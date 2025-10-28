@@ -16,7 +16,7 @@ spec:
       interval: 12h
   values:
     deployment:
-      replicas: 2
+      replicas: 1
     service:
       type: LoadBalancer
     ports:
