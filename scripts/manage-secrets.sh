@@ -168,8 +168,8 @@ case "$1" in
         exit 1
         ;;
 esac
-creat
-e_longhorn_auth() {
+
+create_longhorn_auth() {
     local username="$1"
     local password="$2"
     
