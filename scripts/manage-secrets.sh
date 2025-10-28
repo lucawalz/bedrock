@@ -125,6 +125,12 @@ case "$1" in
     create-cf-secret)
         create_cf_secret "$2"
         ;;
+    create-longhorn-auth)
+        create_longhorn_auth "$2" "$3"
+        ;;
+    create-postgres-auth)
+        create_postgres_auth "$2" "$3"
+        ;;
     help|--help|-h)
         show_help
         ;;
@@ -135,3 +141,53 @@ case "$1" in
         exit 1
         ;;
 esac
+creat
+e_longhorn_auth() {
+    local username="$1"
+    local password="$2"
+    
+    if [[ -z "$username" || -z "$password" ]]; then
+        echo "❌ Please provide both username and password"
+        exit 1
+    fi
+    
+    local secret_file="$PROJECT_ROOT/kubernetes/infrastructure/longhorn/auth-secret.yaml"
+    
+    echo "🔐 Creating Longhorn basic auth secret..."
+    
+    # Generate htpasswd hash
+    local htpasswd_entry=$(htpasswd -nb "$username" "$password")
+    
+    kubectl create secret generic longhorn-auth \
+        --from-literal=users="$htpasswd_entry" \
+        --namespace=longhorn-system \
+        --dry-run=client -o yaml > "$secret_file"
+    
+    sops -e -i "$secret_file"
+    
+    echo "✅ Longhorn auth secret created and encrypted: $secret_file"
+}
+
+create_postgres_auth() {
+    local postgres_password="$1"
+    local user_password="$2"
+    
+    if [[ -z "$postgres_password" || -z "$user_password" ]]; then
+        echo "❌ Please provide both postgres and user passwords"
+        exit 1
+    fi
+    
+    local secret_file="$PROJECT_ROOT/kubernetes/infrastructure/postgres/auth-secret.yaml"
+    
+    echo "🔐 Creating Postgres authentication secret..."
+    
+    kubectl create secret generic postgres-auth \
+        --from-literal=postgres-password="$postgres_password" \
+        --from-literal=user-password="$user_password" \
+        --namespace=postgres \
+        --dry-run=client -o yaml > "$secret_file"
+    
+    sops -e -i "$secret_file"
+    
+    echo "✅ Postgres auth secret created and encrypted: $secret_file"
+}
