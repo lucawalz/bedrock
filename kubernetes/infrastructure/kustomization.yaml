@@ -3,6 +3,6 @@ kind: Kustomization
 resources:
   - flux-system
   - traefik
-  - longhorn
   - cert-manager
+  - longhorn
   - postgres
