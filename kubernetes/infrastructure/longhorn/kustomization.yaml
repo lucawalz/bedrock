@@ -5,4 +5,4 @@ resources:
   - helmrepository.yaml
   - helmrelease.yaml
   - ingress.yaml
-  - auth-secret.yaml
+  # - auth-secret.yaml  # Uncomment after creating proper encrypted secret

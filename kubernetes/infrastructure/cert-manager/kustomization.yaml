@@ -4,5 +4,5 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  - cloudflare-secret.yaml
-  - cluster-issuer.yaml
+  # - cloudflare-secret.yaml  # Uncomment after creating proper encrypted secret
+  # - cluster-issuer.yaml     # Depends on cloudflare-secret

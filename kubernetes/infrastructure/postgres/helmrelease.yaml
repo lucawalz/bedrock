@@ -17,10 +17,11 @@ spec:
   values:
     auth:
       enablePostgresUser: true
-      existingSecret: postgres-auth
-      secretKeys:
-        adminPasswordKey: postgres-password
-        userPasswordKey: user-password
+      # existingSecret: postgres-auth  # Enable after creating encrypted secret
+      # secretKeys:
+      #   adminPasswordKey: postgres-password
+      #   userPasswordKey: user-password
+      postgresPassword: "changeme123"  # Temporary - replace with proper secret
     primary:
       persistence:
         enabled: true

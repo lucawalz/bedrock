@@ -4,4 +4,4 @@ resources:
   - namespace.yaml
   - helmrepository.yaml
   - helmrelease.yaml
-  - auth-secret.yaml
+  # - auth-secret.yaml  # Uncomment after creating proper encrypted secret
