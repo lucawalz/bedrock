@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: postgresql
-      version: "15.5.38"
+      version: "12.12.10"
       sourceRef:
         kind: HelmRepository
         name: bitnami
@@ -16,7 +16,7 @@ spec:
       interval: 12h
   values:
     image:
-      tag: "16.4.0-debian-12-r5"
+      tag: "15"
     auth:
       enablePostgresUser: true
       # existingSecret: postgres-auth  # Enable after creating encrypted secret
@@ -49,7 +49,5 @@ spec:
           drop: ["ALL"]
     metrics:
       enabled: false
-      image:
-        tag: "0.15.0-debian-12-r5"
     networkPolicy:
       enabled: false
