@@ -9,7 +9,7 @@ spec:
     branch: main
   secretRef:
     name: flux-system
-  url: https://github.com/your-username/your-repo
+  url: https://github.com/lucawalz/nixos-homelab
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
