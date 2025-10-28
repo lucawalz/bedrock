@@ -16,7 +16,6 @@ spec:
       interval: 12h
   values:
     deployment:
-      enabled: true
       replicas: 2
     service:
       type: LoadBalancer
@@ -38,8 +37,6 @@ spec:
       - "--serversTransport.insecureSkipVerify=true"
       - "--log.level=INFO"
       - "--accesslog=true"
-      - "--entrypoints.web.address=:8000"
-      - "--entrypoints.websecure.address=:8443"
       - "--providers.kubernetescrd"
       - "--providers.kubernetesingress"
       - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
