@@ -15,14 +15,16 @@ show_help() {
     echo "  decrypt FILE    Decrypt a specific sops-encrypted file"
     echo "  edit FILE       Edit a sops-encrypted file"
     echo "  create-git-secret USERNAME TOKEN  Create and encrypt git auth secret"
-    echo "  create-cf-secret TOKEN             Create and encrypt Cloudflare API secret"
+    echo "  create-cf-secret TOKEN             Create and encrypt Cloudflare API secret
+  create-tunnel-secret TOKEN        Create and encrypt Cloudflare tunnel secret"
     echo ""
     echo "Examples:"
     echo "  $0 encrypt-all"
     echo "  $0 decrypt kubernetes/infrastructure/flux-system/git-auth-secret.yaml"
     echo "  $0 edit kubernetes/infrastructure/cert-manager/cloudflare-secret.yaml"
     echo "  $0 create-git-secret myusername ghp_xxxxxxxxxxxx"
-    echo "  $0 create-cf-secret your-cloudflare-api-token"
+    echo "  $0 create-cf-secret your-cloudflare-api-token
+  $0 create-tunnel-secret your-tunnel-token"
 }
 
 encrypt_all() {
@@ -109,6 +111,28 @@ create_cf_secret() {
     echo "✅ Cloudflare secret created and encrypted: $secret_file"
 }
 
+create_tunnel_secret() {
+    local token="$1"
+    
+    if [[ -z "$token" ]]; then
+        echo "❌ Please provide Cloudflare tunnel token"
+        exit 1
+    fi
+    
+    local secret_file="$PROJECT_ROOT/kubernetes/infrastructure/cloudflare-tunnel/tunnel-secret.yaml"
+    
+    echo "🔐 Creating Cloudflare tunnel secret..."
+    
+    kubectl create secret generic cloudflare-tunnel-secret \
+        --from-literal=tunnel-token="$token" \
+        --namespace=cloudflare-tunnel \
+        --dry-run=client -o yaml > "$secret_file"
+    
+    sops -e -i "$secret_file"
+    
+    echo "✅ Cloudflare tunnel secret created and encrypted: $secret_file"
+}
+
 case "$1" in
     encrypt-all)
         encrypt_all
@@ -124,6 +148,9 @@ case "$1" in
         ;;
     create-cf-secret)
         create_cf_secret "$2"
+        ;;
+    create-tunnel-secret)
+        create_tunnel_secret "$2"
         ;;
     create-longhorn-auth)
         create_longhorn_auth "$2" "$3"
