@@ -17,8 +17,10 @@ spec:
   values:
     persistence:
       defaultClass: true
-      defaultClassReplicaCount: 3
+      defaultClassReplicaCount: 2
       defaultDataLocality: best-effort
+    preUpgradeChecker:
+      jobEnabled: false
     csi:
       kubeletRootDir: /var/lib/kubelet
     defaultSettings:
@@ -31,7 +33,7 @@ spec:
       storageOverProvisioningPercentage: 100
       storageMinimalAvailablePercentage: 25
       upgradeChecker: false
-      defaultReplicaCount: 3
+      defaultReplicaCount: 2
       defaultLonghornStaticStorageClass: longhorn
       backupCompressionMethod: lz4
       backupConcurrentLimit: 2
