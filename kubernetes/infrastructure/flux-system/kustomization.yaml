@@ -4,4 +4,4 @@ resources:
   - namespace.yaml
   - gotk-components.yaml
   - gotk-sync.yaml
-  - git-auth-secret.yaml
+  # - git-auth-secret.yaml  # Uncomment after creating proper encrypted secret
