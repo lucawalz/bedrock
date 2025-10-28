@@ -16,7 +16,7 @@ spec:
       interval: 12h
   values:
     image:
-      tag: "16.4.0"
+      tag: "16"
     auth:
       enablePostgresUser: true
       # existingSecret: postgres-auth  # Enable after creating encrypted secret
@@ -48,15 +48,6 @@ spec:
         capabilities:
           drop: ["ALL"]
     metrics:
-      enabled: true
-      image:
-        tag: "0.15.0"
-      resources:
-        requests:
-          cpu: 50m
-          memory: 64Mi
-        limits:
-          cpu: 100m
-          memory: 128Mi
+      enabled: false
     networkPolicy:
       enabled: false
