@@ -6,7 +6,6 @@ metadata:
 data:
   config.yaml: |
     tunnel: 69439658-da91-425c-a06c-c02bf7e5f955
-    credentials-file: /etc/cloudflared/creds/tunnel-token
     
     ingress:
       # Route all traffic to Traefik
