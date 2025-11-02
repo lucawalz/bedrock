@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - traefik
   - cert-manager
+  - cloudflare-tunnel
   # - external-dns  # Uncomment if using external-dns
 
