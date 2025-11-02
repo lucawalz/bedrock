@@ -33,7 +33,7 @@ flux-status:
 
 # Sync Flux manually
 flux-sync:
-    flux reconcile kustomization -A
+    flux reconcile kustomization flux-system --with-source
 
 # Show K3s cluster info
 k3s-info:
