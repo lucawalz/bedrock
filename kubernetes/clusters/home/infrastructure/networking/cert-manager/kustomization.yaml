@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - helmrelease.yaml
-  - cluster-issuers
+  # Uncomment after cert-manager is installed
+  # - cluster-issuers
 
