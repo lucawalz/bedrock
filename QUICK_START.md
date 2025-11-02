@@ -1,8 +1,104 @@
-# Quick Start - Migrating to New System
+# Quick Start Guide
 
-Follow these steps to switch from the old `nixos/` structure to the new organized structure.
+This guide covers two installation methods:
+1. **Fresh Installation** with nixos-anywhere (recommended for new systems)
+2. **Migration** from existing NixOS systems
 
-## Step 1: Get SSH Host Keys
+## Method 1: Fresh Installation with nixos-anywhere
+
+### Prerequisites
+
+- Target machine with network access
+- SSH access to target machine (or physical access for initial setup)
+- Your SSH public key added to the configuration
+
+### Step 1: Prepare Your SSH Keys
+
+Add your SSH public key to `hosts/common.nix`:
+
+```nix
+users.users.master = {
+  # ... existing config ...
+  openssh.authorizedKeys.keys = [
+    "ssh-ed25519 YOUR_PUBLIC_KEY_HERE your-email@example.com"
+  ];
+};
+```
+
+### Step 2: Adjust Hardware Configuration
+
+Update the disk device in disko configs if needed:
+
+```nix
+# In hosts/master/disko-config.nix and hosts/worker-1/disko-config.nix
+device = "/dev/nvme0n1";  # Change to your target disk (e.g., /dev/sda)
+```
+
+### Step 3: Create K3s Token Secret
+
+Generate a new K3s token and encrypt it:
+
+```bash
+# Generate a random token
+openssl rand -hex 32 | agenix -e secrets/k3s-token.age
+```
+
+### Step 4: Get Target Machine SSH Keys
+
+If the target machine already has NixOS installed:
+
+```bash
+ssh-keyscan -t ed25519 TARGET_IP
+```
+
+If it's a fresh machine, you'll need to install NixOS first, then get the keys.
+
+### Step 5: Update secrets.nix
+
+Add the target machine's SSH host key to `secrets/secrets.nix`:
+
+```nix
+let
+  master = "ssh-ed25519 AAAAC3... root@master";  # From ssh-keyscan
+  worker-1 = "ssh-ed25519 AAAAC3... root@worker-1";  # From ssh-keyscan
+  luca = "ssh-ed25519 YOUR_KEY_HERE your-email@example.com";
+in
+{
+  "k3s-token.age".publicKeys = [ master worker-1 luca ];
+}
+```
+
+### Step 6: Install with nixos-anywhere
+
+Install the master node:
+
+```bash
+nixos-anywhere --flake .#master root@TARGET_IP
+```
+
+Install the worker node:
+
+```bash
+nixos-anywhere --flake .#worker-1 root@WORKER_IP
+```
+
+### Step 7: Verify Installation
+
+SSH into the master node and check the cluster:
+
+```bash
+ssh master@TARGET_IP
+kubectl get nodes
+kubectl get pods -A
+```
+
+---
+
+## Method 2: Migration from Existing System
+
+Follow these steps to switch from an old `nixos/` structure to the new organized structure.
+
+### Step 1: Get SSH Host Keys
 
 SSH into both nodes and get their SSH host public keys:
 
@@ -25,7 +121,7 @@ ssh-keyscan -t ed25519 master
 ssh-keyscan -t ed25519 worker-1
 ```
 
-## Step 2: Update secrets/secrets.nix
+### Step 2: Update secrets/secrets.nix
 
 Edit `secrets/secrets.nix` and replace the placeholder keys with the actual keys you got in Step 1:
 
@@ -41,7 +137,7 @@ in
 }
 ```
 
-## Step 3: Create/Update K3s Token Secret
+### Step 3: Create/Update K3s Token Secret
 
 If you already have a K3s cluster running, get the existing token:
 
@@ -65,7 +161,7 @@ Or if you're setting up a new cluster:
 openssl rand -hex 32 | agenix -e secrets/k3s-token.age
 ```
 
-## Step 4: Copy Hardware Configurations (If Needed)
+### Step 4: Copy Hardware Configurations (If Needed)
 
 If you have existing hardware configs from the old `nixos/` directory:
 
@@ -90,7 +186,7 @@ sudo nixos-generate-config --show-hardware-config > /tmp/hw-config.nix
 # Copy /tmp/hw-config.nix content to hosts/worker-1/hardware-configuration.nix
 ```
 
-## Step 5: Clone Repository on Nodes (If Not Already There)
+### Step 5: Clone Repository on Nodes (If Not Already There)
 
 SSH into each node and make sure the repo is there:
 
@@ -109,7 +205,7 @@ cd /etc/nixos
 git pull  # or clone if needed
 ```
 
-## Step 6: Test Build (Recommended)
+### Step 6: Test Build (Recommended)
 
 Test the build before deploying:
 
@@ -133,7 +229,7 @@ just build master
 just build worker-1
 ```
 
-## Step 7: Deploy to Master Node
+### Step 7: Deploy to Master Node
 
 ```bash
 # SSH into master
@@ -150,7 +246,7 @@ just switch master
 
 Wait for it to complete successfully.
 
-## Step 8: Deploy to Worker-1 Node
+### Step 8: Deploy to Worker-1 Node
 
 ```bash
 # SSH into worker-1
@@ -165,7 +261,7 @@ sudo nixos-rebuild switch --flake .#worker-1
 just switch worker-1
 ```
 
-## Step 9: Verify Everything Works
+### Step 9: Verify Everything Works
 
 ### Check NixOS is running correctly:
 
@@ -193,7 +289,7 @@ sudo cat /run/age-keys/agenix/k3s-token
 # Should show your K3s token (not encrypted)
 ```
 
-## Step 10: Clean Up (Optional)
+### Step 10: Clean Up (Optional)
 
 Once everything is working:
 
@@ -202,7 +298,9 @@ Once everything is working:
 rm -rf nixos/
 ```
 
-## Troubleshooting
+---
+
+## Troubleshooting (Both Methods)
 
 ### Build fails with "cannot decrypt secret"
 
@@ -225,7 +323,7 @@ rm -rf nixos/
 - Verify all file paths are correct
 - Check that `disko-config.nix` exists in each host directory
 
-## Next Steps After Migration
+## Next Steps After Installation
 
 1. **Bootstrap Flux** (when ready):
    ```bash
@@ -236,3 +334,17 @@ rm -rf nixos/
 
 3. **Update cert-manager email** in cluster issuers
 
+
+### nixos-anywhere specific issues
+
+- **Disk device not found**: Update `device = "/dev/nvme0n1"` in disko configs to match your target hardware
+- **SSH connection fails**: Ensure target machine is accessible and has SSH enabled
+- **Permission denied**: Make sure your SSH key is properly configured in the target user account
+- **Disko partitioning fails**: Check if target disk is already in use or has existing partitions that need to be cleared
+
+### Installation Tips
+
+- **Test locally first**: Use `nixos-rebuild build --flake .#master` to test configuration before deploying
+- **Check hardware**: Verify disk device names match your target hardware (`lsblk` on target machine)
+- **Network configuration**: Adjust static IP settings in host configs if needed
+- **Backup important data**: nixos-anywhere will wipe the target disk completely
