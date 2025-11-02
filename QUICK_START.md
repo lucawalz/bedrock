@@ -326,13 +326,24 @@ rm -rf nixos/
 ## Next Steps After Installation
 
 1. **Bootstrap Flux** (when ready):
+   
+   First, export your GitHub token:
+   ```bash
+   export GITHUB_TOKEN=your_github_token
+   ```
+   
+   Then bootstrap Flux:
    ```bash
    just flux-bootstrap
    ```
+   
+   See `kubernetes/README.md` for detailed Flux setup instructions.
 
 2. **Configure DNS** for `syslabs.dev` (see `docs/dns-setup.md`)
 
 3. **Update cert-manager email** in cluster issuers
+
+4. **Set up SOPS for secrets** (see `kubernetes/README.md` secrets section)
 
 
 ### nixos-anywhere specific issues
