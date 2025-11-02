@@ -1,10 +1,10 @@
 # K3s control plane (server/master) role
 
-{ config, pkgs, meta, ... }:
+{ config, pkgs, meta, secretsDir ? ../secrets, ... }:
 
 {
   age.secrets.k3s-token = {
-    file = ../../secrets/k3s-token.age;
+    file = "${secretsDir}/k3s-token.age";
     mode = "0400";
     owner = "root";
     group = "root";

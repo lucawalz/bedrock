@@ -19,6 +19,7 @@
         system = "x86_64-linux";
         specialArgs = {
           meta = { hostname = "master"; };
+          secretsDir = "${self}/secrets";
         };
         modules = [
           disko.nixosModules.disko
@@ -31,6 +32,7 @@
         system = "x86_64-linux";
         specialArgs = {
           meta = { hostname = "worker-1"; };
+          secretsDir = "${self}/secrets";
         };
         modules = [
           disko.nixosModules.disko
