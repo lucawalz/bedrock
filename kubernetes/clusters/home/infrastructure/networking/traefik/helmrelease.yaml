@@ -5,6 +5,7 @@ metadata:
   namespace: traefik
 spec:
   interval: 30m
+  timeout: 10m
   chart:
     spec:
       chart: traefik
@@ -13,10 +14,6 @@ spec:
         kind: HelmRepository
         name: traefik
         namespace: flux-system
-  valuesFrom:
-    - kind: ConfigMap
-      name: traefik-values
-      optional: true
   install:
     createNamespace: true
   upgrade:
