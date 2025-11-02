@@ -6,79 +6,62 @@
 - SSH access to the machines
 - Age keys generated for secrets management
 
-## Initial Installation
+## Installation Methods
 
-### 1. Boot from NixOS ISO
+### Method 1: nixos-anywhere (Recommended)
+
+The fastest and most reliable method:
+
+```bash
+# From your local machine
+nixos-anywhere --flake .#master root@TARGET_IP
+```
+
+This automatically:
+- Partitions the disk (using disko configuration)
+- Installs NixOS
+- Deploys secrets
+- Configures K3s
+
+See `QUICK_START.md` for detailed steps.
+
+### Method 2: Manual Installation
+
+If you prefer manual installation or nixos-anywhere isn't available:
+
+#### 1. Boot from NixOS ISO
 
 Download the latest NixOS ISO and boot the target machine.
 
-### 2. Generate Hardware Configuration
+#### 2. Partition Disk (Optional - disko can do this)
 
-Once booted into the NixOS installer:
+If not using disko, manually partition:
 
 ```bash
-# Partition and format disk (adjust device as needed)
 sudo -i
+# Partition and format disk (adjust device as needed)
+# Example for UEFI:
+parted /dev/nvme0n1 -- mklabel gpt
+parted /dev/nvme0n1 -- mkpart ESP fat32 1MiB 512MiB
+parted /dev/nvme0n1 -- set 1 esp on
+parted /dev/nvme0n1 -- mkpart primary 512MiB 100%
 
-# Mount the root partition
+mkfs.fat -F 32 -n boot /dev/nvme0n1p1
+mkfs.ext4 -L nixos /dev/nvme0n1p2
+
 mount /dev/nvme0n1p2 /mnt
+mkdir -p /mnt/boot
 mount /dev/nvme0n1p1 /mnt/boot
-
-# Generate hardware configuration
-nixos-generate-config --root /mnt
 ```
 
-### 3. Clone This Repository
+#### 3. Clone Repository
 
 ```bash
-cd /mnt
-git clone https://github.com/lucawalz/nixos-homelab.git /mnt/etc/nixos/homelab
+git clone https://github.com/YOUR_USERNAME/nixos-homelab.git /mnt/etc/nixos/homelab
 cd /mnt/etc/nixos/homelab
 ```
 
-### 4. Configure Secrets
-
-Before first deployment, you need to set up secrets:
-
-#### Get Host SSH Keys
-
-   ```bash
-   # From the target machine, get the SSH host key
-   cat /etc/ssh/ssh_host_ed25519_key.pub
-   ```
-
-#### Update secrets.nix
-
-Edit `secrets/secrets.nix` and add the host's public key:
-
-```nix
-let
-  master = "ssh-ed25519 AAAAC3...";  # The key from above
-in
-{
-  "k3s-token.age".publicKeys = [ master luca ];
-}
-```
-
-#### Create K3s Token
-
-```bash
-# Generate a random token
-openssl rand -hex 32 > /tmp/k3s-token
-
-# Encrypt it with agenix
-agenix -e secrets/k3s-token.age
-# Paste the token content, save and exit
-```
-
-### 5. Update Host Configuration
-
-Edit `hosts/home-XX/default.nix` and:
-- Adjust hostname if needed
-- Configure networking (static IP, etc.)
-- Add/remove role imports
-
-### 6. Install NixOS
+#### 4. Install NixOS
 
 ```bash
 cd /mnt/etc/nixos/homelab
@@ -87,11 +70,13 @@ nixos-install --flake .#master
 
 Follow the prompts to set root password.
 
-### 7. Reboot
+#### 5. Reboot
 
 ```bash
 reboot
 ```
+
+**Note**: Secrets and K3s token are already configured in the repository and will be automatically deployed.
 
 ## Updating Configuration
 

@@ -1,10 +1,21 @@
 # Quick Start Guide
 
-This guide covers two installation methods:
-1. **Fresh Installation** with nixos-anywhere (recommended for new systems)
-2. **Migration** from existing NixOS systems
+This guide will help you deploy a complete NixOS homelab with K3s and Flux GitOps from scratch.
 
-## Method 1: Fresh Installation with nixos-anywhere
+**What you'll get:**
+- 2-node K3s cluster (master + worker)
+- Agenix secrets management
+- Flux CD GitOps
+- Longhorn distributed storage
+- Traefik ingress controller (NodePort)
+- cert-manager with Let's Encrypt
+- Prometheus + Grafana monitoring
+
+**Time estimate:** 20-30 minutes for a fresh deployment
+
+---
+
+## Method 1: Fresh Installation with nixos-anywhere (Recommended)
 
 ### Prerequisites
 
@@ -82,15 +93,47 @@ Install the worker node:
 nixos-anywhere --flake .#worker-1 root@WORKER_IP
 ```
 
-### Step 7: Verify Installation
+### Step 7: Bootstrap Flux
 
-SSH into the master node and check the cluster:
+From your local machine, bootstrap Flux to deploy all infrastructure:
 
 ```bash
-ssh master@TARGET_IP
+# Set up kubectl access
+scp master@MASTER_IP:/etc/rancher/k3s/k3s.yaml ~/.kube/k3s-config
+sed -i '' 's|https://127.0.0.1:6443|https://MASTER_IP:6443|g' ~/.kube/k3s-config
+export KUBECONFIG=~/.kube/k3s-config
+
+# Test kubectl access
+kubectl get nodes
+
+# Bootstrap Flux (requires GitHub personal access token)
+export GITHUB_TOKEN=your_github_token
+flux bootstrap github \
+  --owner=YOUR_GITHUB_USERNAME \
+  --repository=nixos-homelab \
+  --path=kubernetes/clusters/home \
+  --personal
+```
+
+### Step 8: Verify Installation
+
+Wait 5-10 minutes for all infrastructure to deploy, then check:
+
+```bash
+# Check Flux status
+flux get kustomizations -A
+flux get helmreleases -A
+
+# Check cluster
 kubectl get nodes
 kubectl get pods -A
+
+# All HelmReleases should show READY: True
 ```
+
+**Access services:**
+- Traefik: `http://MASTER_IP:30080` or `https://MASTER_IP:30443`
+- Grafana: Configure ingress or use port-forward
 
 ---
 
@@ -285,7 +328,7 @@ You should see both `master` and `worker-1` nodes.
 
 ```bash
 # On master node
-sudo cat /run/age-keys/agenix/k3s-token
+sudo cat /run/agenix/k3s-token
 # Should show your K3s token (not encrypted)
 ```
 
@@ -325,25 +368,31 @@ rm -rf nixos/
 
 ## Next Steps After Installation
 
-1. **Bootstrap Flux** (when ready):
-   
-   First, export your GitHub token:
+1. **Configure DNS** for `syslabs.dev`:
+   - Point your domain/subdomains to your public IP
+   - See `docs/dns-setup.md` for details
+
+2. **Set up ingress for services**:
+   - Traefik is accessible on NodePort 30080/30443
+   - Configure ingress resources for your applications
+   - Let's Encrypt certificates will be issued automatically
+
+3. **Access monitoring**:
    ```bash
-   export GITHUB_TOKEN=your_github_token
-   ```
+   # Get Grafana password
+   kubectl get secret -n monitoring kube-prometheus-stack-grafana \
+     -o jsonpath="{.data.admin-password}" | base64 -d
    
-   Then bootstrap Flux:
-   ```bash
-   just flux-bootstrap
+   # Port-forward to access
+   kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
    ```
-   
-   See `kubernetes/README.md` for detailed Flux setup instructions.
 
-2. **Configure DNS** for `syslabs.dev` (see `docs/dns-setup.md`)
+4. **Deploy applications**:
+   - Add your apps to `kubernetes/clusters/home/apps/`
+   - Commit and push - Flux will deploy automatically
 
-3. **Update cert-manager email** in cluster issuers
-
-4. **Set up SOPS for secrets** (see `kubernetes/README.md` secrets section)
+5. **Set up SOPS for Kubernetes secrets** (optional):
+   - See `docs/secrets-management.md` for SOPS setup
 
 
 ### nixos-anywhere specific issues

@@ -46,23 +46,25 @@ If you want automatic DNS record management, set up external-dns:
 
 ## Port Forwarding
 
-If you're behind a router/NAT, forward ports to your Traefik service:
+Traefik is configured with NodePort (not LoadBalancer since K3s servicelb is disabled).
 
-1. **Find Traefik service NodePort**:
-   ```bash
-   kubectl get svc -n traefik traefik
-   ```
+**NodePort configuration:**
+- HTTP: Port 30080
+- HTTPS: Port 30443
 
-2. **Forward ports in your router**:
-   - Port 80 → Traefik service (for HTTP)
-   - Port 443 → Traefik service (for HTTPS)
+**Router port forwarding:**
+1. Forward external port 80 → Any cluster node IP:30080
+2. Forward external port 443 → Any cluster node IP:30443
 
-3. **Or use Traefik's LoadBalancer** (if your cluster supports it):
-   ```yaml
-   # In traefik/values.yaml
-   service:
-     type: LoadBalancer
-   ```
+**Direct access (without port forwarding):**
+- `http://NODE_IP:30080`
+- `https://NODE_IP:30443`
+
+**To check Traefik service:**
+```bash
+kubectl get svc -n traefik traefik
+# Should show NodePort with ports 30080 and 30443
+```
 
 ## Dynamic DNS (If You Don't Have Static IP)
 

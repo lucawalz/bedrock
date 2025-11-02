@@ -64,11 +64,21 @@ agenix -e secrets/k3s-token.age
 
 This decrypts the file, opens it in your editor, and re-encrypts on save.
 
+### Accessing Secrets at Runtime
+
+Decrypted secrets are available at `/run/agenix/` on the target machine:
+
+```bash
+# Example: K3s token
+sudo cat /run/agenix/k3s-token
+```
+
 ### Rotating a Secret
 
 1. Edit the secret: `agenix -e secrets/my-secret.age`
 2. Update the secret content
-3. Rebuild NixOS: `just switch master`
+3. Rebuild NixOS: `sudo nixos-rebuild switch --flake .#master`
+4. The new secret will be automatically decrypted and deployed
 
 ### Adding a New Host
 

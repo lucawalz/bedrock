@@ -11,19 +11,15 @@ The cluster is configured to use `syslabs.dev` with the following subdomains:
 
 ## Required Actions
 
-### 1. Update Cert-Manager Email
+### 1. Update Cert-Manager Email (Already Configured)
 
-Edit the Let's Encrypt cluster issuers to use your email:
+The Let's Encrypt cluster issuers are already configured with `luca@syslabs.dev`.
 
-**File**: `kubernetes/clusters/home/infrastructure/networking/cert-manager/cluster-issuers/letsencrypt-prod.yaml`
-**File**: `kubernetes/clusters/home/infrastructure/networking/cert-manager/cluster-issuers/letsencrypt-staging.yaml`
+If you need to change it, edit:
+- `kubernetes/clusters/home/infrastructure/networking/cert-manager/cluster-issuers/letsencrypt-prod.yaml`
+- `kubernetes/clusters/home/infrastructure/networking/cert-manager/cluster-issuers/letsencrypt-staging.yaml`
 
-Change:
-```yaml
-email: your-email@example.com  # Change this!
-```
-
-To your actual email address.
+Then commit and push - Flux will update automatically.
 
 ### 2. Configure DNS
 
@@ -46,9 +42,13 @@ Set up external-dns to automatically create DNS records. See [DNS Setup Guide](d
 
 ### 3. Port Forwarding
 
-If behind a router/NAT, forward ports:
-- Port 80 → Traefik service (HTTP)
-- Port 443 → Traefik service (HTTPS)
+Traefik is configured with NodePort, so forward these ports from your router to any cluster node:
+- Port 80 → Node IP:30080 (HTTP)
+- Port 443 → Node IP:30443 (HTTPS)
+
+Or access directly via NodePort:
+- `http://NODE_IP:30080`
+- `https://NODE_IP:30443`
 
 ### 4. Test DNS
 

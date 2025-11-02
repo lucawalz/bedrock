@@ -43,22 +43,38 @@ kubectl cluster-info
 
 - GitHub repository access
 - kubectl access to the cluster
-- Flux CLI installed (included in devShell)
+- Flux CLI installed (`brew install fluxcd/tap/flux` on macOS)
+- GitHub personal access token with `repo` scope
+
+### Set up kubectl Access
+
+From your local machine:
+
+```bash
+# Copy kubeconfig from master node
+scp master@MASTER_IP:/etc/rancher/k3s/k3s.yaml ~/.kube/k3s-config
+
+# Update server address
+sed -i '' 's|https://127.0.0.1:6443|https://MASTER_IP:6443|g' ~/.kube/k3s-config
+
+# Use the config
+export KUBECONFIG=~/.kube/k3s-config
+
+# Test access
+kubectl get nodes
+```
 
 ### Bootstrap Flux
 
-One-time setup from your machine:
+One-time setup from your local machine:
 
 ```bash
-# Make sure kubectl is configured
-export KUBECONFIG=/path/to/k3s/kubeconfig.yaml
+# Export GitHub token
+export GITHUB_TOKEN=your_github_token
 
 # Bootstrap Flux
-just flux-bootstrap
-
-# Or manually:
 flux bootstrap github \
-  --owner=lucawalz \
+  --owner=YOUR_GITHUB_USERNAME \
   --repository=nixos-homelab \
   --path=kubernetes/clusters/home \
   --personal
@@ -81,16 +97,18 @@ All resources should show "Ready" status.
 
 ## Deployment Order
 
-Flux automatically deploys resources in dependency order:
+Flux automatically deploys resources in this order:
 
-1. **Sources** - Helm repositories
-2. **Config** - Cluster configuration
+1. **Sources** - Helm repositories (Longhorn, Traefik, cert-manager, Prometheus)
+2. **Config** - Cluster-wide configuration
 3. **Infrastructure**:
-   - Storage (Longhorn)
-   - Networking (Traefik, cert-manager)
-   - Monitoring (Prometheus/Grafana)
-4. **Apps** - Applications
-5. **Secrets** - Encrypted secrets
+   - **Storage**: Longhorn (distributed block storage)
+   - **Networking**: Traefik (ingress, NodePort 30080/30443), cert-manager (Let's Encrypt)
+   - **Monitoring**: Prometheus + Grafana stack
+4. **Apps** - Your applications (currently empty, ready for your apps)
+5. **Secrets** - SOPS-encrypted Kubernetes secrets (optional)
+
+**Note**: Traefik is configured with NodePort instead of LoadBalancer since K3s servicelb is disabled.
 
 ## Adding Applications
 

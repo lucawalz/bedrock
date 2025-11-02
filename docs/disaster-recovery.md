@@ -59,24 +59,42 @@ sudo rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/
 
 ## Recovery Procedures
 
-### Complete Host Rebuild
+### Complete Host Rebuild with nixos-anywhere
+
+The fastest way to rebuild a host:
+
+```bash
+# From your local machine
+nixos-anywhere --flake .#master root@TARGET_IP
+```
+
+This will:
+1. Partition the disk automatically (using disko)
+2. Install NixOS with your configuration
+3. Deploy agenix secrets
+4. Start K3s with the correct token
+
+### Manual Host Rebuild
+
+If nixos-anywhere isn't available:
 
 1. **Boot from NixOS ISO**
-2. **Partition and mount disk**
+2. **Partition and mount disk** (or let disko handle it)
 3. **Clone repository**:
    ```bash
-   git clone https://github.com/lucawalz/nixos-homelab.git /mnt/etc/nixos/homelab
+   git clone https://github.com/YOUR_USERNAME/nixos-homelab.git /mnt/etc/nixos/homelab
    ```
-4. **Restore secrets** (if backed up separately):
-   ```bash
-   tar -xzf secrets-backup-*.tar.gz -C /mnt/etc/nixos/homelab/
-   ```
-5. **Install NixOS**:
+4. **Install NixOS**:
    ```bash
    cd /mnt/etc/nixos/homelab
    nixos-install --flake .#master
    ```
-6. **Reboot and verify**
+5. **Reboot and verify**:
+   ```bash
+   reboot
+   # After reboot
+   kubectl get nodes
+   ```
 
 ### K3s Cluster Recovery
 
@@ -103,21 +121,33 @@ sudo rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/
 
 If entire cluster is lost:
 
-1. **Rebuild master node**
-2. **Create new K3s token**:
+1. **Rebuild master node** (using nixos-anywhere or manual method)
+2. **Rebuild worker nodes**
+3. **Set up kubectl access** from your local machine:
    ```bash
-   agenix -e secrets/k3s-token.age
-   # Generate new token: openssl rand -hex 32
+   scp master@MASTER_IP:/etc/rancher/k3s/k3s.yaml ~/.kube/k3s-config
+   sed -i '' 's|https://127.0.0.1:6443|https://MASTER_IP:6443|g' ~/.kube/k3s-config
+   export KUBECONFIG=~/.kube/k3s-config
    ```
-3. **Update secrets.nix** with new host keys
-4. **Rebuild all nodes**
-5. **Bootstrap Flux again**:
+4. **Bootstrap Flux again**:
    ```bash
-   just flux-bootstrap
+   export GITHUB_TOKEN=your_token
+   flux bootstrap github \
+     --owner=YOUR_USERNAME \
+     --repository=nixos-homelab \
+     --path=kubernetes/clusters/home \
+     --personal
+   ```
+5. **Wait for infrastructure to deploy** (5-10 minutes):
+   ```bash
+   flux get helmreleases -A
    ```
 6. **Restore PVCs** (if using Longhorn backups):
-   - Restore from Longhorn backup target
+   - Access Longhorn UI
+   - Restore from backup target
    - Or restore from external backup
+
+**Note**: The K3s token is managed by agenix and will be automatically deployed from the encrypted secret in Git.
 
 ### Kubernetes Data Recovery
 

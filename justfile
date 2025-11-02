@@ -7,6 +7,7 @@ build HOST:
     nixos-rebuild build --flake .#{{HOST}}
 
 # Bootstrap Flux on the cluster (one-time setup)
+# Requires: export GITHUB_TOKEN=TOKEN
 flux-bootstrap:
     flux bootstrap github \
       --owner=lucawalz \
