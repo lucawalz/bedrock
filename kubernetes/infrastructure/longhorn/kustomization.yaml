@@ -1,8 +1,0 @@
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-resources:
-  - namespace.yaml
-  - helmrepository.yaml
-  - helmrelease.yaml
-  # - ingress.yaml        # Uncomment after creating auth secret
-  # - auth-secret.yaml    # Uncomment after creating proper encrypted secret
