@@ -1,0 +1,11 @@
+# Longhorn Helm values
+# See: https://github.com/longhorn/longhorn/blob/master/chart/values.yaml
+
+defaultSettings:
+  createDefaultDiskLabeledNodes: true
+  defaultDataPath: /var/lib/longhorn
+
+# Storage class configuration
+persistence:
+  defaultClass: true
+

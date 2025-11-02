@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: traefik
+      version: "28.x"
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+  valuesFrom:
+    - kind: ConfigMap
+      name: traefik-values
+      optional: true
+  install:
+    createNamespace: true
+  upgrade:
+    remediation:
+      retries: 3
+

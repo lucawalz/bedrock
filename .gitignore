@@ -1,0 +1,31 @@
+# Nix build results
+result
+result-*
+
+# Flakes
+.flake/
+
+# direnv
+.direnv/
+
+# Secrets (backup - these should already be encrypted)
+*.age
+*.sops.yaml
+!secrets/secrets.nix
+!secrets/**/*.age
+!kubernetes/**/secrets/**/*.sops.yaml
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.log
+

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-settings
+  namespace: default
+data:
+  cluster-domain: "syslabs.dev"
+  timezone: "Europe/Berlin"
+
