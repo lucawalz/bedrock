@@ -4,7 +4,7 @@
 
 {
   imports = [
-    ./disko-config.nix
+    # ./disko-config.nix  # Commented out - using traditional filesystem definitions instead
     ./hardware-configuration.nix
     ../common.nix
     ../../roles/k3s-server.nix

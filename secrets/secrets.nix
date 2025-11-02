@@ -11,9 +11,9 @@
 
 let
   # Host SSH public keys (ed25519)
-  # Replace these with your actual host keys
-  master = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...";  # Replace with actual key
-  worker-1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI...";  # Replace with actual key
+  # These are the SSH host keys from /etc/ssh/ssh_host_ed25519_key.pub on each machine
+  master = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAU9eaUVbsNWFhRKfzokIBEWY7mfAmb+ISf3kjVKHErx root@master";
+  worker-1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJ9ZMnrZHyY0aE72y6boCYgrUYdX9mMH3r1vWxlSZPbb root@worker-1";
   
   # Your personal SSH public key (for local editing)
   luca = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoKFFTFmJR1CSAq55TwXHbUPTxSK847qZL0W6r/ZUV9 luca@macbook";
