@@ -1,78 +1,72 @@
 # NixOS + K3s Homelab
 
-A complete homelab setup using NixOS for operating system management and K3s for Kubernetes orchestration, with Flux CD for GitOps.
+> A complete homelab setup using NixOS for operating system management and K3s for Kubernetes orchestration, with Flux CD for GitOps.
 
-## 📋 Overview
+---
 
-This repository contains a production-ready homelab configuration with:
+## Overview
 
-- **NixOS** - Declarative operating system configuration
-- **K3s** - Lightweight Kubernetes distribution
-- **Flux CD** - GitOps continuous deployment
-- **Longhorn** - Distributed block storage
-- **Traefik** - Ingress controller
-- **cert-manager** - TLS certificate management
-- **Prometheus/Grafana** - Monitoring and observability
+This repository contains a **production-ready homelab configuration** with:
 
-## 🏗️ Architecture
+| Component | Purpose | Technology |
+|-----------|---------|------------|
+| **Operating System** | Declarative system configuration | NixOS |
+| **Container Orchestration** | Lightweight Kubernetes distribution | K3s |
+| **GitOps** | Continuous deployment | Flux CD |
+| **Storage** | Distributed block storage | Longhorn |
+| **Ingress** | Load balancing & SSL termination | Traefik |
+| **Certificates** | TLS certificate management | cert-manager |
+| **Monitoring** | Metrics & observability | Prometheus/Grafana |
 
-- **master** - K3s control plane (master) node
-- **worker-1** - K3s worker (agent) node
-- **worker-2** - Future worker node (placeholder)
+## Architecture
 
-## 🚀 Quick Start
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     master      │    │    worker-1     │    │    worker-N     │
+│                 │    │                 │    │                 │
+│ • K3s Server    │◄──►│ • K3s Agent     │◄──►│ • K3s Agent     │
+│ • etcd          │    │ • Workloads     │    │ • Workloads     │
+│ • Flux CD       │    │ • Longhorn      │    │ • Longhorn      │
+│ • Traefik      │    │ • Monitoring    │    │ • Monitoring    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-### Prerequisites
+### Node Roles
 
-- NixOS installed on target machines
-- SSH access to all nodes
-- Age keys generated for secrets management
-- GitHub repository (for Flux GitOps)
+| Node Type | Role | Components |
+|-----------|------|------------|
+| **master** | Control Plane | K3s server, etcd, Flux CD, Traefik ingress |
+| **worker-1** | Compute Node | K3s agent, application workloads, storage |
+| **worker-N** | Compute Node | Unlimited scalability - add as needed |
 
-### Initial Setup
+> **Scalable Design**: Start with 2 nodes, expand to as many workers as needed. Each node is declaratively configured and automatically joins the cluster.
 
-1. **Clone repository**:
-   ```bash
-   git clone https://github.com/lucawalz/nixos-homelab.git
-   cd nixos-homelab
-   ```
+## Getting Started
 
-2. **Development shell** (auto-loads with direnv):
-   ```bash
-   # If direnv is installed
-   direnv allow
-   
-   # Or manually
-   nix develop
-   ```
+<table>
+<tr>
+<th>User Type</th>
+<th>Recommended Path</th>
+<th>Description</th>
+</tr>
+<tr>
+<td><strong>New Users</strong></td>
+<td><a href="docs/complete-setup-guide.md"><strong>Complete Setup Guide</strong></a></td>
+<td>Step-by-step instructions from zero to running homelab</td>
+</tr>
+<tr>
+<td><strong>NixOS Veterans</strong></td>
+<td><a href="QUICK_START.md"><strong>Quick Start Guide</strong></a></td>
+<td>Fast deployment for experienced users</td>
+</tr>
+<tr>
+<td><strong>Need Help?</strong></td>
+<td><a href="docs/README.md"><strong>Documentation Index</strong></a></td>
+<td>Find guides for specific topics and troubleshooting</td>
+</tr>
+</table>
 
-3. **Configure secrets**:
-   - Get host SSH public keys: `ssh-keyscan -t ed25519 master`
-   - Update `secrets/secrets.nix` with host keys
-   - Create K3s token: `agenix -e secrets/k3s-token.age`
-
-4. **Deploy to nodes**:
-   ```bash
-   just switch master
-   just switch worker-1
-   ```
-
-5. **Bootstrap Flux** (one-time):
-   ```bash
-   just flux-bootstrap
-   ```
-
-6. **Configure DNS** for `syslabs.dev`:
-   - Point DNS records to your public IP (see [DNS Setup Guide](docs/dns-setup.md))
-   - Update email in cert-manager cluster issuers
-
-7. **Verify deployment**:
-   ```bash
-   just flux-check
-   kubectl get nodes
-   ```
-
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 nixos-homelab/
@@ -80,150 +74,132 @@ nixos-homelab/
 ├── roles/              # Role-based configs (k3s-server, k3s-agent)
 ├── secrets/            # Encrypted NixOS secrets (agenix)
 ├── kubernetes/         # Kubernetes manifests (Flux GitOps)
-├── docs/               # Extended documentation
-└── modules/            # Custom NixOS modules (optional)
+├── docs/               # Documentation
+└── modules/            # Custom NixOS modules
 ```
 
-See individual README files in each directory for details.
+## Quick Commands
 
-## 📖 Documentation
+<details>
+<summary><strong>Click to expand command reference</strong></summary>
 
-- **[NixOS Setup Guide](docs/nixos-setup.md)** - Installation and configuration
-- **[Kubernetes Setup Guide](docs/kubernetes-setup.md)** - K3s and Flux setup
-- **[DNS Setup Guide](docs/dns-setup.md)** - Configuring syslabs.dev domain
-- **[Secrets Management](docs/secrets-management.md)** - Managing encrypted secrets
-- **[Disaster Recovery](docs/disaster-recovery.md)** - Backup and recovery procedures
-
-## 🛠️ Common Tasks
-
-### Update NixOS Configuration
-
+### NixOS Operations
 ```bash
-# Test build
-just build master
-
-# Apply changes
-just switch master
+just build master          # Test configuration build
+just switch master         # Apply configuration to master
+just switch worker-1       # Apply configuration to worker
 ```
 
-### Check Flux Status
-
+### Kubernetes Operations
 ```bash
-just flux-check
-just flux-status
+just flux-check           # Check Flux GitOps status
+just flux-bootstrap       # Bootstrap Flux (one-time)
+kubectl get nodes         # Check cluster node status
+kubectl get pods -A       # Check all pods across namespaces
 ```
 
-### Add a New Application
-
-1. Create directory: `kubernetes/clusters/home/apps/category/app-name/`
-2. Create manifests (Deployment, Service, Ingress, etc.)
-3. Add to parent `kustomization.yaml`
-4. Commit and push - Flux deploys automatically
-
-### Edit Secrets
-
+### Secrets Management
 ```bash
-# NixOS secrets (agenix)
-agenix -e secrets/k3s-token.age
-
-# Kubernetes secrets (SOPS)
-just sops-edit kubernetes/clusters/home/secrets/my-secret.sops.yaml
+agenix -e secrets/k3s-token.age              # Edit NixOS secrets
+sops kubernetes/.../secret.sops.yaml         # Edit Kubernetes secrets
 ```
 
-## 🔐 Secrets Management
+### Monitoring & Debugging
+```bash
+kubectl logs -n flux-system -l app=source-controller    # Flux logs
+kubectl get helmreleases -A                             # Helm releases
+journalctl -u k3s                                       # K3s service logs
+```
 
-- **NixOS secrets**: Encrypted with agenix (age) using SSH host keys
-- **Kubernetes secrets**: Encrypted with SOPS (age keys)
+</details>
 
-See [Secrets Management Guide](docs/secrets-management.md) for details.
+## What Makes This Different
 
-## 🔧 Configuration
+<table>
+<tr>
+<th>Traditional Homelab</th>
+<th>This NixOS Setup</th>
+</tr>
+<tr>
+<td>
 
-### Host Configuration
+```diff
+- Manual OS installation
+- Package dependency conflicts
+- Configuration drift over time
+- Hard to reproduce setups
+- Manual backup procedures
+- Imperative updates (apt, yum)
+- "Works on my machine" issues
+- Manual secret management
+```
 
-Edit `hosts/home-XX/default.nix` for host-specific settings:
-- Hostname
-- Network configuration (static IP, etc.)
-- Role assignments
+</td>
+<td>
 
-### Cluster Configuration
+```diff
++ Automated OS deployment
++ Isolated, reproducible packages
++ Declarative, drift-free config
++ Identical setups every time
++ Automated GitOps backups
++ Atomic, rollback-able updates
++ Guaranteed reproducibility
++ Encrypted secret management
+```
 
-Edit `kubernetes/clusters/home/config/cluster-settings.yaml` for:
-- Cluster domain
-- Timezone
-- Other cluster-wide settings
+</td>
+</tr>
+</table>
 
-### Infrastructure
+### Key Benefits
 
-Infrastructure components are in `kubernetes/clusters/home/infrastructure/`:
-- Storage (Longhorn)
-- Networking (Traefik, cert-manager)
-- Monitoring (Prometheus/Grafana)
+| Feature | Benefit | Implementation |
+|---------|---------|----------------|
+| **Infrastructure as Code** | Everything is version controlled | NixOS flakes + Kubernetes manifests |
+| **GitOps Workflow** | Changes via git commits | Flux CD automatic synchronization |
+| **Secret Management** | Secure, encrypted secrets | agenix (NixOS) + SOPS (Kubernetes) |
+| **Zero Downtime** | Rolling updates | Kubernetes deployment strategies |
+| **Disaster Recovery** | Quick restoration | Declarative configuration + backups |
 
-## 🌐 Accessing Services
+## Perfect For
 
-- **Traefik Dashboard**: `traefik.syslabs.dev`
-- **Grafana**: `grafana.syslabs.dev`
-- **Longhorn UI**: Port-forward or Ingress
-
-## 📝 Adding a New Host
-
-1. Generate hardware config on target: `nixos-generate-config --root /mnt`
-2. Create `hosts/worker-X/default.nix`
-3. Add to `flake.nix` nixosConfigurations
-4. Update `secrets/secrets.nix` with host's SSH key
-5. Deploy: `just switch worker-X`
-
-## 🔄 GitOps Workflow
-
-1. Edit Kubernetes manifests locally
-2. Commit and push changes
-3. Flux automatically detects and applies changes
-4. Monitor with `just flux-check`
-
-## 🐛 Troubleshooting
-
-### NixOS Build Fails
-
-- Check all imports exist and paths are correct
-- Verify secrets are properly encrypted
-- Review build errors: `nixos-rebuild build --flake .#master`
-
-### Flux Not Syncing
-
-- Check Flux status: `flux get sources git`
-- Verify repository access
-- Manual sync: `flux reconcile kustomization -A`
-
-### Pods Not Starting
-
-- Check logs: `kubectl logs -n <namespace> <pod>`
-- Check events: `kubectl describe pod -n <namespace> <pod>`
-- Verify PVCs if using storage
-
-### Secrets Issues
-
-- Verify host SSH keys in `secrets/secrets.nix`
-- Check age keys for SOPS secrets
-- See [Secrets Management Guide](docs/secrets-management.md)
-
-## 📚 Resources
-
-- [NixOS Manual](https://nixos.org/manual/nixos/)
-- [K3s Documentation](https://docs.k3s.io/)
-- [Flux Documentation](https://fluxcd.io/docs/)
-- [Agenix](https://github.com/ryantm/agenix)
-- [SOPS](https://github.com/getsops/sops)
-
-## 🤝 Contributing
-
-This is a personal homelab repository. Feel free to fork and adapt for your needs!
-
-## 📄 License
-
-MIT
+<table>
+<tr>
+<td><strong>Homelab Enthusiasts</strong></td>
+<td>Modern infrastructure with enterprise-grade practices</td>
+</tr>
+<tr>
+<td><strong>Kubernetes Learners</strong></td>
+<td>Realistic environment for hands-on experience</td>
+</tr>
+<tr>
+<td><strong>DevOps Engineers</strong></td>
+<td>Practice GitOps workflows and infrastructure automation</td>
+</tr>
+<tr>
+<td><strong>Infrastructure Nerds</strong></td>
+<td>Declarative, reproducible systems that just work</td>
+</tr>
+</table>
 
 ---
 
-**Note**: This configuration is designed for a homelab environment. Adjust security settings, resource limits, and networking for your specific needs.
+## Resources & Documentation
+
+| Resource | Description | Link |
+|----------|-------------|------|
+| **NixOS Manual** | Official NixOS documentation | [nixos.org/manual](https://nixos.org/manual/nixos/) |
+| **K3s Documentation** | Lightweight Kubernetes guide | [docs.k3s.io](https://docs.k3s.io/) |
+| **Flux Documentation** | GitOps toolkit documentation | [fluxcd.io/docs](https://fluxcd.io/docs/) |
+| **Agenix** | NixOS secrets management | [github.com/ryantm/agenix](https://github.com/ryantm/agenix) |
+| **SOPS** | Kubernetes secrets encryption | [github.com/getsops/sops](https://github.com/getsops/sops) |
+
+---
+
+## License
+
+**MIT License** - Feel free to fork, modify, and adapt for your own needs!
+
+> **Contributing**: This is a personal homelab repository, but issues and improvements are welcome. Share your own configurations and learnings with the community.
 

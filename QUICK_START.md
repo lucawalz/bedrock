@@ -1,21 +1,17 @@
 # Quick Start Guide
 
-This guide will help you deploy a complete NixOS homelab with K3s and Flux GitOps from scratch.
+This guide covers **migration scenarios** and **advanced deployment methods**. 
 
-**What you'll get:**
-- 2-node K3s cluster (master + worker)
-- Agenix secrets management
-- Flux CD GitOps
-- Longhorn distributed storage
-- Traefik ingress controller (NodePort)
-- cert-manager with Let's Encrypt
-- Prometheus + Grafana monitoring
+**New to this setup?** → Use the **[Complete Setup Guide](docs/complete-setup-guide.md)** instead.
 
-**Time estimate:** 20-30 minutes for a fresh deployment
+**What this guide covers:**
+- Fresh installation with nixos-anywhere (advanced users)
+- Migration from existing NixOS systems
+- Troubleshooting deployment issues
 
 ---
 
-## Method 1: Fresh Installation with nixos-anywhere (Recommended)
+## Method 1: Fresh Installation with nixos-anywhere
 
 ### Prerequisites
 
@@ -248,7 +244,7 @@ cd /etc/nixos
 git pull  # or clone if needed
 ```
 
-### Step 6: Test Build (Recommended)
+### Step 6: Test Build
 
 Test the build before deploying:
 

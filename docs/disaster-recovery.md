@@ -1,5 +1,9 @@
 # Disaster Recovery Guide
 
+This guide covers backup strategies and recovery procedures for your NixOS homelab.
+
+**For complete setup instructions, see the [Complete Setup Guide](complete-setup-guide.md).**
+
 ## Backup Strategy
 
 ### What to Backup
@@ -7,7 +11,7 @@
 1. **Git Repository** - Already version controlled
 2. **Encrypted Secrets** - Safe to backup (encrypted)
 3. **Kubernetes Data** - PVCs, etcd data
-4. **NixOS System State** - `/nix/store` (optional)
+4. **NixOS System State** - `/nix/store` 
 
 ### Repository Backup
 
@@ -48,7 +52,7 @@ ls -la /var/lib/rancher/k3s/server/db/snapshots/
 
 ### NixOS System Backup
 
-Full system backups (optional):
+Full system backups :
 
 ```bash
 # Using rsync
@@ -212,9 +216,54 @@ cd nixos-homelab
 - Verify backups are restorable
 - Test secrets decryption on fresh machine
 
-## Emergency Contacts
+## Recovery Checklist
 
-- GitHub repository: https://github.com/lucawalz/nixos-homelab
-- Age keys location: `~/.config/sops/age/keys.txt`
-- SSH keys location: `/etc/ssh/ssh_host_ed25519_key.pub`
+### Complete Cluster Loss
+- [ ] Rebuild master node with nixos-anywhere
+- [ ] Rebuild worker nodes
+- [ ] Set up kubectl access
+- [ ] Bootstrap Flux
+- [ ] Wait for infrastructure deployment
+- [ ] Restore data from backups
+- [ ] Verify all services
+
+### Single Node Loss
+- [ ] Rebuild node with nixos-anywhere
+- [ ] Verify node joins cluster
+- [ ] Check pod redistribution
+- [ ] Verify services still accessible
+
+### Data Loss
+- [ ] Identify affected PVCs
+- [ ] Restore from Longhorn backups
+- [ ] Or restore from external backups
+- [ ] Verify application data integrity
+
+## Emergency Information
+
+Keep this information in a secure, accessible location:
+
+- **Repository URL**: https://github.com/YOUR_USERNAME/nixos-homelab
+- **Age keys location**: `~/.config/sops/age/keys.txt`
+- **SSH keys location**: `~/.ssh/id_ed25519*`
+- **Important passwords**: Store securely outside of git
+- **Network configuration**: Document static IPs, VLANs, etc.
+- **Hardware information**: Which physical machine is which hostname
+
+## Regular Maintenance
+
+### Weekly
+- [ ] Check backup status
+- [ ] Verify certificates are renewing
+- [ ] Review monitoring alerts
+
+### Monthly  
+- [ ] Test backup restoration
+- [ ] Update flake inputs: `nix flake update`
+- [ ] Review security logs
+
+### Quarterly
+- [ ] Test complete disaster recovery procedure
+- [ ] Rotate age keys if needed
+- [ ] Update documentation
 
