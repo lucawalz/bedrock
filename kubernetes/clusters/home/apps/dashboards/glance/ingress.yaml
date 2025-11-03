@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: glance
+  namespace: dashboards
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`glance.syslabs.dev`) || Host(`syslabs.dev`)
+      kind: Rule
+      services:
+        - name: glance
+          port: 8080
