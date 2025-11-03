@@ -31,13 +31,21 @@ spec:
           httpGet:
             path: /ready
             port: 2000
-          failureThreshold: 3
-          initialDelaySeconds: 30
+          failureThreshold: 5
+          initialDelaySeconds: 60
           periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 2000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
         resources:
           requests:
             cpu: 10m
-            memory: 64Mi
-          limits:
-            cpu: 100m
             memory: 128Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
