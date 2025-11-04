@@ -262,17 +262,16 @@ data:
                     subreddit: java
                     show-thumbnails: true
 
-              - type: monitor
-                cache: 1m
+              - type: bookmarks
                 title: Homelab Services
-                sites:
-                  - title: Traefik
+                bookmarks:
+                  - title: Traefik Dashboard
                     url: https://traefik.syslabs.dev
                     icon: si:traefik
                   - title: Grafana
                     url: https://grafana.syslabs.dev
                     icon: si:grafana
-                  - title: Longhorn
+                  - title: Longhorn UI
                     url: https://longhorn.syslabs.dev
                     icon: mdi:harddisk
 
