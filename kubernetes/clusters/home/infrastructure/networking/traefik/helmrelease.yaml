@@ -14,10 +14,14 @@ spec:
         kind: HelmRepository
         name: traefik
         namespace: flux-system
-  valuesFrom:
-    - kind: ConfigMap
-      name: traefik-values
-      optional: true
+  values:
+    service:
+      type: NodePort
+    ports:
+      web:
+        nodePort: 30080
+      websecure:
+        nodePort: 30443
   install:
     createNamespace: true
   upgrade:
