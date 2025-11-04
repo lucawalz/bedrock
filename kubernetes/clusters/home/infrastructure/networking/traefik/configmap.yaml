@@ -14,16 +14,20 @@ data:
     # Service configuration
     service:
       type: NodePort
+      spec:
+        ports:
+          web:
+            nodePort: 30080
+          websecure:
+            nodePort: 30443
 
     ports:
       web:
         port: 80
         expose: true
-        nodePort: 30080
       websecure:
         port: 443
         expose: true
-        nodePort: 30443
 
     # Enable dashboard
     api:
