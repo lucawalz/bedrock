@@ -14,12 +14,9 @@ data:
     # Service configuration
     service:
       type: NodePort
-      spec:
-        ports:
-          web:
-            nodePort: 30080
-          websecure:
-            nodePort: 30443
+      nodePorts:
+        web: 30080
+        websecure: 30443
 
     ports:
       web:
