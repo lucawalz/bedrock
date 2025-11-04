@@ -14,8 +14,10 @@ spec:
         kind: HelmRepository
         name: cert-manager
         namespace: flux-system
-  values:
-    installCRDs: true
+  valuesFrom:
+    - kind: ConfigMap
+      name: cert-manager-values
+      optional: true
   install:
     createNamespace: true
     crds: Create

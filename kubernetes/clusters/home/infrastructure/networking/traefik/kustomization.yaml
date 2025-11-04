@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - configmap.yaml
   - helmrelease.yaml
   - dashboard-ingress.yaml
 

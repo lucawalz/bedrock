@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: traefik-values
+  namespace: traefik
+data:
+  values.yaml: |
+    # Traefik Helm values
+    # See: https://github.com/traefik/traefik-helm-chart
+
+    deployment:
+      replicas: 1
+
+    # Service configuration
+    service:
+      type: NodePort
+
+    ports:
+      web:
+        port: 80
+        expose: true
+        nodePort: 30080
+      websecure:
+        port: 443
+        expose: true
+        nodePort: 30443
+
+    # Enable dashboard
+    api:
+      dashboard: true
+      insecure: false
+
+    # Resource requests/limits
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "50Mi"
+      limits:
+        cpu: "300m"
+        memory: "150Mi"

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cert-manager-values
+  namespace: cert-manager
+data:
+  values.yaml: |
+    # cert-manager Helm values
+
+    installCRDs: true
+
+    # Resource requests/limits
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+      limits:
+        cpu: "500m"
+        memory: "256Mi"
