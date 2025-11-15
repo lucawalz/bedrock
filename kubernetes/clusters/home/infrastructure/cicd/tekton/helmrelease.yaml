@@ -7,7 +7,7 @@ spec:
   interval: 30m
   chart:
     spec:
-      chart: tekton-pipeline
+      chart: pipeline
       version: "0.x"
       sourceRef:
         kind: HelmRepository
