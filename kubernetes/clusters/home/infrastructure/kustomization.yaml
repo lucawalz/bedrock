@@ -5,4 +5,5 @@ resources:
   - storage          # Deploy first
   - networking       # Deploy second
   - monitoring       # Deploy third
+  - cicd             # Deploy fourth
 

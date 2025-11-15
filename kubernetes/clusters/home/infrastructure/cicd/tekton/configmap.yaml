@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tekton-values
+  namespace: tekton-pipelines
+data:
+  values.yaml: |
+    # Tekton Pipelines Helm values
+    # See: https://github.com/tektoncd/pipeline/blob/main/charts/tekton-pipeline/values.yaml
+
+    # Tekton Pipelines configuration
+    tektonPipelines:
+      enabled: true
+
+    # Resource limits
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
