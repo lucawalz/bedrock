@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-operator-values
+  namespace: redis-operator
+data:
+  values.yaml: |
+    # Redis Operator Helm values
+    # See: https://github.com/OT-CONTAINER-KIT/redis-operator/blob/master/charts/redis-operator/values.yaml
+
+    # Operator configuration
+    replicaCount: 1
+
+    # Resource limits
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
