@@ -15,19 +15,7 @@ spec:
         namespace: flux-system
   values:
     ingress:
-      enabled: true
-      className: traefik
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-production
-      hosts:
-        - host: n8n.syslabs.dev
-          paths:
-            - path: /
-              pathType: ImplementationSpecific
-      tls:
-        - hosts:
-            - n8n.syslabs.dev
-          secretName: n8n-tls
+      enabled: false
     main:
       persistence:
         enabled: true
