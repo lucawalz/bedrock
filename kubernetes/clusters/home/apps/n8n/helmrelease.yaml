@@ -14,6 +14,8 @@ spec:
         name: n8n
         namespace: flux-system
   values:
+    strategy:
+      type: Recreate
     ingress:
       enabled: false
     main:
