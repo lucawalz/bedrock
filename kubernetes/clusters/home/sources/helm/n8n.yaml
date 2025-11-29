@@ -5,4 +5,4 @@ metadata:
   namespace: flux-system
 spec:
   interval: 1h
-  url: https://c8n.io/8gears/n8n
+  url: https://community-charts.github.io/helm-charts

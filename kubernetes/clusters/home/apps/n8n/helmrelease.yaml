@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: n8n
-      version: "0.24.x"
+      version: "1.16.x"
       sourceRef:
         kind: HelmRepository
         name: n8n
