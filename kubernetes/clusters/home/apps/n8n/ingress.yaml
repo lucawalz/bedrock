@@ -6,12 +6,9 @@ metadata:
 spec:
   entryPoints:
     - web
-    - websecure
   routes:
     - match: Host(`n8n.syslabs.dev`)
       kind: Rule
       services:
         - name: n8n
           port: 5678
-  tls:
-    secretName: n8n-tls
