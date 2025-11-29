@@ -28,8 +28,8 @@ spec:
         - hosts:
             - n8n.syslabs.dev
           secretName: n8n-tls
-    persistence:
-      enabled: true
-      size: 5Gi
-      accessModes:
-        - ReadWriteOnce
+    main:
+      persistence:
+        enabled: true
+        size: 5Gi
+        accessMode: ReadWriteOnce
