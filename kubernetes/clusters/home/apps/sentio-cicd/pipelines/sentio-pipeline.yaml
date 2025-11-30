@@ -1,0 +1,199 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: sentio-build-deploy
+  namespace: sentio-cicd
+spec:
+  params:
+    - name: git-url
+      type: string
+      default: "https://github.com/lucawalz/sentio-systems.git"
+    - name: git-revision
+      type: string
+      default: "main"
+    - name: infra-git-url
+      type: string
+      default: "https://github.com/lucawalz/nixos-homelab.git"
+  workspaces:
+    - name: shared-workspace
+    - name: infra-workspace
+  tasks:
+    # 1. Clone Application Repo
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.git-url)
+        - name: revision
+          value: $(params.git-revision)
+
+    # 2. Build Backend
+    - name: build-backend
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: ghcr.io/lucawalz/sentio-systems/sentio-backend:$(params.git-revision)
+        - name: CONTEXT
+          value: ./sentio-backend
+
+    # 3. Build Frontend
+    - name: build-frontend
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: ghcr.io/lucawalz/sentio-systems/sentio-web:$(params.git-revision)
+        - name: CONTEXT
+          value: ./sentio-web
+        - name: EXTRA_ARGS
+          value: --build-arg=VITE_API_URL=/api
+
+    # 4. Build Birder
+    - name: build-birder
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: ghcr.io/lucawalz/sentio-systems/birder-ai:$(params.git-revision)
+        - name: CONTEXT
+          value: ./sentio-ai/birder
+
+    # 5. Build SpeciesNet
+    - name: build-speciesnet
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:$(params.git-revision)
+        - name: CONTEXT
+          value: ./sentio-ai/speciesnet
+
+    # 6. Build Preprocessing
+    - name: build-preprocessing
+      taskRef:
+        name: kaniko
+      runAfter:
+        - fetch-source
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: IMAGE
+          value: ghcr.io/lucawalz/sentio-systems/preprocessing-service:$(params.git-revision)
+        - name: CONTEXT
+          value: ./sentio-ai/preprocessing
+
+    # 7. Clone Infra Repo
+    - name: fetch-infra
+      taskRef:
+        name: git-clone
+      runAfter:
+        - build-backend
+        - build-frontend
+        - build-birder
+        - build-speciesnet
+        - build-preprocessing
+      workspaces:
+        - name: output
+          workspace: infra-workspace
+      params:
+        - name: url
+          value: $(params.infra-git-url)
+        - name: revision
+          value: "main"
+
+    # 8. Update Manifests (Sequential to avoid git lock)
+    - name: update-backend
+      taskRef:
+        name: git-update-deployment
+      runAfter:
+        - fetch-infra
+      workspaces:
+        - name: source
+          workspace: infra-workspace
+      params:
+        - name: deployment_path
+          value: kubernetes/clusters/home/apps/sentio/backend/deployment.yaml
+        - name: new_image
+          value: ghcr.io/lucawalz/sentio-systems/sentio-backend:$(params.git-revision)
+
+    - name: update-frontend
+      taskRef:
+        name: git-update-deployment
+      runAfter:
+        - update-backend
+      workspaces:
+        - name: source
+          workspace: infra-workspace
+      params:
+        - name: deployment_path
+          value: kubernetes/clusters/home/apps/sentio/frontend/deployment.yaml
+        - name: new_image
+          value: ghcr.io/lucawalz/sentio-systems/sentio-web:$(params.git-revision)
+
+    - name: update-birder
+      taskRef:
+        name: git-update-deployment
+      runAfter:
+        - update-frontend
+      workspaces:
+        - name: source
+          workspace: infra-workspace
+      params:
+        - name: deployment_path
+          value: kubernetes/clusters/home/apps/sentio/ai/birder/deployment.yaml
+        - name: new_image
+          value: ghcr.io/lucawalz/sentio-systems/birder-ai:$(params.git-revision)
+
+    - name: update-speciesnet
+      taskRef:
+        name: git-update-deployment
+      runAfter:
+        - update-birder
+      workspaces:
+        - name: source
+          workspace: infra-workspace
+      params:
+        - name: deployment_path
+          value: kubernetes/clusters/home/apps/sentio/ai/speciesnet/deployment.yaml
+        - name: new_image
+          value: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:$(params.git-revision)
+
+    - name: update-preprocessing
+      taskRef:
+        name: git-update-deployment
+      runAfter:
+        - update-speciesnet
+      workspaces:
+        - name: source
+          workspace: infra-workspace
+      params:
+        - name: deployment_path
+          value: kubernetes/clusters/home/apps/sentio/ai/preprocessing/deployment.yaml
+        - name: new_image
+          value: ghcr.io/lucawalz/sentio-systems/preprocessing-service:$(params.git-revision)
