@@ -5,4 +5,5 @@ resources:
   - dashboards
   - databases
   - n8n
+  - sentio-cicd
 
