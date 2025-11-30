@@ -18,7 +18,11 @@ spec:
       registry: public.ecr.aws
       repository: bitnami/postgresql
       tag: 16.3.0
-    # Auth will be configured with existingSecret after initial deployment
+    auth:
+      existingSecret: postgres-passwords
+      secretKeys:
+        adminPasswordKey: postgres-password
+        replicationPasswordKey: replication-password
     primary:
       persistence:
         enabled: true
