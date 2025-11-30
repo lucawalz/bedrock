@@ -8,10 +8,9 @@ spec:
   chart:
     spec:
       chart: postgresql
-      version: "18.1.x"
       sourceRef:
-        kind: HelmRepository
-        name: bitnami
+        kind: OCIRepository
+        name: postgresql
         namespace: flux-system
   values:
     # Auth will be configured with existingSecret after initial deployment

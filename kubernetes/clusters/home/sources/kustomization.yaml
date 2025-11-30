@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - helm/traefik.yaml
   - helm/n8n.yaml
+  - helm/postgresql.yaml
   - helm/cert-manager.yaml
   - helm/longhorn.yaml
   - helm/prometheus-community.yaml
