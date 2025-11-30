@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
   - dashboards
+  - databases
   - n8n
 
