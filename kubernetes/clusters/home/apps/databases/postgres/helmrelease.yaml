@@ -14,11 +14,7 @@ spec:
         name: bitnami
         namespace: flux-system
   values:
-    auth:
-      existingSecret: postgres-passwords
-      secretKeys:
-        adminPasswordKey: postgres-password
-        replicationPasswordKey: replication-password
+    # Auth will be configured with existingSecret after initial deployment
     primary:
       persistence:
         enabled: true
