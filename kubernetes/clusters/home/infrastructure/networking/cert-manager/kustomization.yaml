@@ -5,5 +5,5 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - helmrelease.yaml
-  - cluster-issuers
+
 

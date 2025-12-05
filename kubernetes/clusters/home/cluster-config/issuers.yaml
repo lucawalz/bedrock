@@ -2,11 +2,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-apps
+  name: cluster-issuers
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/apps
+  path: ./kubernetes/clusters/home/infrastructure/networking/cert-manager/cluster-issuers
   prune: true
   wait: true
   sourceRef:
@@ -14,4 +14,3 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-infrastructure
-    - name: cluster-issuers
