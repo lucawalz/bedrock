@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: n8n-tls
   issuerRef:
-    name: letsencrypt-production
+    name: letsencrypt-prod
     kind: ClusterIssuer
   commonName: n8n.syslabs.dev
   dnsNames:
