@@ -11,3 +11,6 @@ resources:
     cpu: "500m"
     memory: "256Mi"
 
+
+extraArgs:
+  - --disable-challenge-self-check
