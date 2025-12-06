@@ -19,7 +19,7 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: preprocessing
-          image: ghcr.io/lucawalz/sentio-systems/preprocessing-service:main
+          image: ghcr.io/lucawalz/sentio-systems/preprocessing-service:develop
           imagePullPolicy: Always
           ports:
             - containerPort: 8082

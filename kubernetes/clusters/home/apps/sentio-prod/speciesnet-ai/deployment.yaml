@@ -19,7 +19,7 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: speciesnet-ai
-          image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:main
+          image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:develop
           imagePullPolicy: Always
           ports:
             - containerPort: 8081

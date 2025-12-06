@@ -19,7 +19,7 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: birder-ai
-          image: ghcr.io/lucawalz/sentio-systems/birder-ai:main
+          image: ghcr.io/lucawalz/sentio-systems/birder-ai:develop
           imagePullPolicy: Always
           ports:
             - containerPort: 8000
