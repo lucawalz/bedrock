@@ -39,3 +39,8 @@ spec:
           memory: 2Gi
     volumePermissions:
       enabled: true
+      image:
+        registry: public.ecr.aws
+        repository: bitnami/os-shell
+        tag: 12-debian-12-r30
+        pullPolicy: IfNotPresent
