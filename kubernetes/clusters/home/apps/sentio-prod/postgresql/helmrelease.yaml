@@ -37,10 +37,4 @@ spec:
         limits:
           cpu: 1000m
           memory: 2Gi
-    volumePermissions:
-      enabled: true
-      image:
-        registry: public.ecr.aws
-        repository: bitnami/os-shell
-        tag: "12"
-        pullPolicy: IfNotPresent
+

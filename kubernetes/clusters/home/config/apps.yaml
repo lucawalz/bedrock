@@ -8,8 +8,7 @@ spec:
   interval: 10m
   path: ./kubernetes/clusters/home/apps
   prune: true
-  prune: true
-  wait: false
+  wait: true
   sourceRef:
     kind: GitRepository
     name: flux-system
