@@ -35,7 +35,7 @@ spec:
               valueFrom:
                 secretKeyRef:
                   name: sentio-secrets
-                  key: SPRING_DATASOURCE_PASSWORD
+                  key: POSTGRES_PASSWORD
             - name: KEYCLOAK_AUTH_SERVER_URL
               value: "http://sentio-keycloak.sentio-staging.svc.cluster.local:8080"
             - name: KEYCLOAK_REALM
