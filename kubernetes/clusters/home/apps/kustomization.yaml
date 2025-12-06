@@ -6,5 +6,5 @@ resources:
   - databases
   - n8n
   - sentio-staging
-  - sentio-prod
+
 
