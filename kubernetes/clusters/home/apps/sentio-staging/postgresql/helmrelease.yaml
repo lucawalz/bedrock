@@ -22,9 +22,9 @@ spec:
       existingSecret: sentio-secrets
       secretKeys:
         adminPasswordKey: POSTGRES_PASSWORD
+        userPasswordKey: POSTGRES_PASSWORD
       database: sentio
       username: sentio_user
-      passwordSecretKey: POSTGRES_PASSWORD
     primary:
       persistence:
         enabled: true
