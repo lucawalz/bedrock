@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentio-backend
+  namespace: sentio-prod
+  labels:
+    app: sentio-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentio-backend
+  template:
+    metadata:
+      labels:
+        app: sentio-backend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      containers:
+        - name: backend
+          image: ghcr.io/lucawalz/sentio-systems/sentio-backend:main
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://sentio-postgresql.sentio-prod.svc.cluster.local:5432/sentio"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: KEYCLOAK_AUTH_SERVER_URL
+              value: "http://sentio-keycloak.sentio-prod.svc.cluster.local:8080"
+            - name: KEYCLOAK_REALM
+              value: "sentio"
+            - name: KEYCLOAK_RESOURCE
+              value: "sentio-backend"
+            - name: KEYCLOAK_CREDENTIALS_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: KEYCLOAK_CLIENT_SECRET
+            - name: MQTT_BROKER_URL
+              value: "tcp://sentio-mosquitto.sentio-prod.svc.cluster.local:1883"
+            - name: MQTT_USERNAME
+              value: "" 
+            - name: MQTT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: MQTT_PASSWORD
+                  optional: true
+            - name: AI_SERVICE_URL_BIRDER
+              value: "http://sentio-birder-ai.sentio-prod.svc.cluster.local:8000"
+            - name: AI_SERVICE_URL_SPECIESNET
+              value: "http://sentio-speciesnet-ai.sentio-prod.svc.cluster.local:8081"
+            - name: PREPROCESSING_SERVICE_URL
+              value: "http://sentio-preprocessing.sentio-prod.svc.cluster.local:8082"
+          volumeMounts:
+            - name: shared-images
+              mountPath: /app/shared_images
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+      volumes:
+        - name: shared-images
+          persistentVolumeClaim:
+            claimName: sentio-shared-images

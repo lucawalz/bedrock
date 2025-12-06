@@ -1,0 +1,41 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sentio-postgresql
+  namespace: sentio-staging
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: postgresql
+      version: "15.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+  values:
+    image:
+      registry: public.ecr.aws
+      repository: bitnami/postgresql
+      tag: 16.3.0
+    auth:
+      existingSecret: sentio-secrets
+      secretKeys:
+        adminPasswordKey: POSTGRES_PASSWORD
+      database: sentio
+      username: sentio_user
+      passwordSecretKey: POSTGRES_PASSWORD
+    primary:
+      persistence:
+        enabled: true
+        storageClass: longhorn
+        size: 10Gi
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
+    volumePermissions:
+      enabled: true

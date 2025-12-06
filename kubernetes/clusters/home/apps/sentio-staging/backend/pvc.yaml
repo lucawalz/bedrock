@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: sentio-shared-images
+  namespace: sentio-staging
+spec:
+  accessModes:
+    - ReadWriteMany # Needs to be accessed by backend and AI services
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 5Gi

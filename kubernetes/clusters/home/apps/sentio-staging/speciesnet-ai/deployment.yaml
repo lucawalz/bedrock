@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentio-speciesnet-ai
+  namespace: sentio-staging
+  labels:
+    app: sentio-speciesnet-ai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentio-speciesnet-ai
+  template:
+    metadata:
+      labels:
+        app: sentio-speciesnet-ai
+    spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      containers:
+        - name: speciesnet-ai
+          image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:develop
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+          volumeMounts:
+            - name: shared-images
+              mountPath: /app/shared_images
+              readOnly: true
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+      volumes:
+        - name: shared-images
+          persistentVolumeClaim:
+            claimName: sentio-shared-images
