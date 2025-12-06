@@ -48,6 +48,8 @@ spec:
                   key: KEYCLOAK_ADMIN_PASSWORD
             - name: KC_PROXY
               value: "edge"
+            - name: KC_HTTP_RELATIVE_PATH
+              value: "/auth"
             - name: KC_HOSTNAME
               value: "sentio.syslabs.dev"
             - name: KC_HOSTNAME_PATH
