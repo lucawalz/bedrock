@@ -2,19 +2,13 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-secrets
+  name: config
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/secrets
+  path: ./kubernetes/clusters/home/config
   prune: true
   wait: true
   sourceRef:
     kind: GitRepository
     name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-age
-  dependsOn:
-    - name: config

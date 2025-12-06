@@ -14,5 +14,5 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-sources
-    - name: cluster-config
+    - name: config
     - name: cluster-secrets
