@@ -22,9 +22,9 @@ spec:
       enabled: false
 
     # Image Configuration (Use latest to avoid legacy tag issues)
-    # image:
-    #   tag: latest
-    #   pullPolicy: Always
+    image:
+      tag: latest
+      pullPolicy: Always
     
     # Credentials (from Secret)
     auth:
