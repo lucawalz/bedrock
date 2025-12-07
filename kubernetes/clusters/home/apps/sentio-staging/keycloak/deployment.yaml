@@ -48,8 +48,6 @@ spec:
                   key: KEYCLOAK_ADMIN_PASSWORD
             - name: KC_PROXY
               value: "edge"
-            - name: KC_HTTP_RELATIVE_PATH
-              value: "/auth"
             - name: KC_HOSTNAME
               value: "staging-sentio.syslabs.dev"
             - name: KC_HOSTNAME_PATH
@@ -68,13 +66,13 @@ spec:
               memory: 2Gi
           readinessProbe:
             httpGet:
-              path: /auth/health/ready
+              path: /health/ready
               port: 8080
             initialDelaySeconds: 120
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /auth/health/live
+              path: /health/live
               port: 8080
             initialDelaySeconds: 120
             periodSeconds: 10
