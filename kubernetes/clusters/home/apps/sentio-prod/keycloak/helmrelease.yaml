@@ -16,6 +16,7 @@ spec:
   values:
     # Use Production optimization (Quarkus)
     production: true
+    proxyHeaders: xforwarded
     proxy: edge
     
     # Image Configuration (Use latest to avoid legacy tag issues)
