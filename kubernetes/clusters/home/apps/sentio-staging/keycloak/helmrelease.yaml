@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: keycloak
-      version: 21.0.0
+      version: 22.2.0
       sourceRef:
         kind: HelmRepository
         name: bitnami
@@ -17,6 +17,11 @@ spec:
     # Use Production optimization (Quarkus)
     production: true
     proxy: edge
+    
+    # Image Configuration (Use latest to avoid legacy tag issues)
+    image:
+      tag: latest
+      pullPolicy: Always
     
     # Credentials (from Secret)
     auth:
