@@ -5,10 +5,7 @@ metadata:
   namespace: sentio-staging
 spec:
   entryPoints:
-    - websecure
-  tls:
-    secretName: sentio-staging-tls
-    certResolver: letsencrypt-prod
+    - web  # Use HTTP - Cloudflare Tunnel handles TLS
   routes:
     # Frontend (Root)
     - match: Host(`staging-sentio.syslabs.dev`) && PathPrefix(`/`)
