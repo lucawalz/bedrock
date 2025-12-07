@@ -40,7 +40,7 @@ spec:
     externalDatabase:
       host: sentio-postgresql.sentio-staging.svc.cluster.local
       port: 5432
-      user: sentio
+      user: sentio_user
       database: sentio
       existingSecret: "sentio-secrets"
       existingSecretPasswordKey: "POSTGRES_PASSWORD"
