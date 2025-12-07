@@ -1,0 +1,102 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: keycloak
+  namespace: sentio-prod
+spec:
+  interval: 10m
+  chart:
+    spec:
+      chart: keycloak
+      version: 21.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+  values:
+    # Use Production optimization (Quarkus)
+    production: true
+    proxy: edge
+    
+    # Credentials (from Secret)
+    auth:
+      existingSecret: sentio-secrets
+      passwordSecretKey: KEYCLOAK_ADMIN_PASSWORD
+      adminUser: admin
+      
+    # Database (External Postgres)
+    postgresql:
+      enabled: false
+    externalDatabase:
+      host: sentio-postgresql.sentio-prod.svc.cluster.local
+      port: 5432
+      user: sentio
+      database: sentio
+      existingSecret: "sentio-secrets"
+      existingSecretPasswordKey: "POSTGRES_PASSWORD"
+      
+    # Service Access
+    service:
+      type: ClusterIP
+      ports:
+        http: 8080
+    
+    # Ingress (Managed by sentio-prod/ingress.yaml IngressRoute)
+    ingress:
+      enabled: false
+      
+    # Realm Import Logic
+    extraVolumes:
+      - name: realm-template
+        configMap:
+          name: sentio-keycloak-realm
+      - name: realm-import
+        emptyDir: {}
+        
+    extraVolumeMounts:
+      - name: realm-import
+        mountPath: /opt/bitnami/keycloak/data/import
+        
+    extraInitContainers:
+      - name: realm-renderer
+        image: alpine:latest
+        command:
+          - /bin/sh
+          - -c
+          - |
+            apk add --no-cache gettext sed
+            echo "Replacing secrets in sentio-realm.json..."
+            sed "s/KEYCLOAK_CLIENT_SECRET_PLACEHOLDER/${KEYCLOAK_ADMIN_CLIENT_SECRET}/g" /tmp/realm-template.json > /opt/bitnami/keycloak/data/import/sentio-realm.json
+            echo "Realm file prepared."
+        env:
+          - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: sentio-secrets
+                key: KEYCLOAK_ADMIN_CLIENT_SECRET
+        volumeMounts:
+          - name: realm-template
+            mountPath: /tmp/sentio-realm.json
+            subPath: sentio-realm.json
+          - name: realm-import
+            mountPath: /opt/bitnami/keycloak/data/import
+            
+    # Keycloak Configuration
+    extraEnvVars:
+      - name: KEYCLOAK_EXTRA_ARGS
+        value: "--import-realm"
+      - name: KC_HTTP_RELATIVE_PATH
+        value: "/" # Explicitly set root
+      - name: KC_HEALTH_ENABLED
+        value: "true"
+      - name: KC_METRICS_ENABLED
+        value: "true"
+
+    # Resources
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 2000m
+        memory: 2Gi

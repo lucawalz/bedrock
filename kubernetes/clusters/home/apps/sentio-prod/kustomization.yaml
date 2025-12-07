@@ -4,8 +4,8 @@ namespace: sentio-prod
 resources:
   - ingress.yaml
   - postgresql/helmrelease.yaml
-  - keycloak/deployment.yaml
-  - keycloak/service.yaml
+  - keycloak/helmrelease.yaml
+  - keycloak/realm-configmap.yaml
   - mosquitto/deployment.yaml
   - mosquitto/service.yaml
   - mosquitto/configmap.yaml
