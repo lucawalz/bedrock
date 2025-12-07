@@ -104,6 +104,20 @@ spec:
         value: "true"
       - name: KC_METRICS_ENABLED
         value: "true"
+      # Database configuration (explicit env vars since externalDatabase may not apply correctly)
+      - name: KEYCLOAK_DATABASE_HOST
+        value: "sentio-postgresql.sentio-staging.svc.cluster.local"
+      - name: KEYCLOAK_DATABASE_PORT
+        value: "5432"
+      - name: KEYCLOAK_DATABASE_NAME
+        value: "sentio"
+      - name: KEYCLOAK_DATABASE_USER
+        value: "sentio"
+      - name: KEYCLOAK_DATABASE_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: sentio-secrets
+            key: POSTGRES_PASSWORD
 
     # Resources
     resources:
