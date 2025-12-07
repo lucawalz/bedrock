@@ -21,8 +21,10 @@ spec:
     tls:
       enabled: false
 
-    # Image Configuration (Use latest to avoid legacy tag issues)
+    # Image Configuration - Use bitnamilegacy repo since bitnami migrated images
     image:
+      registry: docker.io
+      repository: bitnamilegacy/keycloak
       tag: latest
       pullPolicy: Always
     
