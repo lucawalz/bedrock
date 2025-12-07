@@ -112,12 +112,12 @@ spec:
       - name: KEYCLOAK_DATABASE_NAME
         value: "sentio"
       - name: KEYCLOAK_DATABASE_USER
-        value: "sentio"
+        value: "sentio_user"
       - name: KEYCLOAK_DATABASE_PASSWORD
         valueFrom:
           secretKeyRef:
             name: sentio-secrets
-            key: POSTGRES_PASSWORD
+            key: KEYCLOAK_DB_PASSWORD
 
     # Resources
     resources:
