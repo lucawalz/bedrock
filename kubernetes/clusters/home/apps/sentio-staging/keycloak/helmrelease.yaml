@@ -117,7 +117,7 @@ spec:
         valueFrom:
           secretKeyRef:
             name: sentio-secrets
-            key: KEYCLOAK_DB_PASSWORD
+            key: POSTGRES_PASSWORD
 
     # Resources
     resources:
