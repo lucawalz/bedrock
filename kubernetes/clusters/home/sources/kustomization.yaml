@@ -10,4 +10,5 @@ resources:
   - helm/bitnami.yaml
   - helm/redis-operator.yaml
   - helm/tekton.yaml
+  - helm/it-tools.yaml
 

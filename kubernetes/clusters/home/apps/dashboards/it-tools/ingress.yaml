@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: it-tools
+  namespace: dashboards
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`tools.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: it-tools
+          port: 8080
