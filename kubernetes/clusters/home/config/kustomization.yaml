@@ -6,5 +6,5 @@ resources:
   - infrastructure.yaml
   - issuers.yaml
   - apps.yaml
-  - namespaces.yaml
+
   - cluster-settings.yaml

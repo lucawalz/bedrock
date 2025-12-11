@@ -6,6 +6,6 @@ resources:
   - databases
   - n8n
   - it-tools
-  - sentio-staging
+
 
 
