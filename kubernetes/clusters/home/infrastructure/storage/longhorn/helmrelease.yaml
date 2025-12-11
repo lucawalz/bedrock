@@ -14,6 +14,10 @@ spec:
         name: longhorn
         namespace: flux-system
       version: 1.10.1
+  install:
+    timeout: 15m
+  upgrade:
+    timeout: 15m
   interval: 30m0s
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
