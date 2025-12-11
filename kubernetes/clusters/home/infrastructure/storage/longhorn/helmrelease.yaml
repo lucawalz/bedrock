@@ -1,25 +1,25 @@
+---
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: longhorn
-  namespace: longhorn-system
+  namespace: flux-system
 spec:
-  interval: 30m
   chart:
     spec:
       chart: longhorn
-      version: "1.6.x"
+      reconcileStrategy: ChartVersion
       sourceRef:
         kind: HelmRepository
         name: longhorn
         namespace: flux-system
-  valuesFrom:
-    - kind: ConfigMap
-      name: longhorn-values
-      optional: true
-  install:
-    createNamespace: true
-  upgrade:
-    remediation:
-      retries: 3
-
+      version: 1.10.1
+  interval: 30m0s
+  storageNamespace: longhorn-system
+  targetNamespace: longhorn-system
+  values:
+    defaultSettings:
+      createDefaultDiskLabeledNodes: true
+      defaultDataPath: /var/lib/longhorn
+    persistence:
+      defaultClass: true
