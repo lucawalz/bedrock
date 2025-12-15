@@ -23,7 +23,7 @@ spec:
           command: ['sh', '-c', 'until nc -z keycloak 8080; do echo waiting for keycloak; sleep 5; done;']
         - name: wait-for-postgres
           image: busybox:1.36
-          command: ['sh', '-c', 'until nc -z postgresql.postgres.svc.cluster.local 5432; do echo waiting for postgres; sleep 5; done;']
+          command: ['sh', '-c', 'until nc -z postgres-postgresql.postgres.svc.cluster.local 5432; do echo waiting for postgres; sleep 5; done;']
       containers:
         - name: backend
           image: ghcr.io/lucawalz/sentio-systems/sentio-backend:develop

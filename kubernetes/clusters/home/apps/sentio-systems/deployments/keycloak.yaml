@@ -18,7 +18,7 @@ spec:
       initContainers:
         - name: wait-for-postgres
           image: busybox:1.36
-          command: ['sh', '-c', 'until nc -z postgresql.postgres.svc.cluster.local 5432; do echo waiting for postgres; sleep 5; done;']
+          command: ['sh', '-c', 'until nc -z postgres-postgresql.postgres.svc.cluster.local 5432; do echo waiting for postgres; sleep 5; done;']
         - name: init-realm
           image: alpine:latest
           command:
@@ -52,7 +52,7 @@ spec:
             - name: KC_DB
               value: "postgres"
             - name: KC_DB_URL
-              value: "jdbc:postgresql://postgresql.postgres.svc.cluster.local:5432/keycloak"
+              value: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/keycloak"
             - name: KC_DB_USERNAME
               value: "sentio"
             - name: KC_DB_PASSWORD

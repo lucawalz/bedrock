@@ -9,7 +9,7 @@ data:
   BACKEND_PORT: "8080"
 
   # Database Configuration
-  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgresql.postgres.svc.cluster.local:5432/sentio"
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/sentio"
   SPRING_DATASOURCE_USERNAME: "sentio"
   
   # JPA Configuration
