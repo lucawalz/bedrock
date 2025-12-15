@@ -84,16 +84,14 @@ spec:
               memory: "1Gi"
               cpu: "1000m"
           livenessProbe:
-            httpGet:
-              path: /health
+            tcpSocket:
               port: 8080
             initialDelaySeconds: 120
             periodSeconds: 30
           readinessProbe:
-            httpGet:
-              path: /health/ready
+            tcpSocket:
               port: 8080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 10
       volumes:
         - name: realm-template
