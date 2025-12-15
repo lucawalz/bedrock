@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentio-keycloak
+  namespace: sentio-systems
+  labels:
+    app: sentio-keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentio-keycloak
+  template:
+    metadata:
+      labels:
+        app: sentio-keycloak
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z postgresql.postgres.svc.cluster.local 5432; do echo waiting for postgres; sleep 5; done;']
+        - name: init-realm
+          image: alpine:latest
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache getenv sed
+              echo "Generating Keycloak realm configuration..."
+              sed "s|KEYCLOAK_CLIENT_SECRET_PLACEHOLDER|$KEYCLOAK_ADMIN_CLIENT_SECRET|g" /init-scripts/sentio-realm.json.template > /realm_data/sentio-realm.json
+              echo "Realm configuration generated successfully."
+          env:
+            - name: KEYCLOAK_ADMIN_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: KEYCLOAK_ADMIN_CLIENT_SECRET
+          volumeMounts:
+            - name: realm-template
+              mountPath: /init-scripts
+            - name: realm-data
+              mountPath: /realm_data
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:23.0.7
+          args:
+            - start-dev
+            - --import-realm
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL
+              value: "jdbc:postgresql://postgresql.postgres.svc.cluster.local:5432/keycloak"
+            - name: KC_DB_USERNAME
+              value: "sentio"
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: POSTGRES_PASSWORD
+            - name: KC_HOSTNAME
+              value: "sentio.syslabs.dev"
+            - name: KC_HOSTNAME_PATH
+              value: "/auth"
+            - name: KC_HTTP_RELATIVE_PATH
+              value: "/auth"
+            - name: KEYCLOAK_ADMIN
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: sentio-secrets
+                  key: KEYCLOAK_ADMIN_PASSWORD
+          volumeMounts:
+            - name: realm-data
+              mountPath: /opt/keycloak/data/import
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /auth/health
+              port: 8080
+            initialDelaySeconds: 120
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /auth/health/ready
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+      volumes:
+        - name: realm-template
+          configMap:
+            name: keycloak-realm-template
+        - name: realm-data
+          emptyDir: {}

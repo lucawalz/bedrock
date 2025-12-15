@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentio-frontend
+  namespace: sentio-systems
+  labels:
+    app: sentio-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentio-frontend
+  template:
+    metadata:
+      labels:
+        app: sentio-frontend
+    spec:
+      imagePullSecrets:
+        - name: ghcr-auth
+      containers:
+        - name: frontend
+          image: ghcr.io/lucawalz/sentio-systems/sentio-web:develop
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+          env:
+            - name: VITE_API_BASE_URL
+              value: "/api"
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10

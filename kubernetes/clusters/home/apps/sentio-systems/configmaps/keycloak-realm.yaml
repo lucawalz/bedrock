@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-template
+  namespace: sentio-systems
+data:
+  sentio-realm.json.template: |
+    {
+      "realm": "sentio",
+      "enabled": true,
+      "sslRequired": "external",
+      "registrationAllowed": false,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "clients": [
+        {
+          "clientId": "sentio-backend",
+          "name": "Sentio Backend",
+          "description": "Sentio Systems Backend Service",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "KEYCLOAK_CLIENT_SECRET_PLACEHOLDER",
+          "publicClient": false,
+          "bearerOnly": false,
+          "serviceAccountsEnabled": true,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": true,
+          "redirectUris": [
+            "https://sentio.syslabs.dev/*",
+            "http://localhost:3000/*"
+          ],
+          "webOrigins": [
+            "https://sentio.syslabs.dev",
+            "http://localhost:3000"
+          ]
+        },
+        {
+          "clientId": "sentio-web",
+          "name": "Sentio Web Frontend",
+          "description": "Sentio Systems Web Application",
+          "enabled": true,
+          "publicClient": true,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": true,
+          "redirectUris": [
+            "https://sentio.syslabs.dev/*",
+            "http://localhost:3000/*"
+          ],
+          "webOrigins": [
+            "https://sentio.syslabs.dev",
+            "http://localhost:3000"
+          ]
+        }
+      ],
+      "roles": {
+        "realm": [
+          {
+            "name": "admin",
+            "description": "Administrator role"
+          },
+          {
+            "name": "user",
+            "description": "Standard user role"
+          }
+        ]
+      },
+      "defaultRoles": ["user"]
+    }
