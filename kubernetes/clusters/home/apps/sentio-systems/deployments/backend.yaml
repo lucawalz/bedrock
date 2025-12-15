@@ -55,16 +55,14 @@ spec:
               memory: "1Gi"
               cpu: "1000m"
           livenessProbe:
-            httpGet:
-              path: /actuator/health
+            tcpSocket:
               port: 8080
-            initialDelaySeconds: 60
+            initialDelaySeconds: 90
             periodSeconds: 30
           readinessProbe:
-            httpGet:
-              path: /actuator/health
+            tcpSocket:
               port: 8080
-            initialDelaySeconds: 30
+            initialDelaySeconds: 60
             periodSeconds: 10
       volumes:
         - name: shared-images
