@@ -22,10 +22,7 @@ spec:
           image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai:develop
           imagePullPolicy: Always
           ports:
-            - containerPort: 8081
-          env:
-            - name: SPECIESNET_PORT
-              value: "8081"
+            - containerPort: 8000
           resources:
             requests:
               memory: "512Mi"
@@ -34,16 +31,14 @@ spec:
               memory: "2Gi"
               cpu: "1000m"
           livenessProbe:
-            httpGet:
-              path: /health
-              port: 8081
+            tcpSocket:
+              port: 8000
             initialDelaySeconds: 120
             periodSeconds: 60
             timeoutSeconds: 10
           readinessProbe:
-            httpGet:
-              path: /health
-              port: 8081
+            tcpSocket:
+              port: 8000
             initialDelaySeconds: 60
             periodSeconds: 30
             timeoutSeconds: 10
