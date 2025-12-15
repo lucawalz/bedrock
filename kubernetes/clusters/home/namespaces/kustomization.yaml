@@ -1,0 +1,7 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Centralized namespace definitions
+# These are created before secrets and apps to ensure namespaces exist
+resources:
+  - sentio-systems.yaml
