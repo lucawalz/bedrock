@@ -45,8 +45,13 @@ spec:
             command: ["/bin/sh", "-c"]
             args:
               - |
-                # Fix JavaScript API URLs
-                find /usr/share/nginx/html -type f -name '*.js' -exec sed -i 's|http://localhost:8083|/api|g' {} + && \
+                # Fix JavaScript API URLs (all variations)
+                find /usr/share/nginx/html -type f \( -name '*.js' -o -name '*.html' \) -exec sed -i \
+                  -e 's|http://localhost:8083|/api|g' \
+                  -e 's|https://localhost:8083|/api|g' \
+                  -e 's|localhost:8083/api|/api|g' \
+                  -e 's|localhost:8083|sentio.syslabs.dev|g' \
+                  {} + && \
                 # Fix nginx upstream backend reference
                 if [ -f /etc/nginx/conf.d/default.conf ]; then
                   sed -i 's/upstream backend/upstream sentio-backend/g; s/http:\/\/backend/http:\/\/sentio-backend/g' /etc/nginx/conf.d/default.conf
