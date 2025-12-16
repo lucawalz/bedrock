@@ -55,7 +55,9 @@ spec:
               tag: "23.0.7"
               pullPolicy: IfNotPresent
             
-            command: ["start-dev", "--import-realm"]
+            args:
+              - "start-dev"
+              - "--import-realm"
             
             env:
               KC_DB: "postgres"

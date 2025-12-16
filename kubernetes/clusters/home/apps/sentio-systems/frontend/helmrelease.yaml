@@ -30,6 +30,10 @@ spec:
         replicas: 1
         strategy: RollingUpdate
         
+        pod:
+          imagePullSecrets:
+            - name: ghcr-auth
+        
         containers:
           main:
             image:
