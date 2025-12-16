@@ -43,6 +43,21 @@ spec:
 
             env:
               VITE_API_BASE_URL: "/api"
+
+            # Runtime patch to fix double /api/api from build
+            # Replaces const X="/api" with const X=""
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                find /usr/share/nginx/html/assets -name "*.js" -exec sed -i 's|="/api"|=""|g' {} + && \
+                nginx -g 'daemon off;'
+
+            # Runtime patch to fix double /api/api from build
+            command: ["/bin/sh", "-c"]
+            args:
+              - |
+                find /usr/share/nginx/html/assets -name "*.js" -exec sed -i 's|/api/api|/api|g' {} + && \
+                nginx -g 'daemon off;'
             
             probes:
               liveness:
