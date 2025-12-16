@@ -41,9 +41,6 @@ spec:
               tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
 
-            env:
-              VITE_API_BASE_URL: "/api"
-
             # Runtime patch to fix double /api/api from build
             # Replaces const X="/api" with const X=""
             command: ["/bin/sh", "-c"]
