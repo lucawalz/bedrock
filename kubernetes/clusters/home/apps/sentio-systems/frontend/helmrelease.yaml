@@ -39,18 +39,7 @@ spec:
               repository: ghcr.io/lucawalz/sentio-systems/sentio-web
               tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
-            
-            # Runtime patch: Fix Nginx upstream for Kubernetes (backend -> sentio-backend)
-            command: ["/bin/sh", "-c"]
-            args:
-              - |
-                if [ -f /etc/nginx/conf.d/default.conf ]; then
-                  sed -i 's/remote_addr;/remote_addr; resolver 10.43.0.10 valid=30s;/g' /etc/nginx/conf.d/default.conf && \
-                  sed -i 's/upstream backend/upstream sentio-backend/g' /etc/nginx/conf.d/default.conf || true && \
-                  sed -i 's|http://backend:8080|http://sentio-backend:8080|g' /etc/nginx/conf.d/default.conf
-                fi && \
-                nginx -g 'daemon off;'
-            
+
             env:
               VITE_API_BASE_URL: "/api"
             
@@ -89,6 +78,15 @@ spec:
           http:
             port: 80
     
+    persistence:
+      config:
+        enabled: true
+        type: configMap
+        name: sentio-frontend-nginx
+        globalMounts:
+          - path: /etc/nginx/conf.d/default.conf
+            subPath: default.conf
+
     ingress:
       main:
         enabled: true

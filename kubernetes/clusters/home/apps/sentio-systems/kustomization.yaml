@@ -8,6 +8,7 @@ resources:
   # ConfigMaps
   - keycloak/config-realm.yaml
   - mosquitto/config-mosquitto.yaml
+  - frontend/config-nginx.yaml
   
   # HelmReleases
   - backend/helmrelease.yaml
