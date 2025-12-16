@@ -6,6 +6,8 @@ metadata:
 spec:
   image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai
   interval: 1m0s
+  secretRef:
+    name: ghcr-auth
 ---
 apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImagePolicy
