@@ -1,0 +1,123 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: sentio-systems
+  labels:
+    app: sentio-backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: sentio-systems
+  labels:
+    app: sentio-frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: keycloak
+  namespace: sentio-systems
+  labels:
+    app: sentio-keycloak
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-keycloak
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mosquitto
+  namespace: sentio-systems
+  labels:
+    app: sentio-mosquitto
+spec:
+  type: ClusterIP
+  ports:
+    - port: 1883
+      targetPort: 1883
+      protocol: TCP
+      name: mqtt
+    - port: 9001
+      targetPort: 9001
+      protocol: TCP
+      name: websocket
+  selector:
+    app: sentio-mosquitto
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: preprocessing
+  namespace: sentio-systems
+  labels:
+    app: sentio-preprocessing
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8082
+      targetPort: 8082
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-preprocessing
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: birder
+  namespace: sentio-systems
+  labels:
+    app: sentio-birder
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-birder
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speciesnet
+  namespace: sentio-systems
+  labels:
+    app: sentio-speciesnet
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: 8000
+      protocol: TCP
+      name: http
+  selector:
+    app: sentio-speciesnet

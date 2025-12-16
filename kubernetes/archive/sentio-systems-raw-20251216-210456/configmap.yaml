@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sentio-config
+  namespace: sentio-systems
+data:
+  # Server Configuration
+  SERVER_PORT: "8080"
+  BACKEND_PORT: "8080"
+
+  # Database Configuration
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/sentio"
+  SPRING_DATASOURCE_USERNAME: "sentio"
+  
+  # JPA Configuration
+  JPA_HIBERNATE_DDL: "update"
+  JPA_SHOW_SQL: "false"
+  JPA_FORMAT_SQL: "false"
+
+  # Keycloak Configuration
+  KEYCLOAK_ISSUER_URI: "http://keycloak:8080/realms/sentio"
+  SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/sentio/protocol/openid-connect/certs"
+  KEYCLOAK_ADMIN_SERVER_URL: "http://keycloak:8080"
+  KEYCLOAK_PUBLIC_URL: "https://sentio.syslabs.dev/auth"
+  KEYCLOAK_ADMIN_REALM: "sentio"
+  KEYCLOAK_ADMIN_CLIENT_ID: "sentio-backend"
+  KEYCLOAK_REALM: "sentio"
+
+  # MQTT Configuration
+  MQTT_ENABLED: "true"
+  MQTT_BROKER: "tcp://mosquitto:1883"
+  MQTT_CLIENT_ID: "sentioBackend"
+  MQTT_TOPICS: "weather/data,weather/status,animal_detection/events,animal_detection/status"
+  MQTT_USERNAME: ""
+  MQTT_PASSWORD: ""
+
+  # External APIs
+  OPENMETEO_API_BASE_URL: "https://api.open-meteo.com/v1"
+  OPENMETEO_ARCHIVE_BASE_URL: "https://historical-forecast-api.open-meteo.com/v1"
+  IP_LOCATION_API_URL: "http://ip-api.com/json/"
+  BRIGHTSKY_API_BASE_URL: "https://api.brightsky.dev"
+
+  # Feature Flags
+  OPENMETEO_FORECAST_ENABLED: "true"
+  BRIGHTSKY_ALERTS_ENABLED: "true"
+  SWAGGER_ENABLED: "true"
+  SWAGGER_UI_ENABLED: "true"
+  PREPROCESSING_SERVICE_ENABLED: "true"
+
+  # AI Services
+  PREPROCESSING_SERVICE_URL: "http://preprocessing:8082/preprocess-and-classify"
+  BIRDER_SERVICE_URL: "http://birder:8000"
+  SPECIESNET_SERVICE_URL: "http://speciesnet:8081"
