@@ -35,8 +35,9 @@ spec:
             - name: ghcr-auth
         
         containers:
-          main:
             image:
+              repository: ghcr.io/lucawalz/sentio-systems/sentio-web
+              tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
             
             # Runtime patch: Fix Nginx upstream for Kubernetes (backend -> sentio-backend)
