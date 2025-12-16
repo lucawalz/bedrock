@@ -1,0 +1,25 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageUpdateAutomation
+metadata:
+  name: sentio-systems
+  namespace: flux-system
+spec:
+  interval: 1m0s
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcd
+        email: flux@users.noreply.github.com
+      messageTemplate: |
+        chore(sentio): update image {{range .Updated.Images}}{{println .}}{{end}}
+    push:
+      branch: main
+  update:
+    path: ./kubernetes/clusters/home/apps/sentio-systems
+    strategy: Setters

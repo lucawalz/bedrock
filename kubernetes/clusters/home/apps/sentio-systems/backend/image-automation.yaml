@@ -1,0 +1,22 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: sentio-backend
+  namespace: sentio-systems
+spec:
+  image: ghcr.io/lucawalz/sentio-systems/sentio-backend
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: sentio-backend
+  namespace: sentio-systems
+spec:
+  imageRepositoryRef:
+    name: sentio-backend
+  policy:
+    alphabetical:
+      order: asc
+  filterTags:
+    pattern: '^develop$'

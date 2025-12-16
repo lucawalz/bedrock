@@ -1,0 +1,146 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sentio-backend
+  namespace: sentio-systems
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.x
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      main:
+        replicas: 1
+        strategy: RollingUpdate
+        
+        containers:
+          main:
+            image:
+              repository: ghcr.io/lucawalz/sentio-systems/sen
+
+tio-backend
+              tag: develop # {"$imagepolicy": "sentio-systems:sentio-backend:tag"}
+              pullPolicy: Always
+            
+            env:
+              # Database Configuration (PostgreSQL in postgres namespace)
+              SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/sentio"
+              SPRING_DATASOURCE_USERNAME: "sentio"
+              
+              # JPA Configuration
+              JPA_HIBERNATE_DDL: "update"
+              JPA_SHOW_SQL: "false"
+              JPA_FORMAT_SQL: "false"
+              
+              # Server Configuration
+              SERVER_PORT: "8080"
+              
+              # Keycloak Configuration (internal cluster communication)
+              KEYCLOAK_ISSUER_URI: "https://sentio.syslabs.dev/auth/realms/sentio"
+              SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/sentio/protocol/openid-connect/certs"
+              KEYCLOAK_ADMIN_SERVER_URL: "http://keycloak:8080"
+              KEYCLOAK_PUBLIC_URL: "https://sentio.syslabs.dev/auth"
+              KEYCLOAK_ADMIN_REALM: "sentio"
+              KEYCLOAK_ADMIN_CLIENT_ID: "sentio-backend"
+              KEYCLOAK_REALM: "sentio"
+              
+              # MQTT Configuration
+              MQTT_ENABLED: "true"
+              MQTT_BROKER: "tcp://mosquitto:1883"
+              MQTT_CLIENT_ID: "sentioBackend"
+              MQTT_TOPICS: "weather/data,weather/status,animal_detection/events,animal_detection/status"
+              MQTT_USERNAME: ""
+              MQTT_PASSWORD: ""
+              
+              # External APIs
+              OPENMETEO_API_BASE_URL: "https://api.open-meteo.com/v1"
+              OPENMETEO_ARCHIVE_BASE_URL: "https://historical-forecast-api.open-meteo.com/v1"
+              IP_LOCATION_API_URL: "http://ip-api.com/json/"
+              BRIGHTSKY_API_BASE_URL: "https://api.brightsky.dev"
+              
+              # Feature Flags
+              OPENMETEO_FORECAST_ENABLED: "true"
+              BRIGHTSKY_ALERTS_ENABLED: "true"
+              SWAGGER_ENABLED: "true"
+              SWAGGER_UI_ENABLED: "true"
+              PREPROCESSING_SERVICE_ENABLED: "true"
+              
+              # AI Services (internal cluster DNS)
+              PREPROCESSING_SERVICE_URL: "http://preprocessing:8082/preprocess-and-classify"
+            
+            envFrom:
+              - secretRef:
+                  name: sentio-secrets
+            
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8080
+                  initialDelaySeconds: 90
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8080
+                  initialDelaySeconds: 60
+                  periodSeconds: 10
+            
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "1000m"
+    
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: 8080
+    
+    ingress:
+      main:
+        enabled: true
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        hosts:
+          - host: sentio.syslabs.dev
+            paths:
+              - path: /api
+                pathType: Prefix
+                service:
+                  identifier: main
+                  port: http
+    
+    persistence:
+      shared-images:
+        enabled: true
+        type: persistentVolumeClaim
+        existingClaim: sentio-shared-images
+        globalMounts:
+          - path: /app/shared_images

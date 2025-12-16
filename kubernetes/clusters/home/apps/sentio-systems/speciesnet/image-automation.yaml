@@ -1,0 +1,22 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: sentio-speciesnet
+  namespace: sentio-systems
+spec:
+  image: ghcr.io/lucawalz/sentio-systems/speciesnet-ai
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: sentio-speciesnet
+  namespace: sentio-systems
+spec:
+  imageRepositoryRef:
+    name: sentio-speciesnet
+  policy:
+    alphabetical:
+      order: asc
+  filterTags:
+    pattern: '^develop$'

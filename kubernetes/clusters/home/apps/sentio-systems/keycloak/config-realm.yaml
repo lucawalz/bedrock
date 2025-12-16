@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-template
+  namespace: sentio-systems
+data:
+  sentio-realm.json.template: |
+    {
+      "realm": "sentio",
+      "enabled": true,
+      "sslRequired": "external",
+      "roles": {
+        "realm": [
+          {"name": "user"},
+          {"name": "admin"}
+        ]
+      },
+      "clients": [
+        {
+          "clientId": "sentio-backend",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "KEYCLOAK_CLIENT_SECRET_PLACEHOLDER",
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "protocol": "openid-connect",
+          "publicClient": false,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": true
+        },
+        {
+          "clientId": "sentio-web",
+          "enabled": true,
+          "publicClient": true,
+          "redirectUris": ["*"],
+          "webOrigins": ["*"],
+          "protocol": "openid-connect"
+        }
+      ]
+    }

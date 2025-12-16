@@ -1,0 +1,22 @@
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImageRepository
+metadata:
+  name: sentio-frontend
+  namespace: sentio-systems
+spec:
+  image: ghcr.io/lucawalz/sentio-systems/sentio-web
+  interval: 1m0s
+---
+apiVersion: image.toolkit.fluxcd.io/v1beta2
+kind: ImagePolicy
+metadata:
+  name: sentio-frontend
+  namespace: sentio-systems
+spec:
+  imageRepositoryRef:
+    name: sentio-frontend
+  policy:
+    alphabetical:
+      order: asc
+  filterTags:
+    pattern: '^develop$'

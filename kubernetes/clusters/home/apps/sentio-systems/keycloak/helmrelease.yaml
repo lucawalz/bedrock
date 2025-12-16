@@ -1,0 +1,138 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sentio-keycloak
+  namespace: sentio-systems
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.x
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      main:
+        replicas: 1
+        strategy: RollingUpdate
+        
+        initContainers:
+          init-realm:
+            image:
+              repository: alpine
+              tag: latest
+            command:
+              - /bin/sh
+              - -c
+              - |
+                apk add --no-cache gettext sed
+                echo 'Generating Keycloak realm configuration...'
+                sed "s|KEYCLOAK_CLIENT_SECRET_PLACEHOLDER|${KEYCLOAK_ADMIN_CLIENT_SECRET}|g" \
+                  /init-scripts/sentio-realm.json.template > /realm_data/sentio-realm.json
+                echo 'Realm configuration generated successfully.'
+            envFrom:
+              - secretRef:
+                  name: sentio-secrets
+        
+        containers:
+          main:
+            image:
+              repository: quay.io/keycloak/keycloak
+              tag: "23.0.7"
+              pullPolicy: IfNotPresent
+            
+            command: ["start-dev", "--import-realm"]
+            
+            env:
+              KC_DB: "postgres"
+              KC_DB_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/keycloak"
+              KC_DB_USERNAME: "sentio"
+              KC_HOSTNAME: "sentio.syslabs.dev"
+              KEYCLOAK_ADMIN: "admin"
+            
+            envFrom:
+              - secretRef:
+                  name: sentio-secrets
+            
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8080
+                  initialDelaySeconds: 120
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8080
+                  initialDelaySeconds: 90
+                  periodSeconds: 10
+            
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "200m"
+              limits:
+                memory: "1Gi"
+                cpu: "1000m"
+    
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: 8080
+    
+    ingress:
+      main:
+        enabled: true
+        className: traefik
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        hosts:
+          - host: sentio.syslabs.dev
+            paths:
+              - path: /auth
+                pathType: Prefix
+                service:
+                  identifier: main
+                  port: http
+    
+    persistence:
+      realm-template:
+        enabled: true
+        type: configMap
+        name: keycloak-realm-template
+        advancedMounts:
+          main:
+            init-realm:
+              - path: /init-scripts
+                readOnly: true
+      
+      realm-data:
+        enabled: true
+        type: emptyDir
+        advancedMounts:
+          main:
+            init-realm:
+              - path: /realm_data
+            main:
+              - path: /opt/keycloak/data/import

@@ -1,0 +1,82 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sentio-birder
+  namespace: sentio-systems
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 3.x
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  maxHistory: 2
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 3
+      strategy: rollback
+  uninstall:
+    keepHistory: false
+  values:
+    controllers:
+      main:
+        replicas: 1
+        strategy: RollingUpdate
+        
+        containers:
+          main:
+            image:
+              repository: ghcr.io/lucawalz/sentio-systems/birder-ai
+              tag: develop # {"$imagepolicy": "sentio-systems:sentio-birder:tag"}
+              pullPolicy: Always
+            
+            env:
+              BIRDER_PORT: "8000"
+            
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8000
+                  initialDelaySeconds: 120
+                  periodSeconds: 60
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8000
+                  initialDelaySeconds: 90
+                  periodSeconds: 30
+            
+            resources:
+              requests:
+                memory: "1Gi"
+                cpu: "200m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+    
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: 8000
+    
+    persistence:
+      ai-models:
+        enabled: true
+        type: persistentVolumeClaim
+        existingClaim: sentio-ai-models
+        globalMounts:
+          - path: /app/models

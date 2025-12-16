@@ -2,19 +2,26 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - configmap.yaml
-  - pvc.yaml
-  - services.yaml
-  - ingress.yaml
-  # Deployments
-  - deployments/backend.yaml
-  - deployments/frontend.yaml
-  - deployments/keycloak.yaml
-  - deployments/mosquitto.yaml
-  - deployments/preprocessing.yaml
-  - deployments/birder.yaml
-  - deployments/speciesnet.yaml
+  - source.yaml
+  - image-automation.yaml
+  - pvcs.yaml
+  
   # ConfigMaps
-  - configmaps/mosquitto.yaml
-  - configmaps/keycloak-realm.yaml
-  - configmaps/init-db.yaml
+  - keycloak/config-realm.yaml
+  - mosquitto/config-mosquitto.yaml
+  
+  # HelmReleases
+  - backend/helmrelease.yaml
+  - frontend/helmrelease.yaml
+  - keycloak/helmrelease.yaml
+  - mosquitto/helmrelease.yaml
+  - birder/helmrelease.yaml
+  - speciesnet/helmrelease.yaml
+  - preprocessing/helmrelease.yaml
+  
+  # Image Automation
+  - backend/image-automation.yaml
+  - frontend/image-automation.yaml
+  - birder/image-automation.yaml
+  - speciesnet/image-automation.yaml
+  - preprocessing/image-automation.yaml
