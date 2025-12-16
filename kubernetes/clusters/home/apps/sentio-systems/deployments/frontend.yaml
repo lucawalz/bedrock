@@ -21,6 +21,8 @@ spec:
         - name: frontend
           image: ghcr.io/lucawalz/sentio-systems/sentio-web:develop
           imagePullPolicy: Always
+          command: ["/bin/sh", "-c"]
+          args: ["find /usr/share/nginx/html -type f -name '*.js' -exec sed -i 's|http://localhost:8083|/api|g' {} + && nginx -g 'daemon off;'"]
           ports:
             - containerPort: 80
           env:
