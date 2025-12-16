@@ -58,6 +58,7 @@ spec:
             args:
               - "start-dev"
               - "--import-realm"
+              - "--http-relative-path=/auth"
             
             env:
               KC_DB: "postgres"
