@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - source.yaml
   - image-automation.yaml
-  - pvcs.yaml
   
   # ConfigMaps
   - keycloak/config-realm.yaml
