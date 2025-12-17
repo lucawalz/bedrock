@@ -57,8 +57,8 @@ spec:
               
               # Keycloak Configuration (internal cluster communication)
               KEYCLOAK_ISSUER_URI: "https://sentio.syslabs.dev/auth/realms/sentio"
-              SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://keycloak:8080/realms/sentio/protocol/openid-connect/certs"
-              KEYCLOAK_ADMIN_SERVER_URL: "http://keycloak:8080"
+              SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://sentio-keycloak:8080/realms/sentio/protocol/openid-connect/certs"
+              KEYCLOAK_ADMIN_SERVER_URL: "http://sentio-keycloak:8080"
               KEYCLOAK_PUBLIC_URL: "https://sentio.syslabs.dev/auth"
               KEYCLOAK_ADMIN_REALM: "sentio"
               KEYCLOAK_ADMIN_CLIENT_ID: "sentio-backend"
