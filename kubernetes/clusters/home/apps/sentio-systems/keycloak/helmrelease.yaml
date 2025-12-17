@@ -65,6 +65,8 @@ spec:
               KC_DB_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/keycloak"
               KC_DB_USERNAME: "sentio"
               KC_HOSTNAME: "sentio.syslabs.dev"
+              KC_PROXY: "edge"
+              KC_HOSTNAME_STRICT_HTTPS: "true"
               KEYCLOAK_ADMIN: "admin"
             
             envFrom:
