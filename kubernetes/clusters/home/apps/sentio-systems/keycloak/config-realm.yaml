@@ -7,34 +7,102 @@ data:
   sentio-realm.json.template: |
     {
       "realm": "sentio",
+      "loginTheme": "sentio",
       "enabled": true,
-      "sslRequired": "external",
-      "roles": {
-        "realm": [
-          {"name": "user"},
-          {"name": "admin"}
-        ]
-      },
+      "sslRequired": "none",
+      "registrationAllowed": true,
+      "loginWithEmailAllowed": true,
+      "duplicateEmailsAllowed": false,
+      "resetPasswordAllowed": true,
+      "editUsernameAllowed": false,
+      "bruteForceProtected": true,
+      "permanentLockout": false,
+      "maxFailureWaitSeconds": 900,
+      "minimumQuickLoginWaitSeconds": 60,
+      "waitIncrementSeconds": 60,
+      "quickLoginCheckMilliSeconds": 1000,
+      "maxDeltaTimeSeconds": 43200,
+      "failureFactor": 5,
+      "defaultSignatureAlgorithm": "RS256",
+      "offlineSessionMaxLifespanEnabled": false,
+      "offlineSessionMaxLifespan": 5184000,
+      "accessTokenLifespan": 300,
+      "accessTokenLifespanForImplicitFlow": 900,
+      "ssoSessionIdleTimeout": 1800,
+      "ssoSessionMaxLifespan": 36000,
+      "passwordPolicy": "hashAlgorithm(pbkdf2-sha256) and length(8) and digits(1) and specialChars(1) and notUsername(undefined)",
       "clients": [
         {
           "clientId": "sentio-backend",
+          "name": "Sentio Backend Service",
+          "description": "Backend service for Sentio application",
           "enabled": true,
           "clientAuthenticatorType": "client-secret",
           "secret": "KEYCLOAK_CLIENT_SECRET_PLACEHOLDER",
+          "publicClient": false,
+          "bearerOnly": false,
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": true,
+          "authorizationServicesEnabled": false,
+          "protocol": "openid-connect",
           "redirectUris": ["*"],
           "webOrigins": ["*"],
-          "protocol": "openid-connect",
-          "publicClient": false,
-          "serviceAccountsEnabled": true,
-          "authorizationServicesEnabled": true
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
         },
         {
           "clientId": "sentio-web",
+          "name": "Sentio Web Frontend",
           "enabled": true,
           "publicClient": true,
+          "standardFlowEnabled": true,
+          "directAccessGrantsEnabled": true,
           "redirectUris": ["*"],
           "webOrigins": ["*"],
           "protocol": "openid-connect"
         }
-      ]
+      ],
+      "roles": {
+        "realm": [
+          {"name": "user", "description": "Regular user role"},
+          {"name": "admin", "description": "Administrator role"},
+          {"name": "operator", "description": "Operator role with modify permissions"},
+          {"name": "viewer", "description": "Read-only viewer role"}
+        ]
+      },
+      "users": [
+        {
+          "username": "service-account-sentio-backend",
+          "enabled": true,
+          "serviceAccountClientId": "sentio-backend",
+          "clientRoles": {
+            "realm-management": [
+              "manage-users",
+              "view-users",
+              "query-users"
+            ]
+          }
+        }
+      ],
+      "browserSecurityHeaders": {
+        "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+        "xContentTypeOptions": "nosniff",
+        "xFrameOptions": "SAMEORIGIN",
+        "xRobotsTag": "none",
+        "xXSSProtection": "1; mode=block",
+        "strictTransportSecurity": "max-age=31536000; includeSubDomains"
+      }
     }
