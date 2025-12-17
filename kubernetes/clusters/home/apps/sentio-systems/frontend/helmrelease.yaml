@@ -41,14 +41,6 @@ spec:
               tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
 
-            # Runtime patch to fix double /api/api from build
-            # Replaces const X="/api" with const X=""
-            command: ["/bin/sh", "-c"]
-            args:
-              - |
-                find /usr/share/nginx/html/assets -name "*.js" -exec sed -i 's|="/api"|=""|g' {} + && \
-                nginx -g 'daemon off;'
-            
             probes:
               liveness:
                 enabled: true
