@@ -18,7 +18,5 @@ spec:
   imageRepositoryRef:
     name: sentio-frontend
   policy:
-    alphabetical:
-      order: desc
-  filterTags:
-    pattern: '^develop-[a-f0-9]+$'
+    semver:
+      range: '>=0.0.0-0'  # Matches all semver tags including pre-releases
