@@ -19,6 +19,6 @@ spec:
     name: sentio-backend
   policy:
     alphabetical:
-      order: asc
+      order: desc
   filterTags:
-    pattern: '^develop$'
+    pattern: '^develop-[a-f0-9]+$'
