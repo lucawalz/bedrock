@@ -38,7 +38,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/sentio-web
-              tag: 0.0.1-dev.1766230118 # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
+              tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
 
             probes:
