@@ -18,7 +18,7 @@ spec:
         name: fluxcd
         email: flux@users.noreply.github.com
       messageTemplate: |
-        chore(sentio): update image {{range .Updated.Images}}{{println .}}{{end}}
+        chore(sentio): update image {{range .Changed.Objects}}{{println .}}{{end}}
     push:
       branch: main
   update:
