@@ -2,12 +2,13 @@ apiVersion: image.toolkit.fluxcd.io/v1beta2
 kind: ImageUpdateAutomation
 metadata:
   name: sentio-systems
-  namespace: flux-system
+  namespace: sentio-systems
 spec:
   interval: 1m0s
   sourceRef:
     kind: GitRepository
     name: flux-system
+    namespace: flux-system
   git:
     checkout:
       ref:
