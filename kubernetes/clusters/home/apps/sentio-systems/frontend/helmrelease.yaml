@@ -29,18 +29,15 @@ spec:
       main:
         replicas: 1
         strategy: RollingUpdate
-        
         pod:
           imagePullSecrets:
             - name: ghcr-auth
-        
         containers:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/sentio-web
-              tag: develop # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
+              tag: 0.0.1-dev.1766230118 # {"$imagepolicy": "sentio-systems:sentio-frontend:tag"}
               pullPolicy: Always
-
             probes:
               liveness:
                 enabled: true
@@ -60,7 +57,6 @@ spec:
                     port: 80
                   initialDelaySeconds: 5
                   periodSeconds: 10
-            
             resources:
               requests:
                 memory: "64Mi"
@@ -68,14 +64,12 @@ spec:
               limits:
                 memory: "128Mi"
                 cpu: "200m"
-    
     service:
       main:
         controller: main
         ports:
           http:
             port: 80
-    
     persistence:
       config:
         enabled: true
@@ -84,7 +78,6 @@ spec:
         globalMounts:
           - path: /etc/nginx/conf.d/default.conf
             subPath: default.conf
-
     ingress:
       main:
         enabled: true

@@ -29,26 +29,21 @@ spec:
       main:
         replicas: 1
         strategy: RollingUpdate
-        
         pod:
           imagePullSecrets:
             - name: ghcr-auth
-
-        
         containers:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/preprocessing-service
-              tag: develop # {"$imagepolicy": "sentio-systems:sentio-preprocessing:tag"}
+              tag: 0.0.1-dev.1766230118 # {"$imagepolicy": "sentio-systems:sentio-preprocessing:tag"}
               pullPolicy: Always
-            
             env:
               PREPROCESSING_PORT: "8082"
               BIRDER_SERVICE_URL: "http://birder:8000"
               SPECIESNET_SERVICE_URL: "http://speciesnet:8000"
               BIRD_CLASSIFIER_URL: "http://birder:8000/detect"
               SPECIES_CLASSIFIER_URL: "http://speciesnet:8000/detect"
-            
             probes:
               liveness:
                 enabled: true
@@ -66,7 +61,6 @@ spec:
                     port: 8082
                   initialDelaySeconds: 30
                   periodSeconds: 10
-            
             resources:
               requests:
                 memory: "256Mi"
@@ -74,14 +68,12 @@ spec:
               limits:
                 memory: "512Mi"
                 cpu: "500m"
-    
     service:
       main:
         controller: main
         ports:
           http:
             port: 8082
-    
     persistence:
       shared-images:
         enabled: true

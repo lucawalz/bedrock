@@ -29,32 +29,25 @@ spec:
       main:
         replicas: 1
         strategy: RollingUpdate
-        
         pod:
           imagePullSecrets:
             - name: ghcr-auth
-
-        
         containers:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/sentio-backend
-              tag: develop # {"$imagepolicy": "sentio-systems:sentio-backend:tag"}
+              tag: 0.0.1-dev.1766230118 # {"$imagepolicy": "sentio-systems:sentio-backend:tag"}
               pullPolicy: Always
-            
             env:
               # Database Configuration (PostgreSQL in postgres namespace)
               SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-postgresql.postgres.svc.cluster.local:5432/sentio"
               SPRING_DATASOURCE_USERNAME: "sentio"
-              
               # JPA Configuration
               JPA_HIBERNATE_DDL: "update"
               JPA_SHOW_SQL: "false"
               JPA_FORMAT_SQL: "false"
-              
               # Server Configuration
               SERVER_PORT: "8080"
-              
               # Keycloak Configuration (internal cluster communication)
               KEYCLOAK_ISSUER_URI: "https://sentio.syslabs.dev/auth/realms/sentio"
               SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://sentio-keycloak:8080/auth/realms/sentio/protocol/openid-connect/certs"
@@ -63,7 +56,6 @@ spec:
               KEYCLOAK_ADMIN_REALM: "sentio"
               KEYCLOAK_ADMIN_CLIENT_ID: "sentio-backend"
               KEYCLOAK_REALM: "sentio"
-              
               # MQTT Configuration
               MQTT_ENABLED: "true"
               MQTT_BROKER: "tcp://mosquitto:1883"
@@ -71,27 +63,22 @@ spec:
               MQTT_TOPICS: "weather/data,weather/status,animal_detection/events,animal_detection/status"
               MQTT_USERNAME: ""
               MQTT_PASSWORD: ""
-              
               # External APIs
               OPENMETEO_API_BASE_URL: "https://api.open-meteo.com/v1"
               OPENMETEO_ARCHIVE_BASE_URL: "https://historical-forecast-api.open-meteo.com/v1"
               IP_LOCATION_API_URL: "http://ip-api.com/json/"
               BRIGHTSKY_API_BASE_URL: "https://api.brightsky.dev"
-              
               # Feature Flags
               OPENMETEO_FORECAST_ENABLED: "true"
               BRIGHTSKY_ALERTS_ENABLED: "true"
               SWAGGER_ENABLED: "true"
               SWAGGER_UI_ENABLED: "true"
               PREPROCESSING_SERVICE_ENABLED: "true"
-              
               # AI Services (internal cluster DNS)
               PREPROCESSING_SERVICE_URL: "http://preprocessing:8082/preprocess-and-classify"
-            
             envFrom:
               - secretRef:
                   name: sentio-secrets
-            
             probes:
               liveness:
                 enabled: true
@@ -109,7 +96,6 @@ spec:
                     port: 8080
                   initialDelaySeconds: 60
                   periodSeconds: 10
-            
             resources:
               requests:
                 memory: "512Mi"
@@ -117,14 +103,12 @@ spec:
               limits:
                 memory: "1Gi"
                 cpu: "1000m"
-    
     service:
       main:
         controller: main
         ports:
           http:
             port: 8080
-    
     ingress:
       main:
         enabled: true
@@ -138,7 +122,6 @@ spec:
                 service:
                   identifier: main
                   port: http
-    
     persistence:
       shared-images:
         enabled: true
