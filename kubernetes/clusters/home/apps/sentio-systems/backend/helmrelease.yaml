@@ -36,7 +36,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/sentio-backend
-              tag: 0.0.1-dev.1766353228 # {"$imagepolicy": "sentio-systems:sentio-backend:tag"}
+              tag: 0.0.1-dev.1766432597 # {"$imagepolicy": "sentio-systems:sentio-backend:tag"}
               pullPolicy: Always
             env:
               # Database Configuration (PostgreSQL in postgres namespace)
