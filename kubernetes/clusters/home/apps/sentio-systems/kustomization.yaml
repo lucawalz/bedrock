@@ -4,12 +4,12 @@ kind: Kustomization
 resources:
   - source.yaml
   - image-automation.yaml
-  
+
   # ConfigMaps
   - keycloak/config-realm.yaml
   - mosquitto/config-mosquitto.yaml
   - frontend/config-nginx.yaml
-  
+
   # HelmReleases
   - backend/helmrelease.yaml
   - frontend/helmrelease.yaml
@@ -18,10 +18,15 @@ resources:
   - birder/helmrelease.yaml
   - speciesnet/helmrelease.yaml
   - preprocessing/helmrelease.yaml
-  
+  - mediamtx/helmrelease.yaml
+
   # Image Automation
   - backend/image-automation.yaml
   - frontend/image-automation.yaml
   - birder/image-automation.yaml
   - speciesnet/image-automation.yaml
   - preprocessing/image-automation.yaml
+
+  # Additional ConfigMaps
+  - mediamtx/config-mediamtx.yaml
+  - mediamtx/certificate.yaml

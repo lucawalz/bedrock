@@ -1,0 +1,50 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mediamtx-config
+  namespace: sentio-systems
+data:
+  mediamtx.yml: |
+    # MediaMTX Configuration for Sentio Systems (Production)
+
+    logLevel: info
+    logDestinations: [stdout]
+
+    # RTMPS server (TLS-encrypted) - receives streams from devices
+    rtmp: yes
+    rtmpAddress: :1935
+    rtmpEncryption: strict
+    rtmpsAddress: :1936
+    rtmpServerKey: /tls/tls.key
+    rtmpServerCert: /tls/tls.crt
+
+    # HLS server - serves streams to browsers
+    hls: yes
+    hlsAddress: :8888
+    hlsEncryption: "no"
+    hlsAlwaysRemux: yes
+    hlsVariant: mpegts
+    hlsSegmentCount: 3
+    hlsSegmentDuration: 1s
+    hlsPartDuration: 200ms
+    hlsSegmentMaxSize: 50M
+    hlsAllowOrigin: '*'
+
+    # Auth webhook to backend
+    authMethod: http
+    authHTTPAddress: http://sentio-backend:8080/api/stream/auth
+
+    # Path configuration
+    paths:
+      # Live streams: rtmp://media.syslabs.dev/live/{deviceId}?token={token}
+      live/~^[a-zA-Z0-9-]+$:
+        publishOnDemand: no
+        publishUser: ""
+        publishPass: ""
+        readUser: ""
+        readPass: ""
+
+      # Block all other paths
+      all_others:
+        publishUser: "disabled"
+        readUser: "disabled"
