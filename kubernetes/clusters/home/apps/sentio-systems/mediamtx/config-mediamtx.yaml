@@ -21,7 +21,7 @@ data:
     # HLS server - serves streams to browsers
     hls: yes
     hlsAddress: :8888
-    hlsEncryption: "no"
+    hlsEncryption: false
     hlsAlwaysRemux: yes
     hlsVariant: mpegts
     hlsSegmentCount: 3
