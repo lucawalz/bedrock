@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: mediamtx-rtmps
+  namespace: sentio-systems
+spec:
+  entryPoints:
+    - rtmps
+  routes:
+    - match: HostSNI(`*`)
+      services:
+        - name: sentio-mediamtx
+          port: 1936
+  tls:
+    passthrough: true

@@ -30,3 +30,4 @@ resources:
   # Additional ConfigMaps
   - mediamtx/config-mediamtx.yaml
   - mediamtx/certificate.yaml
+  - mediamtx/ingressroute-tcp.yaml
