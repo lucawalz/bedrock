@@ -42,8 +42,7 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /
+                  tcpSocket:
                     port: 8888
                   initialDelaySeconds: 10
                   periodSeconds: 30
@@ -51,8 +50,7 @@ spec:
                 enabled: true
                 custom: true
                 spec:
-                  httpGet:
-                    path: /
+                  tcpSocket:
                     port: 8888
                   initialDelaySeconds: 5
                   periodSeconds: 10
