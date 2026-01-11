@@ -26,7 +26,7 @@ spec:
         port: 1936
         exposedPort: 1936
         protocol: TCP
-        nodePort: 31936
+        nodePort: 30936
   install:
     createNamespace: true
   upgrade:
