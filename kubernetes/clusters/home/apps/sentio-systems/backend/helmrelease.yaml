@@ -76,6 +76,8 @@ spec:
               PREPROCESSING_SERVICE_ENABLED: "true"
               # AI Services (internal cluster DNS)
               PREPROCESSING_SERVICE_URL: "http://preprocessing:8082/preprocess-and-classify"
+              # n8n Workflow Integration
+              N8N_WEBHOOK_BASE_URL: "https://n8n.syslabs.dev/webhook"
             envFrom:
               - secretRef:
                   name: sentio-secrets
