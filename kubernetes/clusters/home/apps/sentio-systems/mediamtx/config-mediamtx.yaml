@@ -34,17 +34,6 @@ data:
     authMethod: http
     authHTTPAddress: http://sentio-backend:8080/api/stream/auth
 
-    # Path configuration
+    # Path configuration - auth enforced by HTTP webhook
     paths:
-      # Live streams: rtmp://media.syslabs.dev/live/{deviceId}?token={token}
-      live/~^[a-zA-Z0-9-]+$:
-        publishOnDemand: no
-        publishUser: ""
-        publishPass: ""
-        readUser: ""
-        readPass: ""
-
-      # Block all other paths
-      all_others:
-        publishUser: "disabled"
-        readUser: "disabled"
+      all:
