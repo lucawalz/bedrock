@@ -36,7 +36,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/speciesnet-ai
-              tag: 0.0.1-dev.1767985333 # {"$imagepolicy": "sentio-systems:sentio-speciesnet:tag"}
+              tag: 0.0.1-dev.1768133541 # {"$imagepolicy": "sentio-systems:sentio-speciesnet:tag"}
               pullPolicy: Always
             env:
               SPECIESNET_PORT: "8000"
