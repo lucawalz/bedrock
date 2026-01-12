@@ -79,7 +79,7 @@ spec:
         enabled: true
         className: traefik
         annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.entrypoints: web
         hosts:
           - host: mqtt.syslabs.dev
             paths:
