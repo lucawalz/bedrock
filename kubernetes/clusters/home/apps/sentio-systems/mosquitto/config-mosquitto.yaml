@@ -5,17 +5,18 @@ metadata:
   namespace: sentio-systems
 data:
   mosquitto.conf: |
+    # Raw MQTT listener (internal cluster use)
     listener 1883
+    protocol mqtt
+
+    # WebSocket listener (external access via ingress)
     listener 9001
     protocol websockets
-    
+
     allow_anonymous true
-    
+
     persistence true
     persistence_location /mosquitto/data/
-    
+
     log_dest stdout
-    log_type error
-    log_type warning
-    log_type notice
-    log_type information
+    log_type all
