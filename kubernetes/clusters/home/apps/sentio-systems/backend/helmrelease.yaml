@@ -58,7 +58,7 @@ spec:
               KEYCLOAK_REALM: "sentio"
               # MQTT Configuration
               MQTT_ENABLED: "true"
-              MQTT_BROKER: "tcp://mosquitto:1883"
+              MQTT_BROKER: "tcp://sentio-mosquitto:1883"
               MQTT_CLIENT_ID: "sentioBackend"
               MQTT_TOPICS: "weather/data,weather/status,animal_detection/events,animal_detection/status"
               MQTT_USERNAME: ""
