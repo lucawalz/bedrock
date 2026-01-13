@@ -10,3 +10,4 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - media.syslabs.dev
+    - stream.syslabs.dev
