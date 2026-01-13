@@ -36,7 +36,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/birder-ai
-              tag: 0.0.1-dev.1768265275 # {"$imagepolicy": "sentio-systems:sentio-birder:tag"}
+              tag: 0.0.1-dev.1768294656 # {"$imagepolicy": "sentio-systems:sentio-birder:tag"}
               pullPolicy: Always
             env:
               BIRDER_PORT: "8000"
