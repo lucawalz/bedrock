@@ -28,7 +28,7 @@ spec:
     controllers:
       main:
         replicas: 1
-        strategy: RollingUpdate
+        strategy: Recreate
         pod:
           imagePullSecrets:
             - name: ghcr-auth
