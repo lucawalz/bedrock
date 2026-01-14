@@ -36,7 +36,7 @@ spec:
           main:
             image:
               repository: ghcr.io/lucawalz/sentio-systems/preprocessing-service
-              tag: 0.0.1-dev.1768347517 # {"$imagepolicy": "sentio-systems:sentio-preprocessing:tag"}
+              tag: 0.0.1-dev.1768433596 # {"$imagepolicy": "sentio-systems:sentio-preprocessing:tag"}
               pullPolicy: Always
             env:
               PREPROCESSING_PORT: "8082"
