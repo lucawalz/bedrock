@@ -25,10 +25,12 @@ data:
     webrtcEncryption: no
     webrtcAllowOrigin: '*'
 
-    # ICE-TCP configuration for NAT traversal through Cloudflare
-    webrtcICEServers2: []
-    webrtcICEUDPMuxAddress: ""
-    webrtcICETCPMuxAddress: :8189
+    # ICE configuration - trying STUN + TCP fallback
+    webrtcICEServers2:
+      - url: stun:stun.l.google.com:19302
+    webrtcLocalUDPAddress: ""
+    webrtcLocalTCPAddress: :8189
+
 
     # Auth webhook to backend
     authMethod: http
