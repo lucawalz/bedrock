@@ -43,7 +43,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8889
+                    port: 8888
                   initialDelaySeconds: 10
                   periodSeconds: 30
               readiness:
@@ -51,7 +51,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8889
+                    port: 8888
                   initialDelaySeconds: 5
                   periodSeconds: 10
 
@@ -70,11 +70,8 @@ spec:
           rtmps:
             port: 1936
             protocol: TCP
-          webrtc:
-            port: 8889
-            protocol: TCP
-          webrtc-ice:
-            port: 8189
+          hls:
+            port: 8888
             protocol: TCP
 
     ingress:
@@ -84,12 +81,12 @@ spec:
         hosts:
           - host: media.syslabs.dev
             paths:
-              # WebRTC/WHEP playback
+              # HLS playback (browsers fetch segments here)
               - path: /
                 pathType: Prefix
                 service:
                   identifier: main
-                  port: webrtc
+                  port: hls
 
       # RTMPS ingress for device stream push (TLS-encrypted)
       rtmps:

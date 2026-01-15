@@ -18,17 +18,17 @@ data:
     rtmpServerKey: /tls/tls.key
     rtmpServerCert: /tls/tls.crt
 
-    # WebRTC server - sub-second latency streaming via WHEP
-    # Uses ICE-TCP because UDP is blocked by Cloudflare tunnel
-    webrtc: yes
-    webrtcAddress: :8889
-    webrtcEncryption: no
-    webrtcAllowOrigin: '*'
-
-    # ICE-TCP configuration for NAT traversal through Cloudflare
-    webrtcICEServers2: []
-    webrtcICEUDPMuxAddress: ""
-    webrtcICETCPMuxAddress: :8189
+    # HLS server - serves streams to browsers
+    hls: yes
+    hlsAddress: :8888
+    hlsEncryption: false
+    hlsAlwaysRemux: yes
+    hlsVariant: mpegts
+    hlsSegmentCount: 6
+    hlsSegmentDuration: 2s
+    hlsPartDuration: 500ms
+    hlsSegmentMaxSize: 50M
+    hlsAllowOrigin: '*'
 
     # Auth webhook to backend
     authMethod: http
