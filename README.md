@@ -84,27 +84,31 @@ nixos-homelab/
 <summary><strong>Click to expand command reference</strong></summary>
 
 ### NixOS Operations
+
 ```bash
-just build master          # Test configuration build
-just switch master         # Apply configuration to master
-just switch worker-1       # Apply configuration to worker
+make build HOST=master          # Test configuration build
+make switch HOST=master         # Apply configuration to master
+make switch HOST=worker-1       # Apply configuration to worker
 ```
 
 ### Kubernetes Operations
+
 ```bash
-just flux-check           # Check Flux GitOps status
-just flux-bootstrap       # Bootstrap Flux (one-time)
+make flux-check           # Check Flux GitOps status
+make flux-bootstrap       # Bootstrap Flux (one-time)
 kubectl get nodes         # Check cluster node status
 kubectl get pods -A       # Check all pods across namespaces
 ```
 
 ### Secrets Management
+
 ```bash
 agenix -e secrets/k3s-token.age              # Edit NixOS secrets
 sops kubernetes/.../secret.sops.yaml         # Edit Kubernetes secrets
 ```
 
 ### Monitoring & Debugging
+
 ```bash
 kubectl logs -n flux-system -l app=source-controller    # Flux logs
 kubectl get helmreleases -A                             # Helm releases
@@ -202,4 +206,3 @@ journalctl -u k3s                                       # K3s service logs
 **MIT License** - Feel free to fork, modify, and adapt for your own needs!
 
 > **Contributing**: This is a personal homelab repository, but issues and improvements are welcome. Share your own configurations and learnings with the community.
-

@@ -33,6 +33,7 @@ The root `kustomization.yaml` orchestrates deployment in this order:
 Before bootstrapping Flux, ensure:
 
 1. **kubectl access from your local machine**:
+
    ```bash
    # Copy kubeconfig from master node
    scp master:/etc/rancher/k3s/k3s.yaml ~/.kube/k3s-config
@@ -55,6 +56,7 @@ Before bootstrapping Flux, ensure:
    - Export it: `export GITHUB_TOKEN=your_token_here`
 
 3. **Flux CLI installed** (already in your dev shell):
+
    ```bash
    flux --version
    ```
@@ -68,10 +70,11 @@ Before bootstrapping Flux, ensure:
 export GITHUB_TOKEN=your_token_here
 
 # Bootstrap Flux
-just flux-bootstrap
+make flux-bootstrap
 ```
 
 Or manually:
+
 ```bash
 flux bootstrap github \
   --owner=lucawalz \
@@ -81,6 +84,7 @@ flux bootstrap github \
 ```
 
 This will:
+
 - Create `kubernetes/flux-system/` directory with Flux controllers
 - Commit and push to your repository
 - Deploy Flux to your cluster
@@ -90,13 +94,13 @@ This will:
 
 ```bash
 # Check all resources
-just flux-check
+make flux-check
 
 # Show status
-just flux-status
+make flux-status
 
 # Manual sync
-just flux-sync
+make flux-sync
 ```
 
 ## Adding Applications
@@ -111,11 +115,13 @@ just flux-sync
 Before deploying applications with secrets:
 
 1. **Generate an age key** (if you haven't already):
+
    ```bash
    age-keygen -o ~/.config/sops/age/keys.txt
    ```
 
 2. **Update `.sops.yaml`** with your age public key:
+
    ```yaml
    creation_rules:
      - path_regex: kubernetes/.*/secrets/.*\.sops\.yaml$
@@ -124,6 +130,7 @@ Before deploying applications with secrets:
    ```
 
 3. **Create a Kubernetes secret** with your age key:
+
    ```bash
    cat ~/.config/sops/age/keys.txt | \
      kubectl create secret generic sops-age \
@@ -142,9 +149,8 @@ After bootstrapping, verify Flux is running:
 kubectl get pods -n flux-system
 
 # Check all Flux resources
-just flux-check
+make flux-check
 
 # Watch Flux reconciliation
 flux get kustomizations --watch
 ```
-

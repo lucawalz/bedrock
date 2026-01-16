@@ -63,7 +63,7 @@
         age
         nixos-rebuild
         nix-prefetch-git
-        just
+        gnumake
         git
       ];
     };

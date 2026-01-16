@@ -9,6 +9,7 @@ Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for co
 ## Adding a Secret
 
 1. Create a Kubernetes Secret manifest:
+
    ```yaml
    apiVersion: v1
    kind: Secret
@@ -21,16 +22,19 @@ Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for co
    ```
 
 2. Encrypt with SOPS:
+
    ```bash
    sops --encrypt --in-place my-secret.yaml
    ```
 
 3. Rename to `.sops.yaml`:
+
    ```bash
    mv my-secret.yaml my-secret.sops.yaml
    ```
 
 4. Add to `kustomization.yaml`:
+
    ```yaml
    resources:
      - my-secret.sops.yaml
@@ -42,8 +46,8 @@ Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for co
 # Edit encrypted secret
 sops clusters/home/secrets/my-secret.sops.yaml
 
-# Or use justfile command
-just sops-edit clusters/home/secrets/my-secret.sops.yaml
+# Or use Makefile command
+make sops-edit FILE=clusters/home/secrets/my-secret.sops.yaml
 ```
 
 ## Common Secrets
@@ -55,6 +59,7 @@ just sops-edit clusters/home/secrets/my-secret.sops.yaml
 ## Age Key Setup
 
 Make sure you have age keys configured:
+
 ```bash
 # Generate age key (if not exists)
 age-keygen -o ~/.config/sops/age/keys.txt
@@ -64,4 +69,3 @@ cat ~/.config/sops/age/keys.txt | grep public | cut -d: -f2
 
 # Add to .sops.yaml
 ```
-

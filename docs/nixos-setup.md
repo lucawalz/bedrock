@@ -7,6 +7,7 @@ This document covers NixOS-specific configuration details and advanced scenarios
 ## Overview
 
 This homelab uses NixOS for declarative, reproducible system configuration with:
+
 - **Flake-based configuration** for reproducible builds
 - **Disko** for automatic disk partitioning
 - **Agenix** for encrypted secrets management
@@ -24,6 +25,7 @@ nixos-anywhere --flake .#master root@TARGET_IP
 ```
 
 This automatically:
+
 - Partitions the disk (using disko configuration)
 - Installs NixOS
 - Deploys secrets
@@ -97,7 +99,7 @@ sudo nixos-rebuild switch --flake .#master
 Or from your local machine:
 
 ```bash
-just switch master
+make switch HOST=master
 ```
 
 ## Configuration Structure
@@ -124,6 +126,7 @@ nixosConfigurations = {
 ### Host Configuration
 
 Each host has its own directory in `hosts/` with:
+
 - `default.nix` - Main host configuration
 - `hardware-configuration.nix` - Hardware-specific settings
 - `disko-config.nix` - Disk partitioning configuration
@@ -131,6 +134,7 @@ Each host has its own directory in `hosts/` with:
 ### Role-Based Configuration
 
 Roles are defined in `roles/` and imported by hosts:
+
 - `k3s-server.nix` - Kubernetes master node configuration
 - `k3s-agent.nix` - Kubernetes worker node configuration
 - `common-services.nix` - Shared services across all nodes
@@ -228,6 +232,7 @@ The disko configuration handles automatic partitioning:
 ### Customizing for Different Hardware
 
 Update the `device` field for different disk types:
+
 - NVMe: `/dev/nvme0n1`
 - SATA: `/dev/sda`
 - VirtIO: `/dev/vda`
@@ -420,10 +425,10 @@ networking.firewall = {
 nix flake update
 
 # Test build
-just build master
+make build HOST=master
 
 # Apply updates
-just switch master
+make switch HOST=master
 ```
 
 ### Garbage Collection
@@ -444,4 +449,3 @@ journalctl -f
 df -h
 nix-store --gc --print-roots | wc -l
 ```
-

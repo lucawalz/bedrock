@@ -1,10 +1,11 @@
 # Quick Start Guide
 
-This guide covers **migration scenarios** and **advanced deployment methods**. 
+This guide covers **migration scenarios** and **advanced deployment methods**.
 
 **New to this setup?** → Use the **[Complete Setup Guide](docs/complete-setup-guide.md)** instead.
 
 **What this guide covers:**
+
 - Fresh installation with nixos-anywhere (advanced users)
 - Migration from existing NixOS systems
 - Troubleshooting deployment issues
@@ -128,6 +129,7 @@ kubectl get pods -A
 ```
 
 **Access services:**
+
 - Traefik: `http://MASTER_IP:30080` or `https://MASTER_IP:30443`
 - Grafana: Configure ingress or use port-forward
 
@@ -264,8 +266,8 @@ sudo nixos-rebuild build --flake .#worker-1
 
 ```bash
 # Make sure you have the repo on your machine
-just build master
-just build worker-1
+make build HOST=master
+make build HOST=worker-1
 ```
 
 ### Step 7: Deploy to Master Node
@@ -280,7 +282,7 @@ sudo nixos-rebuild switch --flake .#master
 **Or from your local machine:**
 
 ```bash
-just switch master
+make switch HOST=master
 ```
 
 Wait for it to complete successfully.
@@ -297,12 +299,12 @@ sudo nixos-rebuild switch --flake .#worker-1
 **Or from your local machine:**
 
 ```bash
-just switch worker-1
+make switch HOST=worker-1
 ```
 
 ### Step 9: Verify Everything Works
 
-### Check NixOS is running correctly:
+### Check NixOS is running correctly
 
 ```bash
 # On both nodes
@@ -310,7 +312,7 @@ systemctl status k3s  # or k3s-agent on worker
 hostname
 ```
 
-### Check K3s cluster:
+### Check K3s cluster
 
 ```bash
 # On master node
@@ -320,7 +322,7 @@ kubectl cluster-info
 
 You should see both `master` and `worker-1` nodes.
 
-### Check secrets are decrypting:
+### Check secrets are decrypting
 
 ```bash
 # On master node
@@ -374,6 +376,7 @@ rm -rf nixos/
    - Let's Encrypt certificates will be issued automatically
 
 3. **Access monitoring**:
+
    ```bash
    # Get Grafana password
    kubectl get secret -n monitoring kube-prometheus-stack-grafana \
@@ -389,7 +392,6 @@ rm -rf nixos/
 
 5. **Set up SOPS for Kubernetes secrets** (optional):
    - See `docs/secrets-management.md` for SOPS setup
-
 
 ### nixos-anywhere specific issues
 
