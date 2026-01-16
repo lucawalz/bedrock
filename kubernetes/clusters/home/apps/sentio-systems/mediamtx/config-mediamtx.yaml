@@ -23,10 +23,10 @@ data:
     hlsAddress: :8888
     hlsEncryption: false
     hlsAlwaysRemux: yes
-    hlsVariant: mpegts
-    hlsSegmentCount: 6
-    hlsSegmentDuration: 2s
-    hlsPartDuration: 500ms
+    hlsVariant: lowLatency
+    hlsSegmentCount: 3
+    hlsSegmentDuration: 1s
+    hlsPartDuration: 200ms
     hlsSegmentMaxSize: 50M
     hlsAllowOrigin: '*'
 
