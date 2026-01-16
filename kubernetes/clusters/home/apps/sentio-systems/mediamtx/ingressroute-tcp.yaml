@@ -5,11 +5,11 @@ metadata:
   namespace: sentio-systems
 spec:
   entryPoints:
-    - rtmps
+    - websecure
   routes:
-    - match: HostSNI(`*`)
+    - match: HostSNI(`stream.syslabs.dev`)
       services:
         - name: sentio-mediamtx
-          port: 1936
+          port: 443
   tls:
     passthrough: true

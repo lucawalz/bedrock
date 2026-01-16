@@ -22,13 +22,6 @@ spec:
         nodePort: 30080
       websecure:
         nodePort: 30443
-      rtmps:
-        port: 1936
-        exposedPort: 1936
-        protocol: TCP
-        nodePort: 30936
-        expose:
-          default: true
   install:
     createNamespace: true
   upgrade:

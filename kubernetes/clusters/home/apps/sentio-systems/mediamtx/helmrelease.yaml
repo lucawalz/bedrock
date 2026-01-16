@@ -68,7 +68,7 @@ spec:
         controller: main
         ports:
           rtmps:
-            port: 1936
+            port: 443
             protocol: TCP
           hls:
             port: 8888

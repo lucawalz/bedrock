@@ -14,7 +14,7 @@ data:
     rtmp: yes
     rtmpAddress: :1935
     rtmpEncryption: strict
-    rtmpsAddress: :1936
+    rtmpsAddress: :443
     rtmpServerKey: /tls/tls.key
     rtmpServerCert: /tls/tls.crt
 
