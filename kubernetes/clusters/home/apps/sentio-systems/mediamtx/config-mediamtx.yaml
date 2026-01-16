@@ -24,9 +24,9 @@ data:
     hlsEncryption: false
     hlsAlwaysRemux: yes
     hlsVariant: mpegts
-    hlsSegmentCount: 4
-    hlsSegmentDuration: 1s
-    hlsPartDuration: 250ms
+    hlsSegmentCount: 6
+    hlsSegmentDuration: 2s
+    hlsPartDuration: 500ms
     hlsSegmentMaxSize: 50M
     hlsAllowOrigin: '*'
 
