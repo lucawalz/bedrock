@@ -79,8 +79,8 @@ spec:
               # n8n Workflow Integration
               N8N_WEBHOOK_BASE_URL: "https://n8n.syslabs.dev/webhook"
               # Redis Configuration (for viewer session tracking)
-              # Service created by redis-operator: {name}-redis
-              SPRING_DATA_REDIS_HOST: "sentio-redis-redis"
+              # Service created by redis-operator
+              SPRING_DATA_REDIS_HOST: "sentio-redis"
               SPRING_DATA_REDIS_PORT: "6379"
             envFrom:
               - secretRef:
