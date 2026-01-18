@@ -5,7 +5,7 @@ metadata:
   namespace: sentio-systems
 spec:
   kubernetesConfig:
-    image: quay.io/opstree/redis:v7.2.5
+    image: quay.io/opstree/redis:latest
     imagePullPolicy: IfNotPresent
     resources:
       requests:
