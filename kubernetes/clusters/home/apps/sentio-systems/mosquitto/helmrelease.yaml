@@ -28,7 +28,7 @@ spec:
     controllers:
       main:
         replicas: 1
-        strategy: RollingUpdate
+        strategy: Recreate # Required for ReadWriteOnce PVC
 
         containers:
           main:
