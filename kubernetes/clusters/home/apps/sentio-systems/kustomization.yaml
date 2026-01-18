@@ -19,6 +19,7 @@ resources:
   - speciesnet/helmrelease.yaml
   - preprocessing/helmrelease.yaml
   - mediamtx/helmrelease.yaml
+  - redis/redis.yaml
 
   # Image Automation
   - backend/image-automation.yaml
