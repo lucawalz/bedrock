@@ -44,6 +44,8 @@ spec:
               SPECIESNET_SERVICE_URL: "http://speciesnet:8000"
               BIRD_CLASSIFIER_URL: "http://birder:8000/detect"
               SPECIES_CLASSIFIER_URL: "http://speciesnet:8000/detect"
+              REDIS_HOST: "sentio-redis"
+              REDIS_PORT: "6379"
             probes:
               liveness:
                 enabled: true

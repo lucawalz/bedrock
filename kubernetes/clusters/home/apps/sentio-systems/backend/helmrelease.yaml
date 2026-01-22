@@ -83,6 +83,8 @@ spec:
               # Service created by redis-operator
               SPRING_DATA_REDIS_HOST: "sentio-redis"
               SPRING_DATA_REDIS_PORT: "6379"
+              # Queue Configuration (Redis-based AI classification with EDA)
+              QUEUE_ENABLED: "true"
               # Email Configuration
               FRONTEND_URL: "https://sentio.syslabs.dev"
               CONTACT_EMAIL_TO: "team@syslabs.dev"

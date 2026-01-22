@@ -41,6 +41,11 @@ spec:
               pullPolicy: Always
             env:
               SPECIESNET_PORT: "8000"
+              REDIS_HOST: "sentio-redis"
+              REDIS_PORT: "6379"
+              # Queue bridge and ARQ worker modes
+              BRIDGE_MODE: "true"
+              WORKER_MODE: "true"
             probes:
               liveness:
                 enabled: true
