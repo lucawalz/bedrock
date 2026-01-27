@@ -52,7 +52,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8000
+                    port: 8081
                   initialDelaySeconds: 120
                   periodSeconds: 60
               readiness:
@@ -60,7 +60,7 @@ spec:
                 custom: true
                 spec:
                   tcpSocket:
-                    port: 8000
+                    port: 8081
                   initialDelaySeconds: 60
                   periodSeconds: 30
             resources:
@@ -75,4 +75,4 @@ spec:
         controller: main
         ports:
           http:
-            port: 8000
+            port: 8081
