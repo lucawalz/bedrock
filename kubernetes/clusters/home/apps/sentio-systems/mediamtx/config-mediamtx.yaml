@@ -10,6 +10,11 @@ data:
     logLevel: info
     logDestinations: [stdout]
 
+    # Connection resilience - tolerate brief network interruptions
+    readTimeout: 60s
+    writeTimeout: 60s
+    readBufferCount: 2048
+
     # RTMPS server (TLS-encrypted) - receives streams from devices
     rtmp: yes
     rtmpAddress: :1935
