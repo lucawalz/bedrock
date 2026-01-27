@@ -65,10 +65,10 @@ spec:
                   periodSeconds: 30
             resources:
               requests:
-                memory: "512Mi"
+                memory: "1Gi"
                 cpu: "200m"
               limits:
-                memory: "2Gi"
+                memory: "4Gi"
                 cpu: "1000m"
     service:
       main:
