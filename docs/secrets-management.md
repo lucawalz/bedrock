@@ -1,14 +1,6 @@
-# Secrets Management Reference
+# Secrets Management
 
-This document covers comprehensive secrets management using agenix for NixOS and SOPS for Kubernetes.
-
-## Overview
-
-The homelab uses a two-tier secrets management approach:
-- **agenix** - For NixOS system secrets (K3s tokens, SSH keys, etc.)
-- **SOPS** - For Kubernetes application secrets (database passwords, API keys, etc.)
-
-Both use age encryption with different key management strategies.
+Two-tier secrets management: **agenix** for NixOS system secrets and **SOPS** for Kubernetes application secrets. Both use age encryption.
 
 ## NixOS Secrets with agenix
 
@@ -191,10 +183,11 @@ creation_rules:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - namespace.yaml
   - https://github.com/isindir/sops-secrets-operator/deploy/crds
   - https://github.com/isindir/sops-secrets-operator/deploy
 ```
+
+> **Note:** Add the namespace to `kubernetes/clusters/home/namespaces/` separately.
 
 #### 4. Create Age Secret in Cluster
 
@@ -562,4 +555,4 @@ data:
   api-secret: ENC[AES256_GCM,data:ZGVmNDU2,tag:tNHV,type:str]
 ```
 
-This comprehensive secrets management setup ensures that sensitive data is properly encrypted, access-controlled, and auditable across both the NixOS infrastructure and Kubernetes applications.
+This comprehensive setup ensures sensitive data is properly encrypted, access-controlled, and auditable across both NixOS and Kubernetes.

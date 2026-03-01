@@ -1,14 +1,12 @@
-# DNS Setup Guide
+# DNS Setup
 
-This guide explains how to configure DNS for your domain to work with your homelab.
+DNS and networking configuration for the homelab domain.
 
-**For complete setup instructions, see the [Complete Setup Guide](complete-setup-guide.md).**
+See also: [Setup Process](setup-process.md)
 
 ## Prerequisites
 
-- Domain registered (this guide uses `syslabs.dev` as example)
-- Public IP address (static or dynamic)
-- Access to your domain's DNS provider
+- Domain registered (using `syslabs.dev`)
 - Homelab cluster running with Traefik
 
 ## DNS Configuration Options
@@ -29,9 +27,9 @@ Or use a wildcard (if your DNS provider supports it):
 *.syslabs.dev          → YOUR_PUBLIC_IP
 ```
 
-### Option 2: Cloudflare Tunnel (Recommended for this setup)
+### Option 2: Cloudflare Tunnel (Current Setup)
 
-This homelab uses Cloudflare tunnels for secure access without port forwarding:
+The homelab uses Cloudflare tunnels for secure access without port forwarding:
 
 1. **Create Cloudflare tunnel** in the Cloudflare dashboard
 2. **Get tunnel token** from Cloudflare
@@ -174,9 +172,9 @@ kubectl describe certificate traefik-dashboard-tls -n traefik
 - If using tunnel: Check Cloudflare tunnel routes
 - If using direct access: Verify firewall rules allow ports 80/443
 
-## Using Your Own Domain
+## Using a Different Domain
 
-To use a different domain than `syslabs.dev`:
+To switch from `syslabs.dev`:
 
 ### 1. Update Certificate Issuer Email
 

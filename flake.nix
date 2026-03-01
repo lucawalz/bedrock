@@ -13,33 +13,13 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, agenix, ... }: {
+  outputs = { self, nixpkgs, disko, agenix, ... }:
+  let
+    lib = import ./lib { inherit nixpkgs self disko agenix; };
+  in {
     nixosConfigurations = {
-      master = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          meta = { hostname = "master"; };
-          secretsDir = "${self}/secrets";
-        };
-        modules = [
-          disko.nixosModules.disko
-          agenix.nixosModules.default
-          ./hosts/master
-        ];
-      };
-      
-      worker-1 = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        specialArgs = {
-          meta = { hostname = "worker-1"; };
-          secretsDir = "${self}/secrets";
-        };
-        modules = [
-          disko.nixosModules.disko
-          agenix.nixosModules.default
-          ./hosts/worker-1
-        ];
-      };
+      master   = lib.mkHost { hostname = "master"; };
+      worker-1 = lib.mkHost { hostname = "worker-1"; };
     };
 
     devShells.x86_64-linux.default = let

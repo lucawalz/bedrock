@@ -120,6 +120,68 @@ kubectl scale deployment sentio-keycloak -n sentio-systems --replicas=1
 
 ---
 
+## Image Automation & CI/CD
+
+### Tagging Convention
+
+The CI/CD pipeline (GitHub Actions) tags images based on the source branch:
+
+| Branch | Tag Format | Example | Matched by Flux |
+|--------|-----------|---------|-----------------|
+| `main` | Clean semver | `1.0.0` | ✅ Yes |
+| `develop` | `VERSION-dev.TIMESTAMP` | `1.0.0-dev.1769534824` | ❌ No (pre-release) |
+| `release/*` | `VERSION-rc.TIMESTAMP` | `1.0.0-rc.1769534824` | ❌ No (pre-release) |
+
+Flux ImagePolicies use `semver: range: '>=0.0.0'` which only matches **stable releases** (no pre-release suffixes). This means only images pushed from `main` trigger automatic deployments.
+
+### How It Works
+
+1. Merge to `main` → CI builds and pushes `ghcr.io/lucawalz/sentio-systems/<image>:<semver>`
+2. Flux `ImageRepository` scans GHCR every 1 minute
+3. Flux `ImagePolicy` selects the latest stable semver tag
+4. Flux `ImageUpdateAutomation` updates the HelmRelease tag and commits to `main`
+
+### Services & Images
+
+| Service | Image | Policy Name |
+|---------|-------|-------------|
+| Backend | `sentio-backend` | `sentio-backend` |
+| Frontend | `sentio-web` | `sentio-frontend` |
+| Birder AI | `birder-ai` | `sentio-birder` |
+| SpeciesNet AI | `speciesnet-ai` | `sentio-speciesnet` |
+| Preprocessing | `preprocessing-service` | `sentio-preprocessing` |
+
+### Manual Image Override
+
+To temporarily pin a specific image version:
+
+```bash
+# Edit the HelmRelease directly (Flux will revert on next automation cycle)
+kubectl set image deployment/sentio-backend main=ghcr.io/lucawalz/sentio-systems/sentio-backend:1.2.3 -n sentio-systems
+
+# To permanently pin: suspend image automation, then edit the HelmRelease tag
+flux suspend image update sentio-systems -n sentio-systems
+# Edit the tag in the HelmRelease YAML, commit, and push
+```
+
+### Checking Image Automation Status
+
+```bash
+# View latest image policies
+flux get image policy -n sentio-systems
+
+# View image repositories
+flux get image repository -n sentio-systems
+
+# View image update automation
+flux get image update -n sentio-systems
+
+# Check which tag was last applied
+kubectl get imagepolicy -n sentio-systems -o wide
+```
+
+---
+
 ## Common Issues & Fixes
 
 ### Issue: Keycloak Admin UI Shows CSP/Frame Errors

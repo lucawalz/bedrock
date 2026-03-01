@@ -14,3 +14,4 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-infrastructure
+    - name: cluster-namespaces

@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - storage          # Deploy first
   - networking       # Deploy second
-  - monitoring       # Deploy third
-  - cicd             # Deploy fourth
+  - databases        # Deploy third
+  - monitoring       # Deploy fourth
+  - cicd             # Deploy fifth
 

@@ -4,46 +4,40 @@ This directory contains the complete Kubernetes cluster configuration for the ho
 
 ## Structure
 
-- **sources/** - Helm repositories and Git sources
-- **config/** - Cluster-wide configuration (domain, timezone, etc.)
-- **infrastructure/** - Core infrastructure deployed in layers
-  - storage/ - Longhorn
-  - networking/ - Traefik, cert-manager, external-dns
-  - monitoring/ - Prometheus/Grafana stack
-- **apps/** - Applications grouped by function
-  - databases/ - PostgreSQL, Redis, etc.
-  - dashboards/ - Glance, Uptime Kuma
-  - media/ - Plex, Jellyfin (future)
-- **secrets/** - Encrypted Kubernetes secrets (SOPS)
+- **namespaces/** — Centralized namespace definitions (deployed first)
+- **sources/** — Helm repositories (`helm/`) and OCI sources (`oci/`)
+- **config/** — Flux Kustomizations defining deployment order
+- **secrets/** — Encrypted Kubernetes secrets (SOPS)
+- **infrastructure/** — Core infrastructure deployed in layers
+  - `storage/` — Longhorn
+  - `networking/` — Traefik, cert-manager, Cloudflare tunnel
+  - `databases/` — PostgreSQL
+  - `monitoring/` — Prometheus/Grafana stack
+  - `cicd/` — Tekton
+- **apps/** — Applications grouped by function
+  - `dashboards/` — Glance
+  - `it-tools/`, `n8n/` — Standalone apps
+  - `sentio-systems/` — Multi-service application
+- **flux-system/** — Flux bootstrap (auto-managed, do not edit)
 
-## Deployment
+## Deployment Order
 
-Flux automatically deploys resources in dependency order. Infrastructure is deployed before applications.
+Flux deploys resources via `config/` Kustomizations in this order:
 
-## Cluster Domain
-
-Set your cluster domain in `config/cluster-settings.yaml` (if using external-dns or Ingress).
+```
+Layer 0:  cluster-namespaces    (no deps)
+          cluster-sources       (no deps)
+Layer 1:  cluster-secrets       (depends: namespaces)
+Layer 2:  cluster-infrastructure (depends: sources, secrets, namespaces)
+Layer 3:  cluster-issuers       (depends: infrastructure, namespaces)
+Layer 4:  cluster-apps          (depends: infrastructure, issuers, namespaces)
+```
 
 ## Accessing Services
 
 - Traefik dashboard: `traefik.syslabs.dev`
 - Grafana: `grafana.syslabs.dev`
-- Glance: `glance.syslabs.dev` (when deployed)
+- Glance: `glance.syslabs.dev`
 
 All services use TLS certificates from Let's Encrypt via cert-manager.
-
-## DNS Configuration
-
-For the domain `syslabs.dev` to work, you need to:
-
-1. **Point DNS records** to your public IP:
-   - Create A records: `traefik.syslabs.dev`, `grafana.syslabs.dev`, etc.
-   - Or use a wildcard: `*.syslabs.dev` → your public IP
-
-2. **Port forwarding** (if behind NAT):
-   - Forward ports 80 and 443 to your Traefik service
-
-3. **Optional: Use external-dns**:
-   - Configure external-dns with your DNS provider (Cloudflare, etc.)
-   - It will automatically create DNS records for your ingresses
 

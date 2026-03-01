@@ -2,7 +2,7 @@
 
 This document covers K3s cluster management and Flux GitOps configuration.
 
-**For complete setup instructions, see the [Complete Setup Guide](complete-setup-guide.md).**
+See also: [Setup Process](setup-process.md)
 
 ## Overview
 
@@ -21,7 +21,7 @@ The Kubernetes setup includes:
 The master node runs the K3s server with embedded etcd:
 
 ```nix
-# roles/k3s-server.nix
+# modules/k3s/server.nix
 services.k3s = {
   enable = true;
   role = "server";
@@ -44,7 +44,7 @@ services.k3s = {
 Worker nodes join the cluster as agents:
 
 ```nix
-# roles/k3s-agent.nix
+# modules/k3s/agent.nix
 services.k3s = {
   enable = true;
   role = "agent";
@@ -302,11 +302,12 @@ spec:
    apiVersion: kustomize.config.k8s.io/v1beta1
    kind: Kustomization
    resources:
-     - namespace.yaml
      - deployment.yaml
      - service.yaml
      - ingress.yaml
    ```
+
+   > **Note:** Add the namespace to `kubernetes/clusters/home/namespaces/` instead of including it here.
 
 6. **Add to parent kustomization**:
    ```yaml

@@ -11,4 +11,5 @@ resources:
   - helm/redis-operator.yaml
   - helm/tekton.yaml
   - helm/it-tools.yaml
+  - oci/sentio-systems.yaml
 

@@ -1,26 +1,15 @@
-# K3s control plane node (master)
-
 { config, pkgs, meta, ... }:
-
 {
   imports = [
     ./disko-config.nix
     ./hardware-configuration.nix
-    ../common.nix
-    ../../roles/k3s-server.nix
-    ../../roles/common-services.nix
+    ../common
+    ../../modules/k3s/server.nix
+    ../../modules/services/monitoring.nix
+    ../../modules/services/storage.nix
   ];
 
   networking.hostName = "master";
-  
-  # Configure static IP if needed (adjust based on your network)
-  # networking.interfaces.eth0.ipv4.addresses = [{
-  #   address = "192.168.1.10";
-  #   prefixLength = 24;
-  # }];
-  # networking.defaultGateway = "192.168.1.1";
-  # networking.nameservers = [ "192.168.1.1" "8.8.8.8" ];
-
   system.stateVersion = "25.05";
 }
 

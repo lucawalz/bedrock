@@ -5,13 +5,15 @@ When adding new infrastructure components, follow this standardized structure:
 ## Directory Structure
 ```
 component-name/
-├── namespace.yaml          # Namespace definition
 ├── configmap.yaml         # Helm values as ConfigMap
 ├── helmrelease.yaml       # HelmRelease using valuesFrom
 ├── kustomization.yaml     # Kustomize resources
 ├── values.yaml           # Original values file (for reference)
 └── ingress.yaml          # Optional: if component needs ingress
 ```
+
+> **Note:** Namespace definitions are centralized in `namespaces/` at the cluster level.
+> Add your namespace to `kubernetes/clusters/home/namespaces/` instead.
 
 ## ConfigMap Template
 ```yaml
@@ -62,7 +64,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - namespace.yaml
   - configmap.yaml
   - helmrelease.yaml
   # Add other resources as needed

@@ -1,10 +1,6 @@
 # Kubernetes Secrets (SOPS)
 
-This directory contains encrypted Kubernetes secrets managed with SOPS.
-
-## Encryption
-
-Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for configuration.
+Encrypted Kubernetes secrets managed with SOPS + age. See root `.sops.yaml` for config.
 
 ## Adding a Secret
 
@@ -25,15 +21,10 @@ Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for co
 
    ```bash
    sops --encrypt --in-place my-secret.yaml
-   ```
-
-3. Rename to `.sops.yaml`:
-
-   ```bash
    mv my-secret.yaml my-secret.sops.yaml
    ```
 
-4. Add to `kustomization.yaml`:
+3. Add to `kustomization.yaml`:
 
    ```yaml
    resources:
@@ -43,29 +34,12 @@ Secrets are encrypted using **SOPS** with age keys. See root `.sops.yaml` for co
 ## Editing Secrets
 
 ```bash
-# Edit encrypted secret
 sops clusters/home/secrets/my-secret.sops.yaml
-
-# Or use Makefile command
-make sops-edit FILE=clusters/home/secrets/my-secret.sops.yaml
 ```
 
-## Common Secrets
+## Current Secrets
 
-- `cloudflare-api-token.sops.yaml` - Cloudflare API token for external-dns
-- `postgres-passwords.sops.yaml` - Database passwords
-- `grafana-admin.sops.yaml` - Grafana admin credentials
-
-## Age Key Setup
-
-Make sure you have age keys configured:
-
-```bash
-# Generate age key (if not exists)
-age-keygen -o ~/.config/sops/age/keys.txt
-
-# Get public key
-cat ~/.config/sops/age/keys.txt | grep public | cut -d: -f2
-
-# Add to .sops.yaml
-```
+- `cloudflare-api-token.sops.yaml` — Cloudflare API token
+- `cloudflare-tunnel-secret.sops.yaml` — Cloudflare tunnel token
+- `ghcr-auth.sops.yaml` — GitHub Container Registry auth
+- `sentio-systems.sops.yaml` — Sentio application secrets

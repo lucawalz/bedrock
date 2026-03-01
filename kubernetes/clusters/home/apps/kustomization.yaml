@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - dashboards
-  - databases
   - n8n
   - it-tools
   - sentio-systems

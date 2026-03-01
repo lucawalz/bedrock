@@ -1,208 +1,179 @@
 # NixOS + K3s Homelab
 
-> A complete homelab setup using NixOS for operating system management and K3s for Kubernetes orchestration, with Flux CD for GitOps.
+Declarative homelab running NixOS for OS management, K3s for Kubernetes, and Flux CD for GitOps.
 
 ---
 
-## Overview
+## Stack
 
-This repository contains a **production-ready homelab configuration** with:
-
-| Component | Purpose | Technology |
-|-----------|---------|------------|
-| **Operating System** | Declarative system configuration | NixOS |
-| **Container Orchestration** | Lightweight Kubernetes distribution | K3s |
-| **GitOps** | Continuous deployment | Flux CD |
-| **Storage** | Distributed block storage | Longhorn |
-| **Ingress** | Load balancing & SSL termination | Traefik |
-| **Certificates** | TLS certificate management | cert-manager |
-| **Monitoring** | Metrics & observability | Prometheus/Grafana |
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| OS | NixOS (flakes) | Declarative, reproducible system config |
+| Orchestration | K3s | Lightweight Kubernetes |
+| GitOps | Flux CD | Continuous deployment from git |
+| Storage | Longhorn | Distributed block storage |
+| Ingress | Traefik | Load balancing, SSL termination |
+| Certificates | cert-manager + Let's Encrypt | Automatic TLS |
+| Monitoring | Prometheus + Grafana | Metrics and dashboards |
+| DNS/Tunnel | Cloudflare Tunnel | Secure external access |
+| Secrets | agenix (NixOS) + SOPS (K8s) | Encrypted at rest, decrypted at deploy |
+| CI/CD | GitHub Actions + Tekton | Image builds, in-cluster pipelines |
+| Database | PostgreSQL (Bitnami Helm) | Application data |
 
 ## Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     master      │    │    worker-1     │    │    worker-N     │
-│                 │    │                 │    │                 │
-│ • K3s Server    │◄──►│ • K3s Agent     │◄──►│ • K3s Agent     │
-│ • etcd          │    │ • Workloads     │    │ • Workloads     │
-│ • Flux CD       │    │ • Longhorn      │    │ • Longhorn      │
-│ • Traefik      │    │ • Monitoring    │    │ • Monitoring    │
+│     master       │    │    worker-1      │    │    worker-N      │
+│                  │    │                  │    │                  │
+│ • K3s Server     │◄──►│ • K3s Agent      │◄──►│ • K3s Agent      │
+│ • etcd           │    │ • Workloads      │    │ • Workloads      │
+│ • Flux CD        │    │ • Longhorn       │    │ • Longhorn       │
+│ • Traefik        │    │ • Monitoring     │    │ • Monitoring     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### Node Roles
-
-| Node Type | Role | Components |
-|-----------|------|------------|
-| **master** | Control Plane | K3s server, etcd, Flux CD, Traefik ingress |
-| **worker-1** | Compute Node | K3s agent, application workloads, storage |
-| **worker-N** | Compute Node | Unlimited scalability - add as needed |
-
-> **Scalable Design**: Start with 2 nodes, expand to as many workers as needed. Each node is declaratively configured and automatically joins the cluster.
-
-## Getting Started
-
-<table>
-<tr>
-<th>User Type</th>
-<th>Recommended Path</th>
-<th>Description</th>
-</tr>
-<tr>
-<td><strong>New Users</strong></td>
-<td><a href="docs/complete-setup-guide.md"><strong>Complete Setup Guide</strong></a></td>
-<td>Step-by-step instructions from zero to running homelab</td>
-</tr>
-<tr>
-<td><strong>NixOS Veterans</strong></td>
-<td><a href="QUICK_START.md"><strong>Quick Start Guide</strong></a></td>
-<td>Fast deployment for experienced users</td>
-</tr>
-<tr>
-<td><strong>Need Help?</strong></td>
-<td><a href="docs/README.md"><strong>Documentation Index</strong></a></td>
-<td>Find guides for specific topics and troubleshooting</td>
-</tr>
-</table>
+Nodes are fully declarative — rebuild any host from scratch with `nixos-anywhere --flake .#hostname root@IP`.
 
 ## Repository Structure
 
 ```
 nixos-homelab/
-├── hosts/              # Per-host NixOS configurations
-├── roles/              # Role-based configs (k3s-server, k3s-agent)
-├── secrets/            # Encrypted NixOS secrets (agenix)
-├── kubernetes/         # Kubernetes manifests (Flux GitOps)
-├── docs/               # Documentation
-└── modules/            # Custom NixOS modules
+├── flake.nix                  # Entry point — host definitions via lib/mkHost
+├── lib/                       # Utility functions (mkHost helper)
+├── hosts/                     # Per-host NixOS configurations
+│   ├── common/                # Shared config (boot, locale, networking, nix, packages, users)
+│   ├── master/                # Control plane (K3s server, services)
+│   └── worker-1/              # Worker node (K3s agent, services)
+├── modules/                   # Reusable NixOS modules
+│   ├── k3s/                   # K3s server/agent/common
+│   └── services/              # monitoring (node_exporter), storage (Longhorn prereqs)
+├── secrets/                   # Encrypted NixOS secrets (agenix + age)
+├── kubernetes/                # Kubernetes manifests (Flux GitOps)
+│   └── clusters/home/
+│       ├── namespaces/        # Centralized namespace definitions
+│       ├── sources/           # Helm & OCI repositories
+│       ├── config/            # Flux Kustomizations (deployment order)
+│       ├── secrets/           # SOPS-encrypted K8s secrets
+│       ├── infrastructure/    # storage, networking, databases, monitoring, cicd
+│       ├── apps/              # sentio-systems, dashboards, it-tools, n8n
+│       └── flux-system/       # Flux bootstrap (auto-managed)
+└── docs/                      # Documentation
 ```
 
-## Quick Commands
+## Flux Deployment Order
+
+```
+Layer 0:  namespaces    (no deps)
+          sources       (no deps)
+Layer 1:  secrets       (depends: namespaces)
+Layer 2:  infrastructure (depends: sources, secrets, namespaces)
+Layer 3:  issuers       (depends: infrastructure, namespaces)
+Layer 4:  apps          (depends: infrastructure, issuers, namespaces)
+```
+
+## Applications
+
+| App | Description | Namespace |
+|-----|-------------|-----------|
+| **Sentio Systems** | Multi-service platform (backend, frontend, keycloak, AI services, MQTT) | `sentio-systems` |
+| **Glance** | Dashboard | `dashboards` |
+| **IT-Tools** | Developer utilities | `it-tools` |
+| **n8n** | Workflow automation | `n8n` |
+
+## Infrastructure
+
+| Component | Namespace | Notes |
+|-----------|-----------|-------|
+| Longhorn | `longhorn-system` | Distributed storage, 2 replicas |
+| Traefik | `traefik` | NodePort 30080/30443 |
+| cert-manager | `cert-manager` | Let's Encrypt via DNS-01 |
+| Cloudflare Tunnel | `cloudflare-tunnel` | Secure ingress without port forwarding |
+| PostgreSQL | `postgres` | Bitnami Helm chart |
+| Prometheus/Grafana | `monitoring` | kube-prometheus-stack |
+| Tekton | `tekton-pipelines` | In-cluster CI/CD |
+
+## Quick Reference
 
 <details>
-<summary><strong>Click to expand command reference</strong></summary>
-
-### NixOS Operations
+<summary><strong>NixOS</strong></summary>
 
 ```bash
 make build HOST=master          # Test configuration build
-make switch HOST=master         # Apply configuration to master
-make switch HOST=worker-1       # Apply configuration to worker
-```
+make switch HOST=master         # Apply configuration
+make switch HOST=worker-1       # Apply to worker
 
-### Kubernetes Operations
-
-```bash
-make flux-check           # Check Flux GitOps status
-make flux-bootstrap       # Bootstrap Flux (one-time)
-kubectl get nodes         # Check cluster node status
-kubectl get pods -A       # Check all pods across namespaces
-```
-
-### Secrets Management
-
-```bash
-agenix -e secrets/k3s-token.age              # Edit NixOS secrets
-sops kubernetes/.../secret.sops.yaml         # Edit Kubernetes secrets
-```
-
-### Monitoring & Debugging
-
-```bash
-kubectl logs -n flux-system -l app=source-controller    # Flux logs
-kubectl get helmreleases -A                             # Helm releases
-journalctl -u k3s                                       # K3s service logs
+# Add a new worker: create hosts/worker-X/, add to flake.nix
+# See hosts/README.md
 ```
 
 </details>
 
-## What Makes This Different
+<details>
+<summary><strong>Kubernetes & Flux</strong></summary>
 
-<table>
-<tr>
-<th>Traditional Homelab</th>
-<th>This NixOS Setup</th>
-</tr>
-<tr>
-<td>
+```bash
+kubectl get nodes               # Cluster status
+kubectl get pods -A             # All pods
+flux get kustomizations -A      # Flux sync status
+flux get helmreleases -A        # Helm releases
+flux reconcile kustomization cluster-apps --with-source  # Force sync
 
-```diff
-- Manual OS installation
-- Package dependency conflicts
-- Configuration drift over time
-- Hard to reproduce setups
-- Manual backup procedures
-- Imperative updates (apt, yum)
-- "Works on my machine" issues
-- Manual secret management
+make flux-check                 # Full Flux health check
+make flux-bootstrap             # One-time Flux setup
 ```
 
-</td>
-<td>
+</details>
 
-```diff
-+ Automated OS deployment
-+ Isolated, reproducible packages
-+ Declarative, drift-free config
-+ Identical setups every time
-+ Automated GitOps backups
-+ Atomic, rollback-able updates
-+ Guaranteed reproducibility
-+ Encrypted secret management
+<details>
+<summary><strong>Secrets</strong></summary>
+
+```bash
+# NixOS (agenix)
+agenix -e secrets/k3s-token.age
+
+# Kubernetes (SOPS)
+sops kubernetes/clusters/home/secrets/sentio-systems.sops.yaml
 ```
 
-</td>
-</tr>
-</table>
+</details>
 
-### Key Benefits
+<details>
+<summary><strong>Debugging</strong></summary>
 
-| Feature | Benefit | Implementation |
-|---------|---------|----------------|
-| **Infrastructure as Code** | Everything is version controlled | NixOS flakes + Kubernetes manifests |
-| **GitOps Workflow** | Changes via git commits | Flux CD automatic synchronization |
-| **Secret Management** | Secure, encrypted secrets | agenix (NixOS) + SOPS (Kubernetes) |
-| **Zero Downtime** | Rolling updates | Kubernetes deployment strategies |
-| **Disaster Recovery** | Quick restoration | Declarative configuration + backups |
+```bash
+journalctl -u k3s                                       # K3s logs
+kubectl logs -n flux-system -l app=source-controller     # Flux source logs
+kubectl logs -n flux-system -l app=kustomize-controller  # Flux kustomize logs
+flux get image policy -n sentio-systems                  # Image automation status
+```
 
-## Perfect For
+</details>
 
-<table>
-<tr>
-<td><strong>Homelab Enthusiasts</strong></td>
-<td>Modern infrastructure with enterprise-grade practices</td>
-</tr>
-<tr>
-<td><strong>Kubernetes Learners</strong></td>
-<td>Realistic environment for hands-on experience</td>
-</tr>
-<tr>
-<td><strong>DevOps Engineers</strong></td>
-<td>Practice GitOps workflows and infrastructure automation</td>
-</tr>
-<tr>
-<td><strong>Infrastructure Nerds</strong></td>
-<td>Declarative, reproducible systems that just work</td>
-</tr>
-</table>
+## Documentation
 
----
+| Doc | Covers |
+|-----|--------|
+| [Setup Process](docs/setup-process.md) | Full provisioning from bare metal to running cluster |
+| [Kubernetes & Flux](docs/kubernetes-setup.md) | K3s config, Flux bootstrap, adding apps |
+| [Secrets Management](docs/secrets-management.md) | agenix + SOPS, key rotation |
+| [DNS Setup](docs/dns-setup.md) | Cloudflare tunnel, DNS records, certificates |
+| [Disaster Recovery](docs/disaster-recovery.md) | Backups, restoration, emergency procedures |
 
-## Resources & Documentation
+## Key Design Decisions
 
-| Resource | Description | Link |
-|----------|-------------|------|
-| **NixOS Manual** | Official NixOS documentation | [nixos.org/manual](https://nixos.org/manual/nixos/) |
-| **K3s Documentation** | Lightweight Kubernetes guide | [docs.k3s.io](https://docs.k3s.io/) |
-| **Flux Documentation** | GitOps toolkit documentation | [fluxcd.io/docs](https://fluxcd.io/docs/) |
-| **Agenix** | NixOS secrets management | [github.com/ryantm/agenix](https://github.com/ryantm/agenix) |
-| **SOPS** | Kubernetes secrets encryption | [github.com/getsops/sops](https://github.com/getsops/sops) |
+- **Centralized namespaces** — All namespace definitions live in `kubernetes/clusters/home/namespaces/`, not scattered in app/infra dirs
+- **ConfigMap-based Helm values** — Infrastructure HelmReleases use `valuesFrom` ConfigMaps for cleaner diffs
+- **Parameterized NixOS modules** — K3s agent `serverAddr` uses `lib.mkDefault`, overridable per-host
+- **Image automation** — Flux watches GHCR for stable semver tags from `main`, auto-commits updates
+- **Firewall enabled** — SSH (22) open by default, K3s ports per role
 
----
+## External Resources
 
-## License
-
-**MIT License** - Feel free to fork, modify, and adapt for your own needs!
-
-> **Contributing**: This is a personal homelab repository, but issues and improvements are welcome. Share your own configurations and learnings with the community.
+| Resource | Link |
+|----------|------|
+| NixOS Manual | [nixos.org/manual](https://nixos.org/manual/nixos/) |
+| K3s Docs | [docs.k3s.io](https://docs.k3s.io/) |
+| Flux Docs | [fluxcd.io/docs](https://fluxcd.io/docs/) |
+| Agenix | [github.com/ryantm/agenix](https://github.com/ryantm/agenix) |
+| SOPS | [github.com/getsops/sops](https://github.com/getsops/sops) |

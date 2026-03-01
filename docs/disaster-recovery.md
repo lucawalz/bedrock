@@ -1,8 +1,8 @@
 # Disaster Recovery Guide
 
-This guide covers backup strategies and recovery procedures for your NixOS homelab.
+This guide covers backup strategies and recovery procedures for the NixOS homelab.
 
-**For complete setup instructions, see the [Complete Setup Guide](complete-setup-guide.md).**
+See also: [Setup Process](setup-process.md)
 
 ## Backup Strategy
 
@@ -15,7 +15,7 @@ This guide covers backup strategies and recovery procedures for your NixOS homel
 
 ### Repository Backup
 
-The entire repository is in git, so regular backups are automatic if pushed to GitHub/GitLab.
+The entire repo is in git — automatically backed up when pushed.
 
 ### Secrets Backup
 
@@ -65,7 +65,7 @@ sudo rsync -aAXv --exclude={"/dev/*","/proc/*","/sys/*","/tmp/*","/run/*","/mnt/
 
 ### Complete Host Rebuild with nixos-anywhere
 
-The fastest way to rebuild a host:
+Fastest way to rebuild a host:
 
 ```bash
 # From your local machine
