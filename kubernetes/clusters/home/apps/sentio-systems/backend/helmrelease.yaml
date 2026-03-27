@@ -50,6 +50,7 @@ spec:
               # Server Configuration
               SERVER_PORT: "8080"
               # Keycloak Configuration (internal cluster communication)
+              SPRING_PROFILES_ACTIVE: "cloud"
               KEYCLOAK_ISSUER_URI: "https://sentio.syslabs.dev/auth/realms/sentio"
               SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: "http://sentio-keycloak:8080/auth/realms/sentio/protocol/openid-connect/certs"
               KEYCLOAK_ADMIN_SERVER_URL: "http://sentio-keycloak:8080/auth"
