@@ -1,0 +1,22 @@
+name: nix-check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+        # Caches the Nix store across runs — cuts cold-build time significantly
+
+      - name: Evaluate all NixOS configurations
+        run: nix flake check --no-build
+        # --no-build evaluates all modules and catches Nix errors without
+        # spending 20+ minutes building the full system closure

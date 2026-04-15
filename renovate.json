@@ -1,6 +1,36 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:base",
+    ":dependencyDashboard"
+  ],
+  "nix": {
+    "enabled": true
+  },
+  "flux": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "description": "Group all nixpkgs flake updates together",
+      "matchManagers": ["nix"],
+      "groupName": "nixpkgs"
+    },
+    {
+      "description": "Group infrastructure Helm charts together",
+      "matchManagers": ["flux"],
+      "matchPackagePatterns": ["cert-manager", "traefik", "longhorn", "kube-prometheus-stack", "redis-operator"],
+      "groupName": "infrastructure charts",
+      "schedule": ["on sunday"]
+    },
+    {
+      "description": "App charts updated individually for easier review",
+      "matchManagers": ["flux"],
+      "matchPackagePatterns": ["n8n", "it-tools", "tekton"],
+      "groupName": "app charts"
+    }
   ]
 }

@@ -1,0 +1,78 @@
+name: k8s-validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  kubeconform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
+            | tar xz -C /usr/local/bin
+
+      - name: Install Flux CRD schemas
+        # Kubeconform needs CRD schemas to validate Flux-specific resources
+        run: |
+          mkdir -p /tmp/flux-schemas
+          curl -sSL https://github.com/fluxcd/flux2/releases/latest/download/flux_install.yaml \
+            | grep -o 'schema\.fluxcd\.io[^"]*' | sort -u || true
+          # Use the community-maintained CRD schema catalog instead
+          git clone --depth=1 https://github.com/datreeio/CRDs-catalog /tmp/crds-catalog
+
+      - name: Validate Kubernetes manifests
+        run: |
+          find kubernetes/ -name "*.yaml" \
+            ! -path "*/flux-system/gotk-components.yaml" \
+            ! -path "*/secrets/*.sops.yaml" \
+            | xargs kubeconform \
+              -strict \
+              -ignore-missing-schemas \
+              -schema-location default \
+              -schema-location '/tmp/crds-catalog/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              -kubernetes-version 1.35.0 \
+              -summary
+        # Skips: gotk-components (generated, large), sops secrets (encrypted, not valid YAML values)
+
+  kustomize-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kustomize
+        run: |
+          curl -sSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" \
+            | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Build all kustomizations
+        run: |
+          # Build each kustomization to ensure all resources resolve correctly
+          # Skips encrypted secret files that kustomize can't process without SOPS key
+          find kubernetes/ -name "kustomization.yaml" -not -path "*/secrets/*" | while read f; do
+            dir=$(dirname "$f")
+            echo "Building $dir..."
+            kustomize build "$dir" > /dev/null || exit 1
+          done
+
+  sops-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check SOPS files are actually encrypted
+        # Prevents accidentally committing decrypted secrets
+        run: |
+          fail=0
+          for f in $(find kubernetes/ -name "*.sops.yaml"); do
+            if ! grep -q "ENC\[AES256_GCM" "$f"; then
+              echo "ERROR: $f does not appear to be encrypted"
+              fail=1
+            fi
+          done
+          exit $fail
