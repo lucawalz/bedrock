@@ -1,48 +1,34 @@
-# NixOS Secrets (agenix)
+# secrets
 
-This directory contains encrypted secrets for NixOS system-level configuration.
+NixOS-level secrets encrypted with [agenix](https://github.com/ryantm/agenix). Each secret is encrypted against the SSH host keys of the nodes that need to decrypt it, plus the admin key.
 
-## Encryption
+## Current secrets
 
-Secrets are encrypted using **agenix** with age keys derived from SSH host keys.
+| File | Used by |
+|---|---|
+| `k3s-token.age` | All nodes — cluster join token |
 
-## Structure
+## Adding a secret
 
-- `secrets.nix` - Maps secret files to their authorized public keys
-- `*.age` - Encrypted secret files
-
-## Adding a Secret
-
-1. Add the secret to `secrets.nix`:
+1. Declare it in `secrets.nix`:
    ```nix
-   {
-     "my-secret.age".publicKeys = [ master worker-1 luca ];
-   }
+   "my-secret.age".publicKeys = [ master worker-1 worker-2 luca ];
    ```
 
-2. Create/encrypt the secret:
+2. Create and edit it:
    ```bash
    agenix -e secrets/my-secret.age
    ```
 
-3. Edit the secret (opens in editor):
-   ```bash
-   agenix -e secrets/my-secret.age
+3. Reference it in a NixOS module:
+   ```nix
+   age.secrets.my-secret.file = "${secretsDir}/my-secret.age";
    ```
 
-## Current Secrets
+## Getting a node's public key
 
-- `k3s-token.age` - K3s cluster join token
-
-## Getting Public Keys
-
-Get a host's SSH public key:
 ```bash
-ssh-keyscan -t ed25519 master
-```
-
-Or from the machine itself:
-```bash
+ssh-keyscan -t ed25519 <hostname>
+# or on the node:
 cat /etc/ssh/ssh_host_ed25519_key.pub
 ```
-

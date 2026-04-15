@@ -1,29 +1,27 @@
-# Infrastructure Layer
+# infrastructure
 
-Core infrastructure components deployed in dependency order:
+Platform services deployed before apps. Each component follows the same pattern: a `ConfigMap` holds Helm values, a `HelmRelease` references it via `valuesFrom`. This keeps values diffs clean and separates config from chart version management.
 
-1. **Storage** (Longhorn) — Deployed first
-2. **Networking** (Traefik, cert-manager, Cloudflare tunnel) — Needs storage
-3. **Databases** (PostgreSQL) — Needs networking
-4. **Monitoring** (Prometheus/Grafana) — Needs networking
-5. **CI/CD** (Tekton) — Needs networking
+## Components
 
-## Standardized Component Structure
+| Layer | Component | Chart |
+|---|---|---|
+| Storage | Longhorn | `longhorn/longhorn` |
+| Networking | Traefik | `traefik/traefik` |
+| Networking | cert-manager | `jetstack/cert-manager` |
+| Networking | Cloudflare Tunnel | plain deployment |
+| Databases | PostgreSQL | `bitnami/postgresql` |
+| Storage | Redis Operator | `ot-helm/redis-operator` |
+| Monitoring | kube-prometheus-stack | `prometheus-community/kube-prometheus-stack` |
+| CI/CD | Tekton | `cdf/tekton-pipeline` |
 
-Each component follows a consistent pattern:
-- **ConfigMap** — Helm values stored as ConfigMap
-- **HelmRelease** — Uses `valuesFrom` to reference ConfigMap
-- **Kustomization** — Orchestrates all resources
-- **Ingress** — Optional, if component needs external access
+## Adding a component
 
-> **Note:** Namespace definitions are centralized in `../namespaces/`, not inside infrastructure directories.
+```
+infrastructure/<name>/
+├── configmap.yaml     # Helm values
+├── helmrelease.yaml   # Chart + valuesFrom reference
+└── kustomization.yaml
+```
 
-## Benefits of ConfigMap Approach
-
-- **Maintainability**: Values separated from HelmRelease definitions
-- **Consistency**: All components follow the same pattern
-- **Flexibility**: Easy to modify values without touching HelmRelease
-- **Version Control**: Clear diffs when values change
-
-See `TEMPLATE.md` for the standardized component structure.
-
+Namespace goes in `../namespaces/`, not here.

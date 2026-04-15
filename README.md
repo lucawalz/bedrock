@@ -137,6 +137,20 @@ Infrastructure charts are grouped and scheduled weekly. App charts are updated i
 
 ---
 
+## Further Reading
+
+| Doc | Contents |
+|---|---|
+| [`hosts/`](hosts/README.md) | Per-host config structure, adding workers |
+| [`modules/`](modules/README.md) | k3s and service NixOS modules |
+| [`secrets/`](secrets/README.md) | agenix NixOS secrets |
+| [`kubernetes/`](kubernetes/README.md) | Flux layout, deployment order, bootstrap |
+| [`kubernetes/.../infrastructure/`](kubernetes/clusters/home/infrastructure/README.md) | Platform components and conventions |
+| [`kubernetes/.../secrets/`](kubernetes/clusters/home/secrets/README.md) | SOPS Kubernetes secrets |
+| [`kubernetes/.../sentio-systems/`](kubernetes/clusters/home/apps/sentio-systems/OPERATIONS.md) | Sentio ops runbook (Keycloak, secrets, image automation) |
+
+---
+
 ## CI
 
 Every pull request runs:

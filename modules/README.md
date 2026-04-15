@@ -1,67 +1,30 @@
-# NixOS Modules
+# modules
 
-Reusable NixOS modules for K3s cluster management and node services.
+Reusable NixOS modules shared across nodes.
 
-## Structure
+## Layout
 
 ```
 modules/
 ├── k3s/
-│   ├── common.nix       # Shared K3s config (agenix secret, systemd ordering)
-│   ├── server.nix       # K3s control plane (imports common.nix)
-│   └── agent.nix        # K3s worker agent (imports common.nix, parameterized serverAddr)
+│   ├── common.nix    # Shared: agenix token, systemd ordering
+│   ├── server.nix    # Control plane role
+│   └── agent.nix     # Worker role
 └── services/
-    ├── monitoring.nix   # Prometheus node_exporter
-    └── storage.nix      # iSCSI + Longhorn prerequisites
+    ├── monitoring.nix # node_exporter (port 9100)
+    └── storage.nix    # openiscsi + Longhorn prerequisites
 ```
 
-## K3s Modules
+## k3s
 
-### `k3s/common.nix`
+| Module | Role | Key config |
+|---|---|---|
+| `common.nix` | Both | Decrypts `k3s-token.age`, orders after `network-online.target` |
+| `server.nix` | Master | `clusterInit = true`, disables built-in servicelb/traefik/local-storage |
+| `agent.nix` | Workers | Connects to `https://master:6443` |
 
-Shared configuration for all K3s nodes:
-- Decrypts `k3s-token.age` via agenix
-- Systemd dependency ordering (`network-online.target`)
-- Graceful shutdown, restart-on-failure
+## services
 
-### `k3s/server.nix`
+`monitoring.nix` — Prometheus `node_exporter` with systemd and process collectors.
 
-Control plane module:
-- Imports `common.nix`
-- Enables K3s in `server` role with `clusterInit = true`
-- Disables built-in servicelb, traefik, local-storage (managed by Flux instead)
-- Opens firewall ports: TCP 6443, 10250; UDP 8472 (Flannel VXLAN)
-
-### `k3s/agent.nix`
-
-Worker module:
-- Imports `common.nix`
-- Enables K3s in `agent` role
-- `serverAddr` defaults to `"https://master:6443"` (overridable via `lib.mkDefault`)
-- Opens firewall ports: TCP 10250; UDP 8472
-
-## Service Modules
-
-### `services/monitoring.nix`
-
-Enables Prometheus `node_exporter` on port 9100 with `systemd` and `processes` collectors. Opens firewall automatically via `openFirewall = true`.
-
-### `services/storage.nix`
-
-Longhorn prerequisites:
-- `openiscsi` for iSCSI volume management
-- Symlinks `/usr/local/bin` for Longhorn compatibility
-- Docker log driver configuration
-
-## Usage
-
-Import modules in host `default.nix`:
-
-```nix
-imports = [
-  ../../modules/k3s/server.nix       # or agent.nix
-  ../../modules/services/monitoring.nix
-  ../../modules/services/storage.nix
-];
-```
-
+`storage.nix` — Enables `openiscsi` and creates the `/usr/local/bin` symlink Longhorn requires.

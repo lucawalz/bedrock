@@ -1,45 +1,37 @@
-# Kubernetes Secrets (SOPS)
+# secrets
 
-Encrypted Kubernetes secrets managed with SOPS + age. See root `.sops.yaml` for config.
+SOPS-encrypted Kubernetes secrets. Flux decrypts these in-cluster using the age key stored in the `sops-age` secret in `flux-system`.
 
-## Adding a Secret
+## Current secrets
 
-1. Create a Kubernetes Secret manifest:
+| File | Contains |
+|---|---|
+| `cloudflare-api-token.sops.yaml` | Cloudflare API token for DNS-01 challenges |
+| `cloudflare-tunnel-secret.sops.yaml` | Cloudflare Tunnel token |
+| `ghcr-auth.sops.yaml` | GitHub Container Registry pull credentials |
+| `sentio-systems.sops.yaml` | Sentio app secrets (DB passwords, OAuth secrets) |
 
-   ```yaml
-   apiVersion: v1
-   kind: Secret
-   metadata:
-     name: my-secret
-     namespace: my-namespace
-   type: Opaque
-   stringData:
-     password: my-password
-   ```
-
-2. Encrypt with SOPS:
-
-   ```bash
-   sops --encrypt --in-place my-secret.yaml
-   mv my-secret.yaml my-secret.sops.yaml
-   ```
-
-3. Add to `kustomization.yaml`:
-
-   ```yaml
-   resources:
-     - my-secret.sops.yaml
-   ```
-
-## Editing Secrets
+## Adding a secret
 
 ```bash
-sops clusters/home/secrets/my-secret.sops.yaml
+# Create and encrypt
+cat > my-secret.yaml <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-secret
+  namespace: my-namespace
+stringData:
+  key: value
+EOF
+sops --encrypt --in-place my-secret.yaml
+mv my-secret.yaml my-secret.sops.yaml
 ```
 
-## Current Secrets
+Add it to `kustomization.yaml`, commit, push.
 
-- `cloudflare-api-token.sops.yaml` — Cloudflare API token
-- `cloudflare-tunnel-secret.sops.yaml` — Cloudflare tunnel token
-- `ghcr-auth.sops.yaml` — GitHub Container Registry auth
-- `sentio-systems.sops.yaml` — Sentio application secrets
+## Editing a secret
+
+```bash
+sops kubernetes/clusters/home/secrets/my-secret.sops.yaml
+```
