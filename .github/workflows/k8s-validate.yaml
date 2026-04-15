@@ -30,6 +30,7 @@ jobs:
           find kubernetes/ -name "*.yaml" \
             ! -path "*/flux-system/gotk-components.yaml" \
             ! -path "*/secrets/*.sops.yaml" \
+            ! -name "values.yaml" \
             | xargs kubeconform \
               -strict \
               -ignore-missing-schemas \
