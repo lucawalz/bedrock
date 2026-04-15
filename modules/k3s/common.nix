@@ -12,10 +12,5 @@
   systemd.services.k3s = {
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
-    serviceConfig = {
-      KillMode = "process";
-      TimeoutStopSec = 30;
-      RestartSec = 5;
-    };
   };
 }
