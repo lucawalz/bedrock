@@ -19,7 +19,9 @@
   in {
     nixosConfigurations = {
       master   = lib.mkHost { hostname = "master"; };
-      worker-1 = lib.mkHost { hostname = "worker-1"; };
+      worker-1 = lib.mkWorker { workerId = 1; };
+      worker-2 = lib.mkWorker { workerId = 2; };
+      # Add more workers: worker-3 = lib.mkWorker { workerId = 3; };
     };
 
     devShells.x86_64-linux.default = let
