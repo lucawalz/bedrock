@@ -38,6 +38,40 @@ data:
           cpu: "500m"
           memory: "512Mi"
 
-    # Disable alertmanager if not needed (reduces resources)
     alertmanager:
-      enabled: false
+      enabled: true
+      alertmanagerSpec:
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+      config:
+        global:
+          resolve_timeout: 5m
+        route:
+          receiver: 'vigil-webhook'
+          group_by: ['alertname']
+          group_wait: 10s
+          group_interval: 5m
+          repeat_interval: 12h
+          routes:
+            - receiver: 'null'
+              matchers:
+                - alertname =~ "InfoInhibitor|Watchdog"
+        receivers:
+          - name: 'null'
+          - name: 'vigil-webhook'
+            webhook_configs:
+              - url: 'https://vigil.syslabs.dev/webhook'
+                send_resolved: true
+        inhibit_rules:
+          - source_matchers:
+              - severity = critical
+            target_matchers:
+              - severity =~ warning|info
+            equal:
+              - namespace
+              - alertname
