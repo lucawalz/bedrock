@@ -13,9 +13,8 @@
     wants = [ "network-online.target" ];
     after = [ "network-online.target" ];
     serviceConfig = {
-      KillMode = "process";       # Don't kill child processes
-      TimeoutStopSec = 30;        # Graceful shutdown
-      Restart = "on-failure";
+      KillMode = "process";
+      TimeoutStopSec = 30;
       RestartSec = 5;
     };
   };
