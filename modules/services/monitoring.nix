@@ -1,13 +1,4 @@
-# Node-level monitoring (Prometheus node_exporter)
-{ config, pkgs, ... }:
+# Node-level monitoring handled by kube-prometheus-stack DaemonSet
+{ ... }:
 {
-  services.prometheus.exporters.node = {
-    enable = true;
-    port = 9100;
-    openFirewall = true;
-    enabledCollectors = [
-      "systemd"
-      "processes"
-    ];
-  };
 }
