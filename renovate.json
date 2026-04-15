@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:base",
+    "config:recommended",
     ":dependencyDashboard"
   ],
   "nix": {
@@ -22,15 +22,25 @@
     {
       "description": "Group infrastructure Helm charts together",
       "matchManagers": ["flux"],
-      "matchPackagePatterns": ["cert-manager", "traefik", "longhorn", "kube-prometheus-stack", "redis-operator"],
       "groupName": "infrastructure charts",
-      "schedule": ["on sunday"]
+      "schedule": ["on sunday"],
+      "matchPackageNames": [
+        "/cert-manager/",
+        "/traefik/",
+        "/longhorn/",
+        "/kube-prometheus-stack/",
+        "/redis-operator/"
+      ]
     },
     {
       "description": "App charts updated individually for easier review",
       "matchManagers": ["flux"],
-      "matchPackagePatterns": ["n8n", "it-tools", "tekton"],
-      "groupName": "app charts"
+      "groupName": "app charts",
+      "matchPackageNames": [
+        "/n8n/",
+        "/it-tools/",
+        "/tekton/"
+      ]
     }
   ]
 }
