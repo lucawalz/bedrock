@@ -12,5 +12,4 @@ resources:
   - helm/tekton.yaml
   - helm/it-tools.yaml
   - helm/rancher.yaml
-  - helm/signoz.yaml
   - oci/sentio-systems.yaml

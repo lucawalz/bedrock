@@ -17,4 +17,3 @@ resources:
   - redis-operator.yaml
   - tekton.yaml
   - rancher.yaml
-  - signoz.yaml
