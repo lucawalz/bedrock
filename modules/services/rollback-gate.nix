@@ -24,7 +24,7 @@
     description = "Timer driving the rollback-gate health gate";
     wantedBy = [ "multi-user.target" ];
     timerConfig = {
-      OnActiveSec = "90s";
+      OnActiveSec = "18s";
       Unit = "rollback-gate.service";
     };
   };
