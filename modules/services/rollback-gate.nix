@@ -11,7 +11,9 @@
       ExecStart = pkgs.writeShellScript "rollback-gate-check" ''
         set -euo pipefail
         ${pkgs.systemd}/bin/systemctl is-active k3s.service
-        status=$(${pkgs.k3s}/bin/kubectl get node "${meta.hostname}" \
+        kc=/etc/rancher/k3s/k3s.yaml
+        if [ ! -f "$kc" ]; then kc=/var/lib/rancher/k3s/agent/kubelet.kubeconfig; fi
+        status=$(KUBECONFIG=$kc ${pkgs.k3s}/bin/kubectl get node "${meta.hostname}" \
           -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}')
         [ "$status" = "True" ]
       '';
