@@ -17,6 +17,7 @@ in
     ../../modules/k3s/server.nix
     ../../modules/services/monitoring.nix
     ../../modules/services/storage.nix
+    ../../modules/services/rollback-gate.nix
   ];
 
   networking.hostName = "master";
