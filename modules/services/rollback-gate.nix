@@ -3,7 +3,6 @@
   systemd.services.rollback-gate = {
     description = "NixOS dead-man's switch health gate";
     after = [ "k3s.service" "network-online.target" ];
-    requires = [ "k3s.service" ];
     wants = [ "network-online.target" ];
 
     serviceConfig = {
