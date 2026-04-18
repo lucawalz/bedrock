@@ -48,6 +48,8 @@ data:
           limits:
             cpu: "200m"
             memory: "256Mi"
+        secrets:
+          - vigil-webhook-secret
       config:
         global:
           resolve_timeout: 5m
@@ -67,6 +69,10 @@ data:
             webhook_configs:
               - url: 'https://vigil.syslabs.dev/webhook'
                 send_resolved: true
+                http_config:
+                  authorization:
+                    type: Bearer
+                    credentials_file: /etc/alertmanager/secrets/vigil-webhook-secret/token
         inhibit_rules:
           - source_matchers:
               - severity = critical
