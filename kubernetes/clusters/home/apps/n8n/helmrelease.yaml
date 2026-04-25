@@ -5,6 +5,7 @@ metadata:
   namespace: n8n
 spec:
   interval: 30m
+  timeout: 10m
   chart:
     spec:
       chart: n8n
@@ -19,14 +20,16 @@ spec:
     ingress:
       enabled: false
     main:
+      env:
+        GENERIC_TIMEZONE: UTC
       persistence:
         enabled: true
         size: 5Gi
         accessMode: ReadWriteOnce
       resources:
         requests:
-          cpu: "100m"
+          cpu: "250m"
           memory: "256Mi"
         limits:
-          cpu: "500m"
+          cpu: "1000m"
           memory: "512Mi"

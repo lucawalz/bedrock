@@ -4,6 +4,7 @@ metadata:
   name: rancher
   namespace: rancher
 spec:
+  suspend: true
   interval: 30m
   timeout: 10m
   chart:
