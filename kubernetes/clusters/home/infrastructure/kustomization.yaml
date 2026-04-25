@@ -6,4 +6,3 @@ resources:
   - networking       # Deploy second
   - databases        # Deploy third
   - monitoring       # Deploy fourth
-  - rancher          # Deploy fifth
