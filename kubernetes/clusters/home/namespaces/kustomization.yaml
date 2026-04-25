@@ -5,10 +5,8 @@ kind: Kustomization
 # These are created before secrets and apps to ensure namespaces exist
 resources:
   - sentio-systems.yaml
-  - it-tools.yaml
   - n8n.yaml
   - databases.yaml
-  - dashboards.yaml
   - traefik.yaml
   - cert-manager.yaml
   - cloudflare.yaml
