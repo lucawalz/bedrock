@@ -20,8 +20,6 @@ spec:
     ingress:
       enabled: false
     main:
-      env:
-        GENERIC_TIMEZONE: UTC
       persistence:
         enabled: true
         size: 5Gi
