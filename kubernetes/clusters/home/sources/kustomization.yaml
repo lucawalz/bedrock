@@ -9,7 +9,5 @@ resources:
   - helm/prometheus-community.yaml
   - helm/bitnami.yaml
   - helm/redis-operator.yaml
-  - helm/tekton.yaml
-  - helm/it-tools.yaml
   - helm/rancher.yaml
   - oci/sentio-systems.yaml
