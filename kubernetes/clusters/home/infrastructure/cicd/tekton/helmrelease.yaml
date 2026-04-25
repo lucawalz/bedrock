@@ -17,6 +17,15 @@ spec:
     - kind: ConfigMap
       name: tekton-values
       optional: true
+  values:
+    controller:
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "500m"
+          memory: "256Mi"
   install:
     createNamespace: true
   upgrade:

@@ -3,3 +3,43 @@ kind: Kustomization
 resources:
 - helmrelease.yaml
 - ingress.yaml
+patches:
+- patch: |-
+    - op: add
+      path: /spec/values/csiPlugin
+      value:
+        attacher:
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+        provisioner:
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+        resizer:
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+        snapshotter:
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+  target:
+    kind: HelmRelease
+    name: longhorn
