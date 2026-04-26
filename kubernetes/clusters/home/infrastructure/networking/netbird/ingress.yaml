@@ -6,6 +6,7 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`netbird.syslabs.dev`) && (PathPrefix(`/management.ManagementService`) || PathPrefix(`/signalexchange.SignalExchange`) || PathPrefix(`/relay`))
       kind: Rule
