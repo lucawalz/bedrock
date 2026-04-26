@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: netbird-dashboard
+  namespace: netbird
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`netbird.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: netbird-dashboard
+          port: 80
