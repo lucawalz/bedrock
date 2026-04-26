@@ -14,3 +14,4 @@ resources:
   - longhorn.yaml
   - redis-operator.yaml
   - rancher.yaml
+  - velero.yaml

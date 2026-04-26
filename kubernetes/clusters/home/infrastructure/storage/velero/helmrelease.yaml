@@ -1,0 +1,55 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: flux-system
+spec:
+  interval: 30m
+  targetNamespace: velero
+  chart:
+    spec:
+      chart: velero
+      version: "12.0.0"
+      sourceRef:
+        kind: HelmRepository
+        name: velero
+        namespace: flux-system
+  install:
+    createNamespace: false
+    timeout: 10m
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.11.0
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /target
+            name: plugins
+    configuration:
+      backupStorageLocation:
+        - name: default
+          provider: aws
+          bucket: horizon-velero-backups
+          config:
+            region: eu-central-1
+            s3ForcePathStyle: "true"
+            s3Url: https://fsn1.your-objectstorage.com
+      volumeSnapshotLocation:
+        - name: default
+          provider: aws
+          config:
+            region: eu-central-1
+    credentials:
+      useSecret: true
+      existingSecret: velero-s3-credentials
+    deployNodeAgent: false
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi

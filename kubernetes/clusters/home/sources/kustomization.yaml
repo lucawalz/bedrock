@@ -10,4 +10,5 @@ resources:
   - helm/bitnami.yaml
   - helm/redis-operator.yaml
   - helm/rancher.yaml
+  - helm/velero.yaml
   - oci/sentio-systems.yaml
