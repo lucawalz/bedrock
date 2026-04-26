@@ -11,4 +11,5 @@ resources:
   - helm/redis-operator.yaml
   - helm/rancher.yaml
   - helm/velero.yaml
+  - helm/netbird.yaml
   - oci/sentio-systems.yaml
