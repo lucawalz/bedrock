@@ -22,7 +22,6 @@ spec:
               repository: ghcr.io/juanfont/headscale
               tag: latest
             args:
-              - headscale
               - serve
             resources:
               requests:
