@@ -57,6 +57,13 @@ spec:
               type: sqlite3
               sqlite:
                 path: /var/lib/headscale/db.sqlite
+            derp:
+              urls:
+                - https://controlplane.tailscale.com/derpmap/default
+              auto_update_enabled: true
+              update_frequency: 24h
+              server:
+                enabled: false
             log:
               level: info
             dns:
