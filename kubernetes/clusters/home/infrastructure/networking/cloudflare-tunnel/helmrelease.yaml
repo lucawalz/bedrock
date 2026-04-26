@@ -33,6 +33,8 @@ spec:
                   secretKeyRef:
                     name: cloudflare-tunnel-secret
                     key: tunnel-token
+              TUNNEL_ORIGIN_ENABLE_HTTP2:
+                value: "true"
             resources:
               requests:
                 cpu: 10m
