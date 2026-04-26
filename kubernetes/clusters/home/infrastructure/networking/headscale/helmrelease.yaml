@@ -54,11 +54,12 @@ spec:
             db_path: /var/lib/headscale/db.sqlite
             log:
               level: info
-            dns_config:
+            dns:
               magic_dns: true
               base_domain: vpn.syslabs.dev
               nameservers:
-                - 1.1.1.1
+                global:
+                  - 1.1.1.1
               override_local_dns: false
     persistence:
       data:
