@@ -7,8 +7,15 @@ spec:
   entryPoints:
     - web
   routes:
+    - match: Host(`netbird.syslabs.dev`) && (PathPrefix(`/api`) || PathPrefix(`/oauth2`) || PathPrefix(`/management.ManagementService`) || PathPrefix(`/signalexchange.SignalExchange`) || PathPrefix(`/relay`))
+      kind: Rule
+      priority: 10
+      services:
+        - name: netbird-server
+          port: 80
     - match: Host(`netbird.syslabs.dev`)
       kind: Rule
+      priority: 1
       services:
         - name: netbird-dashboard
           port: 80
