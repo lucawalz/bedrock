@@ -1,0 +1,9 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: netbird
+  namespace: flux-system
+spec:
+  interval: 24h
+  type: oci
+  url: oci://ghcr.io/cclloyd/helm-netbird
