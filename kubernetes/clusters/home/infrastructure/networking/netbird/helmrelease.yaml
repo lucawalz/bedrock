@@ -26,6 +26,10 @@ spec:
         limits:
           cpu: "500m"
           memory: "512Mi"
+  valuesFrom:
+    - kind: Secret
+      name: netbird-helm-values
+      valuesKey: values.yaml
   install:
     createNamespace: true
   upgrade:
