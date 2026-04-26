@@ -27,8 +27,8 @@ variable "ssh_public_key" {
   sensitive   = true
 }
 
-variable "netbird_setup_key" {
-  description = "Netbird one-off setup key for this burst node"
+variable "headscale_preauthkey" {
+  description = "Headscale pre-auth key for this burst node"
   type        = string
   sensitive   = true
 }
