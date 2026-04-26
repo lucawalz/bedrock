@@ -6,4 +6,4 @@ metadata:
 spec:
   interval: 24h
   type: oci
-  url: oci://ghcr.io/cclloyd/helm-netbird
+  url: oci://ghcr.io/kitstream/helms
