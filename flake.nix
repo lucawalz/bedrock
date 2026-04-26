@@ -49,6 +49,22 @@
         git
       ];
     };
+
+    devShells.aarch64-darwin.default = let
+      pkgs = import nixpkgs {
+        system = "aarch64-darwin";
+      };
+    in pkgs.mkShell {
+      packages = with pkgs; [
+        kubectl
+        fluxcd
+        sops
+        age
+        nixos-anywhere
+        terraform
+        git
+      ];
+    };
   };
 }
 
