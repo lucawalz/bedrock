@@ -7,6 +7,13 @@ result-*
 
 # direnv
 .direnv/
+.envrc.local
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.backup
+**/terraform.tfvars
 
 # Secrets (backup - these should already be encrypted)
 *.age

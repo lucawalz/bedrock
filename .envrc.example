@@ -1,0 +1,11 @@
+# Copy this file to .envrc.local and fill in credentials.
+# The root .envrc sources .envrc.local automatically when present.
+# .envrc.local is gitignored — never commit it.
+
+# Hetzner Object Storage credentials (terraform/velero-bucket-hetzner)
+# Generate in Hetzner Cloud Console → Object Storage → Access Keys
+export TF_VAR_access_key="your-hetzner-object-storage-access-key-id"
+export TF_VAR_secret_key="your-hetzner-object-storage-secret-key"
+
+# Hetzner Cloud API token (future terraform modules: hetzner VM provisioning)
+# export HCLOUD_TOKEN="your-hetzner-cloud-api-token"
