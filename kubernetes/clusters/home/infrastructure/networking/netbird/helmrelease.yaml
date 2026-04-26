@@ -9,16 +9,31 @@ spec:
   chart:
     spec:
       chart: netbird
-      version: "1.4.10"
+      version: "0.4.2"
       sourceRef:
         kind: HelmRepository
         name: netbird
         namespace: flux-system
   values:
-    global:
-      domain:
-        global: netbird.syslabs.dev
     server:
+      config:
+        exposedAddress: "https://netbird.syslabs.dev:443"
+        auth:
+          issuer: "https://netbird.syslabs.dev/oauth2"
+          dashboardRedirectURIs:
+            - "https://netbird.syslabs.dev/nb-auth"
+            - "https://netbird.syslabs.dev/nb-silent-auth"
+      secrets:
+        storeEncryptionKey:
+          secretName: "netbird-helm-values"
+          secretKey: "encryptionKey"
+          autoGenerate: false
+        authSecret:
+          secretName: "netbird-helm-values"
+          secretKey: "authSecret"
+          autoGenerate: false
+      stunService:
+        type: ClusterIP
       resources:
         requests:
           cpu: "100m"
@@ -26,10 +41,11 @@ spec:
         limits:
           cpu: "500m"
           memory: "512Mi"
-  valuesFrom:
-    - kind: Secret
-      name: netbird-helm-values
-      valuesKey: values.yaml
+    oidc:
+      enabled: true
+      idpManager:
+        enabled: true
+        managerType: "embedded"
   install:
     createNamespace: true
   upgrade:
