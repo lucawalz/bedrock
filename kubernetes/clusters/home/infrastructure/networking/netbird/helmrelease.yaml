@@ -17,7 +17,7 @@ spec:
   values:
     global:
       domain:
-        global: netbird.homelab.internal
+        global: netbird.syslabs.dev
     server:
       resources:
         requests:
