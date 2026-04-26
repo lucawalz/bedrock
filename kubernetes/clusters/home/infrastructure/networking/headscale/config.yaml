@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headscale-config
+  namespace: headscale
+data:
+  config.yaml: |
+    server_url: https://headscale.syslabs.dev
+    listen_addr: 0.0.0.0:8080
+    metrics_listen_addr: 127.0.0.1:9090
+    grpc_listen_addr: 0.0.0.0:50443
+    grpc_allow_insecure: true
+    private_key_path: /var/lib/headscale/private.key
+    noise:
+      private_key_path: /var/lib/headscale/noise_private.key
+    db_type: sqlite3
+    db_path: /var/lib/headscale/db.sqlite
+    log:
+      level: info
+    dns_config:
+      magic_dns: true
+      base_domain: vpn.syslabs.dev
+      nameservers:
+        - 1.1.1.1
+      override_local_dns: false
