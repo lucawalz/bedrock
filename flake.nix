@@ -53,7 +53,7 @@
     devShells.aarch64-darwin.default = let
       pkgs = import nixpkgs {
         system = "aarch64-darwin";
-        config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [ "terraform" ];
+        config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
       };
     in pkgs.mkShell {
       packages = with pkgs; [
