@@ -43,9 +43,19 @@ spec:
           memory: "512Mi"
     oidc:
       enabled: true
+      audience: "netbird-dashboard"
       idpManager:
         enabled: true
         managerType: "embedded"
+        clientConfig:
+          issuer: "https://netbird.syslabs.dev/oauth2"
+    dashboard:
+      config:
+        mgmtApiEndpoint: "https://netbird.syslabs.dev"
+        mgmtGrpcApiEndpoint: "https://netbird.syslabs.dev"
+        authAudience: "netbird-dashboard"
+        authClientId: "netbird-dashboard"
+        authAuthority: "https://netbird.syslabs.dev/oauth2"
   install:
     createNamespace: true
   upgrade:
