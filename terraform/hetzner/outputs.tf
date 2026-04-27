@@ -5,3 +5,7 @@ output "server_ipv4" {
 output "server_id" {
   value = hcloud_server.burst_node.id
 }
+
+output "server_hostname" {
+  value = hcloud_server.burst_node.name
+}
