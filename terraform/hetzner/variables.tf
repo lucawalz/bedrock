@@ -43,3 +43,8 @@ variable "k3s_token" {
   type        = string
   sensitive   = true
 }
+
+variable "headscale_server_url" {
+  description = "Headscale server URL injected into the burst NixOS node"
+  type        = string
+}
