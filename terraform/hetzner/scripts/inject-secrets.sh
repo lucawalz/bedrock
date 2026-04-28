@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-mkdir -p etc/horizon
+mkdir -p etc/horizon root/.ssh
 printf '%s' "${HORIZON_HEADSCALE_PREAUTHKEY}"    > etc/horizon/ts-auth-key
 printf '%s' "${HORIZON_HEADSCALE_SERVER_URL}"    > etc/horizon/headscale-server-url
 printf '%s' "${HORIZON_K3S_URL}"                > etc/horizon/k3s-url
 printf '%s' "${HORIZON_K3S_TOKEN}"              > etc/horizon/k3s-token
-chmod 600 etc/horizon/ts-auth-key etc/horizon/headscale-server-url etc/horizon/k3s-url etc/horizon/k3s-token
+printf '%s\n' "${HORIZON_SSH_PUBLIC_KEY}"        > root/.ssh/authorized_keys
+chmod 600 etc/horizon/ts-auth-key etc/horizon/headscale-server-url etc/horizon/k3s-url etc/horizon/k3s-token root/.ssh/authorized_keys
+chmod 700 root/.ssh
