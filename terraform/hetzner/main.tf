@@ -27,6 +27,7 @@ module "install_burst_node" {
   nixos_partitioner_attr = "github:lucawalz/nixos-homelab/${var.flake_ref}#nixosConfigurations.hetzner-burst-node.config.system.build.diskoScript"
   target_host            = hcloud_server.burst_node.ipv4_address
   instance_id            = tostring(hcloud_server.burst_node.id)
+  ssh_keys               = [var.ssh_public_key]
   build_on_remote        = true
   debug_logging          = true
   install_bootloader     = true

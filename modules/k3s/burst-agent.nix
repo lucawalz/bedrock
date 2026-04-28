@@ -33,13 +33,22 @@
 
   boot.loader.grub.enable = true;
 
-  boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
+  boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "sr_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
 
   networking.hostName = "hetzner-burst-node";
+  networking.useDHCP = true;
   networking.firewall.allowedTCPPorts = [ 10250 ];
   networking.firewall.allowedUDPPorts = [ 8472 41641 ];
   networking.firewall.checkReversePath = "loose";
   networking.firewall.trustedInterfaces = [ "tailscale0" ];
+
+  services.openssh = {
+    enable = true;
+    settings = {
+      PermitRootLogin = "prohibit-password";
+      PasswordAuthentication = false;
+    };
+  };
 
   services.tailscale = {
     enable = true;
