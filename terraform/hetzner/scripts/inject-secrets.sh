@@ -13,9 +13,9 @@ chmod 600 "${root}/etc/horizon/ts-auth-key" \
           "${root}/etc/horizon/k3s-url" \
           "${root}/etc/horizon/k3s-token"
 
-install -d -m 700 "${root}/root/.ssh"
-printf '%s\n' "${HORIZON_SSH_PUBLIC_KEY}" > "${root}/root/.ssh/authorized_keys"
-chmod 600 "${root}/root/.ssh/authorized_keys"
+install -d -m 755 "${root}/etc/ssh/authorized_keys.d"
+printf '%s\n' "${HORIZON_SSH_PUBLIC_KEY}" > "${root}/etc/ssh/authorized_keys.d/root"
+chmod 644 "${root}/etc/ssh/authorized_keys.d/root"
 
 trap - EXIT
 echo "${root}"
