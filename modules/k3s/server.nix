@@ -11,6 +11,7 @@
       "--disable=servicelb"        # Using Flux-managed Traefik instead
       "--disable=traefik"          # Using Flux-managed Traefik instead
       "--disable=local-storage"    # Using Longhorn instead
+      "--tls-san=100.64.0.3"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
     clusterInit = true;
