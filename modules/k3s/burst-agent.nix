@@ -86,7 +86,7 @@
         --login-server="$LOGIN_SERVER" \
         --auth-key="$AUTH_KEY" \
         --accept-dns=false \
-        --hostname="$(hostname)" \
+        --hostname="${config.networking.hostName}" \
         --reset
     '';
   };
