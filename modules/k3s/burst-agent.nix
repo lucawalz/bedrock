@@ -58,18 +58,13 @@
   services.tailscale = {
     enable = true;
     interfaceName = "tailscale0";
-    authKeyFile = "/etc/horizon/ts-auth-key";
-    extraUpFlags = [ "--accept-dns=false" ];
   };
-
-  systemd.services.tailscale-autoconnect.enable = lib.mkForce false;
 
   systemd.services.tailscaled-headscale-login = {
     description = "Configure tailscaled to log in to self-hosted headscale";
     wantedBy = [ "multi-user.target" ];
     after = [ "tailscaled.service" "network-online.target" ];
     wants = [ "tailscaled.service" "network-online.target" ];
-    before = [ "tailscale-autoconnect.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
