@@ -31,5 +31,6 @@ module "install_burst_node" {
   debug_logging          = true
   install_bootloader     = true
   extra_files_script     = "${path.module}/scripts/inject-secrets.sh"
+  deployment_ssh_key     = file(pathexpand("~/.ssh/id_ed25519"))
   nix_options            = { "tarball-ttl" = "0" }
 }
