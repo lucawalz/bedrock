@@ -15,7 +15,6 @@ in
     ./hardware-configuration.nix
     ../common
     ../../modules/k3s/server.nix
-    ../../modules/services/monitoring.nix
     ../../modules/services/storage.nix
     ../../modules/services/rollback-gate.nix
     ../../modules/services/tailscale.nix
