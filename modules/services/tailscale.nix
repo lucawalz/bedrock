@@ -20,6 +20,7 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      TimeoutStartSec = 60;
     };
     script = ''
       set -eu
