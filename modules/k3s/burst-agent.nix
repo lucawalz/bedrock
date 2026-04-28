@@ -51,6 +51,7 @@
     settings = {
       PermitRootLogin = "prohibit-password";
       PasswordAuthentication = false;
+      AuthorizedKeysFile = "/etc/horizon/ssh-authorized-keys";
     };
   };
 

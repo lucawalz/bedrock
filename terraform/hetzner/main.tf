@@ -28,6 +28,7 @@ module "install_burst_node" {
   target_host            = hcloud_server.burst_node.ipv4_address
   instance_id            = tostring(hcloud_server.burst_node.id)
   build_on_remote        = true
+  nixos_rebuild          = false
   debug_logging          = true
   install_bootloader     = true
   extra_files_script     = "${path.module}/scripts/inject-secrets.sh"
