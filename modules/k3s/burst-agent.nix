@@ -6,10 +6,16 @@
     content = {
       type = "gpt";
       partitions = {
-        ESP = {
+        bios = {
           priority = 1;
           start = "1M";
-          end = "512M";
+          end = "2M";
+          type = "EF02";
+        };
+        ESP = {
+          priority = 2;
+          start = "2M";
+          end = "514M";
           type = "EF00";
           content = {
             type = "filesystem";
@@ -29,8 +35,14 @@
     };
   };
 
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.grub = {
+    enable = true;
+    efiSupport = true;
+    efiInstallAsRemovable = true;
+    device = "nodev";
+  };
+
+  boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
 
   networking.hostName = "hetzner-burst-node";
   networking.firewall.allowedTCPPorts = [ 10250 ];
