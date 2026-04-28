@@ -35,6 +35,7 @@
             ../modules/services/monitoring.nix
             ../modules/services/storage.nix
             ../modules/services/rollback-gate.nix
+            ../modules/services/tailscale.nix
           ];
 
           networking.hostName = hostname;
