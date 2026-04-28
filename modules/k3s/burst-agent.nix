@@ -12,17 +12,6 @@
           end = "2M";
           type = "EF02";
         };
-        ESP = {
-          priority = 2;
-          start = "2M";
-          end = "514M";
-          type = "EF00";
-          content = {
-            type = "filesystem";
-            format = "vfat";
-            mountpoint = "/boot";
-          };
-        };
         root = {
           size = "100%";
           content = {
@@ -37,9 +26,7 @@
 
   boot.loader.grub = {
     enable = true;
-    efiSupport = true;
-    efiInstallAsRemovable = true;
-    device = "nodev";
+    device = "/dev/sda";
   };
 
   boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
