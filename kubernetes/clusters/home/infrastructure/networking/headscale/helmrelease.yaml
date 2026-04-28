@@ -38,6 +38,14 @@ spec:
             port: 8080
           grpc:
             port: 50443
+      nodeport:
+        controller: headscale
+        type: NodePort
+        ports:
+          http:
+            port: 8080
+            nodePort: 30800
+            protocol: TCP
     configMaps:
       config:
         data:

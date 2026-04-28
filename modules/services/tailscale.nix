@@ -26,7 +26,7 @@
       set -eu
       AUTH_KEY=$(cat ${config.age.secrets.tailscale-auth-key.path})
       ${pkgs.tailscale}/bin/tailscale up \
-        --login-server=https://headscale.syslabs.dev \
+        --login-server=http://192.168.2.191:30800 \
         --auth-key="$AUTH_KEY" \
         --accept-dns=false \
         --reset
