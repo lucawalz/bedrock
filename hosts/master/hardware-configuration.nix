@@ -24,16 +24,6 @@
       options = [ "fmask=0022" "dmask=0022" ];
     };
 
-  fileSystems."/var/lib/kubelet/pods/4bb877f9-d00d-4b2f-a194-0a5dbaa5b64b/volumes/kubernetes.io~projected/kube-api-access-zgkl7" =
-    { device = "tmpfs";
-      fsType = "tmpfs";
-    };
-
-  fileSystems."/var/lib/kubelet/pods/e43a7bb6-6361-4d34-8aa8-976cd84dcc31/volumes/kubernetes.io~projected/kube-api-access-6j2jx" =
-    { device = "tmpfs";
-      fsType = "tmpfs";
-    };
-
   swapDevices = [ ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
