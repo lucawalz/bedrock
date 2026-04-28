@@ -1,5 +1,9 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, modulesPath, ... }:
 {
+  imports = [
+    (modulesPath + "/profiles/qemu-guest.nix")
+  ];
+
   disko.devices.disk.main = {
     type = "disk";
     device = "/dev/sda";
