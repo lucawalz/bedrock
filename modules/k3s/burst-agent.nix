@@ -7,10 +7,17 @@
       type = "gpt";
       partitions = {
         bios = {
-          priority = 1;
-          start = "1M";
-          end = "2M";
+          size = "1M";
           type = "EF02";
+        };
+        ESP = {
+          size = "512M";
+          type = "EF00";
+          content = {
+            type = "filesystem";
+            format = "vfat";
+            mountpoint = "/boot";
+          };
         };
         root = {
           size = "100%";
@@ -24,10 +31,7 @@
     };
   };
 
-  boot.loader.grub = {
-    enable = true;
-    device = "/dev/sda";
-  };
+  boot.loader.grub.enable = true;
 
   boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
 
