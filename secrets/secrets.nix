@@ -11,6 +11,5 @@ let
 in
 {
   "k3s-token.age".publicKeys = [ master worker-1 worker-2 luca ];
-  "tailscale-auth-key.age".publicKeys = [ master worker-1 worker-2 luca ];
 }
 
