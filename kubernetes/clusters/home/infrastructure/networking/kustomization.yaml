@@ -5,6 +5,5 @@ resources:
   - traefik
   - cert-manager
   - cloudflare-tunnel
-  - headscale
   # - external-dns  # Uncomment if using external-dns
 
