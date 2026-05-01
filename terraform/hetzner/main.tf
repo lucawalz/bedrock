@@ -12,12 +12,37 @@ resource "hcloud_ssh_key" "operator" {
   public_key = var.ssh_public_key
 }
 
+resource "hcloud_firewall" "burst_node" {
+  name = "horizon-burst-${var.burst_id}"
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "22"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "udp"
+    port       = "9993"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "icmp"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+}
+
 resource "hcloud_server" "burst_node" {
-  name        = "horizon-burst-${var.burst_id}"
-  server_type = var.server_type
-  image       = "debian-12"
-  location    = var.location
-  ssh_keys    = [hcloud_ssh_key.operator.id]
+  name         = "horizon-burst-${var.burst_id}"
+  server_type  = var.server_type
+  image        = "debian-12"
+  location     = var.location
+  ssh_keys     = [hcloud_ssh_key.operator.id]
+  firewall_ids = [hcloud_firewall.burst_node.id]
 }
 
 module "install_burst_node" {
