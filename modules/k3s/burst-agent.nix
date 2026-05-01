@@ -2,6 +2,7 @@
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
+    ../services/zerotier.nix
   ];
 
   disko.devices.disk.main = {
@@ -36,15 +37,13 @@
   };
 
   boot.loader.grub.enable = true;
-
   boot.initrd.availableKernelModules = [ "ahci" "sd_mod" "sr_mod" "virtio_pci" "virtio_scsi" "virtio_blk" ];
 
   networking.hostName = "hetzner-burst-node";
   networking.useDHCP = true;
   networking.firewall.allowedTCPPorts = [ 10250 ];
-  networking.firewall.allowedUDPPorts = [ 8472 41641 ];
+  networking.firewall.allowedUDPPorts = [ 8472 ];
   networking.firewall.checkReversePath = "loose";
-  networking.firewall.trustedInterfaces = [ "tailscale0" ];
 
   services.openssh = {
     enable = true;
@@ -55,42 +54,11 @@
     };
   };
 
-  services.tailscale = {
-    enable = true;
-    interfaceName = "tailscale0";
-  };
-
-  systemd.services.tailscaled-headscale-login = {
-    description = "Configure tailscaled to log in to self-hosted headscale";
-    wantedBy = [ "multi-user.target" ];
-    after = [ "tailscaled.service" "network-online.target" ];
-    wants = [ "tailscaled.service" "network-online.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    script = ''
-      set -eu
-      if [ ! -f /etc/horizon/headscale-server-url ]; then
-        echo "missing /etc/horizon/headscale-server-url" >&2
-        exit 1
-      fi
-      LOGIN_SERVER=$(cat /etc/horizon/headscale-server-url)
-      AUTH_KEY=$(cat /etc/horizon/ts-auth-key)
-      ${pkgs.tailscale}/bin/tailscale up \
-        --login-server="$LOGIN_SERVER" \
-        --auth-key="$AUTH_KEY" \
-        --accept-dns=false \
-        --hostname="${config.networking.hostName}" \
-        --reset
-    '';
-  };
-
   systemd.services.k3s-config-writer = {
-    description = "Write /etc/rancher/k3s/config.yaml after tailscale0 IP is available";
+    description = "Write /etc/rancher/k3s/config.yaml after the ZeroTier interface gets an IP";
     wantedBy = [ "multi-user.target" ];
-    after = [ "tailscaled-headscale-login.service" ];
-    wants = [ "tailscaled-headscale-login.service" ];
+    after = [ "zerotier-join.service" ];
+    wants = [ "zerotier-join.service" ];
     before = [ "k3s.service" ];
     serviceConfig = {
       Type = "oneshot";
@@ -100,12 +68,15 @@
       set -eu
       DEADLINE=$(( $(date +%s) + 120 ))
       while :; do
-        IP=$(${pkgs.tailscale}/bin/tailscale ip -4 2>/dev/null || true)
-        case "$IP" in
-          100.*) break ;;
-        esac
+        IFACE=$(${pkgs.iproute2}/bin/ip -o link show | ${pkgs.gawk}/bin/awk '$2 ~ /^zt/ {gsub(/:$/, "", $2); print $2; exit}')
+        if [ -n "$IFACE" ]; then
+          IP=$(${pkgs.iproute2}/bin/ip -o -4 addr show "$IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
+          if [ -n "$IP" ]; then
+            break
+          fi
+        fi
         if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-          echo "tailscale0 IP not assigned within 120s" >&2
+          echo "ZeroTier interface IP not assigned within 120s" >&2
           exit 1
         fi
         sleep 2
@@ -113,7 +84,7 @@
       mkdir -p /etc/rancher/k3s
       {
         echo "node-ip: $IP"
-        echo "flannel-iface: tailscale0"
+        echo "flannel-iface: $IFACE"
       } > /etc/rancher/k3s/config.yaml
       chmod 600 /etc/rancher/k3s/config.yaml
     '';
@@ -142,8 +113,8 @@
   };
 
   systemd.services.k3s = {
-    after = [ "k3s-config-writer.service" "tailscaled-headscale-login.service" "k3s-server-addr-writer.service" ];
-    wants = [ "k3s-config-writer.service" "tailscaled-headscale-login.service" "k3s-server-addr-writer.service" ];
+    after = [ "k3s-config-writer.service" "zerotier-join.service" "k3s-server-addr-writer.service" ];
+    wants = [ "k3s-config-writer.service" "zerotier-join.service" "k3s-server-addr-writer.service" ];
     serviceConfig.EnvironmentFile = lib.mkForce "/run/k3s.env";
   };
 
