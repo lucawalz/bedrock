@@ -34,7 +34,7 @@
             ../modules/k3s/agent.nix
             ../modules/services/storage.nix
             ../modules/services/rollback-gate.nix
-            ../modules/services/tailscale.nix
+            ../modules/services/zerotier.nix
           ];
 
           networking.hostName = hostname;
