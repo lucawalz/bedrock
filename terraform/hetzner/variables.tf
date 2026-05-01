@@ -27,10 +27,10 @@ variable "ssh_public_key" {
   sensitive   = true
 }
 
-variable "headscale_preauthkey" {
-  description = "Headscale pre-auth key for this burst node"
+variable "zerotier_network_id" {
+  description = "ZeroTier Central network ID injected into the burst NixOS node"
   type        = string
-  sensitive   = true
+  sensitive   = false
 }
 
 variable "k3s_url" {
@@ -42,9 +42,4 @@ variable "k3s_token" {
   description = "K3s cluster join token"
   type        = string
   sensitive   = true
-}
-
-variable "headscale_server_url" {
-  description = "Headscale server URL injected into the burst NixOS node"
-  type        = string
 }

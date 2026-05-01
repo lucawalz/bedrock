@@ -2,12 +2,10 @@
 set -euo pipefail
 
 install -d -m 755 "etc/horizon"
-printf '%s' "${HORIZON_HEADSCALE_PREAUTHKEY}" > "etc/horizon/ts-auth-key"
-printf '%s' "${HORIZON_HEADSCALE_SERVER_URL}"  > "etc/horizon/headscale-server-url"
-printf '%s' "${HORIZON_K3S_URL}"               > "etc/horizon/k3s-url"
-printf '%s' "${HORIZON_K3S_TOKEN}"             > "etc/horizon/k3s-token"
-chmod 600 "etc/horizon/ts-auth-key" \
-          "etc/horizon/headscale-server-url" \
+printf '%s' "${HORIZON_ZEROTIER_NETWORK_ID}" > "etc/horizon/zerotier-network-id"
+printf '%s' "${HORIZON_K3S_URL}"             > "etc/horizon/k3s-url"
+printf '%s' "${HORIZON_K3S_TOKEN}"           > "etc/horizon/k3s-token"
+chmod 600 "etc/horizon/zerotier-network-id" \
           "etc/horizon/k3s-url" \
           "etc/horizon/k3s-token"
 
