@@ -34,6 +34,7 @@ spec:
         - name: default
           provider: aws
           bucket: horizon-velero-backups
+          prefix: velero
           config:
             region: eu-central-1
             s3ForcePathStyle: "true"
