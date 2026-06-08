@@ -48,13 +48,11 @@ data:
           limits:
             cpu: "200m"
             memory: "256Mi"
-        secrets:
-          - vigil-webhook-secret
       config:
         global:
           resolve_timeout: 5m
         route:
-          receiver: 'vigil-webhook'
+          receiver: 'null'
           group_by: ['alertname']
           group_wait: 10s
           group_interval: 5m
@@ -65,14 +63,6 @@ data:
                 - alertname =~ "InfoInhibitor|Watchdog"
         receivers:
           - name: 'null'
-          - name: 'vigil-webhook'
-            webhook_configs:
-              - url: 'https://vigil.syslabs.dev/webhook'
-                send_resolved: true
-                http_config:
-                  authorization:
-                    type: Bearer
-                    credentials_file: /etc/alertmanager/secrets/vigil-webhook-secret/token
         inhibit_rules:
           - source_matchers:
               - severity = critical
