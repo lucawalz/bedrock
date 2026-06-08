@@ -81,10 +81,14 @@
         fi
         sleep 2
       done
+      NODE_NAME=$(${pkgs.curl}/bin/curl -sf --max-time 10 http://169.254.169.254/hetzner/v1/metadata/hostname || true)
       mkdir -p /etc/rancher/k3s
       {
         echo "node-ip: $IP"
         echo "flannel-iface: $IFACE"
+        [ -n "$NODE_NAME" ] && echo "node-name: $NODE_NAME"
+        echo "node-label:"
+        echo "  - horizon.dev/burst=true"
       } > /etc/rancher/k3s/config.yaml
       chmod 600 /etc/rancher/k3s/config.yaml
     '';
