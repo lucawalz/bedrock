@@ -20,6 +20,7 @@ spec:
     remediation:
       retries: 3
   values:
+    fullnameOverride: kube-prometheus-stack-pushgateway
     serviceMonitor:
       enabled: true
       additionalLabels:
