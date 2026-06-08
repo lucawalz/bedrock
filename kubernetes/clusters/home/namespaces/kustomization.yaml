@@ -4,7 +4,6 @@ kind: Kustomization
 # Centralized namespace definitions
 # These are created before secrets and apps to ensure namespaces exist
 resources:
-  - sentio-systems.yaml
   - n8n.yaml
   - databases.yaml
   - traefik.yaml
