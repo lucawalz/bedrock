@@ -1,6 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: sentio-systems
-  labels:
-    app.kubernetes.io/name: sentio-systems

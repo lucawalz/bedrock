@@ -8,8 +8,6 @@ SOPS-encrypted Kubernetes secrets. Flux decrypts these in-cluster using the age 
 |---|---|
 | `cloudflare-api-token.sops.yaml` | Cloudflare API token for DNS-01 challenges |
 | `cloudflare-tunnel-secret.sops.yaml` | Cloudflare Tunnel token |
-| `ghcr-auth.sops.yaml` | GitHub Container Registry pull credentials |
-| `sentio-systems.sops.yaml` | Sentio app secrets (DB passwords, OAuth secrets) |
 
 ## Adding a secret
 
