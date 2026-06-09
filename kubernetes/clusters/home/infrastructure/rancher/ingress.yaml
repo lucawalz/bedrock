@@ -5,12 +5,10 @@ metadata:
   namespace: rancher
 spec:
   entryPoints:
-    - websecure
+    - web
   routes:
     - match: Host(`rancher.syslabs.dev`)
       kind: Rule
       services:
         - name: rancher
           port: 80
-  tls:
-    secretName: rancher-tls
