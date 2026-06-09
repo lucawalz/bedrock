@@ -8,7 +8,6 @@ resources:
   - helm/longhorn.yaml
   - helm/prometheus-community.yaml
   - helm/bitnami.yaml
-  - helm/redis-operator.yaml
   - helm/rancher.yaml
   - helm/velero.yaml
   - helm/ollama.yaml

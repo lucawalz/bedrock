@@ -11,7 +11,6 @@ Platform services deployed before apps. Each component follows the same pattern:
 | Networking | cert-manager | `jetstack/cert-manager` |
 | Networking | Cloudflare Tunnel | plain deployment |
 | Databases | PostgreSQL | `bitnami/postgresql` |
-| Storage | Redis Operator | `ot-helm/redis-operator` |
 | Monitoring | kube-prometheus-stack | `prometheus-community/kube-prometheus-stack` |
 | CI/CD | Tekton | `cdf/tekton-pipeline` |
 

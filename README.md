@@ -74,7 +74,6 @@ All nodes are declared in `flake.nix`, provisioned with [disko](https://github.c
 |---|---|
 | **Longhorn** | Distributed block storage across all three nodes. Chosen over NFS for its replicated volumes, snapshot support, and native CSI integration. Each volume is replicated 2×. |
 | **PostgreSQL** (Bitnami) | Shared relational database for apps that need one (Keycloak, n8n). |
-| **Redis** (redis-operator) | In-cluster cache and pub/sub for Sentio Systems. |
 
 ### Observability
 
