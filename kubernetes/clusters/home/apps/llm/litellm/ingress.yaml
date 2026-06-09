@@ -9,6 +9,8 @@ spec:
   routes:
     - match: Host(`llm.syslabs.dev`)
       kind: Rule
+      middlewares:
+        - name: litellm-root-redirect
       services:
         - name: litellm
           port: 4000
