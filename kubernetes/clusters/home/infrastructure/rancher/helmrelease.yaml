@@ -44,7 +44,11 @@ spec:
     
     # Replica count
     replicas: 1
-    
+
+    extraEnv:
+      - name: CATTLE_FEATURES
+        value: imperative-api-extension=false
+
     # Configure admin user from existing secret
     bootstrapPassword: ""
     useExistingSecret: rancher-admin-secret
