@@ -1,0 +1,14 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: open-webui
+  namespace: llm
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`chat.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: open-webui
+          port: 80
