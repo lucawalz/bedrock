@@ -11,3 +11,5 @@ resources:
   - helm/redis-operator.yaml
   - helm/rancher.yaml
   - helm/velero.yaml
+  - helm/ollama.yaml
+  - helm/open-webui.yaml
