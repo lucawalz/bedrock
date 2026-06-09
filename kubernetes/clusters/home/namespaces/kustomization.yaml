@@ -11,6 +11,6 @@ resources:
   - cloudflare.yaml
   - monitoring.yaml
   - longhorn.yaml
-  - rancher.yaml
+  - cattle-system.yaml
   - velero.yaml
   - llm.yaml
