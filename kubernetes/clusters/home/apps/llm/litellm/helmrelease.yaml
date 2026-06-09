@@ -1,0 +1,34 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: litellm
+  namespace: llm
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: litellm
+      version: "0.0.4"
+      sourceRef:
+        kind: HelmRepository
+        name: litellm
+        namespace: flux-system
+  values:
+    fullnameOverride: litellm
+    replicaCount: 1
+    service:
+      type: ClusterIP
+      port: 4000
+    ingress:
+      enabled: false
+    secretFrom:
+      name: litellm-secrets
+    proxy_config:
+      model_list:
+        - model_name: ollama
+          litellm_params:
+            model: ollama/llama3
+            api_base: http://ollama.llm.svc.cluster.local:11434
+      general_settings:
+        master_key: os.environ/PROXY_MASTER_KEY
