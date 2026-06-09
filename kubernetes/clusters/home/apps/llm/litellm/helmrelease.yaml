@@ -26,9 +26,13 @@ spec:
       name: litellm-secrets
     proxy_config:
       model_list:
-        - model_name: ollama
+        - model_name: qwen2.5-coder:7b
           litellm_params:
-            model: ollama/llama3
+            model: ollama_chat/qwen2.5-coder:7b
+            api_base: http://ollama.llm.svc.cluster.local:11434
+        - model_name: llama3.1:8b
+          litellm_params:
+            model: ollama_chat/llama3.1:8b
             api_base: http://ollama.llm.svc.cluster.local:11434
       general_settings:
         master_key: os.environ/PROXY_MASTER_KEY
