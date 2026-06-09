@@ -13,3 +13,4 @@ resources:
   - helm/velero.yaml
   - helm/ollama.yaml
   - helm/open-webui.yaml
+  - helm/litellm.yaml
