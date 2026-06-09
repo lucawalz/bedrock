@@ -22,6 +22,8 @@ spec:
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
   values:
+    longhornUI:
+      replicas: 1
     defaultSettings:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
