@@ -1,0 +1,40 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama
+  namespace: llm
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: ollama
+      version: "1.60.x"
+      sourceRef:
+        kind: HelmRepository
+        name: ollama
+        namespace: flux-system
+  values:
+    ollama:
+      gpu:
+        enabled: false
+    service:
+      type: ClusterIP
+      port: 11434
+    ingress:
+      enabled: false
+    persistentVolume:
+      enabled: true
+      size: 100Gi
+      storageClass: longhorn
+      accessModes:
+        - ReadWriteOnce
+    nodeSelector:
+      kubernetes.io/hostname: worker-1
+    resources:
+      requests:
+        cpu: "1000m"
+        memory: "4Gi"
+      limits:
+        cpu: "4000m"
+        memory: "16Gi"
