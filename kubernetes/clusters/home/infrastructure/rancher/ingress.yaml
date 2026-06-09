@@ -9,6 +9,8 @@ spec:
   routes:
     - match: Host(`rancher.syslabs.dev`)
       kind: Rule
+      middlewares:
+        - name: rancher-forwarded-proto
       services:
         - name: rancher
           port: 80
