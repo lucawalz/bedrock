@@ -1,0 +1,42 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pgadmin
+  namespace: postgres
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: pgadmin4
+      version: "1.64.0"
+      sourceRef:
+        kind: HelmRepository
+        name: pgadmin
+        namespace: flux-system
+  values:
+    service:
+      type: ClusterIP
+      port: 80
+    ingress:
+      enabled: false
+    existingSecret: pgadmin-admin-secret
+    secretKeys:
+      pgadminPasswordKey: password
+    env:
+      email: admin@syslabs.dev
+    persistentVolume:
+      enabled: true
+      size: 10Gi
+      storageClass: longhorn
+    serverDefinitions:
+      enabled: true
+      servers:
+        homelab:
+          Name: "homelab"
+          Group: "Servers"
+          Host: "postgres-postgresql.postgres.svc.cluster.local"
+          Port: 5432
+          MaintenanceDB: "postgres"
+          Username: "postgres"
+          SSLMode: "prefer"
