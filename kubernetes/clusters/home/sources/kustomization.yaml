@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - helm/traefik.yaml
+  - helm/bjw-s.yaml
   - helm/n8n.yaml
   - helm/cert-manager.yaml
   - helm/longhorn.yaml
