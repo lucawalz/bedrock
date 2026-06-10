@@ -13,6 +13,8 @@
   "github-actions": {
     "enabled": true
   },
+  "rebaseWhen": "behind-base-branch",
+  "platformAutomerge": true,
   "packageRules": [
     {
       "description": "Group all nixpkgs flake updates together",
@@ -28,8 +30,7 @@
         "/cert-manager/",
         "/traefik/",
         "/longhorn/",
-        "/kube-prometheus-stack/",
-        "/redis-operator/"
+        "/kube-prometheus-stack/"
       ]
     },
     {
@@ -37,10 +38,18 @@
       "matchManagers": ["flux"],
       "groupName": "app charts",
       "matchPackageNames": [
-        "/n8n/",
-        "/it-tools/",
-        "/tekton/"
+        "/n8n/"
       ]
+    },
+    {
+      "description": "Auto-merge minor, patch, and digest updates",
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": true
+    },
+    {
+      "description": "Hold major updates for manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
     }
   ]
 }
