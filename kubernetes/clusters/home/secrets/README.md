@@ -1,35 +1,26 @@
-# secrets
+# Kubernetes secrets
 
-SOPS-encrypted Kubernetes secrets. Flux decrypts these in-cluster using the age key stored in the `sops-age` secret in `flux-system`.
+Cluster secrets are committed encrypted with SOPS and the age backend, and Flux decrypts them in-cluster as it reconciles. The encrypted files are safe to keep in a public repository; only the cluster holds the private age key, stored as the `sops-age` secret in `flux-system`.
 
-## Current secrets
+`/.sops.yaml` at the repo root defines the rule: any file matching `kubernetes/.*/secrets/.*\.sops\.yaml` has its `data` and `stringData` fields encrypted to the cluster's age recipient. The `cluster-secrets` Kustomization decrypts them at apply time.
 
-| File | Contains |
-|---|---|
-| `cloudflare-api-token.sops.yaml` | Cloudflare API token for DNS-01 challenges |
-| `cloudflare-tunnel-secret.sops.yaml` | Cloudflare Tunnel token |
+## What lives here
 
-## Adding a secret
+| File | Holds |
+|------|-------|
+| `cloudflare-tunnel-secret.sops.yaml` | tunnel token for cloudflared |
+| `cloudflare-api-token.sops.yaml` | Cloudflare API token for DNS-01 ACME |
+| `rancher-secret.sops.yaml` | Rancher admin password |
+| `pgadmin.sops.yaml` | pgAdmin login |
+| `litellm-secrets.sops.yaml`, `litellm-db-init.sops.yaml` | LiteLLM keys and database bootstrap |
+| `longhorn-backup-credentials.sops.yaml` | object-storage credentials for backups |
 
-```bash
-# Create and encrypt
-cat > my-secret.yaml <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: my-secret
-  namespace: my-namespace
-stringData:
-  key: value
-EOF
-sops --encrypt --in-place my-secret.yaml
-mv my-secret.yaml my-secret.sops.yaml
+## Adding or editing a secret
+
+Edit in place; SOPS re-encrypts on save:
+
+```
+sops kubernetes/clusters/home/secrets/<name>.sops.yaml
 ```
 
-Add it to `kustomization.yaml`, commit, push.
-
-## Editing a secret
-
-```bash
-sops kubernetes/clusters/home/secrets/my-secret.sops.yaml
-```
+For a new secret, write the plaintext manifest, encrypt it (`sops --encrypt --in-place <name>.yaml` then rename to `<name>.sops.yaml`), and list it in this directory's `kustomization.yaml` so Flux applies it.
