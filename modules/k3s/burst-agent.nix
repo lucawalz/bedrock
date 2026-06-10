@@ -65,13 +65,19 @@
     after = [ "zerotier-join.service" ];
     wants = [ "zerotier-join.service" ];
     before = [ "k3s.service" ];
+    startLimitIntervalSec = 0;
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
+      Restart = "on-failure";
+      RestartSec = 5;
+      TimeoutStartSec = 600;
     };
-    script = ''
+    script = let
+      ipWaitSeconds = 540;
+    in ''
       set -eu
-      DEADLINE=$(( $(date +%s) + 120 ))
+      DEADLINE=$(( $(date +%s) + ${toString ipWaitSeconds} ))
       while :; do
         IFACE=$(${pkgs.iproute2}/bin/ip -o link show | ${pkgs.gawk}/bin/awk '$2 ~ /^zt/ {gsub(/:$/, "", $2); print $2; exit}')
         if [ -n "$IFACE" ]; then
@@ -81,7 +87,7 @@
           fi
         fi
         if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-          echo "ZeroTier interface IP not assigned within 120s" >&2
+          echo "ZeroTier interface IP not assigned within ${toString ipWaitSeconds}s" >&2
           exit 1
         fi
         sleep 2
