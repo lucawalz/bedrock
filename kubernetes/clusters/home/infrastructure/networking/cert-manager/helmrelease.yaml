@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: cert-manager
-      version: "1.13.x"
+      version: "1.20.x"
       sourceRef:
         kind: HelmRepository
         name: cert-manager
@@ -19,6 +19,9 @@ spec:
       name: cert-manager-values
       optional: true
   values:
+    crds:
+      enabled: true
+      keep: true
     resources:
       requests:
         cpu: "50m"

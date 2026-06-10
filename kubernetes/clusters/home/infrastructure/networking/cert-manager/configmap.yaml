@@ -5,11 +5,6 @@ metadata:
   namespace: cert-manager
 data:
   values.yaml: |
-    # cert-manager Helm values
-
-    installCRDs: true
-
-    # Resource requests/limits
     resources:
       requests:
         cpu: "100m"
