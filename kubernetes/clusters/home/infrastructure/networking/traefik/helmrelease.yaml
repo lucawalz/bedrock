@@ -9,14 +9,15 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "28.x"
+      version: "40.x"
       sourceRef:
         kind: HelmRepository
         name: traefik
         namespace: flux-system
   values:
     service:
-      type: NodePort
+      spec:
+        type: NodePort
     ports:
       web:
         nodePort: 30080
@@ -31,6 +32,8 @@ spec:
         memory: "256Mi"
   install:
     createNamespace: true
+    crds: Create
   upgrade:
+    crds: CreateReplace
     remediation:
       retries: 3
