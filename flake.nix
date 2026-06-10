@@ -43,6 +43,7 @@
         ];
       };
     in pkgs.mkShell {
+      name = "bedrock";
       packages = with pkgs; [
         kubectl
         kubeHelm
@@ -62,6 +63,7 @@
         config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
       };
     in pkgs.mkShell {
+      name = "bedrock";
       packages = with pkgs; [
         kubectl
         fluxcd
