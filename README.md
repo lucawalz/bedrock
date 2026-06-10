@@ -1,4 +1,4 @@
-# nixos-homelab
+# bedrock
 
 > A self-hosted Kubernetes homelab running on bare-metal NixOS, managed entirely through GitOps.
 

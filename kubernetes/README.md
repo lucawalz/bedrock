@@ -45,7 +45,7 @@ infrastructure         (depends: sources, secrets, namespaces)
 export GITHUB_TOKEN=<pat>
 flux bootstrap github \
   --owner=lucawalz \
-  --repository=nixos-homelab \
+  --repository=bedrock \
   --path=kubernetes/clusters/home \
   --personal
 ```

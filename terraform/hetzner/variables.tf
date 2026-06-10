@@ -16,7 +16,7 @@ variable "location" {
 }
 
 variable "flake_ref" {
-  description = "nixos-homelab flake ref (branch or commit SHA)"
+  description = "bedrock flake ref (branch or commit SHA)"
   type        = string
   default     = "main"
 }

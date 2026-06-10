@@ -60,8 +60,8 @@ resource "hcloud_server" "burst_node" {
 module "install_burst_node" {
   source = "github.com/nix-community/nixos-anywhere//terraform/all-in-one"
 
-  nixos_system_attr      = "github:lucawalz/nixos-homelab/${var.flake_ref}#nixosConfigurations.hetzner-burst-node.config.system.build.toplevel"
-  nixos_partitioner_attr = "github:lucawalz/nixos-homelab/${var.flake_ref}#nixosConfigurations.hetzner-burst-node.config.system.build.diskoScript"
+  nixos_system_attr      = "github:lucawalz/bedrock/${var.flake_ref}#nixosConfigurations.hetzner-burst-node.config.system.build.toplevel"
+  nixos_partitioner_attr = "github:lucawalz/bedrock/${var.flake_ref}#nixosConfigurations.hetzner-burst-node.config.system.build.diskoScript"
   target_host            = hcloud_server.burst_node.ipv4_address
   instance_id            = tostring(hcloud_server.burst_node.id)
   build_on_remote        = true
