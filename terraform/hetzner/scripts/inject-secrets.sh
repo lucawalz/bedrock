@@ -11,3 +11,13 @@ chmod 600 "etc/horizon/zerotier-network-id" \
 
 printf '%s\n' "${HORIZON_SSH_PUBLIC_KEY}" > "etc/horizon/ssh-authorized-keys"
 chmod 644 "etc/horizon/ssh-authorized-keys"
+
+if [ -n "${HORIZON_ZEROTIER_IDENTITY_SECRET:-}" ]; then
+  printf '%s' "${HORIZON_ZEROTIER_IDENTITY_SECRET}" > "etc/horizon/zerotier-identity.secret"
+  chmod 600 "etc/horizon/zerotier-identity.secret"
+fi
+
+if [ -n "${HORIZON_ZEROTIER_IDENTITY_PUBLIC:-}" ]; then
+  printf '%s' "${HORIZON_ZEROTIER_IDENTITY_PUBLIC}" > "etc/horizon/zerotier-identity.public"
+  chmod 644 "etc/horizon/zerotier-identity.public"
+fi
