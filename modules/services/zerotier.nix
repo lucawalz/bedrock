@@ -4,6 +4,27 @@
     enable = true;
   };
 
+  systemd.services.zerotier-identity-seed = {
+    description = "Seed pre-generated ZeroTier identity before zerotierone starts";
+    wantedBy = [ "multi-user.target" "zerotierone.service" ];
+    before = [ "zerotierone.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      set -eu
+      if [ ! -f /etc/horizon/zerotier-identity.secret ]; then
+        exit 0
+      fi
+      install -d -m 700 -o root -g root /var/lib/zerotier-one
+      install -m 600 -o root -g root /etc/horizon/zerotier-identity.secret /var/lib/zerotier-one/identity.secret
+      if [ -f /etc/horizon/zerotier-identity.public ]; then
+        install -m 644 -o root -g root /etc/horizon/zerotier-identity.public /var/lib/zerotier-one/identity.public
+      fi
+    '';
+  };
+
   systemd.services.zerotier-join = {
     description = "Join ZeroTier network from /etc/horizon/zerotier-network-id";
     wantedBy = [ "multi-user.target" ];
