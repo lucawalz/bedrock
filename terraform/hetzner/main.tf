@@ -7,45 +7,12 @@ terraform {
   }
 }
 
-data "hcloud_ssh_keys" "all" {}
-
-locals {
-  operator_public_key = trimspace(var.ssh_public_key)
-  existing_operator_keys = [
-    for k in data.hcloud_ssh_keys.all.ssh_keys : k
-    if trimspace(k.public_key) == local.operator_public_key
-  ]
-  operator_key_id = length(local.existing_operator_keys) > 0 ? local.existing_operator_keys[0].id : one(hcloud_ssh_key.operator[*].id)
+data "hcloud_ssh_key" "operator" {
+  name = "horizon-operator"
 }
 
-resource "hcloud_ssh_key" "operator" {
-  count      = length(local.existing_operator_keys) > 0 ? 0 : 1
-  name       = "horizon-operator-${var.burst_id}"
-  public_key = var.ssh_public_key
-}
-
-resource "hcloud_firewall" "burst_node" {
-  name = "horizon-burst-${var.burst_id}"
-
-  rule {
-    direction  = "in"
-    protocol   = "tcp"
-    port       = "22"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "udp"
-    port       = "9993"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
-
-  rule {
-    direction  = "in"
-    protocol   = "icmp"
-    source_ips = ["0.0.0.0/0", "::/0"]
-  }
+data "hcloud_firewall" "burst" {
+  name = "horizon-burst"
 }
 
 resource "hcloud_server" "burst_node" {
@@ -53,8 +20,8 @@ resource "hcloud_server" "burst_node" {
   server_type  = var.server_type
   image        = "debian-12"
   location     = var.location
-  ssh_keys     = [local.operator_key_id]
-  firewall_ids = [hcloud_firewall.burst_node.id]
+  ssh_keys     = [data.hcloud_ssh_key.operator.id]
+  firewall_ids = [data.hcloud_firewall.burst.id]
 }
 
 module "install_burst_node" {
