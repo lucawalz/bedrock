@@ -28,6 +28,12 @@
           ./modules/k3s/burst-agent.nix
         ];
       };
+      router-installer = nixpkgs.lib.nixosSystem {
+        system = "aarch64-linux";
+        modules = [
+          ./hosts/router-installer.nix
+        ];
+      };
     };
 
     devShells.x86_64-linux.default = let
