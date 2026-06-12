@@ -7,6 +7,7 @@
     ../common/users.nix
     ../../modules/router/network.nix
     ../../modules/router/firewall.nix
+    ../../modules/router/dhcp.nix
     ../../modules/router/dns.nix
   ];
 
