@@ -33,10 +33,12 @@
       "30-vlan10" = {
         matchConfig.Name = "vlan10";
         address = [ "192.168.10.1/24" ];
+        linkConfig.RequiredForOnline = "no";
       };
       "30-vlan20" = {
         matchConfig.Name = "vlan20";
         address = [ "192.168.20.1/24" ];
+        linkConfig.RequiredForOnline = "no";
       };
     };
   };

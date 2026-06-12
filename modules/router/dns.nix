@@ -2,6 +2,11 @@
 {
   services.resolved.enable = false;
 
+  systemd.services.adguardhome = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+  };
+
   services.adguardhome = {
     enable = true;
     host = "0.0.0.0";
