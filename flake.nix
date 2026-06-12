@@ -76,7 +76,9 @@
         sops
         age
         nixos-anywhere
+        nixos-rebuild
         terraform
+        zstd
         git
       ];
     };
