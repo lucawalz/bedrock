@@ -15,7 +15,6 @@
       "--tls-san=10.147.17.161"
       "--tls-san=192.168.20.10"
       "--node-ip=192.168.20.10"
-      "--disable-network-policy"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
     clusterInit = true;
