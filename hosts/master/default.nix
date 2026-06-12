@@ -23,6 +23,8 @@ in
   networking.hostName = "master";
   system.stateVersion = "25.05";
 
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   environment.systemPackages = [ kubeHelm pkgs.fluxcd pkgs.sops ];
   environment.variables.KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
 
