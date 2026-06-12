@@ -33,7 +33,6 @@
             ../hosts/common
             ../modules/k3s/agent.nix
             ../modules/services/storage.nix
-            ../modules/services/rollback-gate.nix
             ../modules/services/zerotier.nix
           ];
 
