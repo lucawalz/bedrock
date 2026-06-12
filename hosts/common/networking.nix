@@ -3,6 +3,7 @@
   networking.networkmanager.enable = true;
 
   networking.hosts."192.168.2.191" = [ "master" ];
+  networking.hosts."192.168.20.10" = [ "master" ];
 
   # Firewall: base rules (K3s modules will add their own ports)
   networking.firewall = {
