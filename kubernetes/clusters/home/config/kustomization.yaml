@@ -6,6 +6,7 @@ resources:
   - secrets.yaml
   - infrastructure.yaml
   - issuers.yaml
+  - metallb.yaml
   - apps.yaml
 
   - cluster-settings.yaml

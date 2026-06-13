@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - traefik
+  - metallb
   - cert-manager
   - cloudflare-tunnel
   # - external-dns  # Uncomment if using external-dns
