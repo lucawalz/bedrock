@@ -4,3 +4,4 @@ resources:
   - ollama
   - open-webui
   - litellm
+  - networkpolicies.yaml
