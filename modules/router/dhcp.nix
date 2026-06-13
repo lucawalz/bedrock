@@ -20,23 +20,23 @@
       subnet4 = [
         {
           id = 1;
-          subnet = "192.168.20.0/24";
+          subnet = "10.20.0.0/24";
           pools = [
-            { pool = "192.168.20.100 - 192.168.20.200"; }
+            { pool = "10.20.0.100 - 10.20.0.200"; }
           ];
           reservations = [
-            { hw-address = "98:fa:9b:a0:67:b7"; ip-address = "192.168.20.10"; }
-            { hw-address = "98:fa:9b:a0:63:24"; ip-address = "192.168.20.11"; }
-            { hw-address = "98:fa:9b:34:bc:10"; ip-address = "192.168.20.12"; }
+            { hw-address = "98:fa:9b:a0:67:b7"; ip-address = "10.20.0.10"; }
+            { hw-address = "98:fa:9b:a0:63:24"; ip-address = "10.20.0.11"; }
+            { hw-address = "98:fa:9b:34:bc:10"; ip-address = "10.20.0.12"; }
           ];
           option-data = [
             {
               name = "routers";
-              data = "192.168.20.1";
+              data = "10.20.0.1";
             }
             {
               name = "domain-name-servers";
-              data = "192.168.20.1";
+              data = "10.20.0.1";
             }
           ];
         }
