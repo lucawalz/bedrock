@@ -27,8 +27,6 @@ spec:
       kind: modern_ebpf
     controller:
       kind: daemonset
-    nodeSelector:
-      kubernetes.io/hostname: worker-2
     resources:
       requests:
         cpu: 100m
