@@ -15,12 +15,14 @@ in
     enable = true;
     filterForward = true;
     allowedTCPPorts = [ 22 53 3000 ];
-    allowedUDPPorts = [ 53 ];
-    trustedInterfaces = [ "vlan20" ];
+    allowedUDPPorts = [ 53 51820 ];
+    trustedInterfaces = [ "vlan20" "wg0" ];
 
     extraForwardRules = lib.mkMerge [
       (lib.mkBefore ''iifname "vlan20" ip daddr ${homeSubnet} drop'')
       ''iifname "end0" oifname "vlan20" accept''
+      ''iifname "wg0" oifname "vlan20" accept''
+      ''iifname "vlan20" oifname "wg0" accept''
     ];
   };
 }
