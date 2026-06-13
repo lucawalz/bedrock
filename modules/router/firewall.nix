@@ -8,7 +8,7 @@ in
   networking.nat = {
     enable = true;
     externalInterface = "end0";
-    internalInterfaces = [ "vlan20" ];
+    internalInterfaces = [ "vlan20" "vlan30" ];
   };
 
   networking.firewall = {
@@ -18,11 +18,19 @@ in
     allowedUDPPorts = [ 53 51820 ];
     trustedInterfaces = [ "vlan20" "wg0" ];
 
+    interfaces.vlan30 = {
+      allowedTCPPorts = [ 53 ];
+      allowedUDPPorts = [ 53 67 ];
+    };
+
     extraForwardRules = lib.mkMerge [
       (lib.mkBefore ''iifname "vlan20" ip daddr ${homeSubnet} drop'')
       ''iifname "end0" oifname "vlan20" accept''
       ''iifname "wg0" oifname "vlan20" accept''
       ''iifname "vlan20" oifname "wg0" accept''
+      ''iifname "vlan30" oifname "end0" accept''
+      ''iifname "vlan30" oifname "vlan20" drop''
+      ''iifname "vlan30" ip daddr ${homeSubnet} drop''
     ];
   };
 }
