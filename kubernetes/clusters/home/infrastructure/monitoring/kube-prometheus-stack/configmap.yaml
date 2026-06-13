@@ -22,6 +22,8 @@ data:
 
     grafana:
       enabled: true
+      image:
+        tag: "11.2.3"
       admin:
         existingSecret: grafana-admin
         userKey: admin-user
