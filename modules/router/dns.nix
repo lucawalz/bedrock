@@ -24,6 +24,10 @@
       filtering = {
         protection_enabled = true;
         filtering_enabled = true;
+        rewrites = [
+          { domain = "syslabs.dev"; answer = "192.168.20.50"; enabled = true; }
+          { domain = "*.syslabs.dev"; answer = "192.168.20.50"; enabled = true; }
+        ];
       };
       filters = [
         {
