@@ -6,6 +6,7 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`llm.syslabs.dev`)
       kind: Rule
@@ -14,3 +15,4 @@ spec:
       services:
         - name: litellm
           port: 4000
+  tls: {}

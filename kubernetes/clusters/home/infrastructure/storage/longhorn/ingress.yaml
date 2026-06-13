@@ -4,7 +4,8 @@ metadata:
   name: longhorn-ui
   namespace: longhorn-system
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
   rules:
@@ -18,7 +19,3 @@ spec:
                 name: longhorn-frontend
                 port:
                   number: 80
-  tls:
-    - hosts:
-        - longhorn.syslabs.dev
-      secretName: longhorn-ui-tls

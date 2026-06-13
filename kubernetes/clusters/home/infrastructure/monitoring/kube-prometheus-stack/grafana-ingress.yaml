@@ -4,16 +4,10 @@ metadata:
   name: grafana
   namespace: monitoring
   annotations:
-    # TLS handled by Cloudflare Tunnel
-    # cert-manager.io/cluster-issuer: letsencrypt-prod
-    # traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
-  # TLS handled by Cloudflare Tunnel
-  # tls:
-  #   - hosts:
-  #       - grafana.syslabs.dev
-  #     secretName: grafana-tls
   rules:
     - host: grafana.syslabs.dev
       http:

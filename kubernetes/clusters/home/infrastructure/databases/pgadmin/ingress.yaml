@@ -6,9 +6,11 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`pgadmin.syslabs.dev`)
       kind: Rule
       services:
         - name: pgadmin-pgadmin4
           port: 80
+  tls: {}

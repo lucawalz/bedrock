@@ -1,0 +1,14 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wildcard-syslabs-dev
+  namespace: traefik
+spec:
+  secretName: wildcard-syslabs-dev-tls
+  dnsNames:
+    - syslabs.dev
+    - "*.syslabs.dev"
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-cloudflare
+    group: cert-manager.io
