@@ -2,7 +2,7 @@
 {
   imports = [
     (modulesPath + "/profiles/qemu-guest.nix")
-    ../services/zerotier.nix
+    ../services/wireguard-burst.nix
   ];
 
   disko.devices.disk.main = {
@@ -47,7 +47,7 @@
   networking.hostName = "hetzner-burst-node";
   networking.useDHCP = true;
   networking.firewall.allowedTCPPorts = [ 10250 ];
-  networking.firewall.allowedUDPPorts = [ 8472 ];
+  networking.firewall.allowedUDPPorts = [ 8472 51820 ];
   networking.firewall.checkReversePath = "loose";
 
   services.openssh = {
@@ -60,10 +60,10 @@
   };
 
   systemd.services.k3s-config-writer = {
-    description = "Write /etc/rancher/k3s/config.yaml after the ZeroTier interface gets an IP";
+    description = "Write /etc/rancher/k3s/config.yaml after wg0 gets an IP";
     wantedBy = [ "multi-user.target" ];
-    after = [ "zerotier-join.service" ];
-    wants = [ "zerotier-join.service" ];
+    after = [ "wireguard-burst-up.service" ];
+    wants = [ "wireguard-burst-up.service" ];
     before = [ "k3s.service" ];
     startLimitIntervalSec = 0;
     serviceConfig = {
@@ -79,15 +79,12 @@
       set -eu
       DEADLINE=$(( $(date +%s) + ${toString ipWaitSeconds} ))
       while :; do
-        IFACE=$(${pkgs.iproute2}/bin/ip -o link show | ${pkgs.gawk}/bin/awk '$2 ~ /^zt/ {gsub(/:$/, "", $2); print $2; exit}')
-        if [ -n "$IFACE" ]; then
-          IP=$(${pkgs.iproute2}/bin/ip -o -4 addr show "$IFACE" 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
-          if [ -n "$IP" ]; then
-            break
-          fi
+        IP=$(${pkgs.iproute2}/bin/ip -o -4 addr show wg0 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
+        if [ -n "$IP" ]; then
+          break
         fi
         if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-          echo "ZeroTier interface IP not assigned within ${toString ipWaitSeconds}s" >&2
+          echo "wg0 IPv4 not assigned within ${toString ipWaitSeconds}s" >&2
           exit 1
         fi
         sleep 2
@@ -96,7 +93,7 @@
       mkdir -p /etc/rancher/k3s
       {
         echo "node-ip: $IP"
-        echo "flannel-iface: $IFACE"
+        echo "flannel-iface: wg0"
         [ -n "$NODE_NAME" ] && echo "node-name: $NODE_NAME"
         echo "node-label:"
         echo "  - horizon.dev/burst=true"
@@ -128,8 +125,8 @@
   };
 
   systemd.services.k3s = {
-    after = [ "k3s-config-writer.service" "zerotier-join.service" "k3s-server-addr-writer.service" ];
-    wants = [ "k3s-config-writer.service" "zerotier-join.service" "k3s-server-addr-writer.service" ];
+    after = [ "k3s-config-writer.service" "wireguard-burst-up.service" "k3s-server-addr-writer.service" ];
+    wants = [ "k3s-config-writer.service" "wireguard-burst-up.service" "k3s-server-addr-writer.service" ];
     serviceConfig.EnvironmentFile = lib.mkForce "/run/k3s.env";
   };
 

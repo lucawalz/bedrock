@@ -25,7 +25,7 @@ resource "hcloud_firewall" "burst" {
   rule {
     direction  = "in"
     protocol   = "udp"
-    port       = "9993"
+    port       = "51820"
     source_ips = ["0.0.0.0/0", "::/0"]
   }
 

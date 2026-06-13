@@ -27,12 +27,6 @@ variable "ssh_public_key" {
   sensitive   = true
 }
 
-variable "zerotier_network_id" {
-  description = "ZeroTier Central network ID injected into the burst NixOS node"
-  type        = string
-  sensitive   = false
-}
-
 variable "k3s_url" {
   description = "K3s server URL (https://master:6443)"
   type        = string
