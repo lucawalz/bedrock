@@ -1,0 +1,44 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: falco
+  namespace: falco
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: falco
+      version: "8.0.5"
+      sourceRef:
+        kind: HelmRepository
+        name: falco
+        namespace: flux-system
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    driver:
+      enabled: true
+      kind: modern_ebpf
+    controller:
+      kind: daemonset
+    nodeSelector:
+      kubernetes.io/hostname: worker-2
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    falcosidekick:
+      enabled: false
+    falco:
+      json_output: true
+      stdout_output:
+        enabled: true
