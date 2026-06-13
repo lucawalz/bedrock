@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0014
 date: 2026-06-13
 ---
 
 # 0011. Own the edge with a port-forward instead of a Cloudflare tunnel
+
+> Superseded by [0014](0014-declarative-minimal-cloudflare-exposure.md), which keeps the Cloudflare tunnel and manages it from the repository instead of dropping it.
 
 ## Context
 

@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: rejected
 date: 2026-06-13
 ---
 
@@ -11,7 +11,7 @@ With services exposed directly (see [0011](0011-self-hosted-edge.md)), each one 
 
 ## Decision
 
-Open. No proxy has been chosen yet, pending the answer to the identity-provider question.
+Rejected. No in-cluster auth proxy is adopted. Under [0014](0014-declarative-minimal-cloudflare-exposure.md) the tunnel stays in place and Cloudflare Access remains the single sign-on gate for the exposed hosts, so a separate edge proxy duplicates a boundary that already exists.
 
 ## Options considered
 
