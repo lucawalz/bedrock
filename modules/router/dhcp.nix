@@ -8,7 +8,7 @@
       rebind-timer = 37800;
 
       interfaces-config = {
-        interfaces = [ "vlan20" ];
+        interfaces = [ "vlan20" "vlan30" ];
       };
 
       lease-database = {
@@ -37,6 +37,23 @@
             {
               name = "domain-name-servers";
               data = "10.20.0.1";
+            }
+          ];
+        }
+        {
+          id = 2;
+          subnet = "10.30.0.0/24";
+          pools = [
+            { pool = "10.30.0.100 - 10.30.0.200"; }
+          ];
+          option-data = [
+            {
+              name = "routers";
+              data = "10.30.0.1";
+            }
+            {
+              name = "domain-name-servers";
+              data = "10.30.0.1";
             }
           ];
         }
