@@ -11,7 +11,7 @@ Services need real TLS certificates, renewed automatically, with nobody minding 
 
 ## Decision
 
-cert-manager issues Let's Encrypt certificates through the Cloudflare DNS-01 solver, configured as a ClusterIssuer in `infrastructure/networking/cert-manager/cluster-issuers/`. DNS-01 proves control by writing a TXT record through the Cloudflare API, so it needs no inbound connection and supports wildcards, which fits a cluster with no open ports.
+cert-manager is set up to issue Let's Encrypt certificates through the Cloudflare DNS-01 solver, configured as a ClusterIssuer in `infrastructure/networking/cert-manager/cluster-issuers/`. DNS-01 proves control by writing a TXT record through the Cloudflare API, so it needs no inbound connection and supports wildcards, which fits a cluster with no open ports.
 
 ## Options considered
 
@@ -21,4 +21,4 @@ cert-manager issues Let's Encrypt certificates through the Cloudflare DNS-01 sol
 
 ## Consequences
 
-Certificates renew on their own and a single wildcard covers every service, which also keeps individual subdomain names out of Certificate Transparency logs. The cost is a dependency on a SOPS-encrypted Cloudflare API token scoped to DNS edits: that token is now part of the trust chain and has to be guarded and rotated like any other secret.
+The DNS-01 issuer is in place, but it is not yet the live TLS path. While traffic still arrives through the Cloudflare Tunnel, TLS terminates at the Cloudflare edge and no in-cluster certificate is served. Issuing a single `*.syslabs.dev` wildcard and serving it from Traefik becomes the active path when the tunnel is dropped in [0011](0011-self-hosted-edge.md), at which point a wildcard also keeps individual subdomain names out of Certificate Transparency logs. The standing cost is a dependency on a SOPS-encrypted Cloudflare API token scoped to DNS edits, which is part of the trust chain and has to be guarded and rotated like any other secret.
