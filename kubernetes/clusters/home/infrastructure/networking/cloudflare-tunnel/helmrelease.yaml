@@ -24,15 +24,9 @@ spec:
               tag: latest
             args:
               - tunnel
+              - --config
+              - /etc/cloudflared/config.yaml
               - run
-              - --token
-              - $(TUNNEL_TOKEN)
-            env:
-              TUNNEL_TOKEN:
-                valueFrom:
-                  secretKeyRef:
-                    name: cloudflare-tunnel-secret
-                    key: tunnel-token
             resources:
               requests:
                 cpu: 10m
@@ -40,3 +34,18 @@ spec:
               limits:
                 cpu: 100m
                 memory: 128Mi
+    persistence:
+      config:
+        type: configMap
+        name: cloudflared-config
+        globalMounts:
+          - path: /etc/cloudflared/config.yaml
+            subPath: config.yaml
+            readOnly: true
+      creds:
+        type: secret
+        name: cloudflare-tunnel-credentials
+        globalMounts:
+          - path: /etc/cloudflared/creds/credentials.json
+            subPath: credentials.json
+            readOnly: true
