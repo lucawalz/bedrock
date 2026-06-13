@@ -15,9 +15,11 @@ prometheus:
 
 grafana:
   enabled: true
-  adminUser: admin
-  adminPassword: admin  # Change this or use secret!
-  
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
   persistence:
     enabled: true
     size: 10Gi
