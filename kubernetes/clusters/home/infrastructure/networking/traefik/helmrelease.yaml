@@ -32,6 +32,10 @@ spec:
       limits:
         cpu: "500m"
         memory: "256Mi"
+    tlsStore:
+      default:
+        defaultCertificate:
+          secretName: wildcard-syslabs-dev-tls
   install:
     createNamespace: true
     crds: Create

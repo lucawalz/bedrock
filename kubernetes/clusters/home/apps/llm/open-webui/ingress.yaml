@@ -6,9 +6,11 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`chat.syslabs.dev`)
       kind: Rule
       services:
         - name: open-webui
           port: 80
+  tls: {}

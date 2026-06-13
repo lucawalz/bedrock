@@ -6,6 +6,7 @@ metadata:
 spec:
   entryPoints:
     - web
+    - websecure
   routes:
     - match: Host(`rancher.syslabs.dev`)
       kind: Rule
@@ -14,3 +15,4 @@ spec:
       services:
         - name: rancher
           port: 80
+  tls: {}
