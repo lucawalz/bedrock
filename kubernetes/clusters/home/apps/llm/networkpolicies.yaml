@@ -36,6 +36,23 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: allow-intra-namespace
+  namespace: llm
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector: {}
+  egress:
+    - to:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: allow-open-webui-ingress
   namespace: llm
 spec:
@@ -50,80 +67,6 @@ spec:
             matchLabels:
               kubernetes.io/metadata.name: traefik
       ports:
-        - protocol: TCP
-          port: 80
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-ollama-ingress
-  namespace: llm
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: ollama
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: litellm
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: open-webui
-      ports:
-        - protocol: TCP
-          port: 11434
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-litellm-ingress
-  namespace: llm
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: litellm
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: open-webui
-      ports:
-        - protocol: TCP
-          port: 4000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-open-webui-egress
-  namespace: llm
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: open-webui
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              app.kubernetes.io/name: ollama
-      ports:
-        - protocol: TCP
-          port: 11434
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.42.0.0/16
-              - 10.43.0.0/16
-      ports:
-        - protocol: TCP
-          port: 443
         - protocol: TCP
           port: 80
 ---
@@ -150,6 +93,30 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.42.0.0/16
+              - 10.43.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-open-webui-egress
+  namespace: llm
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: open-webui
+  policyTypes:
+    - Egress
+  egress:
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
