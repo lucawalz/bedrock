@@ -16,3 +16,4 @@ resources:
   - helm/open-webui.yaml
   - helm/litellm.yaml
   - helm/pgadmin.yaml
+  - helm/falco.yaml
