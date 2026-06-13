@@ -22,4 +22,4 @@ A self-hosted WireGuard hub runs on the NixOS router, replacing ZeroTier. WireGu
 
 ## Consequences
 
-Peer management becomes explicit and manual, but stays declarative and auditable, with keys handled by the secrets model in [0007](0007-agenix-sops-secrets.md). The home line becomes the WireGuard endpoint, so that public address must stay out of committed config. This is accepted but not yet implemented. The router that hosts the hub is the NixOS box from [0003](0003-nixos-router-over-opnsense.md).
+Peer management becomes explicit and manual, but stays declarative and auditable, with keys handled by the secrets model in [0007](0007-agenix-sops-secrets.md). The home line becomes the WireGuard endpoint, so that public address must stay out of committed config. This is implemented: the hub runs on the Pi as `wg0` on `10.100.0.1/24` and serves the admin workstation and the Hetzner burst nodes as peers. ZeroTier has been removed everywhere, and the WireGuard hub has fully replaced it. The router that hosts the hub is the NixOS box from [0003](0003-nixos-router-over-opnsense.md).
