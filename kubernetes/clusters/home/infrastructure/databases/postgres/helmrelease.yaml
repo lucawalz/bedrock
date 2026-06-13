@@ -17,3 +17,6 @@ spec:
   interval: 1m0s
   storageNamespace: postgres
   targetNamespace: postgres
+  values:
+    networkPolicy:
+      enabled: false
