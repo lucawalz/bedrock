@@ -16,3 +16,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0012. Harden the router declaratively before it faces the internet](0012-bulletproof-router-hardening.md) (accepted)
 - [0013. Choose an edge authentication proxy](0013-edge-auth-proxy.md) (rejected)
 - [0014. Manage the Cloudflare tunnel from the repo and expose only three hosts](0014-declarative-minimal-cloudflare-exposure.md) (accepted)
+- [0015. Keep the router on NixOS and move toward a zoned network model](0015-zoned-network-on-a-nixos-router.md) (accepted)
