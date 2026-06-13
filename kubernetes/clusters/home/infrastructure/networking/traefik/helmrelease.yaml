@@ -17,7 +17,9 @@ spec:
   values:
     service:
       spec:
-        type: NodePort
+        type: LoadBalancer
+      annotations:
+        metallb.universe.tf/loadBalancerIPs: 192.168.20.50
     ports:
       web:
         nodePort: 30080
