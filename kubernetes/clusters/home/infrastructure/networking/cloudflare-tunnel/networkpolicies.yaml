@@ -62,5 +62,9 @@ spec:
               - 10.42.0.0/16
               - 10.43.0.0/16
       ports:
+        - protocol: UDP
+          port: 7844
+        - protocol: TCP
+          port: 7844
         - protocol: TCP
           port: 443
