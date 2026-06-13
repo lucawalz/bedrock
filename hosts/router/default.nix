@@ -9,6 +9,7 @@
     ../../modules/router/firewall.nix
     ../../modules/router/dhcp.nix
     ../../modules/router/dns.nix
+    ../../modules/router/wireguard.nix
   ];
 
   nixpkgs.hostPlatform = "aarch64-linux";
