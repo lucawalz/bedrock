@@ -38,7 +38,7 @@
           networking.hostName = hostname;
           system.stateVersion = "25.05";
 
-          services.k3s.extraFlags = [ "--node-ip=192.168.20.1${toString workerId}" ];
+          services.k3s.extraFlags = [ "--node-ip=10.20.0.1${toString workerId}" ];
 
           disko.devices = {
             disk = {

@@ -25,7 +25,7 @@
       };
       "30-vlan20" = {
         matchConfig.Name = "vlan20";
-        address = [ "192.168.20.1/24" ];
+        address = [ "10.20.0.1/24" ];
         linkConfig.RequiredForOnline = "no";
       };
     };
