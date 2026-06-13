@@ -13,6 +13,7 @@
       "--disable=local-storage"    # Using Longhorn instead
       "--tls-san=10.20.0.10"
       "--node-ip=10.20.0.10"
+      "--secrets-encryption"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
     clusterInit = true;
