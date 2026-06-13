@@ -17,6 +17,13 @@ spec:
   values:
     fullnameOverride: open-webui
     replicaCount: 1
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
     ollama:
       enabled: false
     ollamaUrls:
