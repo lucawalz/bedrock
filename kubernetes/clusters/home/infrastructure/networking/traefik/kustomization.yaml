@@ -5,5 +5,4 @@ resources:
   - helmrelease.yaml
   - certificate.yaml
   - dashboard-ingress.yaml
-  - networkpolicies.yaml
 
