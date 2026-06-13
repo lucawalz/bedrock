@@ -16,7 +16,6 @@ in
     ../common
     ../../modules/k3s/server.nix
     ../../modules/services/storage.nix
-    ../../modules/services/zerotier.nix
   ];
 
   networking.hostName = "master";
