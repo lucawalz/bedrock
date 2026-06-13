@@ -18,6 +18,13 @@ spec:
     ollama:
       gpu:
         enabled: false
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
+      seccompProfile:
+        type: RuntimeDefault
     service:
       type: ClusterIP
       port: 11434
