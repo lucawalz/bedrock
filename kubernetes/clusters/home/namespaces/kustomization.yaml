@@ -19,3 +19,6 @@ resources:
   - homepage.yaml
   - blog.yaml
   - reloader.yaml
+  - caph-system.yaml
+  - capi-k3s-bootstrap-system.yaml
+  - capi-k3s-control-plane-system.yaml
