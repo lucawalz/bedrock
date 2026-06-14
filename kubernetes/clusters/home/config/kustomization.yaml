@@ -5,6 +5,7 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - cluster-api.yaml
   - issuers.yaml
   - metallb.yaml
   - apps.yaml
