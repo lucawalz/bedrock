@@ -1,0 +1,11 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: k3s
+  namespace: capi-k3s-control-plane-system
+spec:
+  name: k3s
+  type: controlPlane
+  version: v0.4.0
+  fetchConfig:
+    url: https://github.com/k3s-io/cluster-api-k3s/releases

@@ -8,3 +8,4 @@ resources:
   - monitoring       # Deploy fourth
   - rancher
   - security
+  - cluster-api

@@ -1,0 +1,21 @@
+apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
+kind: KThreesConfigTemplate
+metadata:
+  name: burst
+  namespace: caph-system
+spec:
+  template:
+    spec:
+      agentConfig:
+        airGapped: true
+        nodeName: "{{ ds.meta_data.hostname }}"
+        nodeLabels:
+          - horizon.dev/pool=burst
+      files:
+        - path: /etc/tailscale/authkey
+          owner: root:root
+          permissions: "0400"
+          contentFrom:
+            secret:
+              name: tailscale-burst-authkey
+              key: authkey

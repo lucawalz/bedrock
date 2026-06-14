@@ -18,3 +18,4 @@ resources:
   - helm/pgadmin.yaml
   - helm/falco.yaml
   - helm/stakater.yaml
+  - helm/cluster-autoscaler.yaml

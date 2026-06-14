@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cluster-autoscaler
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: kube-system
+  chart:
+    spec:
+      chart: cluster-autoscaler
+      version: "9.57.0"
+      sourceRef:
+        kind: HelmRepository
+        name: cluster-autoscaler
+        namespace: flux-system
+  install:
+    createNamespace: false
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    cloudProvider: clusterapi
+    clusterAPIMode: incluster-incluster
+    autoDiscovery:
+      labels:
+        - cluster.x-k8s.io/cluster-name: home-burst
+    extraArgs:
+      scale-down-enabled: true
+      scale-down-delay-after-add: 10m
+      scale-down-unneeded-time: 10m
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
