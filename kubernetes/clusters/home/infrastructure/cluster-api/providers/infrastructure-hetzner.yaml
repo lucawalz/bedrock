@@ -10,4 +10,4 @@ spec:
   configSecret:
     name: hetzner
   fetchConfig:
-    url: https://github.com/syself/cluster-api-provider-hetzner/releases
+    url: https://github.com/syself/cluster-api-provider-hetzner/releases/v1.1.6/infrastructure-components.yaml
