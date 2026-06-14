@@ -8,4 +8,4 @@ spec:
   type: controlPlane
   version: v0.4.0
   fetchConfig:
-    url: https://github.com/k3s-io/cluster-api-k3s/releases
+    url: https://github.com/k3s-io/cluster-api-k3s/releases/v0.4.0/control-plane-components.yaml
