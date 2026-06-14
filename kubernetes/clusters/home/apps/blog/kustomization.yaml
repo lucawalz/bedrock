@@ -4,3 +4,4 @@ resources:
   - deployment.yaml
   - ingress.yaml
   - networkpolicies.yaml
+  - image-automation.yaml
