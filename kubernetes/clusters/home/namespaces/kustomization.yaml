@@ -16,3 +16,4 @@ resources:
   - velero.yaml
   - llm.yaml
   - falco.yaml
+  - homepage.yaml
