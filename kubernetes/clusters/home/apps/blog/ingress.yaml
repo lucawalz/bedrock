@@ -8,7 +8,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`blog.syslabs.dev`)
+    - match: Host(`lucawalz.dev`)
       kind: Rule
       services:
         - name: blog

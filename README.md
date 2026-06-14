@@ -29,7 +29,7 @@ The point of the project is to keep a real cluster reproducible and reviewable. 
 
 ## Architecture
 
-The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `blog` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over WireGuard or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites `*.syslabs.dev` to the Traefik VIP. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
+The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over WireGuard or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites `*.syslabs.dev` to the Traefik VIP. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
 Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the companion horizon controller through Terraform, installed with nixos-anywhere, and joins the WireGuard hub as another K3s agent.
 
@@ -148,7 +148,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Open WebUI | chat front-end for the local models | public (`chat`) |
 | LiteLLM | OpenAI-compatible gateway in front of Ollama | public (`llm`) |
 | n8n | workflow automation | public (`n8n`) |
-| Blog | static Hugo site | public (`blog`) |
+| Blog | static Hugo site | public (`lucawalz.dev`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
 | Grafana | dashboards for the Prometheus stack | internal |
 | Rancher | cluster management UI | internal |

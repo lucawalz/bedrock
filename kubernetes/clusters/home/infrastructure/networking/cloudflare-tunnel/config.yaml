@@ -17,6 +17,6 @@ data:
         service: https://traefik.traefik.svc.cluster.local:443
       - hostname: n8n.syslabs.dev
         service: https://traefik.traefik.svc.cluster.local:443
-      - hostname: blog.syslabs.dev
+      - hostname: lucawalz.dev
         service: https://traefik.traefik.svc.cluster.local:443
       - service: http_status:404
