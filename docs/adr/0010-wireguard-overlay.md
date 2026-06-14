@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0023
 date: 2026-06-13
 ---
 
 # 0010. Self-host a WireGuard overlay to replace ZeroTier
+
+> Superseded by [0023](0023-tailscale-overlay.md), which replaces the self-hosted WireGuard hub with Tailscale.
 
 ## Context
 

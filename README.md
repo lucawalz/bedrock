@@ -12,13 +12,13 @@ A bare-metal Kubernetes homelab that lives entirely in Git.
 
 bedrock is the single source of truth for a small home cluster. Three mini PCs run [NixOS](https://nixos.org/) and a [K3s](https://k3s.io/) cluster, and a Raspberry Pi running NixOS acts as the router, gateway, and DNS for the network. Everything from each machine's disk layout to the workloads running on top is declared in this repository. Host configuration is applied with `nixos-rebuild`; cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a change to the `main` branch becomes a change to the cluster without anyone running commands against it by hand.
 
-The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over WireGuard or the LAN. When the local nodes run short on capacity, the companion [horizon](https://github.com/lucawalz/horizon) controller provisions a temporary node on Hetzner Cloud through [Terraform](https://www.terraform.io/), and it joins the cluster over the WireGuard hub.
+The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. When the local nodes run short on capacity, the companion [horizon](https://github.com/lucawalz/horizon) controller provisions a temporary node on Hetzner Cloud through [Terraform](https://www.terraform.io/), and it joins the cluster over the tailnet.
 
 ### Features
 
 - Fully declarative hosts with NixOS flakes, including disk partitioning ([disko](https://github.com/nix-community/disko)) and per-host secrets ([agenix](https://github.com/ryantm/agenix)).
 - GitOps reconciliation with Flux v2: the repository is the only way state reaches the cluster.
-- Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and burst nodes reach the cluster over a self-hosted [WireGuard](https://www.wireguard.com/) hub, the one forwarded UDP port.
+- Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and burst nodes reach the cluster over [Tailscale](https://tailscale.com/), where the Pi advertises the cluster subnet to the tailnet and NAT traversal needs no forwarded port.
 - Replicated storage with [Longhorn](https://longhorn.io/) and off-site backups to Hetzner object storage with [Velero](https://velero.io/).
 - On-demand cloud burst nodes installed with [nixos-anywhere](https://github.com/nix-community/nixos-anywhere) and joined to the cluster automatically.
 - Secrets committed encrypted with [SOPS](https://github.com/getsops/sops) and age, decrypted only inside the cluster.
@@ -29,11 +29,11 @@ The point of the project is to keep a real cluster reproducible and reviewable. 
 
 ## Architecture
 
-The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over WireGuard or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites `*.syslabs.dev` to the Traefik VIP. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
+The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites `*.syslabs.dev` to the Traefik VIP. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
-Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the companion horizon controller through Terraform, installed with nixos-anywhere, and joins the WireGuard hub as another K3s agent.
+Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the companion horizon controller through Terraform, installed with nixos-anywhere, enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst`, and joins the cluster as another K3s agent over the tailnet.
 
-![Network topology: Internet through the ISP router and Pi router to the VLAN 20 cluster and VLAN 30 DMZ, with WireGuard, Cloudflare Tunnel, and Flux GitOps planes](docs/network-topology.svg)
+![Network topology: Internet through the ISP router and Pi router to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes](docs/network-topology.svg)
 
 ## Hardware
 
@@ -44,9 +44,9 @@ Three Lenovo ThinkCentre m920q nodes on VLAN 20, with a Raspberry Pi as the rout
 | master | K3s server and control plane | 10.20.0.10 |
 | worker-1 | K3s agent | 10.20.0.11 |
 | worker-2 | K3s agent | 10.20.0.12 |
-| router | Pi gateway, firewall, DNS, WireGuard hub | 10.20.0.1 |
+| router | Pi gateway, firewall, DNS, Tailscale subnet router | 10.20.0.1 |
 
-Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi hosts a self-hosted WireGuard hub on `10.100.0.0/24` that keeps the cluster reachable on a stable address for admins and lets remote burst nodes join across the internet.
+Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi joins the tailnet as a subnet router and advertises `10.20.0.0/24`, so admins with `--accept-routes` reach the cluster on its LAN addresses from anywhere, and remote burst nodes join across the internet. The home K3s nodes stay LAN-only.
 
 NixOS does not manage device firmware, so firmware patching is manual: `rpi-eeprom` on the Pi and the m920q BIOS on the nodes.
 
@@ -54,7 +54,7 @@ NixOS does not manage device firmware, so firmware patching is manual: `rpi-eepr
 
 - [Nix](https://nixos.org/download.html) with flakes enabled, for the host configurations and the dev shell.
 - A GitHub account that owns this repository, for the Flux bootstrap.
-- For burst nodes: a Hetzner Cloud project and the WireGuard hub on the router.
+- For burst nodes: a Hetzner Cloud project and a Tailscale tailnet with the subnet router running on the Pi.
 
 The dev shell pins the rest of the toolchain (kubectl, helm, flux, sops, age, terraform, nixos-anywhere):
 
@@ -112,7 +112,7 @@ Update a physical node after editing its NixOS configuration:
 nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
 ```
 
-Burst nodes are not added by hand. The companion horizon controller provisions them through the `terraform/hetzner` module, registering the node as a WireGuard peer and injecting the join token it needs, and removes them again when load drops.
+Burst nodes are not added by hand. The companion horizon controller provisions them through the `terraform/hetzner` module, enrolling the node into the tailnet with a tagged auth key and injecting the join token it needs, and removes them again when load drops.
 
 The reconciliation order and the steps for adding a service are in [`kubernetes/README.md`](kubernetes/README.md).
 
@@ -126,7 +126,8 @@ hosts/
   master/              control-plane node, with its disk layout and hardware scan
 modules/
   k3s/                 server, agent, and Hetzner burst-agent roles
-  services/            WireGuard peering, Longhorn prerequisites, the rollback gate
+  router/              firewall, NAT, and the Tailscale subnet router
+  services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets (the K3s join token)
 kubernetes/
   clusters/home/       the live cluster Flux reconciles
@@ -141,7 +142,7 @@ The `terraform/hetzner` module is driven by the [horizon](https://github.com/luc
 
 ## Services
 
-Each service is reached at a subdomain of the cluster domain. The public ones go through the tunnel; the rest are internal-only, reachable over WireGuard or the LAN through split-horizon DNS:
+Each service is reached at a subdomain of the cluster domain. The public ones go through the tunnel; the rest are internal-only, reachable over Tailscale or the LAN through split-horizon DNS:
 
 | Service | Purpose | Access |
 |---------|---------|--------|
