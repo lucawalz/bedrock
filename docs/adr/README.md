@@ -21,3 +21,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0017. Establish a defense-in-depth baseline](0017-defense-in-depth-baseline.md) (accepted)
 - [0018. Add an internal cluster dashboard and router metrics](0018-internal-dashboard-and-router-metrics.md) (accepted)
 - [0019. Self-host a static blog](0019-self-hosted-static-blog.md) (accepted)
+- [0020. Roll workloads on config and secret change with Reloader](0020-reloader-config-driven-rollouts.md) (accepted)
