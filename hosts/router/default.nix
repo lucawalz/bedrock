@@ -10,6 +10,7 @@
     ../../modules/router/dhcp.nix
     ../../modules/router/dns.nix
     ../../modules/router/wireguard.nix
+    ../../modules/router/monitoring.nix
   ];
 
   nixpkgs.hostPlatform = "aarch64-linux";
