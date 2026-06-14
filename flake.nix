@@ -22,11 +22,11 @@
       router   = lib.mkHost { hostname = "router"; system = "aarch64-linux"; };
       worker-1 = lib.mkWorker { workerId = 1; };
       worker-2 = lib.mkWorker { workerId = 2; };
-      hetzner-burst-node = nixpkgs.lib.nixosSystem {
+      hetzner-capi-node = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           disko.nixosModules.disko
-          ./modules/k3s/burst-agent.nix
+          ./modules/k3s/capi-node.nix
         ];
       };
       router-installer = nixpkgs.lib.nixosSystem {
