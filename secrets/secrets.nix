@@ -12,6 +12,6 @@ let
 in
 {
   "k3s-token.age".publicKeys = [ master worker-1 worker-2 luca ];
-  "wg-router-private.age".publicKeys = [ router luca ];
+  "tailscale-authkey.age".publicKeys = [ router luca ];
 }
 
