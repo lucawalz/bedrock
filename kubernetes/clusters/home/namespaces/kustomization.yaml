@@ -18,3 +18,4 @@ resources:
   - falco.yaml
   - homepage.yaml
   - blog.yaml
+  - reloader.yaml

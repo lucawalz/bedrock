@@ -17,3 +17,4 @@ resources:
   - helm/litellm.yaml
   - helm/pgadmin.yaml
   - helm/falco.yaml
+  - helm/stakater.yaml
