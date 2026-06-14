@@ -1,0 +1,16 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: blog
+  namespace: blog
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`blog.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: blog
+          port: 80
+  tls: {}
