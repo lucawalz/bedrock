@@ -76,6 +76,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: cattle-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: blog
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: homepage
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
