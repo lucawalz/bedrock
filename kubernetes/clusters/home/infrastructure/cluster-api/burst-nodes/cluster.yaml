@@ -3,8 +3,6 @@ kind: Cluster
 metadata:
   name: burst
   namespace: caph-system
-  labels:
-    cluster-api.cattle.io/rancher-auto-import: "true"
 spec:
   clusterNetwork:
     pods:
