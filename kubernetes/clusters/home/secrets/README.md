@@ -14,6 +14,7 @@ Cluster secrets are committed encrypted with SOPS and the age backend, and Flux 
 | `pgadmin.sops.yaml` | pgAdmin login |
 | `litellm-secrets.sops.yaml`, `litellm-db-init.sops.yaml` | LiteLLM keys and database bootstrap |
 | `longhorn-backup-credentials.sops.yaml` | object-storage credentials for backups |
+| `velero-s3-credentials.sops.yaml` | object-storage credentials for Velero, as the AWS INI `cloud` key |
 
 ## Adding or editing a secret
 
