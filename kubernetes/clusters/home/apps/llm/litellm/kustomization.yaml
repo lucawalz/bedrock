@@ -5,3 +5,4 @@ resources:
   - ingress.yaml
   - middleware.yaml
   - db-init-job.yaml
+  - pdb.yaml

@@ -13,6 +13,13 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
   values:
     controllers:
       cloudflared:
@@ -24,10 +31,12 @@ spec:
             image:
               repository: cloudflare/cloudflared
               tag: latest
+              digest: sha256:ba461b8aa9c042156dbd39c38657fe7431bafa063220eab8d5330a523863da9f
             args:
               - tunnel
               - --config
               - /etc/cloudflared/config.yaml
+              - --no-autoupdate
               - run
             probes:
               liveness:

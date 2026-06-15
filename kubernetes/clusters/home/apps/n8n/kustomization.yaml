@@ -4,3 +4,4 @@ resources:
   - helmrelease.yaml
   - ingress.yaml
   - networkpolicies.yaml
+  - pdb.yaml
