@@ -54,7 +54,7 @@ spec:
               app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
-          port: 443
+          port: 8443
     - to:
         - ipBlock:
             cidr: 0.0.0.0/0
