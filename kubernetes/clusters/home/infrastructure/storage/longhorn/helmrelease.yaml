@@ -16,8 +16,13 @@ spec:
       version: 1.10.1
   install:
     timeout: 15m
+    remediation:
+      retries: 3
   upgrade:
     timeout: 15m
+    remediation:
+      retries: 3
+      remediateLastFailure: true
   interval: 30m0s
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
