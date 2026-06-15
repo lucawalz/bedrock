@@ -8,7 +8,6 @@ spec:
     spec:
       agentConfig:
         airGapped: true
-        nodeName: "{{ ds.meta_data.hostname }}"
         nodeLabels:
           - horizon.dev/pool=burst
       files:
