@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: node-reaper
+  namespace: caph-system
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: node-reaper
+        spec:
+          serviceAccountName: node-reaper
+          restartPolicy: Never
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: node-reaper
+              image: alpine/k8s:1.35.2
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                runAsNonRoot: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                requests:
+                  cpu: 25m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+
+                  candidates="$(kubectl get nodes \
+                    -l 'horizon.dev/pool in (elastic,reserved)' \
+                    -o jsonpath='{range .items[*]}{.metadata.name}{" "}{range .status.conditions[?(@.type=="Ready")]}{.status}{end}{"\n"}{end}' \
+                    | awk '$2 != "True" { print $1 }')"
+
+                  if [ -z "$candidates" ]; then
+                    echo "no orphan candidates"
+                    exit 0
+                  fi
+
+                  if ! owned="$(kubectl get machines -A \
+                    -o jsonpath='{range .items[*]}{.status.nodeRef.name}{"\n"}{end}')"; then
+                    echo "failed to list machines; refusing to delete on incomplete data" >&2
+                    exit 1
+                  fi
+
+                  for node in $candidates; do
+                    if printf '%s\n' "$owned" | grep -qxF "$node"; then
+                      echo "keeping owned node $node"
+                      continue
+                    fi
+                    echo "deleting orphan node $node"
+                    kubectl delete node "$node" --wait=false
+                  done
