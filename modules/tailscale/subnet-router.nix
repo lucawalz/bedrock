@@ -30,6 +30,7 @@ in
       useRoutingFeatures = "both";
       authKeyFile = cfg.authKeyFile;
       extraUpFlags = [
+        "--login-server=https://controlplane.tailscale.com"
         "--advertise-routes=${trustedSubnet}"
         "--accept-dns=false"
         "--advertise-tags=tag:cluster"
