@@ -28,3 +28,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0024. Let the cluster-autoscaler own the burst pool replica count](0024-autoscaler-owned-burst-pool.md) (accepted)
 - [0025. Split burst capacity into elastic and reserved node pools](0025-elastic-and-reserved-node-pools.md) (accepted)
 - [0026. Prune orphan burst node objects with an in-cluster reaper](0026-orphan-node-reaper.md) (accepted)
+- [0027. Guarantee a usable CAPI node snapshot at all times](0027-durable-capi-node-snapshot-pipeline.md) (accepted)

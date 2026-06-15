@@ -9,7 +9,12 @@ on:
       - modules/k3s/capi-node.nix
       - modules/k3s/hetzner-scaffolding.nix
       - infra/packer/**
+  schedule:
+    - cron: "0 4 * * 1"
   workflow_dispatch:
+
+env:
+  SNAPSHOT_RETENTION: "3"
 
 jobs:
   build:
@@ -39,6 +44,10 @@ jobs:
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
         run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "exists=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
           COUNT=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
@@ -99,7 +108,8 @@ jobs:
               "https://api.hetzner.cloud/v1/servers/$ID"
           done
 
-      - name: Delete stale snapshots
+      - name: Verify current snapshot exists
+        id: verify
         if: needs.build.result == 'success'
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
@@ -111,14 +121,33 @@ jobs:
             $(git rev-parse HEAD:modules/k3s/hetzner-scaffolding.nix) \
             $(git rev-parse HEAD:infra/packer) \
             | sha256sum | cut -c1-40)
-          OLD_IDS=$(curl -sf -G \
+          COUNT=$(curl -sf -G \
+            -H "Authorization: Bearer $HCLOUD_TOKEN" \
+            --data-urlencode "type=snapshot" \
+            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-nixos-hash=${CURRENT_HASH}" \
+            "https://api.hetzner.cloud/v1/images" \
+            | jq '.images | length')
+          if [ "$COUNT" -lt 1 ]; then
+            echo "no snapshot found for current hash ${CURRENT_HASH}; refusing to prune" >&2
+            exit 1
+          fi
+          echo "current_hash=${CURRENT_HASH}" >> $GITHUB_OUTPUT
+
+      - name: Prune stale snapshots beyond retention floor
+        if: steps.verify.outcome == 'success'
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          CURRENT_HASH: ${{ steps.verify.outputs.current_hash }}
+        run: |
+          DELETE_IDS=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
             --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-managed=true" \
+            --data-urlencode "sort=created:desc" \
             "https://api.hetzner.cloud/v1/images?per_page=50" \
-            | jq -r --arg hash "$CURRENT_HASH" \
-              '.images[] | select(.labels["bedrock-nixos-hash"] != $hash) | .id')
-          for ID in $OLD_IDS; do
+            | jq -r --arg hash "$CURRENT_HASH" --argjson keep "${SNAPSHOT_RETENTION}" \
+              '[.images[] | select(.labels["bedrock-nixos-hash"] != $hash)] | .[($keep - 1):] | .[].id')
+          for ID in $DELETE_IDS; do
             curl -sf -X DELETE -H "Authorization: Bearer $HCLOUD_TOKEN" \
               "https://api.hetzner.cloud/v1/images/$ID"
           done
