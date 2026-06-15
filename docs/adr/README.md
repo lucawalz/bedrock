@@ -25,3 +25,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0021. Serve the public blog and portfolio at the lucawalz.dev apex](0021-public-blog-portfolio-domain.md) (accepted)
 - [0022. Automate blog image deploys with Flux Image Update Automation](0022-automate-blog-image-deploys.md) (accepted)
 - [0023. Replace the self-hosted WireGuard overlay with Tailscale](0023-tailscale-overlay.md) (accepted)
+- [0024. Let the cluster-autoscaler own the burst pool replica count](0024-autoscaler-owned-burst-pool.md) (accepted)
