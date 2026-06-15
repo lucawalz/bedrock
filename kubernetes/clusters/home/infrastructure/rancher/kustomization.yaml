@@ -5,3 +5,4 @@ resources:
   - helmrelease.yaml
   - ingress.yaml
   - middleware.yaml
+  - pdb.yaml

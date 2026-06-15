@@ -17,6 +17,23 @@ spec:
   interval: 1m0s
   storageNamespace: postgres
   targetNamespace: postgres
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
   values:
+    image:
+      tag: 18.3.0
+      digest: sha256:9b62e6057d781853916a712ad2591a607de4529160e07c2eaf58d75ef6c45b9d
     networkPolicy:
       enabled: false
+    primary:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          memory: 768Mi
