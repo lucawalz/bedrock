@@ -8,7 +8,7 @@ metadata:
     horizon.dev/pool-name: burst-workers
 spec:
   clusterName: burst
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       horizon.dev/managed-by: horizon
