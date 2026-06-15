@@ -6,9 +6,9 @@ on:
     paths:
       - flake.nix
       - flake.lock
-      - modules/**
-      - lib/**
-      - hosts/**
+      - modules/k3s/capi-node.nix
+      - modules/k3s/hetzner-scaffolding.nix
+      - infra/packer/**
   workflow_dispatch:
 
 jobs:
@@ -29,9 +29,9 @@ jobs:
           echo "nixos_hash=$(printf '%s\n' \
             $(git rev-parse HEAD:flake.nix) \
             $(git rev-parse HEAD:flake.lock) \
-            $(git rev-parse HEAD:modules) \
-            $(git rev-parse HEAD:lib) \
-            $(git rev-parse HEAD:hosts) \
+            $(git rev-parse HEAD:modules/k3s/capi-node.nix) \
+            $(git rev-parse HEAD:modules/k3s/hetzner-scaffolding.nix) \
+            $(git rev-parse HEAD:infra/packer) \
             | sha256sum | cut -c1-40)" >> $GITHUB_OUTPUT
 
       - name: Check for existing snapshot
@@ -107,9 +107,9 @@ jobs:
           CURRENT_HASH=$(printf '%s\n' \
             $(git rev-parse HEAD:flake.nix) \
             $(git rev-parse HEAD:flake.lock) \
-            $(git rev-parse HEAD:modules) \
-            $(git rev-parse HEAD:lib) \
-            $(git rev-parse HEAD:hosts) \
+            $(git rev-parse HEAD:modules/k3s/capi-node.nix) \
+            $(git rev-parse HEAD:modules/k3s/hetzner-scaffolding.nix) \
+            $(git rev-parse HEAD:infra/packer) \
             | sha256sum | cut -c1-40)
           OLD_IDS=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
