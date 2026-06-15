@@ -45,7 +45,10 @@ spec:
   install:
     createNamespace: true
     crds: Create
+    remediation:
+      retries: 3
   upgrade:
     crds: CreateReplace
     remediation:
       retries: 3
+      remediateLastFailure: true
