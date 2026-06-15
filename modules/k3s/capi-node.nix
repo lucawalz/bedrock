@@ -3,6 +3,7 @@ let
   tailscaleAuthKeyPath = "/etc/tailscale/authkey";
   tailscaleIface = "tailscale0";
   k3sConfigPath = "/etc/rancher/k3s/config.yaml";
+  metadataBase = "http://169.254.169.254/hetzner/v1/metadata";
   airGappedInstallScript = pkgs.writeShellScript "k3s-airgapped-install" ''
     exit 0
   '';
@@ -12,7 +13,7 @@ in
 {
   imports = [ ./hetzner-scaffolding.nix ];
 
-  networking.hostName = "hetzner-capi-node";
+  networking.hostName = "";
   networking.useDHCP = true;
   networking.firewall.allowedTCPPorts = [ 10250 ];
   networking.firewall.allowedUDPPorts = [ 8472 ];
@@ -36,6 +37,31 @@ in
     "L+ /opt/install.sh - - - - ${airGappedInstallScript}"
   ];
 
+  systemd.services.hetzner-set-hostname = {
+    description = "Set the node hostname from Hetzner metadata";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    before = [ "tailscaled-autoconnect.service" "k3s-capi-config-augment.service" "k3s.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      TimeoutStartSec = 120;
+    };
+    script = ''
+      NAME=""
+      i=0
+      while [ $i -lt 30 ]; do
+        NAME=$(${pkgs.curl}/bin/curl -fsS --max-time 5 ${metadataBase}/hostname 2>/dev/null || true)
+        if [ -n "$NAME" ]; then break; fi
+        i=$((i+1))
+        sleep 2
+      done
+      if [ -n "$NAME" ]; then
+        ${pkgs.systemd}/bin/hostnamectl set-hostname "$NAME"
+      fi
+    '';
+  };
+
   services.tailscale = {
     enable = true;
     useRoutingFeatures = "client";
@@ -43,12 +69,11 @@ in
     extraUpFlags = [
       "--accept-routes"
       "--advertise-tags=tag:burst"
-      "--hostname=hetzner-capi-node"
     ];
   };
 
   systemd.services.tailscaled-autoconnect = {
-    after = [ "tailscaled.service" ];
+    after = [ "tailscaled.service" "hetzner-set-hostname.service" ];
     wants = [ "tailscaled.service" ];
     serviceConfig.TimeoutStartSec = lib.mkForce 600;
     preStart = ''
@@ -101,6 +126,15 @@ in
       ${pkgs.gnugrep}/bin/grep -q '^node-ip:' ${k3sConfigPath} || printf 'node-ip: %s\n' "$IP" >> ${k3sConfigPath}
       # flannel derives its VXLAN MTU from this iface (tailscale0 is 1280) so pod traffic over the tailnet does not fragment.
       ${pkgs.gnugrep}/bin/grep -q '^flannel-iface:' ${k3sConfigPath} || printf 'flannel-iface: %s\n' "${tailscaleIface}" >> ${k3sConfigPath}
+      ${pkgs.gnused}/bin/sed -i '/- cloud-provider=external/d' ${k3sConfigPath}
+      ID=$(${pkgs.curl}/bin/curl -fsS --max-time 10 ${metadataBase}/instance-id 2>/dev/null || true)
+      if [ -n "$ID" ] && ! ${pkgs.gnugrep}/bin/grep -q 'provider-id=' ${k3sConfigPath}; then
+        if ${pkgs.gnugrep}/bin/grep -q '^kubelet-arg:' ${k3sConfigPath}; then
+          ${pkgs.gnused}/bin/sed -i "/^kubelet-arg:/a - provider-id=hcloud://$ID" ${k3sConfigPath}
+        else
+          printf 'kubelet-arg:\n- provider-id=hcloud://%s\n' "$ID" >> ${k3sConfigPath}
+        fi
+      fi
     '';
   };
 
