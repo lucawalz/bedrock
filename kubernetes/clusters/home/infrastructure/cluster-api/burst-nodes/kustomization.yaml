@@ -3,3 +3,7 @@ kind: Kustomization
 
 resources:
   - kthreesconfigtemplate.yaml
+  - cluster.yaml
+  - hetznercluster.yaml
+  - hcloudmachinetemplate.yaml
+  - machinedeployment.yaml
