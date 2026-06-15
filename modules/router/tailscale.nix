@@ -1,8 +1,7 @@
 { config, secretsDir ? ../../secrets, ... }:
-let
-  trustedSubnet = "10.20.0.0/24";
-in
 {
+  imports = [ ../tailscale/subnet-router.nix ];
+
   age.secrets.tailscale-authkey = {
     file = "${secretsDir}/tailscale-authkey.age";
     mode = "0400";
@@ -10,17 +9,10 @@ in
     group = "root";
   };
 
-  services.tailscale = {
+  bedrock.tailscaleSubnetRouter = {
     enable = true;
-    useRoutingFeatures = "both";
+    hostname = "router";
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    extraUpFlags = [
-      "--advertise-routes=${trustedSubnet}"
-      "--accept-routes"
-      # the router runs AdGuard as the LAN resolver, so tailscale must not take over DNS
-      "--accept-dns=false"
-      "--advertise-tags=tag:cluster"
-      "--hostname=router"
-    ];
+    acceptRoutes = true;
   };
 }
