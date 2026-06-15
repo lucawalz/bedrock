@@ -1,7 +1,7 @@
 # Utility functions to reduce duplication in flake.nix
 { nixpkgs, self, disko, agenix, ... }:
 {
-  mkHost = { hostname, system ? "x86_64-linux" }:
+  mkHost = { hostname, system ? "x86_64-linux", baseline ? true }:
     nixpkgs.lib.nixosSystem {
       inherit system;
       specialArgs = {
@@ -12,7 +12,7 @@
         disko.nixosModules.disko
         agenix.nixosModules.default
         ../hosts/${hostname}
-      ];
+      ] ++ nixpkgs.lib.optional baseline ../hosts/common;
     };
 
   mkWorker = { workerId, diskDevice ? "/dev/nvme0n1", system ? "x86_64-linux" }:
@@ -28,9 +28,9 @@
       modules = [
         disko.nixosModules.disko
         agenix.nixosModules.default
+        ../hosts/common
         ({ config, lib, ... }: {
           imports = [
-            ../hosts/common
             ../modules/k3s/agent.nix
             ../modules/services/storage.nix
           ];
