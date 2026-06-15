@@ -7,7 +7,7 @@
     enable = true;
     role = "server";
     extraFlags = [
-      "--write-kubeconfig-mode=0644"
+      "--write-kubeconfig-mode=0600"
       "--disable=servicelb"        # Using Flux-managed Traefik instead
       "--disable=traefik"          # Using Flux-managed Traefik instead
       "--disable=local-storage"    # Using Longhorn instead
