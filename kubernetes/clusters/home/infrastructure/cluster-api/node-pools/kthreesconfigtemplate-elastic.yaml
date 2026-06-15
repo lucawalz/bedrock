@@ -1,7 +1,7 @@
 apiVersion: bootstrap.cluster.x-k8s.io/v1beta2
 kind: KThreesConfigTemplate
 metadata:
-  name: burst
+  name: elastic
   namespace: caph-system
 spec:
   template:
@@ -9,7 +9,7 @@ spec:
       agentConfig:
         airGapped: true
         nodeLabels:
-          - horizon.dev/pool=burst
+          - horizon.dev/pool=elastic
       files:
         - path: /etc/tailscale/authkey
           owner: root:root

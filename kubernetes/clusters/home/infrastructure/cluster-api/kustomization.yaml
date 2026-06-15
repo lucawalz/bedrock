@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - cluster-autoscaler
-  - burst-nodes
+  - node-pools
