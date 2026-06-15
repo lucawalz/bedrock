@@ -21,6 +21,10 @@ spec:
     remediation:
       retries: 3
   values:
+    objectStorage:
+      bucket: &bucket horizon-velero-backups
+      region: &region eu-central-1
+      s3Url: &s3Url https://fsn1.your-objectstorage.com
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.11.0
@@ -33,17 +37,17 @@ spec:
       backupStorageLocation:
         - name: default
           provider: aws
-          bucket: horizon-velero-backups
+          bucket: *bucket
           prefix: velero
           config:
-            region: eu-central-1
+            region: *region
             s3ForcePathStyle: "true"
-            s3Url: https://fsn1.your-objectstorage.com
+            s3Url: *s3Url
       volumeSnapshotLocation:
         - name: default
           provider: aws
           config:
-            region: eu-central-1
+            region: *region
     credentials:
       useSecret: true
       existingSecret: velero-s3-credentials

@@ -11,7 +11,9 @@ The cluster runs at home, on one internet line, in one building. A disk failure 
 
 ## Decision
 
-Velero handles cluster backup and restore, targeting Hetzner object storage in `fsn1` through the AWS S3 plugin, configured in `infrastructure/storage/velero/`. A daily schedule runs disaster-recovery backups with a one-week retention, and Velero captures both resource manifests and CSI volume snapshots, so a restore brings back the workloads and their data, not just the YAML.
+Velero handles cluster backup and restore, targeting an S3-compatible object storage bucket through the AWS S3 plugin, configured in `infrastructure/storage/velero/`. The configuration is provider-neutral: `provider: aws` with `s3ForcePathStyle` and a custom endpoint, so the bucket can live on any S3-compatible provider. The bucket name, region, and endpoint are a single `objectStorage` coordinate group in the HelmRelease values, and the access keys live in a SOPS-encrypted secret that Flux owns and applies. A daily schedule runs disaster-recovery backups with a one-week retention, and Velero captures both resource manifests and CSI volume snapshots, so a restore brings back the workloads and their data, not just the YAML.
+
+The bucket itself is created once, out-of-band, in the same spirit as the cluster age key. No destroy-capable tooling runs against the object-storage provider from this repository, because that account is shared with the separate vigil project. The one-time bootstrap is documented in `terraform/object-storage/README.md`.
 
 ## Options considered
 
@@ -21,4 +23,4 @@ Velero handles cluster backup and restore, targeting Hetzner object storage in `
 
 ## Consequences
 
-The cluster can be rebuilt from off-site copies, and namespace backups give horizon a clean way to move a workload to the cloud. The cost is another dependency on a SOPS-encrypted credential, the Hetzner S3 access keys, and the usual backup discipline: a backup that is never restore-tested is a guess, so restores have to be exercised, not assumed.
+The cluster can be rebuilt from off-site copies, and namespace backups give horizon a clean way to move a workload to the cloud. The cost is another dependency on a SOPS-encrypted credential, the S3 access keys, and the usual backup discipline: a backup that is never restore-tested is a guess, so restores have to be exercised, not assumed.
