@@ -24,6 +24,14 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
+    podSecurityContext:
+      seccompProfile:
+        type: RuntimeDefault
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - ALL
     objectStorage:
       bucket: &bucket horizon-velero-backups
       region: &region eu-central-1
@@ -32,6 +40,11 @@ spec:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.11.0
         imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
         volumeMounts:
           - mountPath: /target
             name: plugins
