@@ -26,3 +26,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0022. Automate blog image deploys with Flux Image Update Automation](0022-automate-blog-image-deploys.md) (accepted)
 - [0023. Replace the self-hosted WireGuard overlay with Tailscale](0023-tailscale-overlay.md) (accepted)
 - [0024. Let the cluster-autoscaler own the burst pool replica count](0024-autoscaler-owned-burst-pool.md) (accepted)
+- [0025. Split burst capacity into elastic and reserved node pools](0025-elastic-and-reserved-node-pools.md) (accepted)
