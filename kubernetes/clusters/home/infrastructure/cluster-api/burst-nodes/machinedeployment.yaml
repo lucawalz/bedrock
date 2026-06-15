@@ -6,9 +6,11 @@ metadata:
   labels:
     horizon.dev/managed-by: horizon
     horizon.dev/pool-name: burst-workers
+  annotations:
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-min-size: "0"
+    cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "2"
 spec:
   clusterName: burst
-  replicas: 0
   selector:
     matchLabels:
       horizon.dev/managed-by: horizon
