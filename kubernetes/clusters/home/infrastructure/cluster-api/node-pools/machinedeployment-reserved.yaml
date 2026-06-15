@@ -1,0 +1,37 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachineDeployment
+metadata:
+  name: reserved-workers
+  namespace: caph-system
+  labels:
+    cluster.x-k8s.io/cluster-name: burst
+    horizon.dev/managed-by: horizon
+    horizon.dev/pool-type: reserved
+    horizon.dev/pool-name: reserved-workers
+  annotations:
+    kustomize.toolkit.fluxcd.io/ssa: IfNotPresent
+spec:
+  clusterName: burst
+  replicas: 0
+  selector:
+    matchLabels:
+      horizon.dev/managed-by: horizon
+      horizon.dev/pool-name: reserved-workers
+  template:
+    metadata:
+      labels:
+        horizon.dev/managed-by: horizon
+        horizon.dev/pool-type: reserved
+        horizon.dev/pool-name: reserved-workers
+    spec:
+      clusterName: burst
+      version: v1.35.2+k3s1
+      bootstrap:
+        configRef:
+          apiGroup: bootstrap.cluster.x-k8s.io
+          kind: KThreesConfigTemplate
+          name: reserved
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: HCloudMachineTemplate
+        name: worker
