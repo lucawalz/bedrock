@@ -42,8 +42,8 @@ build {
 
   provisioner "shell-local" {
     inline = [
-      "sleep 120",
-      "until ssh -i ${var.ssh_private_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes root@${build.Host} 'systemctl is-system-running --wait || true && sync'; do sleep 15; done"
+      "sleep 60",
+      "until ssh -i ${var.ssh_private_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o BatchMode=yes root@${build.Host} 'cloud-init status --wait >/dev/null 2>&1 || true; sync'; do sleep 15; done"
     ]
   }
 }
