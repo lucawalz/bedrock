@@ -1,0 +1,22 @@
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: HetznerCluster
+metadata:
+  name: burst
+  namespace: caph-system
+spec:
+  controlPlaneEndpoint:
+    host: 10.20.0.10
+    port: 6443
+  controlPlaneRegions:
+    - hel1
+  controlPlaneLoadBalancer:
+    enabled: false
+  hcloudNetwork:
+    enabled: false
+  hetznerSecretRef:
+    name: hetzner
+    key:
+      hcloudToken: hcloud-token
+  sshKeys:
+    hcloud:
+      - name: bedrock-capi
