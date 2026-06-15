@@ -13,5 +13,11 @@ in
 
   security.sudo.wheelNeedsPassword = false;
 
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
 }
