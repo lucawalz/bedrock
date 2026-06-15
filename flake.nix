@@ -19,7 +19,7 @@
   in {
     nixosConfigurations = {
       master   = lib.mkHost { hostname = "master"; };
-      router   = lib.mkHost { hostname = "router"; system = "aarch64-linux"; };
+      router   = lib.mkHost { hostname = "router"; system = "aarch64-linux"; baseline = false; };
       worker-1 = lib.mkWorker { workerId = 1; };
       worker-2 = lib.mkWorker { workerId = 2; };
       hetzner-capi-node = nixpkgs.lib.nixosSystem {

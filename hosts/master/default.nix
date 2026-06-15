@@ -13,7 +13,6 @@ in
   imports = [
     ./disko-config.nix
     ./hardware-configuration.nix
-    ../common
     ../../modules/k3s/server.nix
     ../../modules/services/storage.nix
   ];
