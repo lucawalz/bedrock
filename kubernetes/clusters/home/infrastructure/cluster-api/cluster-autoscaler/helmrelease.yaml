@@ -25,7 +25,7 @@ spec:
     clusterAPIMode: incluster-incluster
     autoDiscovery:
       labels:
-        - cluster.x-k8s.io/cluster-name: home-burst
+        - cluster.x-k8s.io/cluster-name: burst
     extraArgs:
       scale-down-enabled: true
       scale-down-delay-after-add: 10m
