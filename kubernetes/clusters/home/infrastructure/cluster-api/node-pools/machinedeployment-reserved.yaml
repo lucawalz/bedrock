@@ -13,6 +13,8 @@ metadata:
 spec:
   clusterName: burst
   replicas: 0
+  machineNaming:
+    template: "reserved-worker-{{ .random }}"
   selector:
     matchLabels:
       horizon.dev/managed-by: horizon
