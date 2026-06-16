@@ -37,6 +37,12 @@ spec:
         memory: 512Mi
     falcosidekick:
       enabled: false
+    falcoctl:
+      artifact:
+        install:
+          enabled: false
+        follow:
+          enabled: false
     falco:
       json_output: true
       stdout_output:
