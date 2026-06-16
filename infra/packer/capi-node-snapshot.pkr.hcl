@@ -20,7 +20,6 @@ source "hcloud" "capi-node" {
     "bedrock-managed"    = "true"
     "bedrock-role"       = "capi-node"
     "bedrock-nixos-hash" = var.nixos_hash
-    "caph-image-name"    = "bedrock-capi-node"
   }
 
   ssh_handshake_attempts = 60

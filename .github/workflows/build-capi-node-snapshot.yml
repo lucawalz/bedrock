@@ -133,7 +133,41 @@ jobs:
           fi
           echo "current_hash=${CURRENT_HASH}" >> $GITHUB_OUTPUT
 
-      - name: Prune stale snapshots beyond retention floor
+      - name: Promote current snapshot for CAPH selection
+        if: steps.verify.outcome == 'success'
+        env:
+          HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+          CURRENT_HASH: ${{ steps.verify.outputs.current_hash }}
+        run: |
+          images=$(curl -sf -G \
+            -H "Authorization: Bearer $HCLOUD_TOKEN" \
+            --data-urlencode "type=snapshot" \
+            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-managed=true" \
+            --data-urlencode "sort=created:desc" \
+            "https://api.hetzner.cloud/v1/images?per_page=50")
+          relabel() {
+            curl -sf -X PUT -H "Authorization: Bearer $HCLOUD_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"labels\": $2}" \
+              "https://api.hetzner.cloud/v1/images/$1" >/dev/null
+          }
+          selected=$(echo "$images" | jq -r --arg hash "$CURRENT_HASH" \
+            'first(.images[] | select(.labels["bedrock-nixos-hash"] == $hash) | .id) // empty')
+          if [ -z "$selected" ]; then
+            echo "no current-hash snapshot to promote" >&2
+            exit 1
+          fi
+          labels=$(echo "$images" | jq -c --argjson id "$selected" \
+            '(.images[] | select(.id == $id) | .labels) + {"caph-image-name": "bedrock-capi-node"}')
+          relabel "$selected" "$labels"
+          for id in $(echo "$images" | jq -r --argjson sel "$selected" \
+            '.images[] | select(.id != $sel and (.labels | has("caph-image-name"))) | .id'); do
+            labels=$(echo "$images" | jq -c --argjson id "$id" \
+              '(.images[] | select(.id == $id) | .labels) | del(.["caph-image-name"])')
+            relabel "$id" "$labels"
+          done
+
+      - name: Prune duplicate and stale snapshots
         if: steps.verify.outcome == 'success'
         env:
           HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
@@ -145,8 +179,10 @@ jobs:
             --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-managed=true" \
             --data-urlencode "sort=created:desc" \
             "https://api.hetzner.cloud/v1/images?per_page=50" \
-            | jq -r --arg hash "$CURRENT_HASH" --argjson keep "${SNAPSHOT_RETENTION}" \
-              '[.images[] | select(.labels["bedrock-nixos-hash"] != $hash)] | .[($keep - 1):] | .[].id')
+            | jq -r --arg hash "$CURRENT_HASH" --argjson keep "${SNAPSHOT_RETENTION}" '
+              ([.images[] | select(.labels["bedrock-nixos-hash"] == $hash)] | .[1:] | .[].id),
+              ([.images[] | select(.labels["bedrock-nixos-hash"] != $hash)] | .[($keep - 1):] | .[].id)
+            ')
           for ID in $DELETE_IDS; do
             curl -sf -X DELETE -H "Authorization: Bearer $HCLOUD_TOKEN" \
               "https://api.hetzner.cloud/v1/images/$ID"
