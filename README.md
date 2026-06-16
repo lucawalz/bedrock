@@ -156,6 +156,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | pgAdmin | Postgres administration | internal |
 | Longhorn | storage management UI | internal |
 | Traefik | router dashboard | internal |
+| ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 
 Ollama serves the models (`qwen2.5-coder:7b` and `llama3.1:8b`) on worker-1 and stays internal. A single Postgres instance backs n8n, LiteLLM, and pgAdmin.
 
