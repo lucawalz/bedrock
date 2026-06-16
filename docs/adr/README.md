@@ -31,3 +31,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0027. Guarantee a usable CAPI node snapshot at all times](0027-durable-capi-node-snapshot-pipeline.md) (accepted)
 - [0028. Route alerts and reconciliation failures to a self-hosted ntfy](0028-self-hosted-ntfy-alerting.md) (accepted)
 - [0029. Promote a single CAPH-selectable node snapshot](0029-single-selectable-capi-node-snapshot.md) (accepted)
+- [0030. Accept an externally managed control plane for the burst cluster](0030-externally-managed-control-plane.md) (accepted)
