@@ -29,3 +29,5 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0025. Split burst capacity into elastic and reserved node pools](0025-elastic-and-reserved-node-pools.md) (accepted)
 - [0026. Prune orphan burst node objects with an in-cluster reaper](0026-orphan-node-reaper.md) (accepted)
 - [0027. Guarantee a usable CAPI node snapshot at all times](0027-durable-capi-node-snapshot-pipeline.md) (accepted)
+- [0028. Route alerts and reconciliation failures to a self-hosted ntfy](0028-self-hosted-ntfy-alerting.md) (accepted)
+- [0029. Promote a single CAPH-selectable node snapshot](0029-single-selectable-capi-node-snapshot.md) (accepted)
