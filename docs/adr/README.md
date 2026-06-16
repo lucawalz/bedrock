@@ -32,3 +32,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0028. Route alerts and reconciliation failures to a self-hosted ntfy](0028-self-hosted-ntfy-alerting.md) (accepted)
 - [0029. Promote a single CAPH-selectable node snapshot](0029-single-selectable-capi-node-snapshot.md) (accepted)
 - [0030. Accept an externally managed control plane for the burst cluster](0030-externally-managed-control-plane.md) (accepted)
+- [0031. Pin the home flannel MTU to the tailnet path MTU](0031-pin-home-flannel-mtu-to-tailnet-path.md) (accepted)
