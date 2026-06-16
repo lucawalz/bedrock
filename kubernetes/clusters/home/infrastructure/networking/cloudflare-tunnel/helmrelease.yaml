@@ -30,8 +30,7 @@ spec:
           app:
             image:
               repository: cloudflare/cloudflared
-              tag: latest
-              digest: sha256:ba461b8aa9c042156dbd39c38657fe7431bafa063220eab8d5330a523863da9f
+              tag: latest@sha256:ba461b8aa9c042156dbd39c38657fe7431bafa063220eab8d5330a523863da9f
             args:
               - tunnel
               - --config
