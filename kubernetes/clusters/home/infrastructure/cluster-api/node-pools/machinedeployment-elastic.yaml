@@ -13,6 +13,8 @@ metadata:
     cluster.x-k8s.io/cluster-api-autoscaler-node-group-max-size: "2"
 spec:
   clusterName: burst
+  machineNaming:
+    template: "elastic-worker-{{ .random }}"
   selector:
     matchLabels:
       horizon.dev/managed-by: horizon
