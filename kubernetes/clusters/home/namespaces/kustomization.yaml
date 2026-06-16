@@ -18,6 +18,7 @@ resources:
   - falco.yaml
   - homepage.yaml
   - blog.yaml
+  - ntfy.yaml
   - reloader.yaml
   - caph-system.yaml
   - capi-k3s-bootstrap-system.yaml
