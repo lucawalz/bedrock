@@ -6,6 +6,9 @@ metadata:
 spec:
   template:
     spec:
+      controlPlaneEndpoint:
+        host: ""
+        port: 6443
       controlPlaneRegions:
         - hel1
       controlPlaneLoadBalancer:
