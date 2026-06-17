@@ -13,6 +13,8 @@ date: 2026-06-15
 
 Tailscale replaces the self-hosted WireGuard hub. The Pi router runs as a Tailscale subnet router and advertises the trusted `10.20.0.0/24` range, so the admin workstation and any tailnet member reach the cluster without a manual peer list. Burst nodes join the tailnet at boot from an auth key and ride the same overlay, which removes the bespoke key injection and the `wg0`-up dance. The router keeps AdGuard as the LAN resolver, so Tailscale is told not to manage DNS.
 
+Superseded in part by [ADR 0032](0032-drop-worker-2-standby-subnet-router.md): the worker-2 standby subnet router described in this paragraph has been removed, leaving the Pi as the sole subnet router.
+
 worker-2 runs a standby subnet router advertising the same `10.20.0.0/24` prefix, so the Pi is no longer a single point of failure for tailnet access to the lab. Tailscale fails over between two nodes advertising one prefix on its own, with no virtual IP or keepalive to operate. The subnet-router configuration is a shared NixOS module (`modules/tailscale/subnet-router.nix`) parameterised per host; the primary on the Pi sets `--accept-routes`, the standby on worker-2 deliberately does not, since a subnet router that accepts the prefix it serves forms a routing loop. Both share `tag:cluster` and the `--accept-dns=false` posture. The standby authenticates with its own auth key, scoped to the worker-2 host key in the secrets model from [0007](0007-agenix-sops-secrets.md).
 
 ## Options considered
