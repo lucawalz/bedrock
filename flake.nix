@@ -22,11 +22,18 @@
       router   = lib.mkHost { hostname = "router"; system = "aarch64-linux"; baseline = false; };
       worker-1 = lib.mkWorker { workerId = 1; };
       worker-2 = lib.mkWorker { workerId = 2; };
-      hetzner-capi-node = nixpkgs.lib.nixosSystem {
+      pool-node = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
           disko.nixosModules.disko
-          ./modules/k3s/capi-node.nix
+          ./modules/k3s/pool-node.nix
+        ];
+      };
+      cluster-node = nixpkgs.lib.nixosSystem {
+        system = "x86_64-linux";
+        modules = [
+          disko.nixosModules.disko
+          ./modules/k3s/cluster-node.nix
         ];
       };
       router-installer = nixpkgs.lib.nixosSystem {

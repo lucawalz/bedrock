@@ -35,7 +35,7 @@ in
 
   services.openiscsi = {
     enable = true;
-    name = "iqn.2016-04.com.open-iscsi:bedrock-capi-node";
+    name = "iqn.2016-04.com.open-iscsi:bedrock-pool-node";
   };
 
   systemd.tmpfiles.rules = [
