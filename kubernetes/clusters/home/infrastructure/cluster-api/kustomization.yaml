@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
   - cluster-autoscaler
+  - external-controlplane
   - node-pools
   - reaper
