@@ -6,6 +6,13 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Grafana
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: grafana.png
+    gethomepage.dev/href: https://grafana.syslabs.dev
+    gethomepage.dev/siteMonitor: https://grafana.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   ingressClassName: traefik
   rules:

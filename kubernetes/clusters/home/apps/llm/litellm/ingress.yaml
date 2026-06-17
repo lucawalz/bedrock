@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: litellm
   namespace: llm
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: LiteLLM
+    gethomepage.dev/group: AI
+    gethomepage.dev/icon: litellm.png
+    gethomepage.dev/href: https://llm.syslabs.dev
+    gethomepage.dev/siteMonitor: https://llm.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

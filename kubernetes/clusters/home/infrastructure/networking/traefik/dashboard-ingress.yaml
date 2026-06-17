@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: traefik-dashboard
   namespace: traefik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Traefik
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: traefik.png
+    gethomepage.dev/href: https://traefik.syslabs.dev
+    gethomepage.dev/siteMonitor: https://traefik.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

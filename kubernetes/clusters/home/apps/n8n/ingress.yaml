@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: n8n
   namespace: n8n
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: n8n
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: n8n.png
+    gethomepage.dev/href: https://n8n.syslabs.dev
+    gethomepage.dev/siteMonitor: https://n8n.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

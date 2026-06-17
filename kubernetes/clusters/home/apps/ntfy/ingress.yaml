@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: ntfy
   namespace: ntfy
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: ntfy
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: ntfy.png
+    gethomepage.dev/href: https://ntfy.syslabs.dev
+    gethomepage.dev/siteMonitor: https://ntfy.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web
