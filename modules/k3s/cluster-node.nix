@@ -118,6 +118,7 @@ in
         ${pkgs.gnugrep}/bin/grep -q '^flannel-iface:' ${k3sConfigPath} || printf 'flannel-iface: %s\n' "$IFACE" >> ${k3sConfigPath}
       fi
       ${pkgs.gnused}/bin/sed -i '/- cloud-provider=external/d' ${k3sConfigPath}
+      ${pkgs.gawk}/bin/awk '/-arg:[[:space:]]*$/{p=$0;next} {if(p!=""){if($0~/^[[:space:]]*-[[:space:]]/)print p;p=""}print}' ${k3sConfigPath} > ${k3sConfigPath}.tmp && ${pkgs.coreutils}/bin/mv ${k3sConfigPath}.tmp ${k3sConfigPath}
       ID=$(${pkgs.curl}/bin/curl -fsS --max-time 10 ${metadataBase}/instance-id 2>/dev/null || true)
       if [ -n "$ID" ] && ! ${pkgs.gnugrep}/bin/grep -q 'provider-id=' ${k3sConfigPath}; then
         if ${pkgs.gnugrep}/bin/grep -q '^kubelet-arg:' ${k3sConfigPath}; then
