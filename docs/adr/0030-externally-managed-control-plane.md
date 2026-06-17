@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0033
 date: 2026-06-17
 ---
 
 # 0030. Accept an externally managed control plane for the burst cluster
+
+> Superseded by [0033](0033-adopt-external-controlplane-object.md), which provides a control-plane object and controller to retire the status nudge.
 
 ## Context
 
