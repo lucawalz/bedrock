@@ -1,8 +1,5 @@
 # Utility functions to reduce duplication in flake.nix
 { nixpkgs, self, disko, agenix, ... }:
-let
-  standbySubnetRouterWorkerId = 2;
-in
 {
   mkHost = { hostname, system ? "x86_64-linux", baseline ? true }:
     nixpkgs.lib.nixosSystem {
@@ -32,33 +29,16 @@ in
         disko.nixosModules.disko
         agenix.nixosModules.default
         ../hosts/common
-        ({ config, lib, secretsDir, ... }: {
+        ({ ... }: {
           imports = [
             ../modules/k3s/agent.nix
             ../modules/services/storage.nix
-            ../modules/tailscale/subnet-router.nix
           ];
 
           networking.hostName = hostname;
           system.stateVersion = "25.05";
 
           services.k3s.extraFlags = [ "--node-ip=10.20.0.1${toString workerId}" ];
-
-          age.secrets = lib.mkIf (workerId == standbySubnetRouterWorkerId) {
-            "tailscale-authkey-${hostname}" = {
-              file = "${secretsDir}/tailscale-authkey-${hostname}.age";
-              mode = "0400";
-              owner = "root";
-              group = "root";
-            };
-          };
-
-          bedrock.tailscaleSubnetRouter = lib.mkIf (workerId == standbySubnetRouterWorkerId) {
-            enable = true;
-            hostname = hostname;
-            authKeyFile = config.age.secrets."tailscale-authkey-${hostname}".path;
-            acceptRoutes = false;
-          };
 
           disko.devices = {
             disk = {

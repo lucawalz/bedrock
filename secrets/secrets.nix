@@ -13,7 +13,6 @@ in
 {
   "k3s-token.age".publicKeys = [ master worker-1 worker-2 luca ];
   "tailscale-authkey.age".publicKeys = [ router luca ];
-  "tailscale-authkey-worker-2.age".publicKeys = [ worker-2 luca ];
   "adguard-admin.age".publicKeys = [ router luca ];
 }
 
