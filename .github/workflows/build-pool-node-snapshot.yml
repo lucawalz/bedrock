@@ -1,4 +1,4 @@
-name: build-capi-node-snapshot
+name: build-pool-node-snapshot
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
     paths:
       - flake.nix
       - flake.lock
-      - modules/k3s/capi-node.nix
+      - modules/k3s/pool-node.nix
       - modules/k3s/hetzner-scaffolding.nix
       - infra/packer/**
   schedule:
@@ -34,7 +34,7 @@ jobs:
           echo "nixos_hash=$(printf '%s\n' \
             $(git rev-parse HEAD:flake.nix) \
             $(git rev-parse HEAD:flake.lock) \
-            $(git rev-parse HEAD:modules/k3s/capi-node.nix) \
+            $(git rev-parse HEAD:modules/k3s/pool-node.nix) \
             $(git rev-parse HEAD:modules/k3s/hetzner-scaffolding.nix) \
             $(git rev-parse HEAD:infra/packer) \
             | sha256sum | cut -c1-40)" >> $GITHUB_OUTPUT
@@ -51,7 +51,7 @@ jobs:
           COUNT=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
-            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-nixos-hash=${{ steps.hash.outputs.nixos_hash }}" \
+            --data-urlencode "label_selector=bedrock-role=pool-node,bedrock-nixos-hash=${{ steps.hash.outputs.nixos_hash }}" \
             "https://api.hetzner.cloud/v1/images" \
             | jq '.images | length')
           echo "exists=$([ "$COUNT" -gt 0 ] && echo true || echo false)" >> $GITHUB_OUTPUT
@@ -75,7 +75,7 @@ jobs:
           PKR_VAR_nixos_commit_sha: ${{ github.sha }}
           PKR_VAR_nixos_hash: ${{ steps.hash.outputs.nixos_hash }}
           PKR_VAR_ssh_private_key_file: /tmp/packer_key
-        run: packer build .
+        run: packer build -only=hcloud.pool-node .
 
   cleanup:
     runs-on: ubuntu-latest
@@ -117,14 +117,14 @@ jobs:
           CURRENT_HASH=$(printf '%s\n' \
             $(git rev-parse HEAD:flake.nix) \
             $(git rev-parse HEAD:flake.lock) \
-            $(git rev-parse HEAD:modules/k3s/capi-node.nix) \
+            $(git rev-parse HEAD:modules/k3s/pool-node.nix) \
             $(git rev-parse HEAD:modules/k3s/hetzner-scaffolding.nix) \
             $(git rev-parse HEAD:infra/packer) \
             | sha256sum | cut -c1-40)
           COUNT=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
-            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-nixos-hash=${CURRENT_HASH}" \
+            --data-urlencode "label_selector=bedrock-role=pool-node,bedrock-nixos-hash=${CURRENT_HASH}" \
             "https://api.hetzner.cloud/v1/images" \
             | jq '.images | length')
           if [ "$COUNT" -lt 1 ]; then
@@ -142,7 +142,7 @@ jobs:
           images=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
-            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-managed=true" \
+            --data-urlencode "label_selector=bedrock-role=pool-node,bedrock-managed=true" \
             --data-urlencode "sort=created:desc" \
             "https://api.hetzner.cloud/v1/images?per_page=50")
           relabel() {
@@ -158,7 +158,7 @@ jobs:
             exit 1
           fi
           labels=$(echo "$images" | jq -c --argjson id "$selected" \
-            '(.images[] | select(.id == $id) | .labels) + {"caph-image-name": "bedrock-capi-node"}')
+            '(.images[] | select(.id == $id) | .labels) + {"caph-image-name": "bedrock-pool-node"}')
           relabel "$selected" "$labels"
           for id in $(echo "$images" | jq -r --argjson sel "$selected" \
             '.images[] | select(.id != $sel and (.labels | has("caph-image-name"))) | .id'); do
@@ -176,7 +176,7 @@ jobs:
           DELETE_IDS=$(curl -sf -G \
             -H "Authorization: Bearer $HCLOUD_TOKEN" \
             --data-urlencode "type=snapshot" \
-            --data-urlencode "label_selector=bedrock-role=capi-node,bedrock-managed=true" \
+            --data-urlencode "label_selector=bedrock-role=pool-node,bedrock-managed=true" \
             --data-urlencode "sort=created:desc" \
             "https://api.hetzner.cloud/v1/images?per_page=50" \
             | jq -r --arg hash "$CURRENT_HASH" --argjson keep "${SNAPSHOT_RETENTION}" '

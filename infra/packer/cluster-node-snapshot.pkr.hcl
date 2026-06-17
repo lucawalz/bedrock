@@ -7,7 +7,7 @@ packer {
   }
 }
 
-source "hcloud" "capi-node" {
+source "hcloud" "cluster-node" {
   token                = var.hcloud_token
   image                = "debian-12"
   location             = "hel1"
@@ -15,10 +15,10 @@ source "hcloud" "capi-node" {
   ssh_username         = "root"
   ssh_private_key_file = var.ssh_private_key_file
 
-  snapshot_name = "bedrock-capi-node-${var.nixos_hash}"
+  snapshot_name = "bedrock-cluster-node-${var.nixos_hash}"
   snapshot_labels = {
     "bedrock-managed"    = "true"
-    "bedrock-role"       = "capi-node"
+    "bedrock-role"       = "cluster-node"
     "bedrock-nixos-hash" = var.nixos_hash
   }
 
@@ -27,7 +27,7 @@ source "hcloud" "capi-node" {
 }
 
 build {
-  sources = ["source.hcloud.capi-node"]
+  sources = ["source.hcloud.cluster-node"]
 
   provisioner "shell-local" {
     inline = [
@@ -36,7 +36,7 @@ build {
       "chmod 700 /tmp/packer-extra-files/root/.ssh",
       "cp ${var.ssh_private_key_file}.pub /tmp/packer-extra-files/root/.ssh/authorized_keys",
       "chmod 600 /tmp/packer-extra-files/root/.ssh/authorized_keys",
-      "nix run --accept-flake-config 'github:nix-community/nixos-anywhere?ref=1.13.0' -- --extra-files /tmp/packer-extra-files --ssh-option 'IdentityFile=${var.ssh_private_key_file}' --ssh-option 'StrictHostKeyChecking=no' --ssh-option 'UserKnownHostsFile=/dev/null' --flake 'github:lucawalz/bedrock/${var.nixos_commit_sha}#hetzner-capi-node' root@${build.Host}"
+      "nix run --accept-flake-config 'github:nix-community/nixos-anywhere?ref=1.13.0' -- --extra-files /tmp/packer-extra-files --ssh-option 'IdentityFile=${var.ssh_private_key_file}' --ssh-option 'StrictHostKeyChecking=no' --ssh-option 'UserKnownHostsFile=/dev/null' --flake 'github:lucawalz/bedrock/${var.nixos_commit_sha}#cluster-node' root@${build.Host}"
     ]
   }
 
