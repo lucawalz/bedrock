@@ -15,7 +15,6 @@ resources:
   - cattle-system.yaml
   - velero.yaml
   - llm.yaml
-  - falco.yaml
   - homepage.yaml
   - blog.yaml
   - ntfy.yaml
