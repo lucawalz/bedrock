@@ -33,8 +33,14 @@ in
     };
   };
 
+  services.openiscsi = {
+    enable = true;
+    name = "iqn.2016-04.com.open-iscsi:bedrock-capi-node";
+  };
+
   systemd.tmpfiles.rules = [
     "L+ /opt/install.sh - - - - ${airGappedInstallScript}"
+    "L+ /usr/local/bin - - - - /run/current-system/sw/bin/"
   ];
 
   systemd.services.hetzner-set-hostname = {
