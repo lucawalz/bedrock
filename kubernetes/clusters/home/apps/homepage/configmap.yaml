@@ -6,6 +6,8 @@ metadata:
 data:
   kubernetes.yaml: |
     mode: cluster
+    ingress: true
+    traefik: true
 
   settings.yaml: |
     title: syslabs
@@ -35,33 +37,7 @@ data:
               href: https://grafana.syslabs.dev
 
   services.yaml: |
-    - AI:
-        - Open WebUI:
-            href: https://chat.syslabs.dev
-            description: chat frontend
-            siteMonitor: https://chat.syslabs.dev
-        - LiteLLM:
-            href: https://llm.syslabs.dev
-            description: llm gateway
-            siteMonitor: https://llm.syslabs.dev
-    - Apps:
-        - n8n:
-            href: https://n8n.syslabs.dev
-            description: workflow automation
-            siteMonitor: https://n8n.syslabs.dev
-        - pgAdmin:
-            href: https://pgadmin.syslabs.dev
-            description: postgres admin
-            siteMonitor: https://pgadmin.syslabs.dev
-    - Platform:
-        - Grafana:
-            href: https://grafana.syslabs.dev
-            description: dashboards
-            siteMonitor: https://grafana.syslabs.dev
-        - Rancher:
-            href: https://rancher.syslabs.dev
-            description: cluster management
-            siteMonitor: https://rancher.syslabs.dev
+    []
 
   widgets.yaml: |
     - kubernetes:
