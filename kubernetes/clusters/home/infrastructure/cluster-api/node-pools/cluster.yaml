@@ -11,6 +11,10 @@ spec:
     services:
       cidrBlocks:
         - 10.43.0.0/16
+  controlPlaneRef:
+    apiGroup: controlplane.horizon.dev
+    kind: ExternalControlPlane
+    name: burst
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
     kind: HetznerCluster
