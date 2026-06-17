@@ -1,12 +1,3 @@
-packer {
-  required_plugins {
-    hcloud = {
-      version = ">= 1.5.0"
-      source  = "github.com/hetznercloud/hcloud"
-    }
-  }
-}
-
 source "hcloud" "cluster-node" {
   token                = var.hcloud_token
   image                = "debian-12"
