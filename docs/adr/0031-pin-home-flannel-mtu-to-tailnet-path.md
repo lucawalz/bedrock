@@ -15,13 +15,13 @@ Cross-node pod packets larger than roughly 1200 bytes set the don't-fragment bit
 
 ## Decision
 
-Pin the home flannel MTU to 1230 so every node's overlay agrees at the tailnet path MTU. k3s exposes no first-class flannel-MTU option, so the shared k3s module deploys a flannel net-conf at `/etc/k3s/flannel-net-conf.json` carrying the cluster pod CIDR `10.42.0.0/16`, the vxlan backend, and `MTU: 1230`, and points k3s at it with `--flannel-conf`. The override keeps k3s's own pod CIDR and vxlan backend, with the same VNI and UDP 8472 port, so only the MTU changes.
+Pin the home flannel overlay to 1230 so every node's overlay agrees at the tailnet path MTU. k3s exposes no first-class flannel-MTU option, so the shared k3s module deploys a flannel net-conf at `/etc/k3s/flannel-net-conf.json` carrying the cluster pod CIDR `10.42.0.0/16`, the vxlan backend, and `MTU: 1280`, and points k3s at it with `--flannel-conf`. The net-conf MTU is the outer encapsulated-packet size, so flannel subtracts the 50-byte vxlan header and gives flannel.1 a device MTU of 1230; the field carries 1280 precisely so the overlay device settles at 1230. The override keeps k3s's own pod CIDR and vxlan backend, with the same VNI and UDP 8472 port, so only the MTU changes.
 
 The override lives in `common.nix`, which both the server and agent modules import, so master and both workers receive it. The burst node module does not import `common.nix`, so the burst node is untouched and keeps deriving its 1230 from `tailscale0`.
 
 ## Options considered
 
-- Deploy a flannel net-conf override pinning MTU 1230 through the shared k3s module, chosen. It is the single place that reaches all home nodes, it changes only the MTU while preserving the pod CIDR and backend, and it lands the same 1230 the burst node already uses.
+- Deploy a flannel net-conf override through the shared k3s module, setting the outer MTU to 1280 so the overlay device settles at 1230, chosen. It is the single place that reaches all home nodes, it changes only the MTU while preserving the pod CIDR and backend, and it lands the same 1230 the burst node already uses.
 - Set `flannel-iface: tailscale0` on the home nodes as well, rejected. The home nodes are not tailnet members and have no `tailscale0`, so flannel would have no interface to bind and the overlay would break.
 - Add static routes or push the correction through the Pi router, rejected. The underlay already routes correctly via the Pi; the only fault is the MTU mismatch, which routing changes do not address.
 
@@ -29,7 +29,9 @@ The override lives in `common.nix`, which both the server and agent modules impo
 
 All home nodes carry a flannel.1 MTU of 1230, matching the burst node and the tailnet path, so cross-node pod packets no longer exceed the tunnel and pod-networked workloads on burst nodes stop being black-holed. Home-to-home pod traffic now also runs at 1230 rather than 1450; the lower MTU costs a small amount of per-packet efficiency on the LAN but keeps a single overlay MTU across the whole cluster, which is simpler than a per-node split and removes the failure mode entirely. The net-conf file becomes the source of truth for the home overlay's pod CIDR and backend, so any future change to either must be made there as well as in k3s.
 
-A live measurement this session confirmed the pin is exact: 1230 plus the 50-byte VXLAN header is 1280, the `tailscale0` path MTU, so the overlay now fits its worst leg with nothing to spare.
+A live measurement this session set the value. Flannel writes `FLANNEL_MTU` as the net-conf MTU less the 50-byte vxlan header, so the field must carry the outer 1280 to land a 1230 device; an earlier 1230 in the field produced a 1180 device. The 1230 overlay plus the header is 1280, the `tailscale0` path MTU, so the overlay fits its worst leg with nothing to spare.
+
+Applying a changed flannel MTU requires recreating flannel.1. It is a persistent vxlan device, so a k3s restart reuses the existing interface at its old MTU; a node reboot, or deleting flannel.1 and cni0 before the restart, is needed for the new MTU to take effect.
 
 ## Follow-up
 
