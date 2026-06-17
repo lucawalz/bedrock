@@ -31,5 +31,8 @@ metadata:
     cluster.x-k8s.io/aggregate-to-manager: "true"
 rules:
   - apiGroups: ["controlplane.horizon.dev"]
-    resources: ["externalcontrolplanes", "externalcontrolplanes/status"]
+    resources: ["externalcontrolplanes"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["controlplane.horizon.dev"]
+    resources: ["externalcontrolplanes/status"]
     verbs: ["get", "list", "watch"]
