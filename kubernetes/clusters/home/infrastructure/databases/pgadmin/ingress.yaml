@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: pgadmin
   namespace: postgres
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: pgAdmin
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: pgadmin.png
+    gethomepage.dev/href: https://pgadmin.syslabs.dev
+    gethomepage.dev/siteMonitor: https://pgadmin.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

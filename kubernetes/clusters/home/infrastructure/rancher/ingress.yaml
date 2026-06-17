@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: rancher
   namespace: cattle-system
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Rancher
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: rancher.png
+    gethomepage.dev/href: https://rancher.syslabs.dev
+    gethomepage.dev/siteMonitor: https://rancher.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

@@ -6,6 +6,13 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Longhorn
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: longhorn.png
+    gethomepage.dev/href: https://longhorn.syslabs.dev
+    gethomepage.dev/siteMonitor: https://longhorn.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   ingressClassName: traefik
   rules:

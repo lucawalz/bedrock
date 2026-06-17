@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: open-webui
   namespace: llm
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Open WebUI
+    gethomepage.dev/group: AI
+    gethomepage.dev/icon: open-webui.png
+    gethomepage.dev/href: https://chat.syslabs.dev
+    gethomepage.dev/siteMonitor: https://chat.syslabs.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web

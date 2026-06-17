@@ -3,6 +3,14 @@ kind: IngressRoute
 metadata:
   name: blog
   namespace: blog
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: blog
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: ghost.png
+    gethomepage.dev/href: https://lucawalz.dev
+    gethomepage.dev/siteMonitor: https://lucawalz.dev
+    gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
     - web
