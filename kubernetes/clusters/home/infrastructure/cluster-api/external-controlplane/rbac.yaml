@@ -1,0 +1,35 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: horizon-controller
+rules:
+  - apiGroups: ["controlplane.horizon.dev"]
+    resources: ["externalcontrolplanes"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["controlplane.horizon.dev"]
+    resources: ["externalcontrolplanes/status"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: horizon-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: horizon-controller
+subjects:
+  - kind: ServiceAccount
+    name: horizon-controller
+    namespace: caph-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: horizon-controller-aggregate-to-manager
+  labels:
+    cluster.x-k8s.io/aggregate-to-manager: "true"
+rules:
+  - apiGroups: ["controlplane.horizon.dev"]
+    resources: ["externalcontrolplanes", "externalcontrolplanes/status"]
+    verbs: ["get", "list", "watch"]
