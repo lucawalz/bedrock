@@ -36,7 +36,19 @@ spec:
         cpu: 500m
         memory: 512Mi
     falcosidekick:
-      enabled: false
+      enabled: true
+      config:
+        webhook:
+          address: http://ntfy.ntfy.svc.cluster.local/falco
+          minimumpriority: warning
+        debug: false
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
     falcoctl:
       artifact:
         install:
