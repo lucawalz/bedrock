@@ -20,3 +20,4 @@ resources:
   - helm/cluster-autoscaler.yaml
   - helm/wrenix.yaml
   - helm/otwld.yaml
+  - helm/controlplane.yaml

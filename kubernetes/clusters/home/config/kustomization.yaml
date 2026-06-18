@@ -5,6 +5,7 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - flux-operator.yaml
   - cluster-api.yaml
   - issuers.yaml
   - metallb.yaml
