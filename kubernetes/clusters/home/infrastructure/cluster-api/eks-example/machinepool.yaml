@@ -1,0 +1,29 @@
+apiVersion: cluster.x-k8s.io/v1beta2
+kind: MachinePool
+metadata:
+  name: eks-example-pool-0
+  namespace: capa-system
+spec:
+  clusterName: eks-example
+  replicas: 2
+  template:
+    spec:
+      clusterName: eks-example
+      bootstrap:
+        dataSecretName: ""
+      infrastructureRef:
+        apiGroup: infrastructure.cluster.x-k8s.io
+        kind: AWSManagedMachinePool
+        name: eks-example-pool-0
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
+kind: AWSManagedMachinePool
+metadata:
+  name: eks-example-pool-0
+  namespace: capa-system
+spec:
+  eksNodegroupName: eks-example-pool-0
+  instanceType: t3.large
+  scaling:
+    minSize: 1
+    maxSize: 3
