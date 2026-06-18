@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: alertmanager
+  namespace: monitoring
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Alertmanager
+    gethomepage.dev/group: Observability
+    gethomepage.dev/icon: alertmanager.png
+    gethomepage.dev/href: https://alertmanager.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=alertmanager
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`alertmanager.syslabs.dev`)
+      kind: Rule
+      middlewares:
+        - name: monitoring-dashboard-auth
+      services:
+        - name: kube-prometheus-stack-alertmanager
+          port: 9093
+  tls: {}
