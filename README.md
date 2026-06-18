@@ -33,7 +33,7 @@ The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a
 
 Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the companion horizon controller through Terraform, installed with nixos-anywhere, enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst`, and joins the cluster as another K3s agent over the tailnet.
 
-![Network topology: Internet through the ISP router and Pi router to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes](docs/network-topology.svg)
+![Network topology: Internet through the ISP and Pi routers to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes, and horizon provisioning Hetzner Cloud capacity as a burst pool and a separate cluster](docs/network-topology.svg)
 
 ## Hardware
 
