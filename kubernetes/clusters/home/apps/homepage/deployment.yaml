@@ -28,6 +28,22 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      initContainers:
+        - name: copy-config
+          image: ghcr.io/gethomepage/homepage:v1.5.0
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c", "cp -L /config-src/* /app/config/"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config-src
+              mountPath: /config-src
+            - name: config
+              mountPath: /app/config
       containers:
         - name: homepage
           image: ghcr.io/gethomepage/homepage:v1.5.0
@@ -64,35 +80,15 @@ spec:
             periodSeconds: 15
           volumeMounts:
             - name: config
-              mountPath: /app/config/settings.yaml
-              subPath: settings.yaml
-            - name: config
-              mountPath: /app/config/services.yaml
-              subPath: services.yaml
-            - name: config
-              mountPath: /app/config/widgets.yaml
-              subPath: widgets.yaml
-            - name: config
-              mountPath: /app/config/kubernetes.yaml
-              subPath: kubernetes.yaml
-            - name: config
-              mountPath: /app/config/bookmarks.yaml
-              subPath: bookmarks.yaml
-            - name: config
-              mountPath: /app/config/docker.yaml
-              subPath: docker.yaml
-            - name: config
-              mountPath: /app/config/custom.css
-              subPath: custom.css
-            - name: config
-              mountPath: /app/config/custom.js
-              subPath: custom.js
+              mountPath: /app/config
             - name: logs
               mountPath: /app/config/logs
       volumes:
-        - name: config
+        - name: config-src
           configMap:
             name: homepage
+        - name: config
+          emptyDir: {}
         - name: logs
           emptyDir: {}
 ---
