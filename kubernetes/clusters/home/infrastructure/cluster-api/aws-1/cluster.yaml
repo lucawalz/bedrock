@@ -1,7 +1,7 @@
 apiVersion: cluster.x-k8s.io/v1beta2
 kind: Cluster
 metadata:
-  name: eks-example
+  name: aws-1
   namespace: capa-system
   labels:
     bedrock.io/gitops-peer: "true"
@@ -13,26 +13,26 @@ spec:
   controlPlaneRef:
     apiGroup: controlplane.cluster.x-k8s.io
     kind: AWSManagedControlPlane
-    name: eks-example-control-plane
+    name: aws-1-control-plane
   infrastructureRef:
     apiGroup: infrastructure.cluster.x-k8s.io
     kind: AWSManagedCluster
-    name: eks-example
+    name: aws-1
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta2
 kind: AWSManagedCluster
 metadata:
-  name: eks-example
+  name: aws-1
   namespace: capa-system
 spec: {}
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1beta2
 kind: AWSManagedControlPlane
 metadata:
-  name: eks-example-control-plane
+  name: aws-1-control-plane
   namespace: capa-system
 spec:
-  region: us-east-1
-  sshKeyName: REPLACE-ME
-  version: v1.30
-  eksClusterName: eks-example
+  region: eu-central-1
+  roleName: eks-controlplane.cluster-api-provider-aws.sigs.k8s.io
+  version: v1.31
+  eksClusterName: aws-1
