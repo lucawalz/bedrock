@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: capa-system
+
+resources:
+  - clusterresourceset.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+  - name: gitops-peer-flux-components
+    files:
+      - files/gotk-components.yaml
+  - name: gitops-peer-flux-sync
+    files:
+      - files/gotk-sync.yaml
