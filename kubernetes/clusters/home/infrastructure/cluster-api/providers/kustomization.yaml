@@ -3,5 +3,6 @@ kind: Kustomization
 
 resources:
   - infrastructure-hetzner.yaml
+  - infrastructure-aws.yaml
   - bootstrap-k3s.yaml
   - control-plane-k3s.yaml
