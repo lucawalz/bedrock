@@ -21,6 +21,7 @@ The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a
 - Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and burst nodes reach the cluster over [Tailscale](https://tailscale.com/), where the Pi advertises the cluster subnet to the tailnet and NAT traversal needs no forwarded port.
 - Replicated storage with [Longhorn](https://longhorn.io/) and off-site backups to Hetzner object storage with [Velero](https://velero.io/).
 - On-demand cloud burst nodes booted from a pre-baked NixOS snapshot and joined to the cluster automatically.
+- Cloud peer clusters reconciled from Git: a cluster labelled `bedrock.io/gitops-peer=true` self-bootstraps Flux through a Cluster API ClusterResourceSet, with AWS peers on managed EKS and Hetzner peers on self-hosted k3s.
 - Secrets committed encrypted with [SOPS](https://github.com/getsops/sops) and age, decrypted only inside the cluster.
 
 ### Background
@@ -32,6 +33,8 @@ The point of the project is to keep a real cluster reproducible and reviewable. 
 The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
 Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the companion horizon controller through Cluster API from a pre-baked snapshot, enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst`, and joins the cluster as another K3s agent over the tailnet.
+
+bedrock also declares cloud peer clusters, not only the home cluster and its burst nodes. A cluster authored under `kubernetes/clusters/home/infrastructure/cluster-api/` and labelled `bedrock.io/gitops-peer=true` is picked up by a Cluster API ClusterResourceSet, which installs Flux on it and points it at the shared cloud-safe `kubernetes/peers/base` overlay, so the peer reconciles its own GitOps from this repository without depending on the home cluster. The first peer is an AWS cluster, `aws-1`, on the managed EKS control plane through the Cluster API AWS provider, so AWS owns etcd, certificates, and control-plane upgrades; Hetzner clusters self-host k3s because Hetzner offers no managed control plane. The reasoning is in [ADR 0035](docs/adr/0035-standalone-gitops-managed-cloud-cluster.md) and [0036](docs/adr/0036-aws-via-managed-eks-control-plane.md).
 
 ![Network topology: Internet through the ISP and Pi routers to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes, and horizon provisioning Hetzner Cloud capacity as a burst pool and a separate cluster](docs/network-topology.svg)
 
@@ -55,6 +58,7 @@ NixOS does not manage device firmware, so firmware patching is manual: `rpi-eepr
 - [Nix](https://nixos.org/download.html) with flakes enabled, for the host configurations and the dev shell.
 - A GitHub account that owns this repository, for the Flux bootstrap.
 - For burst nodes: a Hetzner Cloud project and a Tailscale tailnet with the subnet router running on the Pi.
+- For an AWS EKS peer: an AWS account with the Cluster API AWS IAM roles bootstrapped through `clusterawsadm`, and a scoped credential committed as a SOPS secret.
 
 The dev shell pins the rest of the toolchain (kubectl, helm, flux, sops, age, terraform, nixos-anywhere):
 
@@ -131,6 +135,7 @@ modules/
 secrets/               agenix-encrypted host secrets (the K3s join token)
 kubernetes/
   clusters/home/       the live cluster Flux reconciles, including the cluster-api manifests the horizon controller drives
+  peers/base/          shared cloud-safe overlay that GitOps peer clusters reconcile
 ```
 
 Workers have no directory of their own. `flake.nix` builds them from `lib.mkWorker`, so adding worker-3 takes one line in the flake and one public key in `secrets/secrets.nix`.
