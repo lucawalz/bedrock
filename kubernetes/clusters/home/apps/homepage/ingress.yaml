@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Platform
     gethomepage.dev/icon: homepage.png
     gethomepage.dev/href: https://home.syslabs.dev
-    gethomepage.dev/siteMonitor: https://home.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=homepage
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

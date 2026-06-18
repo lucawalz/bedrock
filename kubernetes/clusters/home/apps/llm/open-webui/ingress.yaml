@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: AI
     gethomepage.dev/icon: open-webui.png
     gethomepage.dev/href: https://chat.syslabs.dev
-    gethomepage.dev/siteMonitor: https://chat.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=open-webui
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

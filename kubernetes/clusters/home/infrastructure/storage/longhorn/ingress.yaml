@@ -11,7 +11,7 @@ metadata:
     gethomepage.dev/group: Platform
     gethomepage.dev/icon: longhorn.png
     gethomepage.dev/href: https://longhorn.syslabs.dev
-    gethomepage.dev/siteMonitor: https://longhorn.syslabs.dev
+    gethomepage.dev/podSelector: app=longhorn-ui
     gethomepage.dev/statusStyle: "dot"
 spec:
   ingressClassName: traefik

@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Apps
     gethomepage.dev/icon: pgadmin.png
     gethomepage.dev/href: https://pgadmin.syslabs.dev
-    gethomepage.dev/siteMonitor: https://pgadmin.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=pgadmin4
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

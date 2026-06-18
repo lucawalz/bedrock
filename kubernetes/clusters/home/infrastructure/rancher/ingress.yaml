@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Platform
     gethomepage.dev/icon: rancher.png
     gethomepage.dev/href: https://rancher.syslabs.dev
-    gethomepage.dev/siteMonitor: https://rancher.syslabs.dev
+    gethomepage.dev/podSelector: app=rancher
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
