@@ -19,3 +19,4 @@ resources:
   - helm/stakater.yaml
   - helm/cluster-autoscaler.yaml
   - helm/wrenix.yaml
+  - helm/otwld.yaml
