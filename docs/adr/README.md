@@ -38,3 +38,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0034. Add a standalone cluster node snapshot](0034-standalone-cluster-node-snapshot.md) (accepted)
 - [0035. Standalone GitOps-managed cloud cluster](0035-standalone-gitops-managed-cloud-cluster.md) (accepted)
 - [0036. Run AWS through the managed EKS control plane](0036-aws-via-managed-eks-control-plane.md) (accepted)
+- [0037. Move the home Flux install to the ControlPlane flux-operator](0037-flux-operator-controlplane-install.md) (accepted)
