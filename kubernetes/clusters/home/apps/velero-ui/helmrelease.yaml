@@ -1,0 +1,50 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero-ui
+  namespace: velero
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: velero-ui
+      version: "0.14.0"
+      sourceRef:
+        kind: HelmRepository
+        name: otwld
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    configuration:
+      general:
+        veleroNamespace: "velero"
+        secretPassPhrase:
+          useSecret: true
+          existingSecret: velero-ui-passphrase
+          key: pass_phrase
+      policies:
+        enabled: true
+        value: |
+          g,*,read,all
+          u,*,read,all
+    rbac:
+      create: false
+      clusterAdministrator: false
+    serviceAccount:
+      create: true
+    service:
+      port: 3000
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
