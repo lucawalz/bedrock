@@ -27,6 +27,9 @@ data:
       Platform:
         style: row
         columns: 3
+      Network:
+        style: row
+        columns: 2
 
   docker.yaml: ""
 
@@ -54,7 +57,10 @@ data:
               href: https://github.com/lucawalz/horizon
 
   services.yaml: |
-    []
+    - Network:
+        - AdGuard Home:
+            icon: adguard-home.png
+            href: http://10.20.0.1:3000
 
   widgets.yaml: |
     - kubernetes:
