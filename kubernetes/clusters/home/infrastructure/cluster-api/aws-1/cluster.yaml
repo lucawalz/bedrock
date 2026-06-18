@@ -5,6 +5,7 @@ metadata:
   namespace: capa-system
   labels:
     bedrock.io/gitops-peer: "true"
+    cluster-api.cattle.io/rancher-auto-import: "true"
 spec:
   clusterNetwork:
     pods:
