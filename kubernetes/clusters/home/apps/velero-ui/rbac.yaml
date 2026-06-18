@@ -16,6 +16,7 @@ rules:
       - namespaces
       - pods
       - pods/log
+      - pods/status
     verbs:
       - get
       - list
