@@ -20,4 +20,5 @@ resources:
   - helm/cluster-autoscaler.yaml
   - helm/wrenix.yaml
   - helm/otwld.yaml
+  - helm/goauthentik.yaml
   - helm/controlplane.yaml

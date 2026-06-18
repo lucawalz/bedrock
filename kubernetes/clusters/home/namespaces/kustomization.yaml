@@ -17,6 +17,7 @@ resources:
   - llm.yaml
   - homepage.yaml
   - blog.yaml
+  - authentik.yaml
   - ntfy.yaml
   - reloader.yaml
   - caph-system.yaml

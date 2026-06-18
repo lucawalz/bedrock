@@ -47,6 +47,7 @@ in
         filtering_enabled = true;
         rewrites = [
           { domain = "alertmanager.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
+          { domain = "auth.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "flux.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "grafana.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "home.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
