@@ -15,8 +15,8 @@ data:
         attrs:
           name: GitHub
           provider_type: github
-          client_id: !ENV GITHUB_CLIENT_ID
-          client_secret: !ENV GITHUB_CLIENT_SECRET
+          client_id: !Env GITHUB_CLIENT_ID
+          client_secret: !Env GITHUB_CLIENT_SECRET
           additional_scopes: "user:email read:org"
           enrollment_flow: !Find [authentik_flows.flow, [slug, default-source-enrollment]]
           authentication_flow: !Find [authentik_flows.flow, [slug, default-source-authentication]]
