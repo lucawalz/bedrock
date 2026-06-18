@@ -20,10 +20,13 @@ data:
         columns: 2
       Apps:
         style: row
-        columns: 2
+        columns: 3
+      Observability:
+        style: row
+        columns: 3
       Platform:
         style: row
-        columns: 2
+        columns: 3
 
   docker.yaml: ""
 
@@ -34,11 +37,21 @@ data:
   bookmarks.yaml: |
     - Cluster:
         - Rancher:
-            - abbr: RA
+            - icon: rancher.png
               href: https://rancher.syslabs.dev
         - Grafana:
-            - abbr: GR
+            - icon: grafana.png
               href: https://grafana.syslabs.dev
+    - Cluster ops:
+        - Rancher Cluster Management:
+            - icon: rancher.png
+              href: https://rancher.syslabs.dev/dashboard/c/local/manager/provisioning.cattle.io.cluster
+        - bedrock:
+            - icon: github.png
+              href: https://github.com/lucawalz/bedrock
+        - horizon:
+            - icon: github.png
+              href: https://github.com/lucawalz/horizon
 
   services.yaml: |
     []
@@ -52,14 +65,9 @@ data:
           showLabel: true
           label: cluster
         nodes:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
+          show: false
     - resources:
         backend: kubernetes
         expanded: true
         cpu: true
         memory: true
-    - prometheus:
-        url: http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090
