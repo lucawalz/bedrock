@@ -7,3 +7,5 @@ resources:
   - homepage
   - blog
   - ntfy
+  - velero-ui
+  - capacitor
