@@ -46,13 +46,17 @@ in
         protection_enabled = true;
         filtering_enabled = true;
         rewrites = [
+          { domain = "alertmanager.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
+          { domain = "flux.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "grafana.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "home.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "longhorn.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "ntfy.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "pgadmin.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
+          { domain = "prometheus.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "rancher.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
           { domain = "traefik.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
+          { domain = "velero.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
         ];
       };
       filters = [
