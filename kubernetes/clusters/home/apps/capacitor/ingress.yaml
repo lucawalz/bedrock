@@ -1,0 +1,36 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: flux-dashboard-auth
+  namespace: flux-system
+spec:
+  basicAuth:
+    secret: flux-dashboard-auth
+    removeHeader: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: capacitor
+  namespace: flux-system
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Flux
+    gethomepage.dev/group: Observability
+    gethomepage.dev/icon: flux.png
+    gethomepage.dev/href: https://flux.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/instance=capacitor
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`flux.syslabs.dev`)
+      kind: Rule
+      middlewares:
+        - name: flux-dashboard-auth
+      services:
+        - name: capacitor
+          port: 9000
+  tls: {}
