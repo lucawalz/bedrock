@@ -16,6 +16,7 @@ Cluster secrets are committed encrypted with SOPS and the age backend, and Flux 
 | `longhorn-backup-credentials.sops.yaml` | object-storage credentials for backups |
 | `velero-s3-credentials.sops.yaml` | object-storage credentials for Velero, as the AWS INI `cloud` key |
 | `hcloud.sops.yaml` | Hetzner Cloud API token for CCM/CSI, as `kube-system/hcloud` |
+| `capi-aws.sops.yaml` | placeholder AWS credentials for the CAPA provider, as `AWS_B64ENCODED_CREDENTIALS` in `capa-system` |
 | `traefik-dashboard-auth.sops.yaml` | bcrypt htpasswd backing the Traefik dashboard BasicAuth middleware |
 
 The Hetzner token in `hcloud.sops.yaml` is the same account token used by the separate vigil project, so any rotation must be coordinated across both repos.
