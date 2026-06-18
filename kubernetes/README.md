@@ -6,7 +6,6 @@ Everything under `clusters/home/` is the live cluster state. Flux watches `main`
 
 ```
 clusters/home/
-  flux-system/     Flux controllers (gotk-components) and the Git source (gotk-sync)
   config/          the Flux Kustomizations that build the cluster, plus cluster-settings
   namespaces/      namespace definitions
   sources/helm/    HelmRepository sources
@@ -19,7 +18,7 @@ clusters/home/
 
 ## Reconciliation order
 
-The root kustomization pulls in `flux-system` (the controllers and the Git source) and `config` (the set of Flux Kustomizations). Those Kustomizations apply in dependency order, and any layer whose dependencies are not ready waits instead of failing:
+The root kustomization pulls in `config` (the set of Flux Kustomizations). Those Kustomizations apply in dependency order, and any layer whose dependencies are not ready waits instead of failing:
 
 1. `cluster-sources` and `cluster-namespaces` have no dependencies. Sources defines the HelmRepositories every release pulls from; namespaces are created before anything lands in them.
 2. `cluster-secrets` decrypts the SOPS secrets, after namespaces exist.
@@ -29,7 +28,7 @@ The root kustomization pulls in `flux-system` (the controllers and the Git sourc
 
 ## Bootstrap
 
-Flux manages itself. `clusters/home/kustomization.yaml` includes `flux-system`, so the controller versions and the Git source URL reconcile from this repo like any other resource. Upgrading Flux or changing the source is therefore a commit, not a re-bootstrap. A fresh cluster is brought up once, bootstrapped against a fork of this repository:
+Flux is carried declaratively by the [Flux Operator](https://fluxcd.control-plane.io/operator/). A `FluxInstance` under `infrastructure/flux-operator/` declares the controllers, the distribution version, and the Git source, so upgrading Flux or changing the source is a commit rather than a re-bootstrap. The reasoning is in [ADR 0037](../docs/adr/0037-flux-operator-controlplane-install.md). A fresh cluster is seeded once against a fork of this repository, after which the operator adopts the install in place:
 
 ```
 flux bootstrap github \
