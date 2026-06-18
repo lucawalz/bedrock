@@ -35,3 +35,5 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0031. Pin the home flannel MTU to the tailnet path MTU](0031-pin-home-flannel-mtu-to-tailnet-path.md) (accepted)
 - [0032. Drop the worker-2 standby subnet router](0032-drop-worker-2-standby-subnet-router.md) (accepted)
 - [0033. Adopt a custom ExternalControlPlane object for the burst cluster](0033-adopt-external-controlplane-object.md) (accepted)
+- [0034. Add a standalone cluster node snapshot](0034-standalone-cluster-node-snapshot.md) (accepted)
+- [0035. Standalone GitOps-managed cloud cluster](0035-standalone-gitops-managed-cloud-cluster.md) (proposed)
