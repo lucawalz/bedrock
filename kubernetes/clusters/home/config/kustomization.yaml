@@ -5,6 +5,7 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - authentik.yaml
   - flux-operator.yaml
   - cluster-api.yaml
   - issuers.yaml

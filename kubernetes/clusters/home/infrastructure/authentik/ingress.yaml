@@ -1,0 +1,24 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: authentik
+  namespace: authentik
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Authentik
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: authentik.png
+    gethomepage.dev/href: https://auth.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=authentik
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`auth.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: authentik-server
+          port: 80
+  tls: {}

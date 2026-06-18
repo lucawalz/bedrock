@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: authentik-blueprints
+  namespace: authentik
+data:
+  github.yaml: |
+    version: 1
+    metadata:
+      name: github-oauth-source
+    entries:
+      - model: authentik_sources_oauth.oauthsource
+        identifiers:
+          slug: github
+        attrs:
+          name: GitHub
+          provider_type: github
+          client_id: !ENV GITHUB_CLIENT_ID
+          client_secret: !ENV GITHUB_CLIENT_SECRET
+          additional_scopes: "user:email read:org"
