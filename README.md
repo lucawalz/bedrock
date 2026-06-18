@@ -17,7 +17,7 @@ The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a
 ### Features
 
 - Fully declarative hosts with NixOS flakes, including disk partitioning ([disko](https://github.com/nix-community/disko)) and per-host secrets ([agenix](https://github.com/ryantm/agenix)).
-- GitOps reconciliation with Flux v2: the repository is the only way state reaches the cluster.
+- GitOps reconciliation with Flux v2, carried declaratively by the Flux Operator: the repository is the only way state reaches the cluster.
 - Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and burst nodes reach the cluster over [Tailscale](https://tailscale.com/), where the Pi advertises the cluster subnet to the tailnet and NAT traversal needs no forwarded port.
 - Replicated storage with [Longhorn](https://longhorn.io/) and off-site backups to Hetzner object storage with [Velero](https://velero.io/).
 - On-demand cloud burst nodes booted from a pre-baked NixOS snapshot and joined to the cluster automatically.
@@ -76,7 +76,7 @@ A fresh cluster is brought up in two stages: the hosts, then Flux.
    nixos-rebuild switch --flake .#master --target-host root@<master-ip>
    ```
 
-2. Fork this repository, then bootstrap Flux once against the fork so the cluster reconciles from a repo under the operator's own control. From then on Flux manages itself, so upgrading it or changing the source is a commit rather than a re-bootstrap:
+2. Fork this repository, then seed Flux once against the fork so the cluster reconciles from a repo under the operator's own control:
 
    ```
    flux bootstrap github \
@@ -86,7 +86,9 @@ A fresh cluster is brought up in two stages: the hosts, then Flux.
      --personal
    ```
 
-Flux installs its controllers, reads `kubernetes/clusters/home`, and reconciles the whole cluster from Git.
+   This installs the controllers and the `flux-system` Git source, which then reconcile `kubernetes/clusters/home`. The manifests there include the [Flux Operator](https://fluxcd.control-plane.io/operator/), which adopts the install in place and carries it declaratively as a `FluxInstance` from then on, so changing the controllers, the distribution, or the source is a commit rather than a re-bootstrap. The reasoning is in [ADR 0037](docs/adr/0037-flux-operator-controlplane-install.md).
+
+Flux reads `kubernetes/clusters/home` and reconciles the whole cluster from Git.
 
 ## Usage
 
@@ -158,6 +160,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | pgAdmin | Postgres administration | internal |
 | Longhorn | storage management UI | internal |
 | Traefik | router dashboard | internal |
+| Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 
 Ollama serves the models (`qwen2.5-coder:7b` and `llama3.1:8b`) on worker-1 and stays internal. A single Postgres instance backs n8n, LiteLLM, and pgAdmin.
