@@ -91,6 +91,15 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: ntfy
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: authentik
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: velero
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: flux-system
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
