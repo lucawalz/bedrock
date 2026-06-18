@@ -11,7 +11,7 @@ metadata:
     gethomepage.dev/group: Platform
     gethomepage.dev/icon: grafana.png
     gethomepage.dev/href: https://grafana.syslabs.dev
-    gethomepage.dev/siteMonitor: https://grafana.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=grafana
     gethomepage.dev/statusStyle: "dot"
 spec:
   ingressClassName: traefik

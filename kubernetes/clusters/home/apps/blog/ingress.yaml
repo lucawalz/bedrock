@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Apps
     gethomepage.dev/icon: ghost.png
     gethomepage.dev/href: https://lucawalz.dev
-    gethomepage.dev/siteMonitor: https://lucawalz.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=blog
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

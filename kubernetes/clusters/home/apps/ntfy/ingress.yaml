@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Apps
     gethomepage.dev/icon: ntfy.png
     gethomepage.dev/href: https://ntfy.syslabs.dev
-    gethomepage.dev/siteMonitor: https://ntfy.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=ntfy
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

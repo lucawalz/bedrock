@@ -7,9 +7,9 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: LiteLLM
     gethomepage.dev/group: AI
-    gethomepage.dev/icon: litellm.png
+    gethomepage.dev/icon: sh-litellm.png
     gethomepage.dev/href: https://llm.syslabs.dev
-    gethomepage.dev/siteMonitor: https://llm.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=litellm
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
