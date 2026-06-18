@@ -18,3 +18,40 @@ data:
           client_id: !ENV GITHUB_CLIENT_ID
           client_secret: !ENV GITHUB_CLIENT_SECRET
           additional_scopes: "user:email read:org"
+          enrollment_flow: !Find [authentik_flows.flow, [slug, default-source-enrollment]]
+          authentication_flow: !Find [authentik_flows.flow, [slug, default-source-authentication]]
+  github-identification.yaml: |
+    version: 1
+    metadata:
+      name: github-identification-binding
+    entries:
+      - model: authentik_stages_identification.identificationstage
+        identifiers:
+          name: default-authentication-identification
+        attrs:
+          sources:
+            - !Find [authentik_core.source, [slug, authentik-built-in]]
+            - !Find [authentik_core.source, [slug, github]]
+  github-restriction.yaml: |
+    version: 1
+    metadata:
+      name: github-single-user-restriction
+    entries:
+      - model: authentik_policies_expression.expressionpolicy
+        identifiers:
+          name: restrict-github-single-user
+        attrs:
+          expression: |
+            ak_logger.info("github-restrict-context", userinfo=request.context.get("oauth_userinfo"))
+            username = request.context.get("oauth_userinfo", {}).get("login")
+            if username == "lucawalz":
+                return True
+            ak_message("This authentik instance is restricted.")
+            return False
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !Find [authentik_sources_oauth.oauthsource, [slug, github]]
+          policy: !Find [authentik_policies_expression.expressionpolicy, [name, restrict-github-single-user]]
+          order: 0
+        attrs:
+          enabled: true
