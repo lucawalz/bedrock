@@ -169,7 +169,7 @@ Secrets use two mechanisms, both committed encrypted, never in plaintext:
 - Host secrets use agenix, encrypted to each node's SSH host key. Only the K3s join token lives here. See [`secrets/README.md`](secrets/README.md).
 - Kubernetes secrets use SOPS with age, decrypted by Flux in-cluster at reconcile time. See [`kubernetes/clusters/home/secrets/README.md`](kubernetes/clusters/home/secrets/README.md).
 
-Several layers of defense-in-depth sit on top. The app namespaces run default-deny NetworkPolicies, so a pod reaches only what it is explicitly allowed to. Workloads run with a non-root, dropped-capability securityContext. [Falco](https://falco.org/) watches for anomalous runtime behaviour on every node, and K3s encrypts Secrets at rest.
+Several layers of defense-in-depth sit on top. The app namespaces run default-deny NetworkPolicies, so a pod reaches only what it is explicitly allowed to. Workloads run with a non-root, dropped-capability securityContext, and K3s encrypts Secrets at rest.
 
 ## Continuous integration
 
