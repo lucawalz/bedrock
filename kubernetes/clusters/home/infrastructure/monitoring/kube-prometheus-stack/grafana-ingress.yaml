@@ -18,8 +18,6 @@ spec:
   routes:
     - match: Host(`grafana.syslabs.dev`)
       kind: Rule
-      middlewares:
-        - name: authentik-forward-auth
       services:
         - name: kube-prometheus-stack-grafana
           port: 80
