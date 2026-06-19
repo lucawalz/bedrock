@@ -7,7 +7,6 @@ let
   airGappedInstallScript = pkgs.writeShellScript "k3s-airgapped-install" ''
     exit 0
   '';
-  configWaitSeconds = 540;
   tailscaleWaitSeconds = 540;
 in
 {
@@ -47,7 +46,7 @@ in
     description = "Set the node hostname from Hetzner metadata";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
-    before = [ "tailscaled-autoconnect.service" "k3s-capi-config-augment.service" "k3s.service" ];
+    before = [ "tailscaled-autoconnect.service" "k3s-config-augment.service" "k3s.service" ];
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
@@ -94,11 +93,11 @@ in
     '';
   };
 
-  systemd.services.k3s-capi-config-augment = {
-    description = "Augment CAPI-written k3s config with tailscale node networking";
+  systemd.services.k3s-config-augment = {
+    description = "Augment user-data k3s config with tailscale node networking";
     wantedBy = [ "multi-user.target" ];
-    after = [ "tailscaled-autoconnect.service" ];
-    wants = [ "tailscaled-autoconnect.service" ];
+    after = [ "cloud-final.service" "tailscaled-autoconnect.service" ];
+    wants = [ "cloud-final.service" "tailscaled-autoconnect.service" ];
     before = [ "k3s.service" ];
     serviceConfig = {
       Type = "oneshot";
@@ -109,14 +108,6 @@ in
     };
     script = ''
       set -eu
-      DEADLINE=$(( $(date +%s) + ${toString configWaitSeconds} ))
-      while [ ! -s ${k3sConfigPath} ]; do
-        if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-          echo "${k3sConfigPath} not written within ${toString configWaitSeconds}s" >&2
-          exit 1
-        fi
-        sleep 2
-      done
       DEADLINE=$(( $(date +%s) + ${toString tailscaleWaitSeconds} ))
       while :; do
         IP=$(${pkgs.iproute2}/bin/ip -o -4 addr show ${tailscaleIface} 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $4}' | ${pkgs.coreutils}/bin/cut -d/ -f1 | ${pkgs.coreutils}/bin/head -1)
@@ -150,8 +141,8 @@ in
   };
 
   systemd.services.k3s = {
-    after = [ "tailscaled-autoconnect.service" "k3s-capi-config-augment.service" ];
-    wants = [ "tailscaled-autoconnect.service" "k3s-capi-config-augment.service" ];
+    after = [ "tailscaled-autoconnect.service" "k3s-config-augment.service" ];
+    wants = [ "tailscaled-autoconnect.service" "k3s-config-augment.service" ];
   };
 
   system.stateVersion = "25.05";
