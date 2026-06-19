@@ -49,7 +49,6 @@ data:
             pd = request.context.get("prompt_data") or {}
             pu = request.context.get("pending_user")
             candidates = [ui.get("login"), pd.get("username"), getattr(pu, "username", None)]
-            ak_logger.info("github-restrict-context", oauth=ui, prompt=pd, candidates=candidates)
             return "lucawalz" not in [c for c in candidates if c]
       - model: authentik_flows.flow
         id: enrollment-flow
