@@ -32,12 +32,11 @@ spec:
       serviceAccount:
         name: cluster-autoscaler-aws-cluster-autoscaler
         annotations:
-          # <ACCOUNT_ID> filled at stand-up; trust policy bound to the cluster OIDC issuer
-          eks.amazonaws.com/role-arn: arn:aws:iam::<ACCOUNT_ID>:role/bedrock-eks-cluster-autoscaler
+          eks.amazonaws.com/role-arn: arn:aws:iam::867344464550:role/bedrock-eks-cluster-autoscaler
     extraArgs:
       scale-down-enabled: true
-      scale-down-delay-after-add: 10m
-      scale-down-unneeded-time: 10m
+      scale-down-delay-after-add: 3m
+      scale-down-unneeded-time: 3m
       balance-similar-node-groups: true
     resources:
       requests:
