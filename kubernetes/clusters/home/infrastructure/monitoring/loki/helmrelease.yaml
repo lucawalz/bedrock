@@ -1,0 +1,91 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: loki
+  namespace: monitoring
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: loki
+      version: "6.55.0"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    deploymentMode: SingleBinary
+    loki:
+      auth_enabled: false
+      analytics:
+        reporting_enabled: false
+      commonConfig:
+        replication_factor: 1
+        path_prefix: /var/loki
+      storage:
+        type: filesystem
+      schemaConfig:
+        configs:
+          - from: "2024-04-01"
+            store: tsdb
+            object_store: filesystem
+            schema: v13
+            index:
+              prefix: index_
+              period: 24h
+      limits_config:
+        retention_period: 336h
+        reject_old_samples: true
+        reject_old_samples_max_age: 168h
+        max_cache_freshness_per_query: 10m
+        split_queries_by_interval: 15m
+        volume_enabled: true
+      compactor:
+        working_directory: /var/loki/compactor
+        retention_enabled: true
+        delete_request_store: filesystem
+      pattern_ingester:
+        enabled: false
+      ingester:
+        chunk_encoding: snappy
+    singleBinary:
+      replicas: 1
+      persistence:
+        enabled: true
+        storageClass: longhorn
+        size: 20Gi
+        accessModes:
+          - ReadWriteOnce
+      resources:
+        requests: { cpu: 100m, memory: 256Mi }
+        limits: { cpu: 1000m, memory: 1Gi }
+      extraEnv:
+        - name: GOMEMLIMIT
+          value: "900MiB"
+    minio: { enabled: false }
+    gateway: { enabled: false }
+    read: { replicas: 0 }
+    write: { replicas: 0 }
+    backend: { replicas: 0 }
+    chunksCache: { enabled: false }
+    resultsCache: { enabled: false }
+    lokiCanary: { enabled: false }
+    test: { enabled: false }
+    selfMonitoring:
+      enabled: false
+      grafanaAgent:
+        installOperator: false
+    monitoring:
+      serviceMonitor:
+        enabled: true
+        labels:
+          release: kube-prometheus-stack
