@@ -4,7 +4,5 @@ kind: Kustomization
 resources:
   - cluster-autoscaler
   - cluster-class
-  - external-controlplane
   - gitops-peer
-  - node-pools
   - reaper
