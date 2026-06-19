@@ -27,12 +27,21 @@ spec:
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
   values:
+    longhornManager:
+      nodeSelector:
+        bedrock.io/storage: "true"
+    longhornDriver:
+      nodeSelector:
+        bedrock.io/storage: "true"
     longhornUI:
       replicas: 1
+      nodeSelector:
+        bedrock.io/storage: "true"
     defaultSettings:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
+      systemManagedComponentsNodeSelector: "bedrock.io/storage:true"
     persistence:
       defaultClass: true
       defaultClassReplicaCount: 3
