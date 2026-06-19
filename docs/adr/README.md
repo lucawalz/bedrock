@@ -42,3 +42,5 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0038. Authentik single sign-on for internal dashboards](0038-authentik-sso-for-internal-dashboards.md) (accepted)
 - [0039. Observability stack with Loki, Tempo, and Grafana Alloy](0039-observability-stack-loki-tempo-alloy.md) (accepted)
 - [0040. Finalize orphaned Longhorn nodes in the burst node reaper](0040-reap-orphaned-longhorn-nodes.md) (accepted)
+- [0041. Autoscale Hetzner burst nodes with the native cluster-autoscaler provider](0041-hetzner-autoscaling-native-provider.md) (accepted, not yet implemented)
+- [0042. Run AWS as an ephemeral autoscaling EKS cluster with an S3 backup foothold](0042-ephemeral-eks-autoscaling-and-s3-foothold.md) (accepted, not yet implemented)
