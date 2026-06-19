@@ -173,7 +173,7 @@ data:
                   labels:
                     severity: warning
                   annotations:
-                    summary: "High error log rate in {{ $labels.namespace }}"
+                    summary: 'High error log rate in {{ "{{ $labels.namespace }}" }}'
                   data:
                     - refId: A
                       relativeTimeRange:
