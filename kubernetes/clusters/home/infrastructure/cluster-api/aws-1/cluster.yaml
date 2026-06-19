@@ -35,5 +35,22 @@ metadata:
 spec:
   region: eu-central-1
   roleName: eks-controlplane.cluster-api-provider-aws.sigs.k8s.io
-  version: v1.31
+  version: v1.33
   eksClusterName: aws-1
+  associateOIDCProvider: true
+  accessConfig:
+    authenticationMode: api_and_config_map
+  # -eksbuild.N pins resolved at stand-up via aws eks describe-addon-versions --kubernetes-version 1.33
+  addons:
+    - name: vpc-cni
+      version: v1.19.0-eksbuild.N
+      conflictResolution: overwrite
+    - name: coredns
+      version: v1.12.0-eksbuild.N
+      conflictResolution: overwrite
+    - name: kube-proxy
+      version: v1.33.0-eksbuild.N
+      conflictResolution: overwrite
+    - name: eks-pod-identity-agent
+      version: v1.3.0-eksbuild.N
+      conflictResolution: overwrite
