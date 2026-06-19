@@ -24,6 +24,10 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
+    # tag must track the EKS control-plane minor in aws-1/cluster.yaml or DRA version-skew breaks scaling
+    image:
+      repository: registry.k8s.io/autoscaling/cluster-autoscaler
+      tag: "v1.33.4"
     cloudProvider: aws
     awsRegion: eu-central-1
     autoDiscovery:
