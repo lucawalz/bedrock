@@ -185,7 +185,7 @@ data:
                         datasource:
                           type: loki
                           uid: loki
-                        expr: 'sum by (namespace) (count_over_time({namespace=~".+"} |~ "(?i)level=error|\"level\":\"error\"|ERROR" [5m]))'
+                        expr: 'sum by (namespace) (count_over_time({namespace=~".+"} |~ `(?i:level=error|"level":"error")|\bERROR\b` [5m]))'
                         queryType: instant
                     - refId: C
                       datasourceUid: __expr__
