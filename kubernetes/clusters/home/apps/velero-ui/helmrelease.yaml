@@ -32,8 +32,20 @@ spec:
       policies:
         enabled: true
         value: |
-          g,*,read,all
-          u,*,read,all
+          u,admin,manage,all
+    env:
+      - name: BASIC_AUTH_ENABLED
+        value: "true"
+      - name: BASIC_AUTH_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: velero-ui-auth
+            key: username
+      - name: BASIC_AUTH_PASSWORD
+        valueFrom:
+          secretKeyRef:
+            name: velero-ui-auth
+            key: password
     rbac:
       create: false
       clusterAdministrator: false
