@@ -77,6 +77,7 @@ data:
       name: github-single-user-restriction
     entries:
       - model: authentik_policies_expression.expressionpolicy
+        id: restrict-github-policy
         identifiers:
           name: restrict-github-single-user
         attrs:
@@ -91,16 +92,18 @@ data:
             ak_message("This authentik instance is restricted to a single account.")
             return False
       - model: authentik_policies.policybinding
+        id: restrict-github-enrollment-binding
         identifiers:
           target: !Find [authentik_flows.flow, [slug, github-enrollment]]
-          policy: !Find [authentik_policies_expression.expressionpolicy, [name, restrict-github-single-user]]
+          policy: !KeyOf restrict-github-policy
           order: 0
         attrs:
           enabled: true
       - model: authentik_policies.policybinding
+        id: restrict-github-auth-binding
         identifiers:
           target: !Find [authentik_flows.flow, [slug, default-source-authentication]]
-          policy: !Find [authentik_policies_expression.expressionpolicy, [name, restrict-github-single-user]]
+          policy: !KeyOf restrict-github-policy
           order: 0
         attrs:
           enabled: true
