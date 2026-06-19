@@ -4,7 +4,7 @@ metadata:
   name: burst
   namespace: caph-system
   labels:
-    cluster-api.cattle.io/rancher-auto-import: "true"
+    cluster-api.cattle.io/rancher-auto-import: "false"
 spec:
   clusterNetwork:
     pods:
