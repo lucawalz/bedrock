@@ -3,6 +3,8 @@ kind: MachinePool
 metadata:
   name: aws-1-pool-0
   namespace: capa-system
+  annotations:
+    cluster.x-k8s.io/replicas-managed-by: external-autoscaler
 spec:
   clusterName: aws-1
   replicas: 1
@@ -26,6 +28,9 @@ spec:
   roleName: eks-nodegroup.cluster-api-provider-aws.sigs.k8s.io
   instanceType: t3.small
   amiType: AL2023_x86_64_STANDARD
+  additionalTags:
+    k8s.io/cluster-autoscaler/enabled: "true"
+    k8s.io/cluster-autoscaler/aws-1: "owned"
   scaling:
     minSize: 1
     maxSize: 2
