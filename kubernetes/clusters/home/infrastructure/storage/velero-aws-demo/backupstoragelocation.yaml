@@ -1,0 +1,15 @@
+apiVersion: velero.io/v1
+kind: BackupStorageLocation
+metadata:
+  name: aws-demo
+  namespace: velero
+spec:
+  provider: aws
+  objectStorage:
+    bucket: bedrock-velero-aws-demo
+    prefix: velero
+  config:
+    region: eu-central-1
+  credential:
+    name: velero-aws-demo
+    key: cloud
