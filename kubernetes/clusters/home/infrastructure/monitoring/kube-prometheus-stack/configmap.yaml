@@ -99,6 +99,28 @@ data:
             nodeGraph:
               enabled: true
 
+      alerting:
+        contactpoints.yaml:
+          apiVersion: 1
+          contactPoints:
+            - orgId: 1
+              name: ntfy
+              receivers:
+                - uid: ntfy_webhook
+                  type: webhook
+                  settings:
+                    url: "http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.title%7D%7D&message=%7B%7B.message%7D%7D"
+                    httpMethod: POST
+        policies.yaml:
+          apiVersion: 1
+          policies:
+            - orgId: 1
+              receiver: ntfy
+              group_by: ['grafana_folder', 'alertname']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+
     alertmanager:
       enabled: true
       alertmanagerSpec:
