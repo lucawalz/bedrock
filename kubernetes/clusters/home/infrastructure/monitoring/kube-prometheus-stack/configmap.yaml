@@ -24,10 +24,10 @@ data:
         resources:
           requests:
             cpu: "200m"
-            memory: "512Mi"
+            memory: "1Gi"
           limits:
             cpu: "1000m"
-            memory: "2Gi"
+            memory: "3Gi"
         additionalScrapeConfigs:
           - job_name: pi-router
             scrape_interval: 30s
@@ -46,6 +46,11 @@ data:
       enabled: false
     kubeProxy:
       enabled: false
+
+    defaultRules:
+      rules:
+        kubeApiserverBurnrate: false
+        kubeApiserverSlos: false
 
     grafana:
       enabled: true
