@@ -7,3 +7,4 @@ resources:
   - loki
   - tempo
   - alloy
+  - alert-rules
