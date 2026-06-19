@@ -23,6 +23,8 @@ in
     after = [ "network-online.target" ];
     wants = [ "network-online.target" ];
 
+    restartTriggers = [ config.age.secrets.adguard-admin.file ];
+
     serviceConfig.ExecStartPre = [
       ("+" + injectAdminUser)
     ];
