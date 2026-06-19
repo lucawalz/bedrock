@@ -102,7 +102,9 @@ data:
           name: default-authentication-identification
         attrs:
           show_source_labels: true
-          user_fields: []
+          user_fields:
+            - email
+            - username
           sources:
             - !Find [authentik_core.source, [slug, authentik-built-in]]
             - !Find [authentik_core.source, [slug, github]]
