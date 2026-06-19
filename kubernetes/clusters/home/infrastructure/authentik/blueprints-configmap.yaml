@@ -133,25 +133,6 @@ data:
           slug: flux
           provider: !KeyOf prov-flux
       - model: authentik_providers_proxy.proxyprovider
-        id: prov-velero
-        identifiers:
-          name: velero-forward-auth
-        attrs:
-          name: velero-forward-auth
-          mode: forward_domain
-          external_host: https://velero.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-velero
-        identifiers:
-          slug: velero
-        attrs:
-          name: Velero
-          slug: velero
-          provider: !KeyOf prov-velero
-      - model: authentik_providers_proxy.proxyprovider
         id: prov-traefik
         identifiers:
           name: traefik-forward-auth
@@ -209,25 +190,6 @@ data:
           slug: alertmanager
           provider: !KeyOf prov-alertmanager
       - model: authentik_providers_proxy.proxyprovider
-        id: prov-grafana
-        identifiers:
-          name: grafana-forward-auth
-        attrs:
-          name: grafana-forward-auth
-          mode: forward_domain
-          external_host: https://grafana.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-grafana
-        identifiers:
-          slug: grafana
-        attrs:
-          name: Grafana
-          slug: grafana
-          provider: !KeyOf prov-grafana
-      - model: authentik_providers_proxy.proxyprovider
         id: prov-longhorn
         identifiers:
           name: longhorn-forward-auth
@@ -246,44 +208,6 @@ data:
           name: Longhorn
           slug: longhorn
           provider: !KeyOf prov-longhorn
-      - model: authentik_providers_proxy.proxyprovider
-        id: prov-pgadmin
-        identifiers:
-          name: pgadmin-forward-auth
-        attrs:
-          name: pgadmin-forward-auth
-          mode: forward_domain
-          external_host: https://pgadmin.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-pgadmin
-        identifiers:
-          slug: pgadmin
-        attrs:
-          name: pgAdmin
-          slug: pgadmin
-          provider: !KeyOf prov-pgadmin
-      - model: authentik_providers_proxy.proxyprovider
-        id: prov-rancher
-        identifiers:
-          name: rancher-forward-auth
-        attrs:
-          name: rancher-forward-auth
-          mode: forward_domain
-          external_host: https://rancher.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-rancher
-        identifiers:
-          slug: rancher
-        attrs:
-          name: Rancher
-          slug: rancher
-          provider: !KeyOf prov-rancher
       - model: authentik_providers_proxy.proxyprovider
         id: prov-ntfy
         identifiers:
@@ -330,13 +254,9 @@ data:
             authentik_host: https://auth.syslabs.dev
           providers:
             - !KeyOf prov-flux
-            - !KeyOf prov-velero
             - !KeyOf prov-traefik
             - !KeyOf prov-prometheus
             - !KeyOf prov-alertmanager
-            - !KeyOf prov-grafana
             - !KeyOf prov-longhorn
-            - !KeyOf prov-pgadmin
-            - !KeyOf prov-rancher
             - !KeyOf prov-ntfy
             - !KeyOf prov-homepage
