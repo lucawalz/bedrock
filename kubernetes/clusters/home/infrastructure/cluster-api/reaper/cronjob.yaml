@@ -54,24 +54,23 @@ spec:
                     | awk '$2 != "True" { print $1 }')"
 
                   if [ -z "$candidates" ]; then
-                    echo "no orphan candidates"
-                    exit 0
-                  fi
-
-                  if ! owned="$(kubectl get machines -A \
-                    -o jsonpath='{range .items[*]}{.status.nodeRef.name}{"\n"}{end}')"; then
-                    echo "failed to list machines; refusing to delete on incomplete data" >&2
-                    exit 1
-                  fi
-
-                  for node in $candidates; do
-                    if printf '%s\n' "$owned" | grep -qxF "$node"; then
-                      echo "keeping owned node $node"
-                      continue
+                    echo "no orphan node candidates"
+                  else
+                    if ! owned="$(kubectl get machines -A \
+                      -o jsonpath='{range .items[*]}{.status.nodeRef.name}{"\n"}{end}')"; then
+                      echo "failed to list machines; refusing to delete on incomplete data" >&2
+                      exit 1
                     fi
-                    echo "deleting orphan node $node"
-                    kubectl delete node "$node" --wait=false
-                  done
+
+                    for node in $candidates; do
+                      if printf '%s\n' "$owned" | grep -qxF "$node"; then
+                        echo "keeping owned node $node"
+                        continue
+                      fi
+                      echo "deleting orphan node $node"
+                      kubectl delete node "$node" --wait=false
+                    done
+                  fi
 
                   if lhnodes="$(kubectl get nodes.longhorn.io -n longhorn-system \
                     -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.allowScheduling}{"\n"}{end}')"; then
