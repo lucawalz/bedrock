@@ -24,15 +24,24 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
-    cloudProvider: clusterapi
-    clusterAPIMode: incluster-incluster
-    autoDiscovery:
-      labels:
-        - cluster.x-k8s.io/cluster-name: burst
+    cloudProvider: hetzner
+    autoscalingGroups:
+      - name: elastic
+        instanceType: cpx22
+        region: hel1
+        minSize: 0
+        maxSize: 2
     extraArgs:
       scale-down-enabled: true
       scale-down-delay-after-add: 10m
       scale-down-unneeded-time: 10m
+    extraEnvSecrets:
+      HCLOUD_TOKEN:
+        name: hcloud
+        key: hcloud-token
+      HCLOUD_CLUSTER_CONFIG:
+        name: cluster-autoscaler-hcloud-config
+        key: HCLOUD_CLUSTER_CONFIG
     resources:
       requests:
         cpu: 50m
