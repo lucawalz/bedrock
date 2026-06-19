@@ -5,7 +5,6 @@ resources:
   - configmap.yaml
   - helmrelease.yaml
   - grafana-ingress.yaml
-  - dashboard-auth.yaml
   - prometheus-ingress.yaml
   - alertmanager-ingress.yaml
 

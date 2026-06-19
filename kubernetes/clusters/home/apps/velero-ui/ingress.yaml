@@ -1,16 +1,6 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: velero-dashboard-auth
-  namespace: velero
-spec:
-  basicAuth:
-    secret: velero-dashboard-auth
-    removeHeader: true
----
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
   name: authentik-forward-auth
   namespace: velero
 spec:
