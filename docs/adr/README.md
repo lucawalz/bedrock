@@ -40,3 +40,5 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0036. Run AWS through the managed EKS control plane](0036-aws-via-managed-eks-control-plane.md) (accepted)
 - [0037. Move the home Flux install to the ControlPlane flux-operator](0037-flux-operator-controlplane-install.md) (accepted)
 - [0038. Authentik single sign-on for internal dashboards](0038-authentik-sso-for-internal-dashboards.md) (accepted)
+- [0039. Observability stack with Loki, Tempo, and Grafana Alloy](0039-observability-stack-loki-tempo-alloy.md) (accepted)
+- [0040. Finalize orphaned Longhorn nodes in the burst node reaper](0040-reap-orphaned-longhorn-nodes.md) (accepted)

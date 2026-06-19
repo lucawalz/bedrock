@@ -22,3 +22,27 @@ subjects:
   - kind: ServiceAccount
     name: node-reaper
     namespace: caph-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: node-reaper-longhorn
+  namespace: longhorn-system
+rules:
+  - apiGroups: ["longhorn.io"]
+    resources: ["nodes"]
+    verbs: ["get", "list", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: node-reaper-longhorn
+  namespace: longhorn-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: node-reaper-longhorn
+subjects:
+  - kind: ServiceAccount
+    name: node-reaper
+    namespace: caph-system

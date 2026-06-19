@@ -72,3 +72,18 @@ spec:
                     echo "deleting orphan node $node"
                     kubectl delete node "$node" --wait=false
                   done
+
+                  if lhnodes="$(kubectl get nodes.longhorn.io -n longhorn-system \
+                    -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.allowScheduling}{"\n"}{end}')"; then
+                    printf '%s\n' "$lhnodes" | while read -r lhnode allow; do
+                      [ -n "$lhnode" ] || continue
+                      kubectl get node "$lhnode" >/dev/null 2>&1 && continue
+                      if [ "$allow" = "true" ]; then
+                        echo "disabling scheduling on orphaned longhorn node $lhnode"
+                        kubectl patch nodes.longhorn.io "$lhnode" -n longhorn-system \
+                          --type=merge -p '{"spec":{"allowScheduling":false}}'
+                      fi
+                    done
+                  else
+                    echo "longhorn nodes unavailable; skipping longhorn finalize" >&2
+                  fi
