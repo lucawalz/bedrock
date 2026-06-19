@@ -9,6 +9,7 @@ resources:
   - helm/cert-manager.yaml
   - helm/longhorn.yaml
   - helm/prometheus-community.yaml
+  - helm/grafana.yaml
   - helm/bitnami.yaml
   - helm/rancher.yaml
   - helm/velero.yaml
