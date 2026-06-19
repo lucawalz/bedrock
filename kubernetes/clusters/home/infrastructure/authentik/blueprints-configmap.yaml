@@ -26,13 +26,33 @@ data:
       name: github-internal-enrollment
     entries:
       - model: authentik_stages_user_write.userwritestage
+        id: enrollment-write-stage
         identifiers:
           name: github-enrollment-write
         attrs:
           user_type: internal
           user_creation_mode: always_create
           create_users_as_inactive: false
+      - model: authentik_stages_deny.denystage
+        id: enrollment-deny-stage
+        identifiers:
+          name: github-enrollment-deny
+        attrs:
+          deny_message: "This authentik instance is restricted to a single account."
+      - model: authentik_policies_expression.expressionpolicy
+        id: restrict-github-policy
+        identifiers:
+          name: restrict-github-single-user
+        attrs:
+          expression: |
+            ui = request.context.get("oauth_userinfo") or {}
+            pd = request.context.get("prompt_data") or {}
+            pu = request.context.get("pending_user")
+            candidates = [ui.get("login"), pd.get("username"), getattr(pu, "username", None)]
+            ak_logger.info("github-restrict-context", oauth=ui, prompt=pd, candidates=candidates)
+            return "lucawalz" not in [c for c in candidates if c]
       - model: authentik_flows.flow
+        id: enrollment-flow
         identifiers:
           slug: github-enrollment
         attrs:
@@ -41,23 +61,38 @@ data:
           designation: enrollment
           authentication: none
       - model: authentik_flows.flowstagebinding
+        id: enrollment-deny-binding
         identifiers:
-          target: !Find [authentik_flows.flow, [slug, github-enrollment]]
+          target: !KeyOf enrollment-flow
           order: 0
+        attrs:
+          stage: !KeyOf enrollment-deny-stage
+          evaluate_on_plan: true
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enrollment-flow
+          order: 1
         attrs:
           stage: !Find [authentik_stages_prompt.promptstage, [name, default-source-enrollment-prompt]]
       - model: authentik_flows.flowstagebinding
         identifiers:
-          target: !Find [authentik_flows.flow, [slug, github-enrollment]]
-          order: 1
-        attrs:
-          stage: !Find [authentik_stages_user_write.userwritestage, [name, github-enrollment-write]]
-      - model: authentik_flows.flowstagebinding
-        identifiers:
-          target: !Find [authentik_flows.flow, [slug, github-enrollment]]
+          target: !KeyOf enrollment-flow
           order: 2
         attrs:
+          stage: !KeyOf enrollment-write-stage
+      - model: authentik_flows.flowstagebinding
+        identifiers:
+          target: !KeyOf enrollment-flow
+          order: 3
+        attrs:
           stage: !Find [authentik_stages_user_login.userloginstage, [name, default-source-enrollment-login]]
+      - model: authentik_policies.policybinding
+        identifiers:
+          target: !KeyOf enrollment-deny-binding
+          policy: !KeyOf restrict-github-policy
+          order: 0
+        attrs:
+          enabled: true
   github-identification.yaml: |
     version: 1
     metadata:
@@ -71,39 +106,3 @@ data:
           sources:
             - !Find [authentik_core.source, [slug, authentik-built-in]]
             - !Find [authentik_core.source, [slug, github]]
-  github-restriction.yaml: |
-    version: 1
-    metadata:
-      name: github-single-user-restriction
-    entries:
-      - model: authentik_policies_expression.expressionpolicy
-        id: restrict-github-policy
-        identifiers:
-          name: restrict-github-single-user
-        attrs:
-          expression: |
-            ui = request.context.get("oauth_userinfo") or {}
-            pd = request.context.get("prompt_data") or {}
-            pu = request.context.get("pending_user")
-            candidates = [ui.get("login"), pd.get("username"), getattr(pu, "username", None)]
-            ak_logger.info("github-restrict-context", oauth=ui, prompt=pd, candidates=candidates)
-            if "lucawalz" in [c for c in candidates if c]:
-                return True
-            ak_message("This authentik instance is restricted to a single account.")
-            return False
-      - model: authentik_policies.policybinding
-        id: restrict-github-enrollment-binding
-        identifiers:
-          target: !Find [authentik_flows.flow, [slug, github-enrollment]]
-          policy: !KeyOf restrict-github-policy
-          order: 0
-        attrs:
-          enabled: true
-      - model: authentik_policies.policybinding
-        id: restrict-github-auth-binding
-        identifiers:
-          target: !Find [authentik_flows.flow, [slug, default-source-authentication]]
-          policy: !KeyOf restrict-github-policy
-          order: 0
-        attrs:
-          enabled: true
