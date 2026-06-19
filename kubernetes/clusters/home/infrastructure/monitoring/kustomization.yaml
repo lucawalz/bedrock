@@ -4,3 +4,6 @@ kind: Kustomization
 resources:
   - kube-prometheus-stack
   - prometheus-pushgateway
+  - loki
+  - tempo
+  - alloy
