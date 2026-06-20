@@ -53,6 +53,7 @@ spec:
         serviceMonitor:
           enabled: true
           interval: 60s
+          honorLabels: true
           additionalLabels:
             release: kube-prometheus-stack
   install:
