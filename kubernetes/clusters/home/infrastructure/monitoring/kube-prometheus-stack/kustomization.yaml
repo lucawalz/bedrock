@@ -7,4 +7,5 @@ resources:
   - grafana-ingress.yaml
   - prometheus-ingress.yaml
   - alertmanager-ingress.yaml
+  - slo-dashboard.yaml
 
