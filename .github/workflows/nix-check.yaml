@@ -6,6 +6,24 @@ on:
     branches: [main]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Check formatting
+        run: nix run nixpkgs#nixfmt-rfc-style -- --check $(git ls-files '*.nix')
+
+      - name: Run statix
+        run: nix run nixpkgs#statix -- check .
+
+      - name: Run deadnix
+        run: nix run nixpkgs#deadnix -- --fail .
+
   check:
     runs-on: ubuntu-latest
     steps:
