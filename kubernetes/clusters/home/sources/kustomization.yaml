@@ -25,3 +25,4 @@ resources:
   - helm/controlplane.yaml
   - helm/kyverno.yaml
   - helm/policy-reporter.yaml
+  - helm/flagger.yaml
