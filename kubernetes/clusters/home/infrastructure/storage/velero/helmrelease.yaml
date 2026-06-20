@@ -38,7 +38,7 @@ spec:
       s3Url: &s3Url https://fsn1.your-objectstorage.com
     initContainers:
       - name: velero-plugin-for-aws
-        image: velero/velero-plugin-for-aws:v1.11.0
+        image: velero/velero-plugin-for-aws:v1.14.1
         imagePullPolicy: IfNotPresent
         securityContext:
           allowPrivilegeEscalation: false
