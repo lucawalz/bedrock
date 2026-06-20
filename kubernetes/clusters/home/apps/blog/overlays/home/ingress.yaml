@@ -20,5 +20,6 @@ spec:
       kind: Rule
       services:
         - name: blog
+          kind: TraefikService
           port: 80
   tls: {}
