@@ -35,7 +35,7 @@ spec:
           command: ["sh", "-c", "cp -L /config-src/* /app/config/"]
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -68,7 +68,7 @@ spec:
               memory: "256Mi"
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
@@ -83,6 +83,8 @@ spec:
               mountPath: /app/config
             - name: logs
               mountPath: /app/config/logs
+            - name: next-cache
+              mountPath: /app/.next/cache
       volumes:
         - name: config-src
           configMap:
@@ -90,6 +92,8 @@ spec:
         - name: config
           emptyDir: {}
         - name: logs
+          emptyDir: {}
+        - name: next-cache
           emptyDir: {}
 ---
 apiVersion: v1
