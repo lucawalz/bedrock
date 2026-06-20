@@ -4,3 +4,6 @@ kind: Kustomization
 resources:
   - cluster-autoscaler-source.yaml
   - cluster-autoscaler-helmrelease.yaml
+  - aws-load-balancer-controller-source.yaml
+  - aws-load-balancer-controller-helmrelease.yaml
+  - ../../clusters/home/apps/blog/overlays/eks
