@@ -6,6 +6,7 @@ kind: Kustomization
 resources:
   - n8n.yaml
   - databases.yaml
+  - cnpg-system.yaml
   - traefik.yaml
   - metallb-system.yaml
   - cert-manager.yaml
