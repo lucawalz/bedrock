@@ -31,6 +31,13 @@ spec:
           - ALL
       seccompProfile:
         type: RuntimeDefault
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "1"
+        memory: "512Mi"
     service:
       type: ClusterIP
       port: 4000
