@@ -1,5 +1,8 @@
 # Shared K3s configuration for both server and agent nodes
-{ secretsDir ? ../../secrets, ... }:
+{
+  secretsDir ? ../../secrets,
+  ...
+}:
 {
   age.secrets.k3s-token = {
     file = "${secretsDir}/k3s-token.age";

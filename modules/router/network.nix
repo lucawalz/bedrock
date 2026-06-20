@@ -1,5 +1,4 @@
-_:
-{
+_: {
   networking = {
     useDHCP = false;
     useNetworkd = true;
@@ -30,7 +29,10 @@ _:
       "20-end0" = {
         matchConfig.Name = "end0";
         networkConfig.DHCP = "yes";
-        vlan = [ "vlan20" "vlan30" ];
+        vlan = [
+          "vlan20"
+          "vlan30"
+        ];
       };
       "30-vlan20" = {
         matchConfig.Name = "vlan20";

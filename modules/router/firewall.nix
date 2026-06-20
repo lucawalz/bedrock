@@ -10,20 +10,33 @@ in
     nat = {
       enable = true;
       externalInterface = "end0";
-      internalInterfaces = [ "vlan20" "vlan30" ];
+      internalInterfaces = [
+        "vlan20"
+        "vlan30"
+      ];
     };
 
     firewall = {
       enable = true;
       filterForward = true;
       allowedUDPPorts = [ 53 ];
-      trustedInterfaces = [ "vlan20" "tailscale0" ];
+      trustedInterfaces = [
+        "vlan20"
+        "tailscale0"
+      ];
 
-      interfaces.vlan20.allowedTCPPorts = [ 22 53 3000 ];
+      interfaces.vlan20.allowedTCPPorts = [
+        22
+        53
+        3000
+      ];
 
       interfaces.vlan30 = {
         allowedTCPPorts = [ 53 ];
-        allowedUDPPorts = [ 53 67 ];
+        allowedUDPPorts = [
+          53
+          67
+        ];
       };
 
       extraForwardRules = lib.mkMerge [

@@ -1,5 +1,4 @@
-_:
-{
+_: {
   services.kea.dhcp4 = {
     enable = true;
     settings = {
@@ -8,7 +7,10 @@ _:
       rebind-timer = 37800;
 
       interfaces-config = {
-        interfaces = [ "vlan20" "vlan30" ];
+        interfaces = [
+          "vlan20"
+          "vlan30"
+        ];
       };
 
       lease-database = {
@@ -25,9 +27,18 @@ _:
             { pool = "10.20.0.100 - 10.20.0.200"; }
           ];
           reservations = [
-            { hw-address = "98:fa:9b:a0:67:b7"; ip-address = "10.20.0.10"; }
-            { hw-address = "98:fa:9b:a0:63:24"; ip-address = "10.20.0.11"; }
-            { hw-address = "98:fa:9b:34:bc:10"; ip-address = "10.20.0.12"; }
+            {
+              hw-address = "98:fa:9b:a0:67:b7";
+              ip-address = "10.20.0.10";
+            }
+            {
+              hw-address = "98:fa:9b:a0:63:24";
+              ip-address = "10.20.0.11";
+            }
+            {
+              hw-address = "98:fa:9b:34:bc:10";
+              ip-address = "10.20.0.12";
+            }
           ];
           option-data = [
             {

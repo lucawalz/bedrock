@@ -35,7 +35,8 @@ in
         "--accept-dns=false"
         "--advertise-tags=tag:cluster"
         "--hostname=${cfg.hostname}"
-      ] ++ lib.optional cfg.acceptRoutes "--accept-routes";
+      ]
+      ++ lib.optional cfg.acceptRoutes "--accept-routes";
     };
   };
 }

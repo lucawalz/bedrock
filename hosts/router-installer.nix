@@ -6,7 +6,10 @@
 
   networking.hostName = "router";
 
-  boot.kernelParams = [ "console=ttyS0,115200" "console=tty1" ];
+  boot.kernelParams = [
+    "console=ttyS0,115200"
+    "console=tty1"
+  ];
 
   services.openssh = {
     enable = true;

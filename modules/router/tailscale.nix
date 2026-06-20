@@ -1,4 +1,8 @@
-{ config, secretsDir ? ../../secrets, ... }:
+{
+  config,
+  secretsDir ? ../../secrets,
+  ...
+}:
 {
   imports = [ ../tailscale/subnet-router.nix ];
 
