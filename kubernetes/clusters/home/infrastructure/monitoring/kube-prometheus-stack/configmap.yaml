@@ -56,6 +56,8 @@ data:
       enabled: true
       image:
         tag: "11.2.3"
+      deploymentStrategy:
+        type: Recreate
       admin:
         existingSecret: grafana-admin
         userKey: admin-user
