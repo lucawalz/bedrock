@@ -27,6 +27,20 @@ spec:
     ingress:
       enabled: false
     main:
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: http
+        initialDelaySeconds: 60
+        periodSeconds: 10
+        failureThreshold: 12
+      readinessProbe:
+        httpGet:
+          path: /healthz/readiness
+          port: http
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        failureThreshold: 6
       persistence:
         enabled: true
         size: 5Gi
