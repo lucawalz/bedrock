@@ -16,3 +16,4 @@ spec:
     - name: cluster-infrastructure
     - name: cluster-namespaces
     - name: cluster-secrets
+    - name: cluster-cnpg-db
