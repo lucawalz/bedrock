@@ -16,3 +16,4 @@ spec:
     - name: cluster-infrastructure
     - name: cluster-issuers
     - name: cluster-namespaces
+    - name: cluster-cnpg-db
