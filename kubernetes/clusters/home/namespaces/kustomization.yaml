@@ -20,6 +20,7 @@ resources:
   - authentik.yaml
   - ntfy.yaml
   - reloader.yaml
+  - kyverno.yaml
   - caph-system.yaml
   - capa-system.yaml
   - capi-k3s-bootstrap-system.yaml
