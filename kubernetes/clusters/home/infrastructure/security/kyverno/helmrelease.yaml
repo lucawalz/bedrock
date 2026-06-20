@@ -87,3 +87,5 @@ spec:
         enabled: true
       admissionReports:
         enabled: true
+      backgroundScan:
+        skipResourceFilters: false
