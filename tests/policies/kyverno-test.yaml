@@ -1,0 +1,74 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: pod-security-and-limits
+policies:
+  - ../../kubernetes/clusters/home/policies/require-resources.yaml
+  - ../../kubernetes/clusters/home/policies/require-run-as-non-root.yaml
+  - ../../kubernetes/clusters/home/policies/disallow-privilege-escalation.yaml
+  - ../../kubernetes/clusters/home/policies/require-drop-all-capabilities.yaml
+  - ../../kubernetes/clusters/home/policies/disallow-latest-tag.yaml
+resources:
+  - resources/compliant.yaml
+  - resources/violating.yaml
+results:
+  - policy: require-resources
+    rule: require-requests-limits
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: require-resources
+    rule: require-requests-limits
+    kind: Pod
+    resources:
+      - violating
+    result: fail
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - violating
+    result: fail
+  - policy: disallow-privilege-escalation
+    rule: privilege-escalation
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: disallow-privilege-escalation
+    rule: privilege-escalation
+    kind: Pod
+    resources:
+      - violating
+    result: fail
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - violating
+    result: fail
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - violating
+    result: fail
