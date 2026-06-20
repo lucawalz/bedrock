@@ -27,7 +27,7 @@ spec:
     # tag must track the EKS control-plane minor in aws-1/cluster.yaml or DRA version-skew breaks scaling
     image:
       repository: registry.k8s.io/autoscaling/cluster-autoscaler
-      tag: "v1.33.4"
+      tag: "v1.35.0"
     cloudProvider: aws
     awsRegion: eu-central-1
     autoDiscovery:
