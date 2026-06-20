@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - helmrelease.yaml
   - redis.yaml
-  - db-init-job.yaml
   - blueprints-configmap.yaml
   - ingress.yaml
   - networkpolicies.yaml
