@@ -22,6 +22,7 @@ resources:
   - ntfy.yaml
   - reloader.yaml
   - kyverno.yaml
+  - flagger.yaml
   - caph-system.yaml
   - capa-system.yaml
   - capi-k3s-bootstrap-system.yaml
