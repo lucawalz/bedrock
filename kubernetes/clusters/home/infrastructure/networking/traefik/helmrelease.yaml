@@ -42,6 +42,19 @@ spec:
       default:
         defaultCertificate:
           secretName: wildcard-syslabs-dev-tls
+    metrics:
+      prometheus:
+        entryPoint: metrics
+        addEntryPointsLabels: true
+        addRoutersLabels: true
+        addServicesLabels: true
+        service:
+          enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 60s
+          additionalLabels:
+            release: kube-prometheus-stack
   install:
     createNamespace: true
     crds: Create
