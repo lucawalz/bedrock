@@ -4,5 +4,4 @@ resources:
   - helmrelease.yaml
   - ingress.yaml
   - middleware.yaml
-  - db-init-job.yaml
   - pdb.yaml

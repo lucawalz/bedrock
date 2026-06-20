@@ -1,0 +1,31 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+  namespace: postgres
+spec:
+  instances: 1
+  enableSuperuserAccess: true
+  storage:
+    size: 8Gi
+    storageClass: longhorn
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 768Mi
+  bootstrap:
+    initdb:
+      database: app
+      owner: app
+  managed:
+    roles:
+      - name: litellm
+        login: true
+        passwordSecret:
+          name: pg-litellm
+      - name: authentik
+        login: true
+        passwordSecret:
+          name: pg-authentik

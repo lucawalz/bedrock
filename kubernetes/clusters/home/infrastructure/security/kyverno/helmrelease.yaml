@@ -23,6 +23,29 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
+    config:
+      resourceFiltersIncludeNamespaces:
+        - kube-system
+        - kube-node-lease
+        - kube-public
+        - flux-system
+        - kyverno
+        - cnpg-system
+        - cert-manager
+        - capa-system
+        - caph-system
+        - capi-k3s-bootstrap-system
+        - capi-k3s-control-plane-system
+        - longhorn-system
+        - metallb-system
+        - monitoring
+        - velero
+        - cattle-*
+        - fleet-*
+        - cluster-fleet-*
+        - p-*
+        - user-*
+        - local
     admissionController:
       replicas: 1
       resources:

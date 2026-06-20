@@ -25,7 +25,7 @@ spec:
       error_reporting:
         enabled: false
       postgresql:
-        host: postgres-postgresql.postgres.svc.cluster.local
+        host: postgres-rw.postgres.svc.cluster.local
         name: authentik
         user: authentik
         port: 5432

@@ -5,6 +5,8 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - cnpg-operator.yaml
+  - cnpg-db.yaml
   - policies.yaml
   - authentik.yaml
   - flux-operator.yaml
