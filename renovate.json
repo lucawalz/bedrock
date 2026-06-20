@@ -53,7 +53,7 @@
       "automerge": false
     },
     {
-      "description": "Hold stateful infrastructure minors for manual review and step one minor at a time",
+      "description": "Hold stateful infrastructure minors for manual review",
       "matchManagers": ["flux"],
       "matchPackageNames": [
         "/^longhorn$/",
@@ -63,7 +63,18 @@
         "/^cert-manager$/"
       ],
       "matchUpdateTypes": ["minor"],
-      "automerge": false,
+      "automerge": false
+    },
+    {
+      "description": "Step stateful infrastructure one minor at a time",
+      "matchManagers": ["flux"],
+      "matchPackageNames": [
+        "/^longhorn$/",
+        "/^cloudnative-pg$/",
+        "/^kube-prometheus-stack$/",
+        "/^velero$/",
+        "/^cert-manager$/"
+      ],
       "separateMultipleMinor": true
     }
   ]
