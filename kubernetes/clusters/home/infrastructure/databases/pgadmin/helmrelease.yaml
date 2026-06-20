@@ -44,7 +44,7 @@ spec:
         homelab:
           Name: "homelab"
           Group: "Servers"
-          Host: "postgres-postgresql.postgres.svc.cluster.local"
+          Host: "postgres-rw.postgres.svc.cluster.local"
           Port: 5432
           MaintenanceDB: "postgres"
           Username: "postgres"
