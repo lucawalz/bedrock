@@ -120,7 +120,9 @@ nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
 
 Burst nodes are not added by hand. The companion horizon controller provisions them through the Cluster API manifests under `kubernetes/clusters/home/infrastructure/cluster-api/`, enrolling the node into the tailnet with a tagged auth key and injecting the join token it needs, and removes them again when load drops.
 
-The reconciliation order and the steps for adding a service are in [`kubernetes/README.md`](kubernetes/README.md).
+Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then `cluster-infrastructure`, then `cluster-issuers`, then `cluster-apps`.
+
+To add a service: create its namespace under `namespaces/`, add a HelmRepository under `sources/helm/` if the chart needs a new one, declare the workload as a HelmRelease under `apps/` or `infrastructure/` and list it in the nearest kustomization, and for external access add a Traefik IngressRoute and map the hostname into the Cloudflare tunnel. Encrypt any secret with SOPS into the matching `secrets/` folder. Commit to `main`, and Flux applies it on its next pass.
 
 ## Repository layout
 
@@ -169,10 +171,16 @@ Ollama serves the models (`qwen2.5-coder:7b` and `llama3.1:8b`) on worker-1 and 
 
 Secrets use two mechanisms, both committed encrypted, never in plaintext:
 
-- Host secrets use agenix, encrypted to each node's SSH host key. Only the K3s join token lives here. See [`secrets/README.md`](secrets/README.md).
-- Kubernetes secrets use SOPS with age, decrypted by Flux in-cluster at reconcile time. See [`kubernetes/clusters/home/secrets/README.md`](kubernetes/clusters/home/secrets/README.md).
+- Host secrets use agenix, encrypted to each node's SSH host key, so a node decrypts its own secrets at boot with no shared passphrase. `secrets/secrets.nix` lists the recipients; the K3s join token and the router's Tailscale and AdGuard secrets live here.
+- Kubernetes secrets use SOPS with age. Files matching `kubernetes/.*/secrets/.*\.sops\.yaml` are encrypted to the cluster's age recipient and decrypted by Flux in-cluster at reconcile time, grouped under `bootstrap/`, `platform/`, `identity/`, and `apps/`. The encrypted files are safe in a public repository; only the cluster holds the private key.
+
+Editing secrets, re-keying them, and recovering them on a fresh cluster are covered in the [disaster recovery runbook](docs/disaster-recovery.md).
 
 Several layers of defense-in-depth sit on top. The app namespaces run default-deny NetworkPolicies, so a pod reaches only what it is explicitly allowed to. Workloads run with a non-root, dropped-capability securityContext, and K3s encrypts Secrets at rest.
+
+## Disaster recovery
+
+The cluster is reproducible from this repository plus a small set of seeds it cannot hold: the age key that decrypts the secrets, the host SSH keys, and the Velero backups in Hetzner object storage. The full rebuild from total loss, the recovery seeds, and the procedures for rehearsing recovery without an outage are in the [disaster recovery runbook](docs/disaster-recovery.md).
 
 ## Continuous integration
 
