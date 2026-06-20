@@ -11,8 +11,18 @@ let
   luca = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoKFFTFmJR1CSAq55TwXHbUPTxSK847qZL0W6r/ZUV9 luca@macbook";
 in
 {
-  "k3s-token.age".publicKeys = [ master worker-1 worker-2 luca ];
-  "tailscale-authkey.age".publicKeys = [ router luca ];
-  "adguard-admin.age".publicKeys = [ router luca ];
+  "k3s-token.age".publicKeys = [
+    master
+    worker-1
+    worker-2
+    luca
+  ];
+  "tailscale-authkey.age".publicKeys = [
+    router
+    luca
+  ];
+  "adguard-admin.age".publicKeys = [
+    router
+    luca
+  ];
 }
-

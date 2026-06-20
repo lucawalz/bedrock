@@ -1,4 +1,10 @@
-{ config, pkgs, lib, secretsDir ? ../../secrets, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  secretsDir ? ../../secrets,
+  ...
+}:
 let
   adminUser = "admin";
   configFile = "/var/lib/AdGuardHome/AdGuardHome.yaml";
@@ -41,25 +47,79 @@ in
       dns = {
         bind_hosts = [ "0.0.0.0" ];
         port = 53;
-        bootstrap_dns = [ "1.1.1.1" "9.9.9.9" ];
-        upstream_dns = [ "tls://1.1.1.1" "https://dns.quad9.net/dns-query" ];
+        bootstrap_dns = [
+          "1.1.1.1"
+          "9.9.9.9"
+        ];
+        upstream_dns = [
+          "tls://1.1.1.1"
+          "https://dns.quad9.net/dns-query"
+        ];
       };
       filtering = {
         protection_enabled = true;
         filtering_enabled = true;
         rewrites = [
-          { domain = "alertmanager.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "auth.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "flux.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "grafana.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "home.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "longhorn.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "ntfy.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "pgadmin.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "prometheus.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "rancher.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "traefik.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
-          { domain = "velero.syslabs.dev"; answer = "10.20.0.50"; enabled = true; }
+          {
+            domain = "alertmanager.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "auth.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "flux.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "grafana.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "home.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "longhorn.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "ntfy.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "pgadmin.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "prometheus.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "rancher.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "traefik.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "velero.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
         ];
       };
       filters = [

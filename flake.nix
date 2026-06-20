@@ -13,83 +13,114 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, agenix, ... }:
-  let
-    lib = import ./lib { inherit nixpkgs self disko agenix; };
-  in {
-    nixosConfigurations = {
-      master   = lib.mkHost { hostname = "master"; };
-      router   = lib.mkHost { hostname = "router"; system = "aarch64-linux"; baseline = false; };
-      worker-1 = lib.mkWorker { workerId = 1; };
-      worker-2 = lib.mkWorker { workerId = 2; };
-      pool-node = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          disko.nixosModules.disko
-          ./modules/k3s/pool-node.nix
-        ];
+  outputs =
+    {
+      self,
+      nixpkgs,
+      disko,
+      agenix,
+      ...
+    }:
+    let
+      lib = import ./lib {
+        inherit
+          nixpkgs
+          self
+          disko
+          agenix
+          ;
       };
-      cluster-node = nixpkgs.lib.nixosSystem {
-        system = "x86_64-linux";
-        modules = [
-          disko.nixosModules.disko
-          ./modules/k3s/cluster-node.nix
-        ];
-      };
-      router-installer = nixpkgs.lib.nixosSystem {
-        system = "aarch64-linux";
-        modules = [
-          ./hosts/router-installer.nix
-        ];
-      };
-    };
-
-    devShells.x86_64-linux.default = let
-      pkgs = import nixpkgs {
-        system = "x86_64-linux";
-      };
-      kubeHelm = pkgs.wrapHelm pkgs.kubernetes-helm {
-        plugins = with pkgs.kubernetes-helmPlugins; [
-          helm-secrets
-          helm-diff
-          helm-s3
-          helm-git
-        ];
-      };
-    in pkgs.mkShell {
-      name = "bedrock";
-      packages = with pkgs; [
-        kubectl
-        kubeHelm
-        fluxcd
-        sops
-        age
-        nixos-rebuild
-        nix-prefetch-git
-        gnumake
-        git
+      formatterSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "aarch64-darwin"
       ];
-    };
+    in
+    {
+      formatter = nixpkgs.lib.genAttrs formatterSystems (
+        system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style
+      );
 
-    devShells.aarch64-darwin.default = let
-      pkgs = import nixpkgs {
-        system = "aarch64-darwin";
-        config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
+      nixosConfigurations = {
+        master = lib.mkHost { hostname = "master"; };
+        router = lib.mkHost {
+          hostname = "router";
+          system = "aarch64-linux";
+          baseline = false;
+        };
+        worker-1 = lib.mkWorker { workerId = 1; };
+        worker-2 = lib.mkWorker { workerId = 2; };
+        pool-node = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            disko.nixosModules.disko
+            ./modules/k3s/pool-node.nix
+          ];
+        };
+        cluster-node = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          modules = [
+            disko.nixosModules.disko
+            ./modules/k3s/cluster-node.nix
+          ];
+        };
+        router-installer = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+          modules = [
+            ./hosts/router-installer.nix
+          ];
+        };
       };
-    in pkgs.mkShell {
-      name = "bedrock";
-      packages = with pkgs; [
-        kubectl
-        fluxcd
-        sops
-        age
-        nixos-anywhere
-        nixos-rebuild
-        terraform
-        zstd
-        git
-      ];
+
+      devShells.x86_64-linux.default =
+        let
+          pkgs = import nixpkgs {
+            system = "x86_64-linux";
+          };
+          kubeHelm = pkgs.wrapHelm pkgs.kubernetes-helm {
+            plugins = with pkgs.kubernetes-helmPlugins; [
+              helm-secrets
+              helm-diff
+              helm-s3
+              helm-git
+            ];
+          };
+        in
+        pkgs.mkShell {
+          name = "bedrock";
+          packages = with pkgs; [
+            kubectl
+            kubeHelm
+            fluxcd
+            sops
+            age
+            nixos-rebuild
+            nix-prefetch-git
+            gnumake
+            git
+          ];
+        };
+
+      devShells.aarch64-darwin.default =
+        let
+          pkgs = import nixpkgs {
+            system = "aarch64-darwin";
+            config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
+          };
+        in
+        pkgs.mkShell {
+          name = "bedrock";
+          packages = with pkgs; [
+            kubectl
+            fluxcd
+            sops
+            age
+            nixos-anywhere
+            nixos-rebuild
+            terraform
+            zstd
+            git
+          ];
+        };
     };
-  };
 }
-

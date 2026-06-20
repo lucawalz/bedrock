@@ -17,7 +17,10 @@
 
   networking.hostName = "router";
 
-  boot.kernelParams = [ "console=ttyS0,115200" "console=tty1" ];
+  boot.kernelParams = [
+    "console=ttyS0,115200"
+    "console=tty1"
+  ];
 
   services.openssh.settings.PermitRootLogin = "prohibit-password";
   services.openssh.openFirewall = false;

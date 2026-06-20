@@ -1,5 +1,4 @@
-_:
-{
+_: {
   boot.loader = {
     systemd-boot = {
       enable = true;

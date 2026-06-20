@@ -1,5 +1,4 @@
-_:
-{
+_: {
   networking = {
     networkmanager.enable = true;
     hosts."10.20.0.10" = [ "master" ];
