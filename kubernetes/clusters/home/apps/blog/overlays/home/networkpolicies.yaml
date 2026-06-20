@@ -17,8 +17,13 @@ metadata:
   namespace: blog
 spec:
   podSelector:
-    matchLabels:
-      app.kubernetes.io/name: blog
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - blog
+          - blog-primary
+          - blog-canary
   policyTypes:
     - Ingress
   ingress:
