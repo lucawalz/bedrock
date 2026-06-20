@@ -5,7 +5,6 @@ metadata:
   namespace: postgres
 spec:
   backoffLimit: 4
-  ttlSecondsAfterFinished: 600
   template:
     metadata:
       labels:

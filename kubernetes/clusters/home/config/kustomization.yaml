@@ -13,6 +13,7 @@ resources:
   - issuers.yaml
   - metallb.yaml
   - apps.yaml
+  - litellm-db-init.yaml
   - velero-aws-demo.yaml
 
   - cluster-settings.yaml
