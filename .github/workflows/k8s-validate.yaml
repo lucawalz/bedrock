@@ -9,7 +9,7 @@ jobs:
   kubeconform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install kubeconform
         run: |
@@ -63,7 +63,7 @@ jobs:
   kustomize-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install kustomize
         run: |
@@ -84,7 +84,7 @@ jobs:
   sops-sanity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Check SOPS files are actually encrypted
         # Prevents accidentally committing decrypted secrets
