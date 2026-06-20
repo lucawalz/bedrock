@@ -1,0 +1,21 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: litellm
+  namespace: postgres
+spec:
+  name: litellm
+  owner: litellm
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: authentik
+  namespace: postgres
+spec:
+  name: authentik
+  owner: authentik
+  cluster:
+    name: postgres

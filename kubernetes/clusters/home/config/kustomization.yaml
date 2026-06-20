@@ -5,6 +5,8 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - cnpg-operator.yaml
+  - cnpg-db.yaml
   - policies.yaml
   - authentik.yaml
   - flux-operator.yaml
@@ -13,7 +15,6 @@ resources:
   - issuers.yaml
   - metallb.yaml
   - apps.yaml
-  - litellm-db-init.yaml
   - velero-aws-demo.yaml
 
   - cluster-settings.yaml
