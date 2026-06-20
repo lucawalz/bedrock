@@ -82,6 +82,26 @@ jobs:
             kustomize build "$dir" > /dev/null || exit 1
           done
 
+  kyverno-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install kyverno CLI
+        run: |
+          curl -sSL https://github.com/kyverno/kyverno/releases/download/v1.18.1/kyverno-cli_v1.18.1_linux_x86_64.tar.gz \
+            | tar xz -C /usr/local/bin kyverno
+
+      - name: Run policy unit tests
+        run: kyverno test tests/policies/
+
+      - name: Apply policies to first-party manifests
+        run: |
+          kyverno apply kubernetes/clusters/home/policies/ \
+            --resource kubernetes/clusters/home/apps/blog/deployment.yaml \
+            --resource kubernetes/clusters/home/apps/homepage/deployment.yaml \
+            --resource kubernetes/clusters/home/apps/llm/litellm/db-init-job.yaml
+
   sops-sanity:
     runs-on: ubuntu-latest
     steps:
