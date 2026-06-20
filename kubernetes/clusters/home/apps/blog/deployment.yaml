@@ -50,14 +50,16 @@ spec:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 15
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 5
           readinessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 5
-            periodSeconds: 15
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 2
           volumeMounts:
             - name: tmp
               mountPath: /tmp
