@@ -4,16 +4,12 @@ metadata:
   name: blog
   namespace: blog
   annotations:
-    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/ssl-redirect: "443"
-    external-dns.alpha.kubernetes.io/hostname: lucawalz.dev
 spec:
+  ingressClassName: alb
   rules:
-    - host: lucawalz.dev
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix
