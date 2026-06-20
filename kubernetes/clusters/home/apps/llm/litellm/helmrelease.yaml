@@ -26,11 +26,15 @@ spec:
     replicaCount: 1
     securityContext:
       allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
       capabilities:
         drop:
           - ALL
       seccompProfile:
         type: RuntimeDefault
+    env:
+      HF_HOME: /tmp/hf
+      TIKTOKEN_CACHE_DIR: /tmp/tiktoken
     resources:
       requests:
         cpu: "100m"
