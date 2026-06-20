@@ -46,3 +46,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0042. Run AWS as an ephemeral autoscaling EKS cluster with an S3 backup foothold](0042-ephemeral-eks-autoscaling-and-s3-foothold.md) (accepted, not yet implemented)
 - [0043. Triage production-readiness findings into fixed, accepted, and deferred](0043-triage-production-readiness-findings.md) (accepted)
 - [0044. Define service SLOs with multi-burn-rate error-budget alerting](0044-slo-error-budget-burn-rate-alerting.md) (accepted)
+- [0045. Govern workloads with Kyverno policy-as-code in audit-first rollout](0045-kyverno-policy-as-code-governance.md) (accepted)
