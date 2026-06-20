@@ -8,7 +8,8 @@
     "enabled": true
   },
   "flux": {
-    "enabled": true
+    "enabled": true,
+    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
   },
   "github-actions": {
     "enabled": true
