@@ -1,0 +1,229 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: slo-blog
+  namespace: monitoring
+  labels:
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: slo-blog.availability.recording
+      rules:
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 5m
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[5m]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[5m]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 30m
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[30m]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[30m]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 1h
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[1h]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[1h]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 2h
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[2h]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[2h]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 6h
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[6h]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[6h]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 1d
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[1d]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[1d]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 3d
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[3d]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[3d]))
+        - record: slo:blog_availability:error_ratio
+          labels:
+            window: 30d
+          expr: |
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[30d]))
+            /
+            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[30d]))
+        - record: slo:blog_availability:error_budget_remaining_ratio
+          expr: |
+            1 - (
+              clamp_min(sum without(window) (slo:blog_availability:error_ratio{window="30d"}), 0)
+              / (1 - 0.999)
+            )
+    - name: slo-blog.latency.recording
+      rules:
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 5m
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[5m]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[5m]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 30m
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[30m]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[30m]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 1h
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[1h]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[1h]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 2h
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[2h]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[2h]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 6h
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[6h]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[6h]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 1d
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[1d]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[1d]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 3d
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[3d]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[3d]))
+            )
+        - record: slo:blog_latency:error_ratio
+          labels:
+            window: 30d
+          expr: |
+            1 - (
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.5"}[30d]))
+              /
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[30d]))
+            )
+        - record: slo:blog_latency:error_budget_remaining_ratio
+          expr: |
+            1 - (
+              clamp_min(sum without(window) (slo:blog_latency:error_ratio{window="30d"}), 0)
+              / (1 - 0.99)
+            )
+    - name: slo-blog.availability.alerts
+      rules:
+        - alert: BlogAvailabilityErrorBudgetBurnFast
+          expr: |
+            sum without(window) (slo:blog_availability:error_ratio{window="1h"}) > (14.4 * (1 - 0.999))
+            and
+            sum without(window) (slo:blog_availability:error_ratio{window="5m"}) > (14.4 * (1 - 0.999))
+          for: 2m
+          labels:
+            severity: critical
+            slo: blog-availability
+          annotations:
+            summary: "Blog availability error budget burning fast (14.4x)"
+            description: "The blog is burning its 30d availability error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about two days."
+        - alert: BlogAvailabilityErrorBudgetBurnMedium
+          expr: |
+            sum without(window) (slo:blog_availability:error_ratio{window="6h"}) > (6 * (1 - 0.999))
+            and
+            sum without(window) (slo:blog_availability:error_ratio{window="30m"}) > (6 * (1 - 0.999))
+          for: 15m
+          labels:
+            severity: critical
+            slo: blog-availability
+          annotations:
+            summary: "Blog availability error budget burning medium (6x)"
+            description: "The blog is burning its 30d availability error budget at 6x over 6h and 30m windows."
+        - alert: BlogAvailabilityErrorBudgetBurnSlow
+          expr: |
+            sum without(window) (slo:blog_availability:error_ratio{window="3d"}) > (1 * (1 - 0.999))
+            and
+            sum without(window) (slo:blog_availability:error_ratio{window="6h"}) > (1 * (1 - 0.999))
+          for: 1h
+          labels:
+            severity: warning
+            slo: blog-availability
+          annotations:
+            summary: "Blog availability error budget burning slow (1x)"
+            description: "The blog is burning its 30d availability error budget at 1x over 3d and 6h windows; the budget will be exhausted before the window closes."
+    - name: slo-blog.latency.alerts
+      rules:
+        - alert: BlogLatencyErrorBudgetBurnFast
+          expr: |
+            sum without(window) (slo:blog_latency:error_ratio{window="1h"}) > (14.4 * (1 - 0.99))
+            and
+            sum without(window) (slo:blog_latency:error_ratio{window="5m"}) > (14.4 * (1 - 0.99))
+          for: 2m
+          labels:
+            severity: critical
+            slo: blog-latency
+          annotations:
+            summary: "Blog latency error budget burning fast (14.4x)"
+            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+        - alert: BlogLatencyErrorBudgetBurnMedium
+          expr: |
+            sum without(window) (slo:blog_latency:error_ratio{window="6h"}) > (6 * (1 - 0.99))
+            and
+            sum without(window) (slo:blog_latency:error_ratio{window="30m"}) > (6 * (1 - 0.99))
+          for: 15m
+          labels:
+            severity: critical
+            slo: blog-latency
+          annotations:
+            summary: "Blog latency error budget burning medium (6x)"
+            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 6x over 6h and 30m windows."
+        - alert: BlogLatencyErrorBudgetBurnSlow
+          expr: |
+            sum without(window) (slo:blog_latency:error_ratio{window="3d"}) > (1 * (1 - 0.99))
+            and
+            sum without(window) (slo:blog_latency:error_ratio{window="6h"}) > (1 * (1 - 0.99))
+          for: 1h
+          labels:
+            severity: warning
+            slo: blog-latency
+          annotations:
+            summary: "Blog latency error budget burning slow (1x)"
+            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 1x over 3d and 6h windows."
