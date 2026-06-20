@@ -37,3 +37,6 @@ result-*
 *.tmp
 *.log
 
+# Generated promtool rule fixtures
+tests/promtool/*.gen.yaml
+
