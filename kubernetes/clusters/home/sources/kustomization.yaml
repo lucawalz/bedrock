@@ -24,3 +24,4 @@ resources:
   - helm/goauthentik.yaml
   - helm/controlplane.yaml
   - helm/kyverno.yaml
+  - helm/policy-reporter.yaml
