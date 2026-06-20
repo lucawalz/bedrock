@@ -1,5 +1,5 @@
 # K3s control plane (server) module
-{ config, pkgs, meta, secretsDir ? ../../secrets, ... }:
+{ config, ... }:
 {
   imports = [ ./common.nix ];
 

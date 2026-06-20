@@ -1,8 +1,10 @@
-{ ... }:
+_:
 {
-  networking.useDHCP = false;
-  networking.useNetworkd = true;
-  networking.networkmanager.enable = false;
+  networking = {
+    useDHCP = false;
+    useNetworkd = true;
+    networkmanager.enable = false;
+  };
 
   systemd.network = {
     enable = true;

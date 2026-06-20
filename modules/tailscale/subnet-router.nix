@@ -28,7 +28,7 @@ in
     services.tailscale = {
       enable = true;
       useRoutingFeatures = "both";
-      authKeyFile = cfg.authKeyFile;
+      inherit (cfg) authKeyFile;
       extraUpFlags = [
         "--login-server=https://controlplane.tailscale.com"
         "--advertise-routes=${trustedSubnet}"

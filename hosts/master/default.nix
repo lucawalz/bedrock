@@ -1,4 +1,4 @@
-{ config, lib, pkgs, meta, ... }:
+{ lib, pkgs, ... }:
 let
   kubeHelm = pkgs.wrapHelm pkgs.kubernetes-helm {
     plugins = with pkgs.kubernetes-helmPlugins; [
