@@ -1,5 +1,5 @@
 # Storage prerequisites for Longhorn
-{ config, pkgs, meta, ... }:
+{ meta, ... }:
 {
   # iSCSI target for Longhorn volume management
   services.openiscsi = {

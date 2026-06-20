@@ -1,5 +1,5 @@
 # K3s worker (agent) module
-{ config, lib, pkgs, meta, secretsDir ? ../../secrets, ... }:
+{ config, ... }:
 
 {
   imports = [ ./common.nix ];
