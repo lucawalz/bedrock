@@ -1,7 +1,4 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - helmrelease.yaml
-  - ingress.yaml
-  - middleware.yaml
-  - pdb.yaml
+  - db-init-job.yaml
