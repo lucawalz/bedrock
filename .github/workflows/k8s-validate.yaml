@@ -98,9 +98,8 @@ jobs:
       - name: Apply policies to first-party manifests
         run: |
           kyverno apply kubernetes/clusters/home/policies/ \
-            --resource kubernetes/clusters/home/apps/blog/deployment.yaml \
-            --resource kubernetes/clusters/home/apps/homepage/deployment.yaml \
-            --resource kubernetes/clusters/home/apps/llm/litellm/db-init-job.yaml
+            --resource kubernetes/clusters/home/apps/blog/base/deployment.yaml \
+            --resource kubernetes/clusters/home/apps/homepage/deployment.yaml
 
   sops-sanity:
     runs-on: ubuntu-latest
