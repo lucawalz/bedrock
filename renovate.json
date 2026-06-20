@@ -51,6 +51,19 @@
       "description": "Hold major updates for manual review",
       "matchUpdateTypes": ["major"],
       "automerge": false
+    },
+    {
+      "description": "Hold stateful infrastructure minors for manual review",
+      "matchManagers": ["flux"],
+      "matchPackageNames": [
+        "/^longhorn$/",
+        "/^postgresql$/",
+        "/^kube-prometheus-stack$/",
+        "/^velero$/",
+        "/^cert-manager$/"
+      ],
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
     }
   ]
 }
