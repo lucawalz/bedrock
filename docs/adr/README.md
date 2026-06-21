@@ -49,4 +49,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0045. Govern workloads with Kyverno policy-as-code in audit-first rollout](0045-kyverno-policy-as-code-governance.md) (accepted)
 - [0046. Provision Postgres declaratively with CloudNativePG](0046-cloudnative-pg-declarative-postgres.md) (accepted)
 - [0047. Deliver the blog to the EKS peer with overlay-based multi-cluster CD](0047-multi-cluster-cd-to-eks-peer.md) (accepted)
-- [0048. Canary the blog with Flagger on the Phase 1 Traefik SLIs](0048-flagger-progressive-delivery.md) (accepted)
+- [0048. Canary the blog with Flagger on its Traefik SLIs](0048-flagger-progressive-delivery.md) (accepted)
