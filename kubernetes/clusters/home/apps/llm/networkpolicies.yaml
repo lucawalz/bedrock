@@ -73,60 +73,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-litellm-ingress
-  namespace: llm
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: litellm
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: traefik
-      ports:
-        - protocol: TCP
-          port: 4000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-litellm-egress
-  namespace: llm
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: litellm
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: postgres
-          podSelector:
-            matchLabels:
-              cnpg.io/cluster: postgres
-      ports:
-        - protocol: TCP
-          port: 5432
-    - to:
-        - ipBlock:
-            cidr: 0.0.0.0/0
-            except:
-              - 10.42.0.0/16
-              - 10.43.0.0/16
-      ports:
-        - protocol: TCP
-          port: 443
-        - protocol: TCP
-          port: 80
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-open-webui-egress
   namespace: llm
 spec:
