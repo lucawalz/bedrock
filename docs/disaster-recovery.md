@@ -16,7 +16,7 @@ These cannot live in the repository and must be kept somewhere that survives the
 | The repository | This repository, or a fork. | Flux syncs from it and the rebuild reads it. |
 | Operator identity | The admin SSH key, a recipient on every agenix secret. | Needed to re-key host secrets when host keys are lost. |
 
-External account tokens for Hetzner, Cloudflare, Tailscale, and the Cluster API AWS IAM are stored as SOPS secrets, so they return once the age key is present, but the accounts and their issuers live outside the repository.
+External account tokens for Hetzner, Cloudflare, and Tailscale are stored as SOPS secrets, so they return once the age key is present, but the accounts and their issuers live outside the repository.
 
 The age private key is held only on the operator's workstation, by choice. That is an accepted single point of failure: if both the workstation and the cluster are lost, the encrypted secrets are unrecoverable and must be reissued from their sources.
 

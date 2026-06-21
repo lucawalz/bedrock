@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0049
 date: 2026-06-18
 ---
 
 # 0035. Standalone GitOps-managed cloud cluster
+
+> Superseded by [0049](0049-remove-aws-multicloud-build.md), which removes the AWS build and the gitops-peer primitive this record introduced.
 
 ## Context
 

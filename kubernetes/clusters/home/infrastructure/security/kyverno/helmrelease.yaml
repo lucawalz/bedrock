@@ -32,7 +32,6 @@ spec:
         - kyverno
         - cnpg-system
         - cert-manager
-        - capa-system
         - caph-system
         - capi-k3s-bootstrap-system
         - capi-k3s-control-plane-system

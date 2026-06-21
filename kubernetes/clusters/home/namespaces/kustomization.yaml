@@ -24,6 +24,5 @@ resources:
   - kyverno.yaml
   - flagger.yaml
   - caph-system.yaml
-  - capa-system.yaml
   - capi-k3s-bootstrap-system.yaml
   - capi-k3s-control-plane-system.yaml

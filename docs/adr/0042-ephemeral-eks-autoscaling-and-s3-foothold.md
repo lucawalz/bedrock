@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0049
 date: 2026-06-19
 ---
 
 # 0042. Run AWS as an ephemeral autoscaling EKS cluster with an ephemeral S3 backup demo
+
+> Superseded by [0049](0049-remove-aws-multicloud-build.md), which removes the ephemeral EKS cluster and the S3 backup foothold; backups stay on Hetzner.
 
 ## Context
 
