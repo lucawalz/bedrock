@@ -5,6 +5,8 @@ date: 2026-06-19
 
 # 0039. Observability stack with Loki, Tempo, and Grafana Alloy
 
+> Update 2026-06-21: the standalone Alertmanager is retained, not removed. The kube-prometheus-stack default alert set, more than 150 Prometheus-evaluated rules covering nodes, storage, and workloads, delivers only through Alertmanager, and Grafana's unified alerting evaluates its own rules rather than these, so removing Alertmanager would silence them. Grafana alerting still runs the operator-authored log-error rule to ntfy and coexists with Alertmanager.
+
 ## Context
 
 The home cluster has had metrics and alerting since [0018](0018-internal-dashboard-and-router-metrics.md): kube-prometheus-stack runs Prometheus, a single Alertmanager that forwards to ntfy, and Grafana, with node-exporter, kube-state-metrics, and a static scrape of the Pi router. What it has never had is logs or traces. Pod logs lived only in the kubelet and were lost on eviction, and there was no trace backend at all. Grafana showed metrics and nothing else, so any investigation that needed a log line meant a `kubectl logs` against a guess at the right pod.
