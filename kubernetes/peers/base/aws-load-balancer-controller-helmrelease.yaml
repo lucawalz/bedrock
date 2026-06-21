@@ -26,6 +26,7 @@ spec:
   values:
     clusterName: aws-1
     region: eu-central-1
+    replicaCount: 1
     hostNetwork: true
     dnsPolicy: ClusterFirstWithHostNet
     serviceAccount:
