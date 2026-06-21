@@ -21,10 +21,6 @@ spec:
       owner: app
   managed:
     roles:
-      - name: litellm
-        login: true
-        passwordSecret:
-          name: pg-litellm
       - name: authentik
         login: true
         passwordSecret:

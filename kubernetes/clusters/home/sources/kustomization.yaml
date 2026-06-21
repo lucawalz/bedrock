@@ -15,7 +15,6 @@ resources:
   - helm/velero.yaml
   - helm/ollama.yaml
   - helm/open-webui.yaml
-  - helm/litellm.yaml
   - helm/pgadmin.yaml
   - helm/stakater.yaml
   - helm/cluster-autoscaler.yaml
