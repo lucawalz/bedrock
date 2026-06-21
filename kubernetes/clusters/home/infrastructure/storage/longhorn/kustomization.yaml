@@ -4,6 +4,7 @@ resources:
 - backup-target.yaml
 - helmrelease.yaml
 - ingress.yaml
+- recurringjobs.yaml
 patches:
 - patch: |-
     - op: add
