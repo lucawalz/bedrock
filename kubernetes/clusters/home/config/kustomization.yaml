@@ -11,10 +11,8 @@ resources:
   - authentik.yaml
   - flux-operator.yaml
   - cluster-api.yaml
-  - cluster-api-aws.yaml
   - issuers.yaml
   - metallb.yaml
   - apps.yaml
-  - velero-aws-demo.yaml
 
   - cluster-settings.yaml

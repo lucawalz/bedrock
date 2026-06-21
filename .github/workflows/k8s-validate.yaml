@@ -35,12 +35,10 @@ jobs:
           mkdir -p /tmp/crd-schemas
           providers_dir=kubernetes/clusters/home/infrastructure/cluster-api/providers
           read_version() { grep -E '^[[:space:]]*version:' "$1" | head -1 | awk '{print $2}'; }
-          aws_ver=$(read_version "$providers_dir/infrastructure-aws.yaml")
           caph_ver=$(read_version "$providers_dir/infrastructure-hetzner.yaml")
           k3s_ver=$(read_version "$providers_dir/bootstrap-k3s.yaml")
           cd /tmp/crd-schemas
           python3 /tmp/openapi2jsonschema.py \
-            "https://github.com/kubernetes-sigs/cluster-api-provider-aws/releases/download/${aws_ver}/infrastructure-components.yaml" \
             "https://github.com/syself/cluster-api-provider-hetzner/releases/download/${caph_ver}/infrastructure-components.yaml" \
             "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_ver}/bootstrap-components.yaml" \
             "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_ver}/control-plane-components.yaml"
