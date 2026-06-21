@@ -26,8 +26,13 @@ metadata:
 spec:
   eksNodegroupName: aws-1-pool-0
   roleName: eks-nodegroup.cluster-api-provider-aws.sigs.k8s.io
-  instanceType: t3.small
   amiType: AL2023_x86_64_STANDARD
+  awsLaunchTemplate:
+    instanceType: t3.medium
+    instanceMetadataOptions:
+      httpEndpoint: enabled
+      httpTokens: required
+      httpPutResponseHopLimit: 2
   additionalTags:
     k8s.io/cluster-autoscaler/enabled: "true"
     k8s.io/cluster-autoscaler/aws-1: "owned"
