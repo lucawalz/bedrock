@@ -26,6 +26,8 @@ spec:
   values:
     clusterName: aws-1
     region: eu-central-1
+    hostNetwork: true
+    dnsPolicy: ClusterFirstWithHostNet
     serviceAccount:
       annotations:
         eks.amazonaws.com/role-arn: arn:aws:iam::867344464550:role/bedrock-eks-aws-load-balancer-controller
