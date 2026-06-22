@@ -1,5 +1,12 @@
-{ pkgs, lib, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 let
+  cfg = config.services.kioskConsole;
+
   compositor = pkgs.labwc;
 
   kioskUser = "kiosk";
@@ -67,46 +74,50 @@ let
   '';
 in
 {
-  programs.labwc.enable = true;
+  options.services.kioskConsole.enable = lib.mkEnableOption "kiosk Wayland console on the bar display";
 
-  security.polkit.enable = true;
-  services.dbus.enable = true;
+  config = lib.mkIf cfg.enable {
+    programs.labwc.enable = true;
 
-  users.users.${kioskUser} = {
-    isNormalUser = true;
-    home = "/home/${kioskUser}";
-  };
+    security.polkit.enable = true;
+    services.dbus.enable = true;
 
-  services.greetd = {
-    enable = true;
-    settings = {
-      initial_session = {
-        command = "${session}";
-        user = kioskUser;
-      };
-      default_session = {
-        command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
-        user = "greeter";
+    users.users.${kioskUser} = {
+      isNormalUser = true;
+      home = "/home/${kioskUser}";
+    };
+
+    services.greetd = {
+      enable = true;
+      settings = {
+        initial_session = {
+          command = "${session}";
+          user = kioskUser;
+        };
+        default_session = {
+          command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
+          user = "greeter";
+        };
       };
     };
-  };
 
-  environment = {
-    etc = {
-      "labwc/labwc/autostart".source = autostart;
-      "labwc/labwc/rc.xml".source = rcXml;
-      "labwc/labwc/menu.xml".source = menuXml;
+    environment = {
+      etc = {
+        "labwc/labwc/autostart".source = autostart;
+        "labwc/labwc/rc.xml".source = rcXml;
+        "labwc/labwc/menu.xml".source = menuXml;
+      };
+      systemPackages = [
+        compositor
+        pkgs.foot
+        pkgs.fuzzel
+        pkgs.chromium
+        pkgs.swayidle
+        pkgs.wbg
+        pkgs.wlr-randr
+        pkgs.libdrm
+        pkgs.edid-decode
+      ];
     };
-    systemPackages = [
-      compositor
-      pkgs.foot
-      pkgs.fuzzel
-      pkgs.chromium
-      pkgs.swayidle
-      pkgs.wbg
-      pkgs.wlr-randr
-      pkgs.libdrm
-      pkgs.edid-decode
-    ];
   };
 }
