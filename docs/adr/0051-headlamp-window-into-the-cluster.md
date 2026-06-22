@@ -24,10 +24,11 @@ router into a full workstation.
 Run Headlamp in-cluster as a Flux HelmRelease, the same shape as every other dashboard here
 (Grafana, Longhorn, Velero-UI, Homepage), exposed at `headlamp.syslabs.dev` through Traefik with
 Authentik forward-auth ([0008](0008-traefik-ingress.md),
-[0038](0038-authentik-sso-for-internal-dashboards.md)). It reads the cluster through a dedicated
-ServiceAccount bound to the built-in `view` ClusterRole, so it is read-only and cannot read
-Secrets. The router holds no kubeconfig and no token; it only resolves and reaches the dashboard
-like any other internal service.
+[0038](0038-authentik-sso-for-internal-dashboards.md)). It talks to the cluster through a dedicated
+ServiceAccount bound to `cluster-admin`, giving full read-write management from the panel, with
+Authentik single sign-on as the sole access gate. This is a single-operator homelab choice, weighed
+against a read-only `view` binding and taken for management convenience. The router holds no
+kubeconfig and no token; it only resolves and reaches the dashboard like any other internal service.
 
 The panel runs a kiosk Wayland session: greetd autologs an unprivileged `kiosk` user into labwc,
 which opens Chromium in app mode at the Headlamp URL and idles the output off through swayidle
@@ -51,10 +52,12 @@ panel is cabled, with the output driven by `wlr-randr`.
 
 ## Consequences
 
-The gateway holds no cluster credentials. Physical access to the bar yields at most an
-Authentik-gated, read-only Headlamp session that cannot read Secrets, which is a far smaller
-exposure than a kubeconfig on the router. Headlamp is patched by bumping its chart in Flux, the
-same motion as every other dashboard, rather than by rebuilding the router.
+The gateway holds no cluster credentials, but the dashboard itself is cluster-admin: anyone who
+passes Authentik single sign-on, or reaches an authenticated session at the panel, can manage the
+cluster, with the Authentik gate as the sole control, accepted for a single-operator lab. The
+credential stays in-cluster as the ServiceAccount, not a kubeconfig on the router, so the gateway's
+blast radius is unchanged. Headlamp is patched by bumping its chart in Flux, the same motion as
+every other dashboard, rather than by rebuilding the router.
 
 The resting view depends on the cluster, Traefik, and Authentik being healthy; if the cluster is
 down the panel goes dark, which is an honest signal for a window into the cluster rather than a
