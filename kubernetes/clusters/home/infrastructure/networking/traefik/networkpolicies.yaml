@@ -100,6 +100,12 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: flux-system
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: headlamp
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: rackpeek
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
