@@ -18,6 +18,7 @@ resources:
   - llm.yaml
   - homepage.yaml
   - headlamp.yaml
+  - rackpeek.yaml
   - blog.yaml
   - authentik.yaml
   - ntfy.yaml

@@ -6,6 +6,7 @@ resources:
   - llm
   - homepage
   - headlamp
+  - rackpeek
   - blog/overlays/home
   - ntfy
   - velero-ui
