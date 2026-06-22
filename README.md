@@ -45,6 +45,8 @@ Three Lenovo ThinkCentre m920q nodes on VLAN 20, with a Raspberry Pi as the rout
 | worker-2 | K3s agent | 10.20.0.12 |
 | router | Pi gateway, firewall, DNS, Tailscale subnet router | 10.20.0.1 |
 
+A TP-Link TL-SG108PE carries the VLAN tags at layer 2 and powers the Pi over PoE on port 2, so the router runs from a single cable. It is managed at a static address on the home LAN, and its port map is recorded in [ADR 0050](docs/adr/0050-poe-switch-powers-the-router.md).
+
 Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi joins the tailnet as a subnet router and advertises `10.20.0.0/24`, so admins with `--accept-routes` reach the cluster on its LAN addresses from anywhere, and remote burst nodes join across the internet. The home K3s nodes stay LAN-only.
 
 NixOS does not manage device firmware, so firmware patching is manual: `rpi-eeprom` on the Pi and the m920q BIOS on the nodes.
