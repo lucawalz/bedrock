@@ -91,19 +91,22 @@ in
     };
   };
 
-  environment.etc."labwc/labwc/autostart".source = autostart;
-  environment.etc."labwc/labwc/rc.xml".source = rcXml;
-  environment.etc."labwc/labwc/menu.xml".source = menuXml;
-
-  environment.systemPackages = [
-    compositor
-    pkgs.foot
-    pkgs.fuzzel
-    pkgs.chromium
-    pkgs.swayidle
-    pkgs.wbg
-    pkgs.wlr-randr
-    pkgs.libdrm
-    pkgs.edid-decode
-  ];
+  environment = {
+    etc = {
+      "labwc/labwc/autostart".source = autostart;
+      "labwc/labwc/rc.xml".source = rcXml;
+      "labwc/labwc/menu.xml".source = menuXml;
+    };
+    systemPackages = [
+      compositor
+      pkgs.foot
+      pkgs.fuzzel
+      pkgs.chromium
+      pkgs.swayidle
+      pkgs.wbg
+      pkgs.wlr-randr
+      pkgs.libdrm
+      pkgs.edid-decode
+    ];
+  };
 }
