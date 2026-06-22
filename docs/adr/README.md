@@ -53,3 +53,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0049. Remove the AWS multi-cloud build and keep backups on Hetzner](0049-remove-aws-multicloud-build.md) (accepted)
 - [0050. Replace the layer-2 switch with a PoE model that powers the router](0050-poe-switch-powers-the-router.md) (accepted)
 - [0051. Turn the router's bar display into a window into the cluster with Headlamp](0051-headlamp-window-into-the-cluster.md) (accepted)
+- [0052. Document the rack as code with RackPeek](0052-rackpeek-rack-as-code.md) (accepted)
