@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rackpeek-config
+  namespace: rackpeek
+data:
+  config.yaml: |
+    version: 2
+    resources:
+      - kind: Router
+        name: pi-gateway
+        model: Raspberry Pi 4 (Waveshare PoE+ HAT)
+        managed: true
+        poe: true
+        notes: "Edge router and DNS/DHCP gateway at 10.20.0.1, powered over PoE from switch port 2, carries all three VLANs over one trunk."
+        labels:
+          ip: 10.20.0.1
+          zone: VLAN1-trunk
+          power: PoE port 2
+        ports:
+          - type: rj45
+            speed: 1000
+            count: 1
+      - kind: Switch
+        name: tl-sg108pe
+        model: TP-Link TL-SG108PE
+        managed: true
+        poe: true
+        notes: "8-port PoE+ smart switch at 192.168.2.212. Port 1 Speedport uplink untagged VLAN1; port 2 Pi trunk PoE untagged VLAN1 tagged VLAN20/30; ports 3-5 spare VLAN1; ports 6/7/8 master/worker-1/worker-2 untagged VLAN20 PVID20. 64W PoE budget shared across ports 1-4."
+        labels:
+          ip: 192.168.2.212
+          port1: Speedport uplink, untagged VLAN1
+          port2: Pi trunk, PoE source, untagged VLAN1, tagged VLAN20+30
+          port6: master, untagged VLAN20, PVID20
+          port7: worker-1, untagged VLAN20, PVID20
+          port8: worker-2, untagged VLAN20, PVID20
+        ports:
+          - type: rj45
+            speed: 1000
+            count: 8
+      - kind: Server
+        name: master
+        notes: "Lenovo ThinkCentre m920q, K3s control-plane node at 10.20.0.10 on VLAN20, switch port 6."
+        labels:
+          ip: 10.20.0.10
+          role: control-plane
+          switchPort: "6"
+        ram:
+          size: 40
+        cpus:
+          - model: Intel Core i5-8500T
+            cores: 6
+            threads: 6
+        nics:
+          - type: rj45
+            speed: 1000
+            ports: 1
+      - kind: Server
+        name: worker-1
+        notes: "Lenovo ThinkCentre m920q, K3s worker node at 10.20.0.11 on VLAN20, switch port 7."
+        labels:
+          ip: 10.20.0.11
+          role: worker
+          switchPort: "7"
+        ram:
+          size: 40
+        cpus:
+          - model: Intel Core i5-8500T
+            cores: 6
+            threads: 6
+        nics:
+          - type: rj45
+            speed: 1000
+            ports: 1
+      - kind: Server
+        name: worker-2
+        notes: "Lenovo ThinkCentre m920q, K3s worker node at 10.20.0.12 on VLAN20, switch port 8."
+        labels:
+          ip: 10.20.0.12
+          role: worker
+          switchPort: "8"
+        ram:
+          size: 16
+        cpus:
+          - model: Intel Core i7-8700T
+            cores: 6
+            threads: 12
+        nics:
+          - type: rj45
+            speed: 1000
+            ports: 1
