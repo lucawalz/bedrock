@@ -227,6 +227,25 @@ data:
           name: Homepage
           slug: homepage
           provider: !KeyOf prov-homepage
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-headlamp
+        identifiers:
+          name: headlamp-forward-auth
+        attrs:
+          name: headlamp-forward-auth
+          mode: forward_domain
+          external_host: https://headlamp.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-headlamp
+        identifiers:
+          slug: headlamp
+        attrs:
+          name: Headlamp
+          slug: headlamp
+          provider: !KeyOf prov-headlamp
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -239,4 +258,5 @@ data:
             - !KeyOf prov-prometheus
             - !KeyOf prov-alertmanager
             - !KeyOf prov-longhorn
+            - !KeyOf prov-headlamp
             - !KeyOf prov-homepage

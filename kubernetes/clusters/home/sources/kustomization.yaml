@@ -25,3 +25,4 @@ resources:
   - helm/kyverno.yaml
   - helm/policy-reporter.yaml
   - helm/flagger.yaml
+  - helm/headlamp.yaml
