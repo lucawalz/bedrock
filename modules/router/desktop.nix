@@ -1,0 +1,109 @@
+{ pkgs, lib, ... }:
+let
+  compositor = pkgs.labwc;
+
+  kioskUser = "kiosk";
+  headlampUrl = "https://headlamp.syslabs.dev";
+  idleTimeoutSeconds = 600;
+
+  output = "HDMI-A-1";
+  mode = "1280x400@60Hz";
+  transform = "270";
+
+  browser = lib.getExe pkgs.chromium;
+
+  labwcConfigDir = "/etc/labwc";
+
+  applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --mode ${mode} --transform ${transform}";
+
+  autostart = pkgs.writeShellScript "labwc-autostart" ''
+    ${applyOutput}
+    ${pkgs.wbg}/bin/wbg --color 1d2021 &
+    ${pkgs.swayidle}/bin/swayidle -w \
+      timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
+      resume '${applyOutput}' &
+    ${browser} --ozone-platform=wayland --app=${headlampUrl} --start-fullscreen --noerrdialogs --disable-infobars &
+  '';
+
+  rcXml = pkgs.writeText "labwc-rc.xml" ''
+    <?xml version="1.0"?>
+    <labwc_config>
+      <core>
+        <gap>0</gap>
+      </core>
+      <keyboard>
+        <keybind key="W-Return">
+          <action name="Execute" command="${lib.getExe pkgs.foot}" />
+        </keybind>
+        <keybind key="W-d">
+          <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
+        </keybind>
+      </keyboard>
+    </labwc_config>
+  '';
+
+  menuXml = pkgs.writeText "labwc-menu.xml" ''
+    <?xml version="1.0"?>
+    <openbox_menu>
+      <menu id="root-menu" label="labwc">
+        <item label="Terminal">
+          <action name="Execute" command="${lib.getExe pkgs.foot}" />
+        </item>
+        <item label="Launcher">
+          <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
+        </item>
+        <item label="Reconnect Headlamp">
+          <action name="Execute" command="${browser} --ozone-platform=wayland --app=${headlampUrl} --start-fullscreen" />
+        </item>
+      </menu>
+    </openbox_menu>
+  '';
+
+  session = pkgs.writeShellScript "kiosk-session" ''
+    export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+    export XDG_CONFIG_HOME="${labwcConfigDir}"
+    export XDG_SESSION_TYPE=wayland
+    exec ${compositor}/bin/labwc -C ${labwcConfigDir}/labwc
+  '';
+in
+{
+  programs.labwc.enable = true;
+
+  security.polkit.enable = true;
+  services.dbus.enable = true;
+
+  users.users.${kioskUser} = {
+    isNormalUser = true;
+    home = "/home/${kioskUser}";
+  };
+
+  services.greetd = {
+    enable = true;
+    settings = {
+      initial_session = {
+        command = "${session}";
+        user = kioskUser;
+      };
+      default_session = {
+        command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
+        user = "greeter";
+      };
+    };
+  };
+
+  environment.etc."labwc/labwc/autostart".source = autostart;
+  environment.etc."labwc/labwc/rc.xml".source = rcXml;
+  environment.etc."labwc/labwc/menu.xml".source = menuXml;
+
+  environment.systemPackages = [
+    compositor
+    pkgs.foot
+    pkgs.fuzzel
+    pkgs.chromium
+    pkgs.swayidle
+    pkgs.wbg
+    pkgs.wlr-randr
+    pkgs.libdrm
+    pkgs.edid-decode
+  ];
+}

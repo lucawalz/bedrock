@@ -11,6 +11,8 @@
     ../../modules/router/dns.nix
     ../../modules/router/tailscale.nix
     ../../modules/router/monitoring.nix
+    ../../modules/router/display.nix
+    ../../modules/router/desktop.nix
   ];
 
   nixpkgs.hostPlatform = "aarch64-linux";
