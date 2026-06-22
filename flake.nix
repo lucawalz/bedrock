@@ -98,6 +98,7 @@
             nix-prefetch-git
             gnumake
             git
+            yq-go
           ];
         };
 
@@ -120,6 +121,7 @@
             terraform
             zstd
             git
+            yq-go
           ];
         };
     };
