@@ -1,0 +1,31 @@
+name: docs
+
+on:
+  pull_request:
+  merge_group:
+  push:
+    branches: [main]
+
+jobs:
+  adr-index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check ADR index is in sync
+        run: bash scripts/check-adr-index.sh
+
+  inventory-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Regenerate inventory
+        run: nix shell nixpkgs#yq-go --command bash scripts/gen-inventory.sh
+
+      - name: Fail on inventory drift
+        run: git diff --exit-code docs/inventory.md
