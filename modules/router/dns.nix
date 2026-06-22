@@ -111,6 +111,11 @@ in
             enabled = true;
           }
           {
+            domain = "rackpeek.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "rancher.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
