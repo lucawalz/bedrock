@@ -21,6 +21,25 @@ spec:
         fsGroup: 1654
         seccompProfile:
           type: RuntimeDefault
+      initContainers:
+        - name: seed-config
+          image: busybox:1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+          command:
+            - sh
+            - -c
+            - cp /config-seed/config.yaml /app/config/config.yaml
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config-seed
+              mountPath: /config-seed
+              readOnly: true
+            - name: config
+              mountPath: /app/config
       containers:
         - name: rackpeek
           image: aptacode/rackpeek:v2.0.0@sha256:3b82af1f323346d90ce76fe4b2ad2e72cf3a2413606bcdc606b2dc23aa90d523
@@ -58,12 +77,13 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /app/config
-              readOnly: true
             - name: tmp
               mountPath: /tmp
       volumes:
-        - name: config
+        - name: config-seed
           configMap:
             name: rackpeek-config
+        - name: config
+          emptyDir: {}
         - name: tmp
           emptyDir: {}
