@@ -17,6 +17,7 @@ resources:
   - velero.yaml
   - llm.yaml
   - homepage.yaml
+  - headlamp.yaml
   - blog.yaml
   - authentik.yaml
   - ntfy.yaml

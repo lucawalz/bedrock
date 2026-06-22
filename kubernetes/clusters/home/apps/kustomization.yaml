@@ -5,6 +5,7 @@ resources:
   - n8n
   - llm
   - homepage
+  - headlamp
   - blog/overlays/home
   - ntfy
   - velero-ui
