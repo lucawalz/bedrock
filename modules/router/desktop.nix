@@ -11,6 +11,7 @@ let
 
   kioskUser = "kiosk";
   headlampUrl = "https://headlamp.syslabs.dev";
+  idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
   mode = "1280x400@60";
@@ -25,6 +26,9 @@ let
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${applyOutput}
     ${pkgs.wbg}/bin/wbg --color 1d2021 &
+    ${pkgs.swayidle}/bin/swayidle -w \
+      timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
+      resume '${applyOutput}' &
     ${browser} --ozone-platform=wayland --app=${headlampUrl} --start-fullscreen --noerrdialogs --disable-infobars &
   '';
 
@@ -107,6 +111,7 @@ in
         pkgs.foot
         pkgs.fuzzel
         pkgs.chromium
+        pkgs.swayidle
         pkgs.wbg
         pkgs.wlr-randr
         pkgs.libdrm
