@@ -25,6 +25,10 @@
     6443
     10250
     9100
+    7946
   ];
-  networking.firewall.allowedUDPPorts = [ 8472 ]; # Flannel VXLAN
+  networking.firewall.allowedUDPPorts = [
+    8472
+    7946
+  ];
 }
