@@ -19,6 +19,8 @@
 
   networking.hostName = "router";
 
+  services.kioskConsole.enable = true;
+
   boot.kernelParams = [
     "console=ttyS0,115200"
     "console=tty1"
