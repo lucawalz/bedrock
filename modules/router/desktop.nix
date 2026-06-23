@@ -14,14 +14,14 @@ let
   idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
-  mode = "1280x400@60";
+  mode = "1280x400";
   transform = "normal";
 
   browser = lib.getExe pkgs.chromium;
 
   labwcConfigDir = "/etc/labwc";
 
-  applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --custom-mode ${mode} --transform ${transform}";
+  applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --mode ${mode} --transform ${transform}";
 
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${applyOutput}
