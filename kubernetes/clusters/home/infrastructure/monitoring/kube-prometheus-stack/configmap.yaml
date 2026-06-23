@@ -54,6 +54,10 @@ data:
 
     grafana:
       enabled: true
+      grafana.ini:
+        auth.anonymous:
+          enabled: true
+          org_role: Viewer
       image:
         tag: "11.2.3"
       deploymentStrategy:
