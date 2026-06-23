@@ -54,6 +54,9 @@ spec:
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: pgadmin4
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: postgres
       ports:
         - protocol: TCP
           port: 5432
@@ -81,6 +84,13 @@ spec:
   policyTypes:
     - Egress
   egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
     - to:
         - namespaceSelector:
             matchLabels:
