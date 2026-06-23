@@ -10,7 +10,7 @@ let
   compositor = pkgs.labwc;
 
   kioskUser = "kiosk";
-  headlampUrl = "https://headlamp.syslabs.dev";
+  dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&refresh=30s&theme=dark";
   idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
@@ -29,7 +29,7 @@ let
     ${pkgs.swayidle}/bin/swayidle -w \
       timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
       resume '${applyOutput}' &
-    ${browser} --ozone-platform=wayland --app=${headlampUrl} --start-fullscreen --noerrdialogs --disable-infobars &
+    ${browser} --ozone-platform=wayland --app=${dashboardUrl} --start-fullscreen --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -59,8 +59,8 @@ let
         <item label="Launcher">
           <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
         </item>
-        <item label="Reconnect Headlamp">
-          <action name="Execute" command="${browser} --ozone-platform=wayland --app=${headlampUrl} --start-fullscreen" />
+        <item label="Reload dashboard">
+          <action name="Execute" command="${browser} --ozone-platform=wayland --app=${dashboardUrl} --start-fullscreen" />
         </item>
       </menu>
     </openbox_menu>
