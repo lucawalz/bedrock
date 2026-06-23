@@ -7,3 +7,4 @@ resources:
   - blueprints-configmap.yaml
   - ingress.yaml
   - networkpolicies.yaml
+  - pdb.yaml

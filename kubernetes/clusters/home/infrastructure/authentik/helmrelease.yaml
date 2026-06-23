@@ -63,7 +63,7 @@ spec:
               name: authentik
               key: github-client-secret
     server:
-      replicas: 1
+      replicas: 2
       resources:
         requests:
           cpu: 100m
@@ -71,7 +71,7 @@ spec:
         limits:
           memory: 768Mi
     worker:
-      replicas: 1
+      replicas: 2
       resources:
         requests:
           cpu: 100m
