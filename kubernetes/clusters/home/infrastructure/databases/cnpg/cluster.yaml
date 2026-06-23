@@ -4,7 +4,11 @@ metadata:
   name: postgres
   namespace: postgres
 spec:
-  instances: 1
+  instances: 3
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: preferred
   enableSuperuserAccess: true
   storage:
     size: 8Gi
