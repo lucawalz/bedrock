@@ -4,3 +4,4 @@ resources:
   - config.yaml
   - helmrelease.yaml
   - networkpolicies.yaml
+  - pdb.yaml
