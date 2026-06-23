@@ -52,6 +52,7 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0048. Canary the blog with Flagger on its Traefik SLIs](0048-flagger-progressive-delivery.md) (accepted)
 - [0049. Remove the AWS multi-cloud build and keep backups on Hetzner](0049-remove-aws-multicloud-build.md) (accepted)
 - [0050. Replace the layer-2 switch with a PoE model that powers the router](0050-poe-switch-powers-the-router.md) (accepted)
-- [0051. Turn the router's bar display into a window into the cluster with Headlamp](0051-headlamp-window-into-the-cluster.md) (accepted)
+- [0051. Turn the router's bar display into a window into the cluster with Headlamp](0051-headlamp-window-into-the-cluster.md) (superseded by 0054)
 - [0052. Document the rack as code with RackPeek](0052-rackpeek-rack-as-code.md) (accepted)
 - [0053. Make the critical path survive a single node loss](0053-ha-critical-path-survives-node-loss.md) (accepted)
+- [0054. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID](0054-bar-display-grafana-kiosk-and-corrected-edid.md) (accepted)
