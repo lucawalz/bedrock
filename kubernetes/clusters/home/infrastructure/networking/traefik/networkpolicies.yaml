@@ -102,9 +102,6 @@ spec:
               kubernetes.io/metadata.name: flux-system
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: headlamp
-        - namespaceSelector:
-            matchLabels:
               kubernetes.io/metadata.name: rackpeek
     - to:
         - ipBlock:

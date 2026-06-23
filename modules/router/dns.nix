@@ -81,11 +81,6 @@ in
             enabled = true;
           }
           {
-            domain = "headlamp.syslabs.dev";
-            answer = "10.20.0.50";
-            enabled = true;
-          }
-          {
             domain = "home.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
