@@ -41,6 +41,7 @@ spec:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
+      nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       systemManagedComponentsNodeSelector: "bedrock.io/storage:true"
     persistence:
       defaultClass: true
