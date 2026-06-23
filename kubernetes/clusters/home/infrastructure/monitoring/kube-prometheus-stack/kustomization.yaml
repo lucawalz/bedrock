@@ -8,4 +8,5 @@ resources:
   - prometheus-ingress.yaml
   - alertmanager-ingress.yaml
   - slo-dashboard.yaml
+  - wallbar-dashboard.yaml
 
