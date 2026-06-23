@@ -5,7 +5,6 @@ resources:
   - n8n
   - llm
   - homepage
-  - headlamp
   - rackpeek
   - blog/overlays/home
   - ntfy
