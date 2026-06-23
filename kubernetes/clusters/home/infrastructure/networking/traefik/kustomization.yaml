@@ -6,4 +6,5 @@ resources:
   - certificate.yaml
   - dashboard-ingress.yaml
   - networkpolicies.yaml
+  - pdb.yaml
 
