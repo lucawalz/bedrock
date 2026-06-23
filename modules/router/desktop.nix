@@ -68,7 +68,6 @@ let
 
   session = pkgs.writeShellScript "kiosk-session" ''
     export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-    export XDG_CONFIG_HOME="${labwcConfigDir}"
     export XDG_SESSION_TYPE=wayland
     exec ${compositor}/bin/labwc -C ${labwcConfigDir}/labwc
   '';
