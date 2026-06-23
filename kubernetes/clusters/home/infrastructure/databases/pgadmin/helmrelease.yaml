@@ -51,22 +51,6 @@ spec:
           SSLMode: "prefer"
     strategy:
       type: Recreate
-    securityContext:
-      runAsNonRoot: true
-      runAsUser: 5050
-      runAsGroup: 5050
-      fsGroup: 5050
-      seccompProfile:
-        type: RuntimeDefault
-    containerSecurityContext:
-      enabled: true
-      allowPrivilegeEscalation: false
-      runAsNonRoot: true
-      capabilities:
-        drop:
-          - ALL
-      seccompProfile:
-        type: RuntimeDefault
     resources:
       requests:
         cpu: 50m
