@@ -19,15 +19,18 @@
 
   networking.hostName = "router";
 
-  services.kioskConsole.enable = true;
+  services = {
+    kioskConsole.enable = true;
+    openssh = {
+      settings.PermitRootLogin = "prohibit-password";
+      openFirewall = false;
+    };
+  };
 
   boot.kernelParams = [
     "console=ttyS0,115200"
     "console=tty1"
   ];
-
-  services.openssh.settings.PermitRootLogin = "prohibit-password";
-  services.openssh.openFirewall = false;
 
   system.stateVersion = "25.05";
 }
