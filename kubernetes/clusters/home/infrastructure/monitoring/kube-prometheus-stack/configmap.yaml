@@ -34,7 +34,6 @@ data:
             static_configs:
               - targets:
                   - "10.20.0.1:9100"
-                  - "10.20.0.1:9586"
             relabel_configs:
               - source_labels: [__address__]
                 target_label: instance
