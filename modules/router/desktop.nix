@@ -14,8 +14,8 @@ let
   idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
-  mode = "1280x400";
-  transform = "normal";
+  mode = "400x1280";
+  transform = "90";
 
   browser = lib.getExe pkgs.chromium;
 
@@ -29,7 +29,7 @@ let
     ${pkgs.swayidle}/bin/swayidle -w \
       timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
       resume '${applyOutput}' &
-    ${browser} --ozone-platform=wayland --app=${dashboardUrl} --start-fullscreen --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
+    ${browser} --ozone-platform=wayland --kiosk=${dashboardUrl} --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -60,7 +60,7 @@ let
           <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
         </item>
         <item label="Reload dashboard">
-          <action name="Execute" command="${browser} --ozone-platform=wayland --app=${dashboardUrl} --start-fullscreen" />
+          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk=${dashboardUrl}" />
         </item>
       </menu>
     </openbox_menu>
