@@ -37,7 +37,7 @@ let
       ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
       sleep 3
     done
-    ${browser} --ozone-platform=wayland --kiosk=${dashboardArg} --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
+    ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --kiosk ${dashboardArg} &
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -68,7 +68,7 @@ let
           <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
         </item>
         <item label="Reload dashboard">
-          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk='${dashboardUrlXml}'" />
+          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk '${dashboardUrlXml}'" />
         </item>
       </menu>
     </openbox_menu>
