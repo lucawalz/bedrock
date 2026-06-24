@@ -14,7 +14,7 @@ let
   idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
-  mode = "1920x1080";
+  mode = "1280x400";
   transform = "normal";
 
   browser = lib.getExe pkgs.chromium;
