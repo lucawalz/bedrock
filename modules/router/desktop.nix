@@ -10,7 +10,7 @@ let
   compositor = pkgs.labwc;
 
   kioskUser = "kiosk";
-  dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&refresh=30s&theme=dark";
+  dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
   idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
@@ -37,7 +37,7 @@ let
       ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
       sleep 3
     done
-    ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --kiosk ${dashboardArg} &
+    ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --kiosk ${dashboardArg} &
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
