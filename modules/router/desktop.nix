@@ -23,13 +23,21 @@ let
 
   applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --mode ${mode} --transform ${transform}";
 
+  dashboardArg = lib.escapeShellArg dashboardUrl;
+  dashboardUrlXml = builtins.replaceStrings [ "&" ] [ "&amp;" ] dashboardUrl;
+
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${applyOutput}
     ${pkgs.wbg}/bin/wbg --color 1d2021 &
     ${pkgs.swayidle}/bin/swayidle -w \
       timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
       resume '${applyOutput}' &
-    ${browser} --ozone-platform=wayland --kiosk=${dashboardUrl} --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
+    deadline=$((SECONDS + 150))
+    while [ "$SECONDS" -lt "$deadline" ]; do
+      ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
+      sleep 3
+    done
+    ${browser} --ozone-platform=wayland --kiosk=${dashboardArg} --noerrdialogs --disable-infobars --disable-session-crashed-bubble &
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -60,7 +68,7 @@ let
           <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
         </item>
         <item label="Reload dashboard">
-          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk=${dashboardUrl}" />
+          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk='${dashboardUrlXml}'" />
         </item>
       </menu>
     </openbox_menu>
