@@ -11,6 +11,7 @@ let
 
   kioskUser = "kiosk";
   dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
+  idleTimeoutSeconds = 600;
 
   output = "HDMI-A-1";
   mode = "1280x400";
@@ -28,6 +29,9 @@ let
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${applyOutput}
     ${pkgs.wbg}/bin/wbg --color 1d2021 &
+    ${pkgs.swayidle}/bin/swayidle -w \
+      timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
+      resume '${applyOutput}' &
     deadline=$((SECONDS + 150))
     while [ "$SECONDS" -lt "$deadline" ]; do
       ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
@@ -115,6 +119,7 @@ in
         pkgs.foot
         pkgs.fuzzel
         pkgs.chromium
+        pkgs.swayidle
         pkgs.wbg
         pkgs.wlr-randr
         pkgs.libdrm
