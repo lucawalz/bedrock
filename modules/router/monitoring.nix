@@ -8,4 +8,9 @@ _: {
       "processes"
     ];
   };
+
+  systemd.services.prometheus-node-exporter = {
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
+  };
 }
