@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: "3.x"
+      version: "5.x"
       sourceRef:
         kind: HelmRepository
         name: bjw-s
