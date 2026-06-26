@@ -9,25 +9,31 @@ let
 
   compositor = pkgs.labwc;
 
-  transparentCursor = pkgs.runCommand "transparent-cursor-theme"
-    { nativeBuildInputs = [ pkgs.imagemagick pkgs.xcursorgen ]; }
-    ''
-      cursors="$out/share/icons/transparent/cursors"
-      mkdir -p "$cursors"
-      magick -size 1x1 xc:transparent transparent.png
-      echo "24 0 0 transparent.png" > transparent.cfg
-      xcursorgen transparent.cfg "$cursors/left_ptr"
-      printf '[Icon Theme]\nName=transparent\n' > "$out/share/icons/transparent/index.theme"
-      for n in default text pointer wait watch progress help crosshair cross hand1 hand2 \
-        xterm ibeam fleur move all-scroll not-allowed forbidden left_ptr_watch question_arrow \
-        size_all sb_h_double_arrow sb_v_double_arrow top_side bottom_side left_side right_side \
-        n-resize e-resize s-resize w-resize ns-resize ew-resize col-resize row-resize \
-        nesw-resize nwse-resize zoom-in zoom-out copy alias no-drop grabbing openhand closedhand \
-        vertical-text top_left_corner top_right_corner bottom_left_corner bottom_right_corner \
-        sb_up_arrow sb_down_arrow sb_left_arrow sb_right_arrow context-menu pencil X_cursor; do
-        ln -sf left_ptr "$cursors/$n"
-      done
-    '';
+  transparentCursor =
+    pkgs.runCommand "transparent-cursor-theme"
+      {
+        nativeBuildInputs = [
+          pkgs.imagemagick
+          pkgs.xcursorgen
+        ];
+      }
+      ''
+        cursors="$out/share/icons/transparent/cursors"
+        mkdir -p "$cursors"
+        magick -size 1x1 xc:transparent transparent.png
+        echo "24 0 0 transparent.png" > transparent.cfg
+        xcursorgen transparent.cfg "$cursors/left_ptr"
+        printf '[Icon Theme]\nName=transparent\n' > "$out/share/icons/transparent/index.theme"
+        for n in default text pointer wait watch progress help crosshair cross hand1 hand2 \
+          xterm ibeam fleur move all-scroll not-allowed forbidden left_ptr_watch question_arrow \
+          size_all sb_h_double_arrow sb_v_double_arrow top_side bottom_side left_side right_side \
+          n-resize e-resize s-resize w-resize ns-resize ew-resize col-resize row-resize \
+          nesw-resize nwse-resize zoom-in zoom-out copy alias no-drop grabbing openhand closedhand \
+          vertical-text top_left_corner top_right_corner bottom_left_corner bottom_right_corner \
+          sb_up_arrow sb_down_arrow sb_left_arrow sb_right_arrow context-menu pencil X_cursor; do
+          ln -sf left_ptr "$cursors/$n"
+        done
+      '';
 
   kioskUser = "kiosk";
   dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
