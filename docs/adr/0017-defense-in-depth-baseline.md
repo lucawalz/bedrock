@@ -21,6 +21,8 @@ A layered baseline is adopted, with each layer narrowing what a compromise can d
 
 kube-router, already the cluster's CNI, enforces the NetworkPolicies, so no extra policy engine is introduced. Firmware patching stays a manual task.
 
+**Update (2026-06-26):** Falco runtime threat detection was since removed from the repository; runtime detection is no longer part of the baseline.
+
 ## Options considered
 
 - A layered in-cluster baseline of network policy, workload hardening, runtime detection, and secret encryption, chosen. Each layer is independent, so a gap or a deferral in one does not collapse the others.

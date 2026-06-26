@@ -17,6 +17,8 @@ A [Homepage](https://gethomepage.dev) dashboard is deployed at `home.syslabs.dev
 
 The Pi router gains two Prometheus exporters: node_exporter for host metrics and a WireGuard exporter for tunnel state. Both bind to the VLAN 20 address `10.20.0.1`, reachable from the cluster but never offered on the WAN or home interface, so no firewall change is needed to scrape them. Prometheus scrapes them as a static target, which brings the router into Grafana and onto the dashboard alongside the cluster.
 
+**Update (2026-06-26):** the router WireGuard exporter was removed with the move to the Tailscale overlay in [0023](0023-tailscale-overlay.md); node_exporter remains.
+
 ## Options considered
 
 - Homepage with file and ConfigMap configuration, chosen. Its configuration lives in the repository, which fits the GitOps invariant, and it ships first-class widgets for Kubernetes and for the services already running.
