@@ -31,7 +31,8 @@ let
 
   kioskUser = "kiosk";
   dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
-  idleTimeoutSeconds = 600;
+  presenceTimeoutSeconds = 300;
+  motionPin = 17;
 
   output = "HDMI-A-1";
   mode = "1280x400";
@@ -42,6 +43,24 @@ let
   labwcConfigDir = "/etc/labwc";
 
   applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --mode ${mode} --transform ${transform}";
+  offOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off";
+
+  motionChip = "gpiochip0";
+
+  presenceWatch = pkgs.writeShellScript "presence-watch" ''
+    awake=1
+    last=$SECONDS
+    while true; do
+      if ${pkgs.libgpiod}/bin/gpioget -c ${motionChip} ${toString motionPin} 2>/dev/null | grep -q "=active"; then
+        last=$SECONDS
+        [ "$awake" = 0 ] && { ${applyOutput}; awake=1; }
+      elif [ "$awake" = 1 ] && [ $(( SECONDS - last )) -ge ${toString presenceTimeoutSeconds} ]; then
+        ${offOutput}
+        awake=0
+      fi
+      sleep 1
+    done
+  '';
 
   dashboardArg = lib.escapeShellArg dashboardUrl;
   dashboardUrlXml = builtins.replaceStrings [ "&" ] [ "&amp;" ] dashboardUrl;
@@ -49,9 +68,7 @@ let
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${applyOutput}
     ${pkgs.wbg}/bin/wbg --color 1d2021 &
-    ${pkgs.swayidle}/bin/swayidle -w \
-      timeout ${toString idleTimeoutSeconds} '${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off' \
-      resume '${applyOutput}' &
+    ${presenceWatch} &
     deadline=$((SECONDS + 150))
     while [ "$SECONDS" -lt "$deadline" ]; do
       ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
@@ -114,7 +131,14 @@ in
     users.users.${kioskUser} = {
       isNormalUser = true;
       home = "/home/${kioskUser}";
+      extraGroups = [ "gpio" ];
     };
+
+    users.groups.gpio = { };
+
+    services.udev.extraRules = ''
+      SUBSYSTEM=="gpio", KERNEL=="gpiochip[0-9]*", GROUP="gpio", MODE="0660"
+    '';
 
     services.greetd = {
       enable = true;
@@ -142,9 +166,9 @@ in
         pkgs.foot
         pkgs.fuzzel
         pkgs.chromium
-        pkgs.swayidle
         pkgs.wbg
         pkgs.wlr-randr
+        pkgs.libgpiod
         pkgs.libdrm
         pkgs.edid-decode
       ];
