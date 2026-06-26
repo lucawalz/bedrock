@@ -20,7 +20,7 @@ sorted="$(printf '%s' "$rows" | LC_ALL=C sort)"
   echo
   echo "| Component | Namespace | Chart |"
   echo "| --- | --- | --- |"
-  printf '%s' "$sorted" | while IFS=$'\t' read -r name ns chart; do
+  printf '%s\n' "$sorted" | while IFS=$'\t' read -r name ns chart; do
     echo "| $name | $ns | $chart |"
   done
 } > "$out"
