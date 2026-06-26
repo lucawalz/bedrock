@@ -132,7 +132,6 @@ in
     programs.labwc.enable = true;
 
     security.polkit.enable = true;
-    services.dbus.enable = true;
 
     users.users.${kioskUser} = {
       isNormalUser = true;
@@ -142,20 +141,24 @@ in
 
     users.groups.gpio = { };
 
-    services.udev.extraRules = ''
-      SUBSYSTEM=="gpio", KERNEL=="gpiochip[0-9]*", GROUP="gpio", MODE="0660"
-    '';
+    services = {
+      dbus.enable = true;
 
-    services.greetd = {
-      enable = true;
-      settings = {
-        initial_session = {
-          command = "${session}";
-          user = kioskUser;
-        };
-        default_session = {
-          command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
-          user = "greeter";
+      udev.extraRules = ''
+        SUBSYSTEM=="gpio", KERNEL=="gpiochip[0-9]*", GROUP="gpio", MODE="0660"
+      '';
+
+      greetd = {
+        enable = true;
+        settings = {
+          initial_session = {
+            command = "${session}";
+            user = kioskUser;
+          };
+          default_session = {
+            command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
+            user = "greeter";
+          };
         };
       };
     };
