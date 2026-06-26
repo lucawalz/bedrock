@@ -16,6 +16,7 @@ jobs:
         run: bash scripts/check-adr-index.sh
 
   inventory-drift:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,5 +28,38 @@ jobs:
       - name: Regenerate inventory
         run: nix shell nixpkgs#yq-go --command bash scripts/gen-inventory.sh
 
-      - name: Fail on inventory drift
-        run: git diff --exit-code docs/inventory.md
+      - name: Report inventory drift
+        run: |
+          if git diff --quiet docs/inventory.md; then
+            echo "inventory in sync"
+            exit 0
+          fi
+          echo "::warning::docs/inventory.md is stale; it is regenerated automatically on merge to main"
+          git --no-pager diff docs/inventory.md
+
+  inventory-sync:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: DeterminateSystems/nix-installer-action@main
+
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+
+      - name: Regenerate inventory
+        run: nix shell nixpkgs#yq-go --command bash scripts/gen-inventory.sh
+
+      - name: Commit inventory drift
+        run: |
+          if git diff --quiet docs/inventory.md; then
+            echo "inventory in sync"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/inventory.md
+          git commit -m "docs(inventory): regenerate table after helmrelease chart version bumps"
+          git push
