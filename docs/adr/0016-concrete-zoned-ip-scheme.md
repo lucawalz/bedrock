@@ -22,6 +22,8 @@ The network uses three managed zones plus the unmanaged home LAN, with a mnemoni
 
 The router is the single inter-zone gateway and enforces default-deny between zones. The cluster zone and the WireGuard overlay are trusted; the DMZ is untrusted and may reach only the internet, with its traffic toward the cluster and the home LAN dropped, and it takes DNS and DHCP from the router alone. Adding a real DMZ host later means setting a switch port to untagged VLAN 30 with PVID 30 and tagging VLAN 30 on the Pi trunk port.
 
+**Update (2026-06-26):** the WireGuard `10.100.0.0/24` admin and burst overlay was retired and replaced by a Tailscale overlay per [0023](0023-tailscale-overlay.md).
+
 ## Options considered
 
 - Zone-encoding scheme under `10.0.0.0/8` with the VLAN id as the second octet, chosen. The address of a host names its zone at a glance, and the wider private block leaves room for more zones without renumbering.

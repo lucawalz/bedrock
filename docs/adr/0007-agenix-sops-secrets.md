@@ -11,7 +11,7 @@ The repository is public, so every secret in it has to be committed encrypted an
 
 ## Decision
 
-Host secrets use agenix, encrypted to each node's SSH host key, declared in `secrets/secrets.nix`. Only the K3s join token lives here. Cluster secrets use SOPS with age, configured in `.sops.yaml` and decrypted by Flux inside the cluster. Each tool is used where it fits: agenix for the machines, SOPS for the workloads.
+Host secrets use agenix, encrypted to each node's SSH host key, declared in `secrets/secrets.nix`. These are the K3s join token, the Tailscale auth key, and the AdGuard admin credential. Cluster secrets use SOPS with age, configured in `.sops.yaml` and decrypted by Flux inside the cluster. Each tool is used where it fits: agenix for the machines, SOPS for the workloads.
 
 ## Options considered
 
