@@ -135,12 +135,12 @@ modules/
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets (the K3s join token)
 kubernetes/
-  clusters/home/       the live cluster Flux reconciles, including the cluster-autoscaler and the Cluster API manifests for Hetzner burst scaling
+  clusters/home/       the live cluster Flux reconciles, including the cluster-autoscaler and the Cluster API manifests for reserved and standalone clusters
 ```
 
 Workers have no directory of their own. `flake.nix` builds them from `lib.mkWorker`, so adding worker-3 takes one line in the flake and one public key in `secrets/secrets.nix`.
 
-The cluster-autoscaler under `kubernetes/clusters/home/infrastructure/cluster-api/cluster-autoscaler/` scales the Hetzner burst pool through the hcloud API, and the Cluster API manifests alongside it provision those nodes through the CAPH provider. Flux reconciles all of it; nothing here is applied by hand.
+The cluster-autoscaler under `kubernetes/clusters/home/infrastructure/cluster-api/cluster-autoscaler/` scales the elastic pool with its native Hetzner provider, creating and deleting servers directly through the hcloud API. The Cluster API and CAPH manifests alongside it are the substrate horizon uses for reserved and standalone clusters, not for the autoscaled pool. Flux reconciles all of it; nothing here is applied by hand.
 
 ## Services
 
@@ -149,19 +149,21 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Service | Purpose | Access |
 |---------|---------|--------|
 | Open WebUI | chat front-end for the local models | public (`chat`) |
-| LiteLLM | OpenAI-compatible gateway in front of Ollama | public (`llm`) |
 | n8n | workflow automation | public (`n8n`) |
 | Blog | static Hugo site | public (`lucawalz.dev`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
 | Grafana | dashboards for the Prometheus stack | internal |
 | Rancher | cluster management UI | internal |
+| Authentik | single sign-on and identity provider | internal (`auth`) |
 | pgAdmin | Postgres administration | internal |
 | Longhorn | storage management UI | internal |
+| Velero | backup and restore UI | internal (`velero`) |
+| RackPeek | physical rack and node overview | internal (`rackpeek`) |
 | Traefik | router dashboard | internal |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 
-Ollama serves the models (`qwen2.5-coder:7b` and `llama3.1:8b`) on worker-1 and stays internal. A single Postgres instance backs n8n, LiteLLM, and pgAdmin.
+Ollama serves the local models on worker-1 and stays internal; models are pulled at runtime rather than pinned in the manifests. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its only declared database backs Authentik, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
 
 ## Security
 
