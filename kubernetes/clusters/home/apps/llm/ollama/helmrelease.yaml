@@ -25,6 +25,10 @@ spec:
     ollama:
       gpu:
         enabled: false
+      models:
+        pull:
+          - llama3.2:3b
+          - minicpm-v:8b
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
