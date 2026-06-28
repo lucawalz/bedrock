@@ -1,0 +1,79 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: paperless-ai
+  namespace: paperless
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    controllers:
+      paperless-ai:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/clusterzx/paperless-ai
+              tag: "3.0.9"
+            env:
+              TZ: Europe/Vienna
+              PAPERLESS_API_URL: http://paperless-ngx.paperless.svc.cluster.local:8000/api
+              PAPERLESS_URL: http://paperless-ngx.paperless.svc.cluster.local:8000
+              PAPERLESS_USERNAME: admin
+              AI_PROVIDER: ollama
+              OLLAMA_API_URL: http://ollama.llm.svc.cluster.local:11434
+              OLLAMA_MODEL: llama3.2:3b
+              RAG_SERVICE_URL: http://localhost:8000
+              RAG_SERVICE_ENABLED: "true"
+              SCAN_INTERVAL: "*/30 * * * *"
+              PAPERLESS_API_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: paperless
+                    key: PAPERLESS_API_TOKEN
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: "1000m"
+                memory: 1536Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: paperless-ai
+        ports:
+          http:
+            port: 3000
+    persistence:
+      data:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 2Gi
+        globalMounts:
+          - path: /app/data
