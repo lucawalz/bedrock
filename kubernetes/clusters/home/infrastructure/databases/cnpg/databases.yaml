@@ -8,3 +8,14 @@ spec:
   owner: authentik
   cluster:
     name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: paperless
+  namespace: postgres
+spec:
+  name: paperless
+  owner: paperless
+  cluster:
+    name: postgres

@@ -29,3 +29,7 @@ spec:
         login: true
         passwordSecret:
           name: pg-authentik
+      - name: paperless
+        login: true
+        passwordSecret:
+          name: pg-paperless
