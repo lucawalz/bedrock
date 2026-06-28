@@ -1,0 +1,108 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: paperless-ngx
+  namespace: paperless
+spec:
+  interval: 30m
+  timeout: 15m
+  chart:
+    spec:
+      chart: paperless-ngx
+      version: "0.24.x"
+      sourceRef:
+        kind: HelmRepository
+        name: gabe565
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    image:
+      repository: ghcr.io/paperless-ngx/paperless-ngx
+      tag: 2.14.7
+    env:
+      TZ: Europe/Vienna
+      USERMAP_UID: "1000"
+      USERMAP_GID: "1000"
+      PAPERLESS_URL: https://paperless.syslabs.dev
+      PAPERLESS_DBENGINE: postgresql
+      PAPERLESS_DBHOST: postgres-rw.postgres.svc.cluster.local
+      PAPERLESS_DBPORT: "5432"
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: paperless
+      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_TASK_WORKERS: "2"
+      PAPERLESS_REDIS: redis://paperless-redis:6379
+      PAPERLESS_TIKA_ENABLED: "1"
+      PAPERLESS_TIKA_ENDPOINT: http://paperless-tika:9998
+      PAPERLESS_TIKA_GOTENBERG_ENDPOINT: http://paperless-gotenberg:3000
+      PAPERLESS_DBPASS:
+        valueFrom:
+          secretKeyRef:
+            name: paperless
+            key: PAPERLESS_DBPASS
+      PAPERLESS_SECRET_KEY:
+        valueFrom:
+          secretKeyRef:
+            name: paperless
+            key: PAPERLESS_SECRET_KEY
+      PAPERLESS_ADMIN_USER:
+        valueFrom:
+          secretKeyRef:
+            name: paperless
+            key: PAPERLESS_ADMIN_USER
+      PAPERLESS_ADMIN_PASSWORD:
+        valueFrom:
+          secretKeyRef:
+            name: paperless
+            key: PAPERLESS_ADMIN_PASSWORD
+    service:
+      main:
+        ports:
+          http:
+            port: 8000
+    ingress:
+      main:
+        enabled: false
+    persistence:
+      data:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 5Gi
+      media:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 20Gi
+      export:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 5Gi
+      consume:
+        enabled: true
+        storageClass: longhorn
+        accessMode: ReadWriteOnce
+        size: 5Gi
+    podSecurityContext:
+      fsGroup: 1000
+      fsGroupChangePolicy: OnRootMismatch
+    resources:
+      requests:
+        cpu: 250m
+        memory: 768Mi
+      limits:
+        cpu: "2000m"
+        memory: 2Gi
+    redis:
+      enabled: false
+    postgresql:
+      enabled: false
+    mariadb:
+      enabled: false
