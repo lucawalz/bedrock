@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: ollama
+  name: ollama-vision
   namespace: llm
 spec:
   interval: 30m
@@ -27,7 +27,13 @@ spec:
         enabled: false
       models:
         pull:
+          - minicpm-v:8b
           - llama3.2:3b
+    extraEnv:
+      - name: OLLAMA_MAX_LOADED_MODELS
+        value: "1"
+      - name: OLLAMA_KEEP_ALIVE
+        value: "5m"
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
@@ -42,16 +48,16 @@ spec:
       enabled: false
     persistentVolume:
       enabled: true
-      size: 100Gi
+      size: 30Gi
       storageClass: longhorn
       accessModes:
         - ReadWriteOnce
     nodeSelector:
-      kubernetes.io/hostname: worker-1
+      kubernetes.io/hostname: worker-2
     resources:
       requests:
         cpu: "1000m"
         memory: "4Gi"
       limits:
-        cpu: "4000m"
-        memory: "16Gi"
+        cpu: "10000m"
+        memory: "9Gi"
