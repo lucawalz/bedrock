@@ -21,6 +21,9 @@ data:
       Apps:
         style: row
         columns: 3
+      Documents:
+        style: row
+        columns: 3
       Observability:
         style: row
         columns: 3
