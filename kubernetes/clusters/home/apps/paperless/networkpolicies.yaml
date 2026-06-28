@@ -111,3 +111,43 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-paperless-ai-ingress
+  namespace: paperless
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: paperless-ai
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-paperless-gpt-ingress
+  namespace: paperless
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: paperless-gpt
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - protocol: TCP
+          port: 8080
