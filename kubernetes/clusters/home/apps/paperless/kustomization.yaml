@@ -5,3 +5,4 @@ resources:
   - redis
   - gotenberg
   - tika
+  - ingress.yaml
