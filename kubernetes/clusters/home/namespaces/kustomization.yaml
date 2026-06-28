@@ -21,6 +21,7 @@ resources:
   - blog.yaml
   - authentik.yaml
   - ntfy.yaml
+  - paperless.yaml
   - reloader.yaml
   - kyverno.yaml
   - flagger.yaml

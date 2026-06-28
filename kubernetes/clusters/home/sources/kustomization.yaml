@@ -5,6 +5,7 @@ resources:
   - helm/traefik.yaml
   - helm/metallb.yaml
   - helm/bjw-s.yaml
+  - helm/gabe565.yaml
   - helm/n8n.yaml
   - helm/cert-manager.yaml
   - helm/longhorn.yaml
