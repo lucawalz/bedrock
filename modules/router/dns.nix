@@ -96,6 +96,21 @@ in
             enabled = true;
           }
           {
+            domain = "paperless.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "paperless-ai.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "paperless-gpt.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "pgadmin.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
