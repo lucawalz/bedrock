@@ -8,4 +8,5 @@ resources:
   - rackpeek
   - blog/overlays/home
   - ntfy
+  - paperless
   - velero-ui
