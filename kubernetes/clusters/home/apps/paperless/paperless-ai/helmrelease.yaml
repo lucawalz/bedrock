@@ -38,7 +38,7 @@ spec:
               PAPERLESS_USERNAME: admin
               AI_PROVIDER: ollama
               OLLAMA_API_URL: http://ollama.llm.svc.cluster.local:11434
-              OLLAMA_MODEL: llama3.2:3b
+              OLLAMA_MODEL: qwen2.5:7b
               RAG_SERVICE_URL: http://localhost:8000
               RAG_SERVICE_ENABLED: "true"
               SCAN_INTERVAL: "*/30 * * * *"
