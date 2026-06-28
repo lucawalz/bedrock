@@ -1,0 +1,24 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: paperless
+  namespace: paperless
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Paperless
+    gethomepage.dev/group: Documents
+    gethomepage.dev/icon: paperless-ngx.png
+    gethomepage.dev/href: https://paperless.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-ngx
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`paperless.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: paperless-ngx
+          port: 8000
+  tls: {}
