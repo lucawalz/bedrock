@@ -28,6 +28,7 @@ spec:
       models:
         pull:
           - llama3.2:3b
+          - qwen2.5:7b
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
