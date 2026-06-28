@@ -6,3 +6,4 @@ resources:
   - gotenberg
   - tika
   - ingress.yaml
+  - networkpolicies.yaml
