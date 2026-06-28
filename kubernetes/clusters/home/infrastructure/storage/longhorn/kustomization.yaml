@@ -5,6 +5,7 @@ resources:
 - helmrelease.yaml
 - ingress.yaml
 - recurringjobs.yaml
+- storageclass-disposable.yaml
 patches:
 - patch: |-
     - op: add

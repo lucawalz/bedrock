@@ -43,8 +43,8 @@ spec:
       enabled: false
     persistentVolume:
       enabled: true
-      size: 100Gi
-      storageClass: longhorn
+      size: 30Gi
+      storageClass: longhorn-disposable
       accessModes:
         - ReadWriteOnce
     nodeSelector:
