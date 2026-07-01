@@ -66,9 +66,8 @@ jobs:
 
       - name: Install kustomize
         run: |
-          curl -sSL "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" \
-            | bash
-          sudo mv kustomize /usr/local/bin/
+          curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz \
+            | sudo tar xz -C /usr/local/bin kustomize
 
       - name: Build all kustomizations
         run: |
