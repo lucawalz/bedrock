@@ -7,6 +7,6 @@ spec:
   template:
     spec:
       type: cpx22
-      imageName: bedrock-cluster-node
+      imageName: cluster-node
       sshKeys:
         - name: bedrock-capi
