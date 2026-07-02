@@ -6,7 +6,7 @@ source "hcloud" "pool-node" {
   ssh_username         = "root"
   ssh_private_key_file = var.ssh_private_key_file
 
-  snapshot_name = "pool-node-${var.nixos_hash}"
+  snapshot_name = "bedrock-pool-node-${var.nixos_hash}"
   snapshot_labels = {
     "bedrock-managed"    = "true"
     "bedrock-role"       = "pool-node"
