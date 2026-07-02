@@ -11,7 +11,7 @@ spec:
     - match: Host(`minio.syslabs.dev`)
       kind: Rule
       services:
-        - name: minio-console
+        - name: minio-minio-console
           port: 9001
   tls: {}
 ---
@@ -28,6 +28,6 @@ spec:
     - match: Host(`s3.syslabs.dev`)
       kind: Rule
       services:
-        - name: minio
+        - name: minio-minio
           port: 9000
   tls: {}
