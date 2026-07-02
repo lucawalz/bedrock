@@ -91,6 +91,11 @@ in
             enabled = true;
           }
           {
+            domain = "minio.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "ntfy.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
@@ -127,6 +132,11 @@ in
           }
           {
             domain = "rancher.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "s3.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
           }
