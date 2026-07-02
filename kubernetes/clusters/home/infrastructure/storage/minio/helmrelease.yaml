@@ -1,0 +1,78 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: minio
+  namespace: flux-system
+spec:
+  interval: 30m
+  timeout: 10m
+  targetNamespace: minio
+  storageNamespace: minio
+  chart:
+    spec:
+      chart: minio
+      version: "5.4.0"
+      sourceRef:
+        kind: HelmRepository
+        name: minio
+        namespace: flux-system
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    mode: standalone
+    replicas: 1
+    existingSecret: minio
+    persistence:
+      enabled: true
+      storageClass: longhorn
+      size: 20Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    policies:
+      - name: blog
+        statements:
+          - resources:
+              - arn:aws:s3:::blog
+              - arn:aws:s3:::blog/*
+            actions:
+              - s3:GetBucketLocation
+              - s3:ListBucket
+              - s3:ListBucketMultipartUploads
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:AbortMultipartUpload
+              - s3:ListMultipartUploadParts
+    buckets:
+      - name: blog
+        policy: none
+        purge: false
+        versioning: false
+    users:
+      - accessKey: blog
+        existingSecret: minio
+        existingSecretKey: blogSecretKey
+        policy: blog
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+            patch: |
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: placeholder
+                annotations:
+                  reloader.stakater.com/auto: "true"
