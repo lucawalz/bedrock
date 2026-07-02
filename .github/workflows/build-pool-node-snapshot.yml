@@ -162,7 +162,7 @@ jobs:
             exit 1
           fi
           labels=$(echo "$images" | jq -c --argjson id "$selected" \
-            '(.images[] | select(.id == $id) | .labels) + {"caph-image-name": "bedrock-pool-node"}')
+            '(.images[] | select(.id == $id) | .labels) + {"caph-image-name": "pool-node"}')
           relabel "$selected" "$labels"
           for id in $(echo "$images" | jq -r --argjson sel "$selected" \
             '.images[] | select(.id != $sel and (.labels | has("caph-image-name"))) | .id'); do
