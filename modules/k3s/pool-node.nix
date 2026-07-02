@@ -39,7 +39,7 @@ in
 
     openiscsi = {
       enable = true;
-      name = "iqn.2016-04.com.open-iscsi:pool-node";
+      name = "iqn.2016-04.com.open-iscsi:bedrock-pool-node";
     };
 
     tailscale = {

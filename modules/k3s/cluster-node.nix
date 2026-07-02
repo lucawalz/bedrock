@@ -61,7 +61,7 @@ in
 
     openiscsi = {
       enable = true;
-      name = "iqn.2016-04.com.open-iscsi:cluster-node";
+      name = "iqn.2016-04.com.open-iscsi:bedrock-cluster-node";
     };
 
     k3s = {
