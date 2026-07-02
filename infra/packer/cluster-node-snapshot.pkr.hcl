@@ -6,7 +6,7 @@ source "hcloud" "cluster-node" {
   ssh_username         = "root"
   ssh_private_key_file = var.ssh_private_key_file
 
-  snapshot_name = "bedrock-cluster-node-${var.nixos_hash}"
+  snapshot_name = "cluster-node-${var.nixos_hash}"
   snapshot_labels = {
     "bedrock-managed"    = "true"
     "bedrock-role"       = "cluster-node"
