@@ -60,7 +60,7 @@ spec:
       schema:
         openAPIV3Schema:
           type: string
-          default: cluster-node
+          default: bedrock-cluster-node
   patches:
     - name: region
       definitions:
