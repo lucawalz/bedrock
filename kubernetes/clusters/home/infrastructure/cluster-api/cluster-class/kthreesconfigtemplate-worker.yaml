@@ -8,3 +8,11 @@ spec:
     spec:
       agentConfig:
         airGapped: true
+      files:
+        - path: /etc/tailscale/authkey
+          owner: "root:root"
+          permissions: "0400"
+          contentFrom:
+            secret:
+              name: tailscale-peer-authkey
+              key: authkey

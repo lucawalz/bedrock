@@ -4,6 +4,9 @@ let
   rolePath = "/etc/rancher/k3s/role";
   metadataBase = "http://169.254.169.254/hetzner/v1/metadata";
   configWaitSeconds = 540;
+  tailscaleAuthKeyPath = "/etc/tailscale/authkey";
+  tailscaleIface = "tailscale0";
+  tailscaleWaitSeconds = 540;
   k3sPackage = pkgs.k3s_1_35;
   roleCaptureScript = pkgs.writeShellScript "k3s-role-capture" ''
     set -eu
@@ -42,6 +45,7 @@ in
       ];
       allowedUDPPorts = [ 8472 ];
       checkReversePath = "loose";
+      trustedInterfaces = [ tailscaleIface ];
     };
   };
 
@@ -64,6 +68,16 @@ in
       name = "iqn.2016-04.com.open-iscsi:bedrock-cluster-node";
     };
 
+    tailscale = {
+      enable = true;
+      useRoutingFeatures = "client";
+      authKeyFile = tailscaleAuthKeyPath;
+      extraUpFlags = [
+        "--accept-routes"
+        "--advertise-tags=tag:peer"
+      ];
+    };
+
     k3s = {
       enable = true;
       role = "server";
@@ -82,6 +96,7 @@ in
         wantedBy = [ "multi-user.target" ];
         after = [ "network.target" ];
         before = [
+          "tailscaled-autoconnect.service"
           "k3s-cluster-config-augment.service"
           "k3s.service"
         ];
@@ -99,6 +114,25 @@ in
             i=$((i+1)); sleep 2
           done
           [ -n "$NAME" ] && ${pkgs.systemd}/bin/hostnamectl set-hostname "$NAME" || true
+        '';
+      };
+
+      tailscaled-autoconnect = {
+        after = [
+          "tailscaled.service"
+          "hetzner-set-hostname.service"
+        ];
+        wants = [ "tailscaled.service" ];
+        serviceConfig.TimeoutStartSec = lib.mkForce 600;
+        preStart = ''
+          DEADLINE=$(( $(date +%s) + ${toString tailscaleWaitSeconds} ))
+          while [ ! -s ${tailscaleAuthKeyPath} ]; do
+            if [ "$(date +%s)" -ge "$DEADLINE" ]; then
+              echo "${tailscaleAuthKeyPath} not present within ${toString tailscaleWaitSeconds}s" >&2
+              exit 1
+            fi
+            sleep 2
+          done
         '';
       };
 
