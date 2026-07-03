@@ -43,6 +43,12 @@ spec:
         openAPIV3Schema:
           type: string
           default: hel1
+    - name: networkZone
+      required: false
+      schema:
+        openAPIV3Schema:
+          type: string
+          default: eu-central
     - name: controlPlaneMachineType
       required: false
       schema:
@@ -79,6 +85,18 @@ spec:
               path: /spec/template/spec/controlPlaneLoadBalancer/region
               valueFrom:
                 variable: region
+    - name: networkZone
+      definitions:
+        - selector:
+            apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+            kind: HetznerClusterTemplate
+            matchResources:
+              infrastructureCluster: true
+          jsonPatches:
+            - op: replace
+              path: /spec/template/spec/hcloudNetwork/networkZone
+              valueFrom:
+                variable: networkZone
     - name: controlPlaneMachineType
       definitions:
         - selector:
