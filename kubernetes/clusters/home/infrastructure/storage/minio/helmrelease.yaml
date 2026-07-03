@@ -27,6 +27,8 @@ spec:
   values:
     mode: standalone
     replicas: 1
+    DeploymentUpdate:
+      type: Recreate
     existingSecret: minio
     persistence:
       enabled: true
