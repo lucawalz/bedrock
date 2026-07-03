@@ -22,7 +22,8 @@ spec:
     
     # TLS will be handled by our own certificate
     tls: external
-    
+    agentTLSMode: system-store
+
     # Configure hostname
     hostname: rancher.syslabs.dev
     
