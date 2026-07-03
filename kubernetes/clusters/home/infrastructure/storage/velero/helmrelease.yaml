@@ -33,9 +33,9 @@ spec:
         drop:
           - ALL
     objectStorage:
-      bucket: &bucket horizon-velero-backups
+      bucket: &bucket basalt-backups
       region: &region eu-central-1
-      s3Url: &s3Url https://fsn1.your-objectstorage.com
+      s3Url: &s3Url https://hel1.your-objectstorage.com
     initContainers:
       - name: velero-plugin-for-aws
         image: velero/velero-plugin-for-aws:v1.14.2
