@@ -37,9 +37,7 @@
       ];
     in
     {
-      formatter = nixpkgs.lib.genAttrs formatterSystems (
-        system: nixpkgs.legacyPackages.${system}.nixfmt-rfc-style
-      );
+      formatter = nixpkgs.lib.genAttrs formatterSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 
       nixosConfigurations = {
         master = lib.mkHost { hostname = "master"; };
