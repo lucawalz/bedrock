@@ -5,7 +5,7 @@ kind: Kustomization
 # These are created before secrets and apps to ensure namespaces exist
 resources:
   - n8n.yaml
-  - databases.yaml
+  - postgres.yaml
   - cnpg-system.yaml
   - traefik.yaml
   - metallb-system.yaml
