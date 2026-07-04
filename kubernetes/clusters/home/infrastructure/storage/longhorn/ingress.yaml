@@ -29,7 +29,7 @@ metadata:
   annotations:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: Longhorn
-    gethomepage.dev/group: Platform
+    gethomepage.dev/group: Storage
     gethomepage.dev/icon: longhorn.png
     gethomepage.dev/href: https://longhorn.syslabs.dev
     gethomepage.dev/podSelector: app=longhorn-ui
