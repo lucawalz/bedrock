@@ -8,5 +8,9 @@ spec:
   template:
     ttl: 168h0m0s
     storageLocation: default
+    resourcePolicy:
+      kind: configmap
+      name: skip-disposable-volumes
     excludedNamespaces:
       - paperless
+      - monitoring
