@@ -14,8 +14,13 @@ spec:
       namespaces:
         - blog
         - cloudflare-tunnel
+        - flagger
         - homepage
+        - llm
+        - n8n
         - ntfy
+        - rackpeek
+        - traefik
   background: true
   rules:
     - name: privilege-escalation
