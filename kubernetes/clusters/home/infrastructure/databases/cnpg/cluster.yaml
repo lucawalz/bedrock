@@ -5,6 +5,9 @@ metadata:
   namespace: postgres
 spec:
   instances: 3
+  inheritedMetadata:
+    labels:
+      velero.io/exclude-from-backup: "true"
   affinity:
     enablePodAntiAffinity: true
     topologyKey: kubernetes.io/hostname
