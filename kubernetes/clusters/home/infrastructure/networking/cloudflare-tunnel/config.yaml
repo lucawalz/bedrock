@@ -23,4 +23,6 @@ data:
         originRequest:
           # apex is outside the *.syslabs.dev wildcard cert Traefik serves
           noTLSVerify: true
+      - hostname: rancher.syslabs.dev
+        service: https://traefik.traefik.svc.cluster.local:443
       - service: http_status:404
