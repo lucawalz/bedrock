@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skip-disposable-volumes
+  namespace: velero
+data:
+  policy.yaml: |
+    version: v1
+    volumePolicies:
+      - conditions:
+          storageClass:
+            - longhorn-disposable
+        action:
+          type: skip
