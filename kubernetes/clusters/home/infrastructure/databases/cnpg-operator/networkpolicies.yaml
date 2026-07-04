@@ -87,6 +87,8 @@ spec:
     - from:
         - ipBlock:
             cidr: 10.20.0.0/24
+        - ipBlock:
+            cidr: 10.42.0.0/16
       ports:
         - protocol: TCP
           port: 9443
