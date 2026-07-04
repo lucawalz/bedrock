@@ -4,7 +4,7 @@ metadata:
   name: node-reaper
   namespace: caph-system
 spec:
-  schedule: "*/2 * * * *"
+  schedule: "*/10 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 1
