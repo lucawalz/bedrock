@@ -13,5 +13,5 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: cluster-infrastructure
+    - name: cluster-networking
     - name: cluster-namespaces
