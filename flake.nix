@@ -104,7 +104,6 @@
         let
           pkgs = import nixpkgs {
             system = "aarch64-darwin";
-            config.allowUnfreePredicate = pkg: builtins.elem (nixpkgs.lib.getName pkg) [ "terraform" ];
           };
         in
         pkgs.mkShell {
@@ -116,7 +115,6 @@
             age
             nixos-anywhere
             nixos-rebuild
-            terraform
             zstd
             git
             yq-go

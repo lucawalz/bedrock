@@ -1,6 +1,2 @@
-# Hetzner Object Storage credentials
-export TF_VAR_access_key="your-hetzner-object-storage-access-key-id"
-export TF_VAR_secret_key="your-hetzner-object-storage-secret-key"
-
 # Hetzner Cloud API token
 # export HCLOUD_TOKEN="your-hetzner-cloud-api-token"
