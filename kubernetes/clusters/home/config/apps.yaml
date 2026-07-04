@@ -14,6 +14,8 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-infrastructure
+    - name: cluster-storage
+    - name: cluster-networking
     - name: cluster-issuers
     - name: cluster-namespaces
     - name: cluster-cnpg-db

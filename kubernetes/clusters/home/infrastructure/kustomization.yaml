@@ -2,11 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - storage          # Deploy first
-  - networking       # Deploy second
-  - databases        # Deploy third
-  - monitoring       # Deploy fourth
+  - databases
   - notifications
   - rancher
-  - security
   - delivery

@@ -5,6 +5,10 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - infrastructure.yaml
+  - storage.yaml
+  - networking.yaml
+  - monitoring.yaml
+  - security.yaml
   - cnpg-operator.yaml
   - cnpg-db.yaml
   - policies.yaml
