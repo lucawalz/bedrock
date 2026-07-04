@@ -13,6 +13,7 @@ spec:
     - action: Enforce
       namespaces:
         - blog
+        - cloudflare-tunnel
         - homepage
   background: true
   rules:
