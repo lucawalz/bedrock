@@ -15,6 +15,7 @@ spec:
         - blog
         - cloudflare-tunnel
         - homepage
+        - ntfy
   background: true
   rules:
     - name: drop-all-capabilities
