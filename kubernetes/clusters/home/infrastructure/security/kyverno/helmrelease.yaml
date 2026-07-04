@@ -46,7 +46,7 @@ spec:
         - user-*
         - local
     admissionController:
-      replicas: 1
+      replicas: 2
       resources:
         requests:
           cpu: 100m
@@ -88,3 +88,8 @@ spec:
         enabled: true
       backgroundScan:
         skipResourceFilters: false
+      omitEvents:
+        eventTypes:
+          - PolicyApplied
+          - PolicySkipped
+          - PolicyViolation
