@@ -60,7 +60,10 @@
         "/^cloudnative-pg$/",
         "/^kube-prometheus-stack$/",
         "/^velero$/",
-        "/^cert-manager$/"
+        "/^cert-manager$/",
+        "/^authentik$/",
+        "/^rancher$/",
+        "/^metallb$/"
       ],
       "matchUpdateTypes": ["minor"],
       "automerge": false
