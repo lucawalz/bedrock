@@ -57,3 +57,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0053. Make the critical path survive a single node loss](0053-ha-critical-path-survives-node-loss.md) (accepted)
 - [0054. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID](0054-bar-display-grafana-kiosk-and-corrected-edid.md) (accepted)
 - [0055. Track the cluster inventory as a versionless topology map](0055-versionless-cluster-inventory.md) (accepted)
+- [0057. CloudNativePG native Barman DR and Velero scope](0057-cnpg-barman-dr-and-velero-scope.md) (accepted)
