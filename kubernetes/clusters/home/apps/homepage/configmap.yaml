@@ -14,19 +14,28 @@ data:
     theme: dark
     color: slate
     headerStyle: clean
+    target: _blank
+    useEqualHeights: true
+    quicklaunch:
+      searchDescriptions: true
+      hideInternetSearch: false
+      provider: duckduckgo
     layout:
+      Apps:
+        style: row
+        columns: 4
       AI:
         style: row
         columns: 2
-      Apps:
-        style: row
-        columns: 3
       Documents:
         style: row
         columns: 3
       Observability:
         style: row
-        columns: 3
+        columns: 4
+      Storage:
+        style: row
+        columns: 2
       Platform:
         style: row
         columns: 3
@@ -66,6 +75,12 @@ data:
             href: http://10.20.0.1:3000
 
   widgets.yaml: |
+    - datetime:
+        text_size: l
+        format:
+          dateStyle: long
+          timeStyle: short
+          hourCycle: h23
     - kubernetes:
         cluster:
           show: true
