@@ -42,7 +42,7 @@ in
       extraForwardRules = lib.mkMerge [
         (lib.mkBefore ''iifname "vlan20" ip daddr ${homeSubnet} drop'')
         (lib.mkBefore ''iifname "vlan30" ip daddr ${homeSubnet} drop'')
-        ''iifname "end0" oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
+        ''iifname "end0" ip saddr ${homeSubnet} oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
         ''iifname "tailscale0" oifname "vlan20" accept''
         ''iifname "vlan20" oifname "tailscale0" accept''
         ''iifname "vlan30" oifname "end0" accept''
