@@ -22,6 +22,7 @@ result-*
 !secrets/secrets.nix
 !secrets/**/*.age
 !kubernetes/**/secrets/**/*.sops.yaml
+!kubernetes/**/bootstrap-secrets/**/*.sops.yaml
 
 # macOS
 .DS_Store
