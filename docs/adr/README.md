@@ -58,3 +58,6 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0054. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID](0054-bar-display-grafana-kiosk-and-corrected-edid.md) (accepted)
 - [0055. Track the cluster inventory as a versionless topology map](0055-versionless-cluster-inventory.md) (accepted)
 - [0057. CloudNativePG native Barman DR and Velero scope](0057-cnpg-barman-dr-and-velero-scope.md) (accepted)
+- [0058. Split cluster-infrastructure into focused Flux Kustomizations](0058-split-cluster-infrastructure-kustomizations.md) (accepted)
+- [0059. Outbound-only peers via public Rancher](0059-outbound-only-peers-via-public-rancher.md) (accepted)
+- [0060. Private secrets repository with per-cluster keys](0060-private-secrets-repo-per-cluster-keys.md) (accepted)
