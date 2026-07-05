@@ -4,6 +4,7 @@ resources:
   - sources.yaml
   - namespaces.yaml
   - secrets.yaml
+  - bootstrap-secrets.yaml
   - infrastructure.yaml
   - storage.yaml
   - networking.yaml
