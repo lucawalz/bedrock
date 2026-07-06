@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: blog-allow-ingress
+  namespace: blog
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: blog
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 80
