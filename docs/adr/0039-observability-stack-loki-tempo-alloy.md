@@ -5,8 +5,6 @@ date: 2026-06-19
 
 # 0039. Observability stack with Loki, Tempo, and Grafana Alloy
 
-> Update 2026-06-21: the standalone Alertmanager is retained, not removed. The kube-prometheus-stack default alert set, more than 150 Prometheus-evaluated rules covering nodes, storage, and workloads, delivers only through Alertmanager, and Grafana's unified alerting evaluates its own rules rather than these, so removing Alertmanager would silence them. Grafana alerting still runs the operator-authored log-error rule to ntfy and coexists with Alertmanager.
-
 ## Context
 
 The home cluster has had metrics and alerting since [0018](0018-internal-dashboard-and-router-metrics.md): kube-prometheus-stack runs Prometheus, a single Alertmanager that forwards to ntfy, and Grafana, with node-exporter, kube-state-metrics, and a static scrape of the Pi router. What it has never had is logs or traces. Pod logs lived only in the kubelet and were lost on eviction, and there was no trace backend at all. Grafana showed metrics and nothing else, so any investigation that needed a log line meant a `kubectl logs` against a guess at the right pod.
@@ -19,9 +17,9 @@ Keep Prometheus as the metrics store and add the rest of the Grafana stack aroun
 
 Alloy runs as a DaemonSet and does two things only: it tails every pod's container logs and writes them to Loki, and it accepts OpenTelemetry traces over OTLP and forwards them to Tempo. Metrics are left entirely to Prometheus, which keeps scraping through the existing ServiceMonitors, and Alloy never touches them. Loki and Tempo each run as a single binary with the filesystem backend on a Longhorn volume, so log and trace data stays replicated across the cluster's own nodes with no S3 or MinIO dependency. Loki keeps fourteen days, Tempo seven. Each component exposes its own metrics back to Prometheus through a ServiceMonitor.
 
-Grafana gains Loki and Tempo as datasources alongside Prometheus, wired for correlation so a trace identifier in a log jumps to the trace and a span links back to its logs. Alerting moves into Grafana's built-in engine: a handful of operator-authored rules evaluate against Prometheus, and a webhook contact point delivers to the same ntfy topic the cluster already uses. With Grafana alerting proven, the standalone Alertmanager and its ingress are removed and the orphaned `PrometheusNotConnectedToAlertmanagers` rule is disabled.
+Grafana gains Loki and Tempo as datasources alongside Prometheus, wired for correlation so a trace identifier in a log jumps to the trace and a span links back to its logs. Grafana's built-in engine runs a handful of operator-authored rules that evaluate against Prometheus and deliver to the same ntfy topic the cluster already uses. The standalone Alertmanager is retained alongside it: the kube-prometheus-stack default rule set, more than 150 Prometheus-evaluated rules covering nodes, storage, and workloads, delivers only through Alertmanager, and Grafana's unified alerting evaluates its own rules rather than these, so removing Alertmanager would silence them.
 
-The migration is staged: the collector and stores go in first as purely additive components, then Grafana is pointed at them, then alerting is moved, and Alertmanager is removed last, only once notifications are confirmed arriving through Grafana.
+The migration is staged: the collector and stores go in first as purely additive components, then Grafana is pointed at them, then Grafana alerting is added alongside the retained Alertmanager.
 
 ## Options considered
 
@@ -29,11 +27,11 @@ The migration is staged: the collector and stores go in first as purely additive
 - Mimir as the metrics store in place of Prometheus, rejected. Mimir is a distributed, multi-component system built for scale and long retention; on three nodes it is operational weight with no benefit over a single Prometheus, which speaks the same query language and feeds the same dashboards.
 - Object storage for Loki and Tempo, rejected. An external S3 bucket or an in-cluster MinIO would give the tools their native backend, but the cluster already has replicated Longhorn volumes and the explicit preference was to keep observability data on the cluster's own disks with nothing new to depend on.
 - Promtail for log collection, rejected. It reached end of life in early 2026 and Alloy is its supported successor, so a new deployment starts on Alloy and gains the trace pipeline in the same agent.
-- Keeping the standalone Alertmanager, rejected. Grafana's unified alerting covers a single operator's needs, and routing the same ntfy notifications from Grafana removes a component and keeps rules and dashboards in one console.
+- Removing the standalone Alertmanager once Grafana alerting proved out, rejected on trial. Grafana's unified alerting evaluates only its own rules, so dropping Alertmanager would silence the more than 150 kube-prometheus-stack default alerts that deliver only through it. Grafana alerting runs the operator-authored rules and the two coexist.
 
 ## Consequences
 
-Grafana becomes the single place to read the cluster: metrics from Prometheus, logs from Loki, traces from Tempo, and one alert path to ntfy. An investigation can move from a spiking metric to the logs around it to the trace that caused it without leaving the console. The added cost is modest, roughly a quarter of a core, three quarters of a gigabyte of memory, and thirty gigabytes of Longhorn, partly offset by removing Alertmanager.
+Grafana becomes the single place to read the cluster: metrics from Prometheus, logs from Loki, traces from Tempo, and one alert path to ntfy. An investigation can move from a spiking metric to the logs around it to the trace that caused it without leaving the console. The added cost is modest, roughly a quarter of a core, three quarters of a gigabyte of memory, and thirty gigabytes of Longhorn.
 
 The trace backend is set up before anything emits traces, so Tempo sits empty until an application is instrumented to send OTLP to Alloy, and the pipeline is ready when that day comes. Apps in default-deny namespaces will each need an egress policy to reach Alloy on the OTLP ports, added per app when they start sending traces rather than up front.
 

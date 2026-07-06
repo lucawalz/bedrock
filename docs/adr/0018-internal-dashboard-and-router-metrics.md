@@ -15,9 +15,7 @@ The Pi router had a related gap. It is the gateway, firewall, DNS, and WireGuard
 
 A [Homepage](https://gethomepage.dev) dashboard is deployed at `home.syslabs.dev`, internal-only and not routed through the Cloudflare tunnel. It is deployed as plain manifests, with its configuration committed in a ConfigMap rather than edited at runtime, so the dashboard is reproducible from Git like every other workload. A read-only RBAC role backs the Kubernetes widgets, and `HOMEPAGE_ALLOWED_HOSTS` is set to the dashboard hostname so the service only answers on its own name. The service list is no longer hand-maintained in the ConfigMap; Homepage discovers entries from the cluster by reading `gethomepage.dev` annotations on each service's Traefik IngressRoute or native Ingress, so a route and its dashboard tile are defined in one place and cannot drift apart.
 
-The Pi router gains two Prometheus exporters: node_exporter for host metrics and a WireGuard exporter for tunnel state. Both bind to the VLAN 20 address `10.20.0.1`, reachable from the cluster but never offered on the WAN or home interface, so no firewall change is needed to scrape them. Prometheus scrapes them as a static target, which brings the router into Grafana and onto the dashboard alongside the cluster.
-
-**Update (2026-06-26):** the router WireGuard exporter was removed with the move to the Tailscale overlay in [0023](0023-tailscale-overlay.md); node_exporter remains.
+The Pi router gains a node_exporter for host metrics, binding to the VLAN 20 address `10.20.0.1`, reachable from the cluster but never offered on the WAN or home interface, so no firewall change is needed to scrape it. Prometheus scrapes it as a static target, which brings the router into Grafana and onto the dashboard alongside the cluster. A WireGuard exporter for tunnel state was initially added beside it and later removed with the move to the Tailscale overlay in [0023](0023-tailscale-overlay.md).
 
 ## Options considered
 
