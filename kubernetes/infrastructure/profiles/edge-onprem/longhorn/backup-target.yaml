@@ -4,6 +4,8 @@ kind: BackupTarget
 metadata:
     name: default
     namespace: longhorn-system
+    annotations:
+        kustomize.toolkit.fluxcd.io/prune: disabled
 spec:
     backupTargetURL: s3://basalt-backups@eu-central-1/
     credentialSecret: longhorn-backup-credentials
