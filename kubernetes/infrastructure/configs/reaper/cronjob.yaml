@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: node-reaper
-  namespace: caph-system
+  namespace: longhorn-system
 spec:
   schedule: "*/10 * * * *"
   concurrencyPolicy: Forbid
@@ -56,17 +56,7 @@ spec:
                   if [ -z "$candidates" ]; then
                     echo "no orphan node candidates"
                   else
-                    if ! owned="$(kubectl get machines -A \
-                      -o jsonpath='{range .items[*]}{.status.nodeRef.name}{"\n"}{end}')"; then
-                      echo "failed to list machines; refusing to delete on incomplete data" >&2
-                      exit 1
-                    fi
-
                     for node in $candidates; do
-                      if printf '%s\n' "$owned" | grep -qxF "$node"; then
-                        echo "keeping owned node $node"
-                        continue
-                      fi
                       echo "deleting orphan node $node"
                       kubectl delete node "$node" --wait=false
                     done
