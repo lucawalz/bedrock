@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: region-ash
+  namespace: flux-system
+data:
+  region: ash
+  zone: us-east
+  profile: edge-cloud
+  domain: ash.syslabs.dev
