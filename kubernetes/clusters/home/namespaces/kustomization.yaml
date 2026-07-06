@@ -26,6 +26,3 @@ resources:
   - reloader.yaml
   - kyverno.yaml
   - flagger.yaml
-  - caph-system.yaml
-  - capi-k3s-bootstrap-system.yaml
-  - capi-k3s-control-plane-system.yaml
