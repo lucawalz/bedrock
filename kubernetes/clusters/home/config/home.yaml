@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/cnpg
+  path: ./kubernetes/infrastructure/configs/cnpg
   prune: true
   wait: true
   sourceRef:
@@ -24,7 +24,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/authentik
+  path: ./kubernetes/infrastructure/controllers/authentik
   prune: true
   wait: true
   sourceRef:
@@ -44,7 +44,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/pgadmin
+  path: ./kubernetes/infrastructure/controllers/pgadmin
   prune: true
   wait: true
   sourceRef:
@@ -62,7 +62,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/minio
+  path: ./kubernetes/infrastructure/controllers/minio
   prune: true
   wait: true
   sourceRef:
@@ -80,7 +80,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/reaper
+  path: ./kubernetes/infrastructure/configs/reaper
   prune: true
   wait: true
   sourceRef:

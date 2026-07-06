@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/cert-manager
+  path: ./kubernetes/infrastructure/controllers/cert-manager
   prune: true
   wait: true
   sourceRef:
@@ -24,7 +24,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/cert-manager/cluster-issuers
+  path: ./kubernetes/infrastructure/configs/cert-manager-issuers
   prune: true
   wait: true
   sourceRef:
@@ -41,7 +41,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/storage
+  path: ./kubernetes/infrastructure/controllers/storage
   prune: true
   wait: true
   sourceRef:
@@ -59,7 +59,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/cnpg-operator
+  path: ./kubernetes/infrastructure/controllers/cnpg-operator
   prune: true
   wait: true
   sourceRef:
@@ -76,7 +76,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/security
+  path: ./kubernetes/infrastructure/controllers/security
   prune: true
   wait: true
   sourceRef:
@@ -94,7 +94,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/delivery
+  path: ./kubernetes/infrastructure/controllers/delivery
   prune: true
   wait: true
   sourceRef:
@@ -112,7 +112,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/notifications
+  path: ./kubernetes/infrastructure/configs/notifications
   prune: true
   wait: true
   sourceRef:
@@ -130,7 +130,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/base/alloy
+  path: ./kubernetes/infrastructure/controllers/alloy
   prune: true
   wait: true
   sourceRef:
