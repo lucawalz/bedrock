@@ -1,5 +1,5 @@
 ---
-status: accepted but not yet implemented
+status: accepted
 date: 2026-07-06
 ---
 
@@ -30,3 +30,13 @@ Because the home cluster was never parameterized, the reversion deletes structur
 The homelab returns to the simplest layout that serves one operator, and the multi-region design is not lost. [0061](0061-multi-region-fleet-layout.md) stays in the record as superseded rather than deleted, so the reasoning, the trade-offs, and the demonstration remain legible to anyone who reads the log. The backups, disaster recovery, and hardening persist unchanged.
 
 The reversion is a delete of the isolated multi-region directories plus one collapse of the edge profile, verified by the same rendered-output gate that guarded the build: the home cluster's manifests are identical before and after, so the change is provably confined to structure no cluster runs. The teardown steps were recorded in [0061](0061-multi-region-fleet-layout.md) when the fleet was built, so this record only sets the decision to carry them out.
+
+## Implementation
+
+Carried out on 6 July 2026. The multi-region directories and the entire Cluster API stack were removed: `regions/`, the `ash` and `hel1` spoke entrypoints, `infrastructure/profiles/edge-cloud`, the hub-side spoke `Cluster` instances, each app's cloud overlay, and the Rancher-Turtles providers, ClusterClass, and spoke bootstrap under `fleet/cluster-api`. The two Hetzner spokes were deprovisioned first, so their servers, load balancers, and networks were deleted by their controller before it was uninstalled. On-demand capacity beyond the three bare-metal nodes remains provided by horizon through the hcloud API, as decided in [0062](0062-retire-elastic-cluster-autoscaler.md); the Cluster API substrate it once used is gone.
+
+Rancher is kept, now as the operational plane rather than a fleet provisioner. It owns cluster visibility, access control, and the application catalogue, while Flux remains the sole reconciler of in-cluster state. The two planes must not both own the same objects, so Rancher's own continuous-delivery engine stays off the resources Flux manages.
+
+The platform was not flattened into a single `infrastructure/` list. It collapsed into `infrastructure/controllers` and `infrastructure/configs`, the canonical Flux split, so operator installs reconcile before the custom resources that depend on them. The per-concern Kustomizations from [0058](0058-split-cluster-infrastructure-kustomizations.md) were preserved, and every Flux `Kustomization` kept its name: only `spec.path` changed, which for identical rendered output is a no-op, where a rename would prune and recreate every managed object. The rendered-output gate confirmed the home cluster is byte-for-byte unchanged apart from the intended removals.
+
+The fleet layout is preserved outside the working tree as the `multi-region-fleet` git tag on both the public and the secrets repository, so the demonstrated architecture stays recoverable without being carried as live structure.

@@ -61,6 +61,6 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0058. Split cluster-infrastructure into focused Flux Kustomizations](0058-split-cluster-infrastructure-kustomizations.md) (accepted)
 - [0059. Outbound-only peers via public Rancher](0059-outbound-only-peers-via-public-rancher.md) (accepted)
 - [0060. Private secrets repository with per-cluster keys](0060-private-secrets-repo-per-cluster-keys.md) (accepted)
-- [0061. Lay out the repository as a multi-region fleet](0061-multi-region-fleet-layout.md) (accepted)
+- [0061. Lay out the repository as a multi-region fleet](0061-multi-region-fleet-layout.md) (superseded by 0063)
 - [0062. Retire the elastic cluster-autoscaler](0062-retire-elastic-cluster-autoscaler.md) (accepted)
-- [0063. Return the homelab to a single region after the fleet demonstration](0063-return-to-single-region.md) (accepted but not yet implemented)
+- [0063. Return the homelab to a single region after the fleet demonstration](0063-return-to-single-region.md) (accepted, implemented)
