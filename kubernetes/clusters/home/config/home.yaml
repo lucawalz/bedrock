@@ -87,7 +87,6 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: cluster-capi-providers
     - name: cluster-namespaces
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1

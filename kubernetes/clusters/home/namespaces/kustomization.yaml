@@ -29,4 +29,3 @@ resources:
   - caph-system.yaml
   - capi-k3s-bootstrap-system.yaml
   - capi-k3s-control-plane-system.yaml
-  - caaph-system.yaml
