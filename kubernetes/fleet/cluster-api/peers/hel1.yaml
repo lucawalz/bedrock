@@ -5,6 +5,7 @@ metadata:
   namespace: caph-system
   labels:
     cluster-api.cattle.io/rancher-auto-import: "true"
+    bedrock.syslabs.dev/gitops: "true"
 spec:
   clusterNetwork:
     pods:

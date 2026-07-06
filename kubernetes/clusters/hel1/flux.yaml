@@ -1,62 +1,12 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: blog
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: hel1-region
-  namespace: flux-system
-spec:
-  interval: 10m
-  path: ./kubernetes/regions/hel1
-  prune: true
-  wait: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: hel1-base
-  namespace: flux-system
-spec:
-  interval: 10m
-  path: ./kubernetes/infrastructure/base
-  prune: true
-  wait: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  dependsOn:
-    - name: hel1-region
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: region-hel1
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: hel1-edge
-  namespace: flux-system
-spec:
-  interval: 10m
-  path: ./kubernetes/infrastructure/profiles/edge-cloud
-  prune: true
-  wait: true
-  sourceRef:
-    kind: GitRepository
-    name: flux-system
-  dependsOn:
-    - name: hel1-region
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: region-hel1
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: hel1-apps
+  name: blog
   namespace: flux-system
 spec:
   interval: 10m
@@ -66,9 +16,6 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  dependsOn:
-    - name: hel1-base
-    - name: hel1-edge
   postBuild:
     substituteFrom:
       - kind: ConfigMap
