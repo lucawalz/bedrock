@@ -5,3 +5,4 @@ resources:
   - infrastructure-hetzner.yaml
   - bootstrap-k3s.yaml
   - control-plane-k3s.yaml
+  - addon-helm.yaml
