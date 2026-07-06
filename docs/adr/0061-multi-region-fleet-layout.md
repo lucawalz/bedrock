@@ -1,0 +1,56 @@
+---
+status: accepted
+date: 2026-07-06
+---
+
+# 0061. Lay out the repository as a multi-region fleet
+
+## Context
+
+The repository is organised around a single cluster. Everything the home cluster runs lives under `kubernetes/clusters/home/`: its apps, its infrastructure split into the focused Kustomizations from [0058](0058-split-cluster-infrastructure-kustomizations.md), its sources, namespaces, and policies. The tree is cluster-cohesive, meaning each cluster owns a self-contained subtree that fully describes it. For one cluster this is the simplest possible layout and it has served well.
+
+The direction of the project is no longer one cluster. The home datacentre is meant to grow into a fleet: the three physical nodes at home stay the hub and the first region, and cloud regions such as `hel1` and `ash` join as spokes. The `peers/kustomization.yaml` under the cluster-api tree already anticipates this, with `ash.yaml` and `hel1.yaml` sitting commented out behind an empty resource list, declared but not provisioned. What is missing is a repository shape that lets a new region be added without copying an entire cluster subtree and hand-editing it, because that pattern guarantees the copies drift apart the moment they are touched.
+
+A region differs from another region in a small, bounded set of facts: its name, its zone, its domain, and which infrastructure archetype it runs. An on-prem edge like home runs Traefik, MetalLB, and Longhorn against bare metal. A cloud edge runs a cloud controller manager, a cloud CSI driver, and a cloud load balancer instead. Everything else, the apps and the shape of each infrastructure concern, is region-neutral. The current layout has no place to express that a region is mostly a set of shared blueprints plus a few regional scalars, so every region would have to restate the whole of itself.
+
+This mirrors a split the cluster already makes one layer up. Cluster API describes a fleet as a ClusterClass, the reusable blueprint, and a small Cluster object carrying variables, the instance. The repository layout should make the same distinction for the GitOps content: a region-neutral blueprint plus a small per-region instance that binds values to it.
+
+## Decision
+
+Restructure the repository from the single cluster-cohesive tree into a multi-region fleet layout, where a region is a stampable abstraction defined by nothing more than its per-region values file and a thin cluster entrypoint, and everything else is region-neutral blueprint.
+
+The layout separates into blueprint, instance, and management plane.
+
+Apps become shared blueprints. A regional app is laid out as `apps/<app>/{base,region}`, where `base` holds the region-neutral manifests and `region` holds the per-region binding that the fleet stamps once per region. A home-only app that never spans regions stays flat as `apps/<app>/`, with no regional split to carry weight it does not need.
+
+Infrastructure splits into a shared base and region archetypes. `infrastructure/base` holds the concerns common to every region. `infrastructure/profiles/edge-onprem` and `infrastructure/profiles/edge-cloud` hold the archetype-specific concerns: the on-prem edge profile carries Traefik, MetalLB, and Longhorn, and the cloud edge profile carries the cloud controller manager, the cloud CSI driver, and cloud load balancing. A region selects one profile rather than restating an infrastructure tree. The per-concern Kustomization split from [0058](0058-split-cluster-infrastructure-kustomizations.md) is preserved inside these profiles, so containment of a reconcile failure to a single concern survives the restructure.
+
+Reusable structure lives in `components/region/` as Kustomize Components, so the region-invariant shape of a stamped region is declared once and composed in rather than duplicated.
+
+The management plane is separated from the workload clusters into `fleet/`, holding the Cluster API ClusterClass and providers together with Rancher. This is a hub-and-spoke arrangement: the hub owns the fleet definition and the spokes are the workload clusters it stamps.
+
+Per-region values live in `regions/<name>.yaml`, one file per region, carrying the small set of regional scalars. Thin Flux entrypoints live in `clusters/<name>/`, each binding a region's values to the blueprints and declaring a Cluster API Cluster instance for that region. A region therefore exists only as `regions/<name>.yaml` plus `clusters/<name>/`; adding a region is adding those two things, and nothing else in the tree changes.
+
+Stamping is hybrid, matching each mechanism to what it carries best. Kustomize Components carry structure, the region-invariant shape that is the same for every region. Flux `postBuild.substituteFrom` injects the per-region scalars, the region name, zone, and domain, read from `regions/<name>.yaml`, the same substitution mechanism the cluster already uses for `cluster-domain`. Three guard rails keep the substitution honest. `StrictPostBuildSubstitutions` is enabled so a missing variable fails the reconcile loudly instead of rendering an empty string into a manifest. Variables carry `${var:=default}` defaults where a sensible default exists. Manifests that already carry Helm values, where a bare `${...}` is a Helm template and not a Flux variable, are annotated with `kustomize.toolkit.fluxcd.io/substitute: disabled` so Flux leaves them untouched.
+
+Home stays the hub and remains region-1, because the three physical nodes cannot be split across regions, and it stays the Flux sync root. Real spokes run their own Flux and pull per region, so the fleet is genuinely distributed rather than fanned out from one control point. The non-home regions, `hel1` and `ash`, are declared as blueprints and values but not provisioned, exactly as `peers/kustomization.yaml` already gates them behind a commented resource list. The fleet architecture is therefore demonstrated at zero running cost: the shape is real and reviewable, and no cloud region is billed until one is switched on.
+
+Two regional apps are chosen to exercise the range of difficulty the layout has to absorb. The blog is stateless and goes active-active for free, so it proves the easy end where a regional app is a base plus a trivial per-region binding. The chat service, open-webui with Ollama inference and chat and user state, sits at the hard end, because it forces the questions a stateless app never raises: how chat and user state is held across regions, and whether inference runs regionally next to each spoke or centrally at the hub. Carrying both keeps the layout honest against the workloads that will actually stress it.
+
+## Options considered
+
+- The fleet base-and-overlays layout with region archetypes and a thin per-cluster entrypoint, chosen. It matches the documented Flux guidance on repository structure and the flux2-kustomize-helm-example, where a base is shared and clusters bind to it. Its region archetypes are analogous to Kalypso cluster types and Rancher Fleet cluster groups, a well-trodden way to describe a class of cluster once and stamp many. It reaches the goal that adding a region touches only a values file and a thin entrypoint, and it composes cleanly with the Cluster API ClusterClass and Cluster split it deliberately mirrors.
+- Cluster-cohesive self-contained trees, one full `clusters/<name>/` subtree duplicated per region, rejected. It is the current shape extended by copy-paste, and copy-paste across regions is exactly the pattern that guarantees drift. A fix or a bump has to be applied by hand to every copy, the copies diverge the first time one is edited in isolation, and the divergence is invisible until a region behaves differently for a reason nobody recorded. The simplicity is real for one cluster and turns into a maintenance liability the moment there are two.
+- One hand-written overlay per region rather than a parameterised archetype, rejected. It removes the full-subtree duplication but replaces it with per-region boilerplate that grows with every region added. Each new region is another hand-authored overlay to write and keep in step, whereas an archetype plus a values file makes a new region a data change against an existing blueprint. The parameterised archetype is the durable form and the per-region overlay is the boilerplate form of the same idea.
+
+## Consequences
+
+Adding a region becomes a bounded, low-risk change. A new region is a `regions/<name>.yaml` and a thin `clusters/<name>/` entrypoint that selects an archetype and binds values, with no infrastructure tree to copy and no app manifests to restate. The blueprint is written and reviewed once, and every region inherits fixes and bumps to it without a per-region edit.
+
+The layout is more indirect than the single cluster-cohesive tree. A reader tracing what a region actually runs follows the entrypoint to a profile, into the base, and through the Components and substituted variables, rather than reading one self-contained subtree top to bottom. This is the same trade [0058](0058-split-cluster-infrastructure-kustomizations.md) made at the infrastructure layer, a little more surface for a lot less coupling, taken one level up to the fleet. The indirection is uniform and the payoff scales with the number of regions.
+
+The strict substitution guard rails move a class of error from silent to loud. A missing region variable fails the reconcile instead of rendering blank, which is the intended behaviour but means every variable a blueprint references has to be present in the region values or carry a default, and Helm-values manifests have to be annotated out of substitution or Flux will try to resolve their braces. This discipline is the cost of making the stamping trustworthy.
+
+The declared-but-not-provisioned regions carry a standing obligation to stay real. `hel1` and `ash` exist as blueprints and values that no running cluster exercises, so they can rot without anyone noticing until a region is switched on. Keeping them buildable in review, as the gated `peers/kustomization.yaml` already does, is what keeps the zero-cost demonstration honest rather than aspirational.
+
+The two chosen regional apps set the agenda for what the fleet has to answer next. The blog confirms the easy path works end to end. The chat service surfaces the cross-region storage question for chat and user state and the regional-versus-central-inference question for Ollama, and those are decisions this record deliberately leaves open, to be made against a running spoke rather than in the abstract. This is the reference-architecture direction for a home datacentre growing into a multi-region fleet, and it builds on [0058](0058-split-cluster-infrastructure-kustomizations.md) rather than replacing it.
