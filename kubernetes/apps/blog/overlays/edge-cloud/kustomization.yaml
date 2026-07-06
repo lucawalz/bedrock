@@ -4,3 +4,4 @@ resources:
   - ../../base
   - ingress.yaml
   - networkpolicies.yaml
+  - cloudflared.yaml
