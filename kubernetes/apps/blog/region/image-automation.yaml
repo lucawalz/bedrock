@@ -45,5 +45,5 @@ spec:
     push:
       branch: main
   update:
-    path: ./kubernetes/clusters/home/apps/blog/base
+    path: ./kubernetes/apps/blog/base
     strategy: Setters
