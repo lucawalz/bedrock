@@ -6,7 +6,7 @@ resources:
   - llm
   - homepage
   - rackpeek
-  - blog/overlays/edge-onprem
+  - blog
   - ntfy
   - paperless
   - velero-ui
