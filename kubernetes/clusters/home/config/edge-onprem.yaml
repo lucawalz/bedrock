@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/profiles/edge-onprem
+  path: ./kubernetes/infrastructure/controllers/onprem
   prune: true
   wait: true
   sourceRef:
@@ -24,7 +24,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/infrastructure/profiles/edge-onprem/metallb/config
+  path: ./kubernetes/infrastructure/controllers/onprem/metallb/config
   prune: true
   wait: true
   sourceRef:

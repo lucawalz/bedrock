@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/fleet/rancher
+  path: ./kubernetes/infrastructure/controllers/rancher
   prune: true
   wait: true
   sourceRef:
@@ -24,7 +24,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/fleet/observability
+  path: ./kubernetes/infrastructure/controllers/observability
   prune: true
   wait: true
   sourceRef:
@@ -42,7 +42,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/fleet/flux-operator/install
+  path: ./kubernetes/infrastructure/controllers/flux-operator
   prune: true
   wait: true
   sourceRef:

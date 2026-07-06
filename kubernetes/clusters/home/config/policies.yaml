@@ -6,7 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/policies
+  path: ./kubernetes/infrastructure/configs/policies
   prune: true
   wait: true
   sourceRef:
