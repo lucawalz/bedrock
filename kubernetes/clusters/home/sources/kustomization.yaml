@@ -19,7 +19,6 @@ resources:
   - helm/open-webui.yaml
   - helm/pgadmin.yaml
   - helm/stakater.yaml
-  - helm/cluster-autoscaler.yaml
   - helm/wrenix.yaml
   - helm/otwld.yaml
   - helm/goauthentik.yaml
