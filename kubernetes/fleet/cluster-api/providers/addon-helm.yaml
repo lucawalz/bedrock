@@ -1,0 +1,11 @@
+apiVersion: turtles-capi.cattle.io/v1alpha1
+kind: CAPIProvider
+metadata:
+  name: helm
+  namespace: caaph-system
+spec:
+  name: helm
+  type: addon
+  version: v0.6.4
+  fetchConfig:
+    url: https://github.com/kubernetes-sigs/cluster-api-addon-provider-helm/releases/v0.6.4/addon-components.yaml
