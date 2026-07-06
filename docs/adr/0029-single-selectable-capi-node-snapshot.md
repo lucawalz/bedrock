@@ -7,7 +7,7 @@ date: 2026-06-16
 
 ## Context
 
-CAPH provisions burst and reserved nodes from a Hetzner snapshot referenced by the worker `HCloudMachineTemplate` as `imageName: bedrock-capi-node`. CAPH resolves that value either as an image name or as the value of a `caph-image-name` label, and the snapshots are named per build as `bedrock-capi-node-<hash>`, so the reference resolves through the label rather than the name. The Packer build baked a static `caph-image-name=bedrock-capi-node` label onto every snapshot.
+CAPH provisions burst and reserved nodes from a Hetzner snapshot referenced by the worker `HCloudMachineTemplate` as `imageName: bedrock-pool-node`. CAPH resolves that value either as an image name or as the value of a `caph-image-name` label, and the snapshots are named per build as `bedrock-pool-node-<hash>`, so the reference resolves through the label rather than the name. The Packer build baked a static `caph-image-name=bedrock-pool-node` label onto every snapshot.
 
 [0027](0027-durable-capi-node-snapshot-pipeline.md) kept a retention floor of three generations and added a weekly rebuild that forces a build even when the node-image inputs are unchanged. Both interact badly with a static selection label. The floor leaves two or three generations carrying the same `caph-image-name`, and the forced weekly build mints a second snapshot with the same name and the same `bedrock-nixos-hash` as the existing one, which the prune never removed because it preserved every current-hash image. With more than one snapshot carrying the selection label, CAPH returns `ImageAmbiguous` and the node stays in `Provisioning` forever. The 2026-06-16 provisioning failure traced to this.
 
@@ -15,7 +15,7 @@ CAPH provisions burst and reserved nodes from a Hetzner snapshot referenced by t
 
 Exactly one snapshot carries the selection label at any time, and the workflow sets it rather than Packer.
 
-Packer no longer bakes `caph-image-name`; a freshly built snapshot starts without it and is not selectable until it is promoted. After the existing verify step confirms the current-hash snapshot exists, a promote step adds `caph-image-name=bedrock-capi-node` to the newest current-hash snapshot and removes it from every other snapshot, so a build that has not been verified can never be selected.
+Packer no longer bakes `caph-image-name`; a freshly built snapshot starts without it and is not selectable until it is promoted. After the existing verify step confirms the current-hash snapshot exists, a promote step adds `caph-image-name=bedrock-pool-node` to the newest current-hash snapshot and removes it from every other snapshot, so a build that has not been verified can never be selected.
 
 The prune additionally deletes older snapshots that share the current hash, keeping only the newest, alongside the existing retention floor for older generations. So a forced weekly rebuild of unchanged inputs replaces its predecessor instead of accumulating a duplicate. The prune still runs only after verification and never removes the newest current-hash snapshot, so the zero-image guarantee from [0027](0027-durable-capi-node-snapshot-pipeline.md) holds.
 

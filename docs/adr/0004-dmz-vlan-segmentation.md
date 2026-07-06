@@ -13,7 +13,7 @@ Once the cluster was meant to face the public internet, it could no longer sit o
 
 The cluster nodes live on an isolated VLAN 20, with the router as its inter-zone gateway. The router forwards between the cluster zone and the internet but drops traffic from the cluster into the home subnet, so the blast radius of a compromised workload stops at the VLAN boundary. This builds on the NixOS router from [0003](0003-nixos-router-over-opnsense.md): the segmentation is an nftables forward rule in `modules/router/firewall.nix`, with addressing in `network.nix` and reservations in `dhcp.nix`.
 
-VLAN 20 is now the trusted servers and cluster zone, addressed `10.20.0.0/24` with the router on `10.20.0.1`, and a separate VLAN 30 holds a true DMZ for any genuinely public-facing host. The cluster was originally numbered `192.168.20.0/24`; the concrete zoned addressing that replaces it, and the split of this single VLAN into a trusted zone and a real DMZ, are recorded in [0016](0016-concrete-zoned-ip-scheme.md), which supersedes the addressing in this record.
+The cluster was originally numbered `192.168.20.0/24`. The concrete zoned addressing that replaced it, and the later split of this VLAN into a trusted servers zone and a separate DMZ for any genuinely public-facing host, are recorded in [0016](0016-concrete-zoned-ip-scheme.md), which supersedes the addressing in this record.
 
 ## Options considered
 
