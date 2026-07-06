@@ -5,19 +5,10 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - bootstrap-secrets.yaml
-  - infrastructure.yaml
-  - storage.yaml
-  - networking.yaml
-  - monitoring.yaml
-  - security.yaml
-  - cnpg-operator.yaml
-  - cnpg-db.yaml
+  - base.yaml
+  - edge-onprem.yaml
+  - fleet.yaml
+  - home.yaml
   - policies.yaml
-  - authentik.yaml
-  - flux-operator.yaml
-  - cluster-api.yaml
-  - issuers.yaml
-  - metallb.yaml
   - apps.yaml
-
   - cluster-settings.yaml

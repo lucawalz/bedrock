@@ -1,0 +1,107 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-cnpg-db
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/infrastructure/cnpg
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-cnpg-operator
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-authentik
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/infrastructure/authentik
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-cert-manager
+    - name: cluster-edge-onprem
+    - name: cluster-namespaces
+    - name: cluster-secrets
+    - name: cluster-cnpg-db
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-pgadmin
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/infrastructure/pgadmin
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-cnpg-db
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-minio
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/infrastructure/minio
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-reaper
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/infrastructure/reaper
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-capi-providers
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-flux
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/clusters/home/flux-operator/instance
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-flux-operator
