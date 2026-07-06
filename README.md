@@ -12,27 +12,27 @@ A bare-metal Kubernetes homelab that lives entirely in Git.
 
 bedrock is the single source of truth for a small home cluster. Three mini PCs run [NixOS](https://nixos.org/) and a [K3s](https://k3s.io/) cluster, and a Raspberry Pi running NixOS acts as the router, gateway, and DNS for the network. Everything from each machine's disk layout to the workloads running on top is declared in this repository. Host configuration is applied with `nixos-rebuild`; cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a change to the `main` branch becomes a change to the cluster without anyone running commands against it by hand.
 
-The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. When the local nodes run short on capacity, the cluster-autoscaler provisions a temporary node on Hetzner Cloud directly through the hcloud API, and it joins the cluster over the tailnet.
+The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. When the local nodes run short on capacity, the companion horizon tool provisions an on-demand reserved node on Hetzner Cloud through the hcloud API, and it joins the cluster over the tailnet.
 
 ### Features
 
 - Fully declarative hosts with NixOS flakes, including disk partitioning ([disko](https://github.com/nix-community/disko)) and per-host secrets ([agenix](https://github.com/ryantm/agenix)).
 - GitOps reconciliation with Flux v2, carried declaratively by the Flux Operator: the repository is the only way state reaches the cluster.
-- Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and burst nodes reach the cluster over [Tailscale](https://tailscale.com/), where the Pi advertises the cluster subnet to the tailnet and NAT traversal needs no forwarded port.
+- Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admin and on-demand nodes reach the cluster over [Tailscale](https://tailscale.com/), where the Pi advertises the cluster subnet to the tailnet and NAT traversal needs no forwarded port.
 - Replicated storage with [Longhorn](https://longhorn.io/) and off-site backups to Hetzner object storage with [Velero](https://velero.io/).
-- On-demand cloud burst nodes booted from a pre-baked NixOS snapshot and joined to the cluster automatically.
+- On-demand cloud nodes booted from a pre-baked NixOS snapshot and joined to the cluster by the horizon tool.
 - Secrets committed encrypted with [SOPS](https://github.com/getsops/sops) and age, decrypted only inside the cluster.
 
 ### Background
 
-The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Burst capacity follows the same principle: the cluster-autoscaler adds and removes Hetzner nodes as load changes, with no manual step. The companion [horizon](https://github.com/lucawalz/horizon) tool is an optional CLI on top, used to add on-demand reserved nodes and to drive migrations, not to scale the cluster.
+The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. On-demand capacity follows the same principle: the companion [horizon](https://github.com/lucawalz/horizon) tool adds and removes reserved Hetzner nodes through the hcloud API and drives migrations. The elastic autoscaler that once scaled a pool from zero was retired in [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md), so capacity beyond the three local nodes is now added on demand rather than by a controller reacting to load.
 
 ## Architecture
 
 The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `llm`, `n8n`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
-Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. A burst node is provisioned by the cluster-autoscaler's native Hetzner provider, which runs as one in-cluster Deployment, reads a SOPS-encrypted hcloud token and per-pool config, and creates servers directly through the hcloud API from a pre-baked snapshot. The elastic pool scales from zero on pending-pod pressure; a node enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst`, and joins the cluster as another K3s agent over the tailnet. On scale-down the provider deletes the server and its Node object together. The reasoning is in [ADR 0041](docs/adr/0041-hetzner-autoscaling-native-provider.md).
-![Network topology: Internet through the ISP and Pi routers to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes, and the cluster-autoscaler provisioning a Hetzner Cloud burst pool while horizon adds reserved capacity and a separate cluster](docs/network-topology.svg)
+Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. Capacity beyond the three local nodes is added on demand by horizon, which reads a SOPS-encrypted hcloud token and creates a reserved server directly through the hcloud API from a pre-baked snapshot. The node enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst` and joins the cluster as another K3s agent over the tailnet; horizon deletes the server and its Node object together when it is no longer needed. The elastic autoscaler that once scaled a pool from zero on pending-pod pressure was retired in [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md).
+![Network topology: Internet through the ISP and Pi routers to the VLAN 20 cluster and VLAN 30 DMZ, with Tailscale, Cloudflare Tunnel, and Flux GitOps planes, and horizon adding on-demand reserved capacity on Hetzner Cloud through the hcloud API](docs/network-topology.svg)
 
 ## Hardware
 
@@ -115,7 +115,7 @@ Update a physical node after editing its NixOS configuration:
 nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
 ```
 
-Burst nodes are not added by hand. The cluster-autoscaler provisions them directly through the hcloud API from the pre-baked snapshot, enrolling each node into the tailnet with a tagged auth key and injecting the join token it needs through cloud-init, and removes them again when load drops.
+On-demand nodes are not added by hand. horizon provisions them directly through the hcloud API from the pre-baked snapshot, enrolling each node into the tailnet with a tagged auth key and injecting the join token it needs through cloud-init, and removes them again when they are no longer needed.
 
 Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then `cluster-infrastructure`, then `cluster-issuers`, then `cluster-apps`.
 
@@ -135,12 +135,14 @@ modules/
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets (the K3s join token)
 kubernetes/
-  clusters/home/       the live cluster Flux reconciles, including the cluster-autoscaler and the Cluster API manifests for reserved and standalone clusters
+  apps/                workloads Flux reconciles
+  infrastructure/      the platform, split into controllers/ (operator installs) and configs/ (their custom resources)
+  clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and secrets
 ```
 
 Workers have no directory of their own. `flake.nix` builds them from `lib.mkWorker`, so adding worker-3 takes one line in the flake and one public key in `secrets/secrets.nix`.
 
-The cluster-autoscaler under `kubernetes/clusters/home/infrastructure/cluster-api/cluster-autoscaler/` scales the elastic pool with its native Hetzner provider, creating and deleting servers directly through the hcloud API. The Cluster API and CAPH manifests alongside it are the substrate horizon uses for reserved and standalone clusters, not for the autoscaled pool. Flux reconciles all of it; nothing here is applied by hand.
+On-demand capacity beyond the three local nodes is provided by the companion horizon tool, which creates and deletes reserved Hetzner servers directly through the hcloud API. The Cluster API substrate a multi-region fleet once used was removed with the return to a single cluster ([ADR 0063](docs/adr/0063-return-to-single-region.md)); Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
 
 ## Services
 
