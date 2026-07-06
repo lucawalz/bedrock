@@ -63,3 +63,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0060. Private secrets repository with per-cluster keys](0060-private-secrets-repo-per-cluster-keys.md) (accepted)
 - [0061. Lay out the repository as a multi-region fleet](0061-multi-region-fleet-layout.md) (accepted)
 - [0062. Retire the elastic cluster-autoscaler](0062-retire-elastic-cluster-autoscaler.md) (accepted)
+- [0063. Return the homelab to a single region after the fleet demonstration](0063-return-to-single-region.md) (accepted but not yet implemented)
