@@ -1,0 +1,142 @@
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-cert-manager
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/cert-manager
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-issuers
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/cert-manager/cluster-issuers
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-cert-manager
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-storage
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/storage
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-cnpg-operator
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/cnpg-operator
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-security
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/security
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-delivery
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/delivery
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-notifications
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/notifications
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-alloy
+  namespace: flux-system
+spec:
+  interval: 10m
+  path: ./kubernetes/infrastructure/base/alloy
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-sources
+    - name: cluster-secrets
+    - name: cluster-namespaces

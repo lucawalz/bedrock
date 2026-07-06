@@ -2,14 +2,13 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-clusters="$repo_root/kubernetes/clusters/home"
 out="$repo_root/docs/inventory.md"
 
 rows=""
 while IFS= read -r f; do
   row="$(yq -r '[.metadata.name, .metadata.namespace, .spec.chart.spec.chart] | join("\t")' "$f")"
   rows="$rows$row"$'\n'
-done < <(find "$clusters/apps" "$clusters/infrastructure" -name helmrelease.yaml | sort)
+done < <(find "$repo_root/kubernetes" -name helmrelease.yaml | sort)
 
 sorted="$(printf '%s' "$rows" | LC_ALL=C sort)"
 

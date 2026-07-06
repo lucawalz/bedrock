@@ -2,11 +2,11 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-flux-operator
+  name: cluster-edge-onprem
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/flux-operator/install
+  path: ./kubernetes/infrastructure/profiles/edge-onprem
   prune: true
   wait: true
   sourceRef:
@@ -14,20 +14,22 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-sources
+    - name: cluster-secrets
     - name: cluster-namespaces
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
-  name: cluster-flux
+  name: cluster-metallb
   namespace: flux-system
 spec:
   interval: 10m
-  path: ./kubernetes/clusters/home/infrastructure/flux-operator/instance
+  path: ./kubernetes/infrastructure/profiles/edge-onprem/metallb/config
   prune: true
   wait: true
   sourceRef:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: cluster-flux-operator
+    - name: cluster-edge-onprem
+    - name: cluster-namespaces

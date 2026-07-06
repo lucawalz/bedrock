@@ -2,7 +2,7 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-rule="$here/../../kubernetes/clusters/home/infrastructure/monitoring/alert-rules/slo-blog.yaml"
+rule="$here/../../kubernetes/fleet/observability/alert-rules/slo-blog.yaml"
 gen="$here/slo-blog-rules.gen.yaml"
 
 nix shell nixpkgs#yq-go -c yq '.spec' "$rule" > "$gen"

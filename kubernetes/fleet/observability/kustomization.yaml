@@ -5,6 +5,5 @@ resources:
   - kube-prometheus-stack
   - loki
   - tempo
-  - alloy
   - alert-rules
   - networkpolicies.yaml

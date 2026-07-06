@@ -21,7 +21,7 @@ The site is served at the apex `lucawalz.dev`, a full migration off `blog.syslab
 
 ### Deploy automation
 
-The blog deploys through Flux Image Update Automation. Its CI tags each image with a sortable `main-<timestamp>-<shortsha>` tag alongside `latest`. An ImageRepository scans the GHCR package, an ImagePolicy selects the newest image by timestamp, and an ImageUpdateAutomation writes the resulting immutable tag into the blog Deployment and commits it to `main`. The Deployment image carries the `$imagepolicy` setter marker so the controller knows which field to update, and the automation's write path is scoped to `kubernetes/clusters/home/apps/blog`, so it can only touch blog manifests. This replaces an earlier manual tag-bump model that had rotted into a floating `latest` tag, where a rebuild left the pod spec unchanged and nothing redeployed.
+The blog deploys through Flux Image Update Automation. Its CI tags each image with a sortable `main-<timestamp>-<shortsha>` tag alongside `latest`. An ImageRepository scans the GHCR package, an ImagePolicy selects the newest image by timestamp, and an ImageUpdateAutomation writes the resulting immutable tag into the blog Deployment and commits it to `main`. The Deployment image carries the `$imagepolicy` setter marker so the controller knows which field to update, and the automation's write path is scoped to `kubernetes/apps/blog`, so it can only touch blog manifests. This replaces an earlier manual tag-bump model that had rotted into a floating `latest` tag, where a rebuild left the pod spec unchanged and nothing redeployed.
 
 ## Options considered
 
