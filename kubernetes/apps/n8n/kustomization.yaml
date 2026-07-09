@@ -6,4 +6,3 @@ resources:
   - networkpolicies.yaml
   - pdb.yaml
   - pvc.yaml
-  - volumesnapshot.yaml
