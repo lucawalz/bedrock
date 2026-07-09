@@ -25,6 +25,7 @@
       "--etcd-snapshot-retention=5"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
+    environmentFile = config.age.secrets.etcd-s3-credentials.path;
     clusterInit = true;
   };
 
@@ -34,9 +35,6 @@
     owner = "root";
     group = "root";
   };
-
-  systemd.services.k3s.serviceConfig.EnvironmentFile =
-    config.age.secrets.etcd-s3-credentials.path;
 
   # Firewall ports for K3s control plane
   networking.firewall.allowedTCPPorts = [
