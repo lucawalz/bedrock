@@ -25,4 +25,8 @@ in
     router
     luca
   ];
+  "etcd-s3-credentials.age".publicKeys = [
+    master
+    luca
+  ];
 }
