@@ -11,6 +11,7 @@
       "--disable=servicelb" # Using Flux-managed Traefik instead
       "--disable=traefik" # Using Flux-managed Traefik instead
       "--disable=local-storage" # Using Longhorn instead
+      "--disable=coredns"
       "--tls-san=10.20.0.10"
       "--node-ip=10.20.0.10"
       "--secrets-encryption"
