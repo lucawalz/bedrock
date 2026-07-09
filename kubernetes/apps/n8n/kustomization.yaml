@@ -5,3 +5,5 @@ resources:
   - ingress.yaml
   - networkpolicies.yaml
   - pdb.yaml
+  - pvc.yaml
+  - volumesnapshot.yaml

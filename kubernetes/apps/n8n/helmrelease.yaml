@@ -43,6 +43,7 @@ spec:
         failureThreshold: 6
       persistence:
         enabled: true
+        existingClaim: n8n-data
         size: 5Gi
         accessMode: ReadWriteOnce
       resources:
