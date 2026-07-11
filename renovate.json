@@ -16,6 +16,7 @@
   },
   "rebaseWhen": "conflicted",
   "platformAutomerge": true,
+  "timezone": "Europe/Berlin",
   "packageRules": [
     {
       "description": "Group all nixpkgs flake updates together",
@@ -27,6 +28,7 @@
       "matchManagers": ["flux"],
       "groupName": "infrastructure charts",
       "schedule": ["on sunday"],
+      "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
         "/cert-manager/",
         "/traefik/",
@@ -53,7 +55,7 @@
       "automerge": false
     },
     {
-      "description": "Hold stateful infrastructure minors for manual review",
+      "description": "Hold critical infrastructure minors and patches for manual review",
       "matchManagers": ["flux"],
       "matchPackageNames": [
         "/^longhorn$/",
@@ -61,11 +63,12 @@
         "/^kube-prometheus-stack$/",
         "/^velero$/",
         "/^cert-manager$/",
+        "/^traefik$/",
         "/^authentik$/",
         "/^rancher$/",
         "/^metallb$/"
       ],
-      "matchUpdateTypes": ["minor"],
+      "matchUpdateTypes": ["minor", "patch"],
       "automerge": false
     },
     {
