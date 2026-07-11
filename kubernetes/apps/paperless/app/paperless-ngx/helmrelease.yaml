@@ -29,7 +29,7 @@ spec:
       TZ: Europe/Vienna
       USERMAP_UID: "1000"
       USERMAP_GID: "1000"
-      PAPERLESS_URL: https://paperless.syslabs.dev
+      PAPERLESS_URL: https://paperless.${cluster_domain}
       PAPERLESS_DBENGINE: postgresql
       PAPERLESS_DBHOST: postgres-rw.postgres.svc.cluster.local
       PAPERLESS_DBPORT: "5432"

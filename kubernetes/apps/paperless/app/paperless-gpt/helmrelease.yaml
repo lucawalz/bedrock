@@ -33,7 +33,7 @@ spec:
               tag: "v0.25.1"
             env:
               PAPERLESS_BASE_URL: http://paperless-ngx.paperless.svc.cluster.local:8000
-              PAPERLESS_PUBLIC_URL: https://paperless.syslabs.dev
+              PAPERLESS_PUBLIC_URL: https://paperless.${cluster_domain}
               LLM_PROVIDER: ollama
               LLM_MODEL: llama3.2:3b
               OLLAMA_HOST: http://ollama-vision.llm.svc.cluster.local:11434
