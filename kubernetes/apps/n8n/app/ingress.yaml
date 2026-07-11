@@ -8,7 +8,7 @@ metadata:
     gethomepage.dev/name: n8n
     gethomepage.dev/group: Apps
     gethomepage.dev/icon: n8n.png
-    gethomepage.dev/href: https://n8n.syslabs.dev
+    gethomepage.dev/href: https://n8n.${cluster_domain}
     gethomepage.dev/podSelector: app.kubernetes.io/name=n8n
     gethomepage.dev/statusStyle: "dot"
 spec:
@@ -16,7 +16,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`n8n.syslabs.dev`)
+    - match: Host(`n8n.${cluster_domain}`)
       kind: Rule
       services:
         - name: n8n
