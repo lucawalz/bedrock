@@ -10,9 +10,9 @@ resources:
   - traefik.yaml
   - metallb-system.yaml
   - cert-manager.yaml
-  - cloudflare.yaml
+  - cloudflare-tunnel.yaml
   - monitoring.yaml
-  - longhorn.yaml
+  - longhorn-system.yaml
   - cattle-system.yaml
   - velero.yaml
   - llm.yaml
