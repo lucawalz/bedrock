@@ -5,3 +5,4 @@ resources:
   - serviceaccount.yaml
   - rbac.yaml
   - cronjob.yaml
+  - pod-reaper.yaml
