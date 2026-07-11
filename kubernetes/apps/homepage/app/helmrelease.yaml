@@ -1,0 +1,119 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homepage
+  namespace: homepage
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    global:
+      createDefaultServiceAccount: false
+    controllers:
+      homepage:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        serviceAccount:
+          name: homepage
+        initContainers:
+          copy-config:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.5.0
+            command: ["sh", "-c", "cp -L /config-src/* /app/config/"]
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+        containers:
+          app:
+            image:
+              repository: ghcr.io/gethomepage/homepage
+              tag: v1.5.0
+            env:
+              MY_POD_IP:
+                valueFrom:
+                  fieldRef:
+                    fieldPath: status.podIP
+              HOMEPAGE_ALLOWED_HOSTS: home.${cluster_domain},$$(MY_POD_IP):3000
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /api/healthcheck
+                    port: 3000
+                  initialDelaySeconds: 5
+                  periodSeconds: 15
+              readiness:
+                enabled: false
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+    service:
+      app:
+        controller: homepage
+        ports:
+          http:
+            port: 3000
+    persistence:
+      config-src:
+        type: configMap
+        name: homepage
+        advancedMounts:
+          homepage:
+            copy-config:
+              - path: /config-src
+                readOnly: true
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
+      logs:
+        type: emptyDir
+        advancedMounts:
+          homepage:
+            app:
+              - path: /app/config/logs
+      next-cache:
+        type: emptyDir
+        advancedMounts:
+          homepage:
+            app:
+              - path: /app/.next/cache

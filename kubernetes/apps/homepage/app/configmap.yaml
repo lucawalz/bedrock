@@ -53,14 +53,14 @@ data:
     - Cluster:
         - Rancher:
             - icon: rancher.png
-              href: https://rancher.syslabs.dev
+              href: https://rancher.${cluster_domain}
         - Grafana:
             - icon: grafana.png
-              href: https://grafana.syslabs.dev
+              href: https://grafana.${cluster_domain}
     - Cluster ops:
         - Rancher Cluster Management:
             - icon: rancher.png
-              href: https://rancher.syslabs.dev/dashboard/c/local/manager/provisioning.cattle.io.cluster
+              href: https://rancher.${cluster_domain}/dashboard/c/local/manager/provisioning.cattle.io.cluster
         - bedrock:
             - icon: github.png
               href: https://github.com/lucawalz/bedrock
