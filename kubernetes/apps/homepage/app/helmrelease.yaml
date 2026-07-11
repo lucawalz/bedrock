@@ -47,11 +47,12 @@ spec:
               repository: ghcr.io/gethomepage/homepage
               tag: v1.5.0
             env:
-              MY_POD_IP:
+              - name: MY_POD_IP
                 valueFrom:
                   fieldRef:
                     fieldPath: status.podIP
-              HOMEPAGE_ALLOWED_HOSTS: home.${cluster_domain},$$(MY_POD_IP):3000
+              - name: HOMEPAGE_ALLOWED_HOSTS
+                value: home.${cluster_domain},$$(MY_POD_IP):3000
             probes:
               liveness:
                 enabled: true
