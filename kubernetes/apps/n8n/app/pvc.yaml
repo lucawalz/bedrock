@@ -12,7 +12,3 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  dataSource:
-    apiGroup: snapshot.storage.k8s.io
-    kind: VolumeSnapshot
-    name: n8n-migrate-3replica
