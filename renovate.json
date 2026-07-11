@@ -14,7 +14,7 @@
   "github-actions": {
     "enabled": true
   },
-  "rebaseWhen": "behind-base-branch",
+  "rebaseWhen": "conflicted",
   "platformAutomerge": true,
   "packageRules": [
     {
