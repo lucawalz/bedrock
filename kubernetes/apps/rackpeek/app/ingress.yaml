@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: rackpeek
+  namespace: rackpeek
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: RackPeek
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: rackpeek.png
+    gethomepage.dev/href: https://rackpeek.${cluster_domain}
+    gethomepage.dev/podSelector: app.kubernetes.io/name=rackpeek
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`rackpeek.${cluster_domain}`)
+      kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
+      services:
+        - name: rackpeek
+          port: 8080
+  tls: {}

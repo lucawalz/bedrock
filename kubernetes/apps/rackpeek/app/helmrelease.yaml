@@ -1,0 +1,109 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rackpeek
+  namespace: rackpeek
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    controllers:
+      rackpeek:
+        initContainers:
+          seed-config:
+            image:
+              repository: busybox
+              tag: 1.37.0@sha256:9532d8c39891ca2ecde4d30d7710e01fb739c87a8b9299685c63704296b16028
+            command:
+              - sh
+              - -c
+              - cp /config-seed/config.yaml /app/config/config.yaml
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+        containers:
+          app:
+            image:
+              repository: aptacode/rackpeek
+              tag: v2.0.0@sha256:3b82af1f323346d90ce76fe4b2ad2e72cf3a2413606bcdc606b2dc23aa90d523
+            env:
+              RPK_YAML_DIR: /app/config
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 15
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /health
+                    port: 8080
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 25m
+                memory: 128Mi
+              limits:
+                cpu: 200m
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: rackpeek
+        ports:
+          http:
+            port: 8080
+    persistence:
+      config-seed:
+        type: configMap
+        name: rackpeek-config
+        globalMounts:
+          - path: /config-seed
+            readOnly: true
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
