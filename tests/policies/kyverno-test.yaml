@@ -3,11 +3,11 @@ kind: Test
 metadata:
   name: pod-security-and-limits
 policies:
-  - ../../kubernetes/clusters/home/policies/require-resources.yaml
-  - ../../kubernetes/clusters/home/policies/require-run-as-non-root.yaml
-  - ../../kubernetes/clusters/home/policies/disallow-privilege-escalation.yaml
-  - ../../kubernetes/clusters/home/policies/require-drop-all-capabilities.yaml
-  - ../../kubernetes/clusters/home/policies/disallow-latest-tag.yaml
+  - ../../kubernetes/infrastructure/configs/policies/require-resources.yaml
+  - ../../kubernetes/infrastructure/configs/policies/require-run-as-non-root.yaml
+  - ../../kubernetes/infrastructure/configs/policies/disallow-privilege-escalation.yaml
+  - ../../kubernetes/infrastructure/configs/policies/require-drop-all-capabilities.yaml
+  - ../../kubernetes/infrastructure/configs/policies/disallow-latest-tag.yaml
 resources:
   - resources/compliant.yaml
   - resources/violating.yaml

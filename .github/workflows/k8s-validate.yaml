@@ -26,23 +26,6 @@ jobs:
           # Use the community-maintained CRD schema catalog instead
           git clone --depth=1 https://github.com/datreeio/CRDs-catalog /tmp/crds-catalog
 
-      - name: Generate CAPI provider CRD schemas
-        # Catalog lags the provider versions this repo pins; generate accurate schemas from each pinned release
-        run: |
-          pip install --quiet pyyaml
-          curl -sSL https://raw.githubusercontent.com/yannh/kubeconform/master/scripts/openapi2jsonschema.py \
-            -o /tmp/openapi2jsonschema.py
-          mkdir -p /tmp/crd-schemas
-          providers_dir=kubernetes/fleet/cluster-api/providers
-          read_version() { grep -E '^[[:space:]]*version:' "$1" | head -1 | awk '{print $2}'; }
-          caph_ver=$(read_version "$providers_dir/infrastructure-hetzner.yaml")
-          k3s_ver=$(read_version "$providers_dir/bootstrap-k3s.yaml")
-          cd /tmp/crd-schemas
-          python3 /tmp/openapi2jsonschema.py \
-            "https://github.com/syself/cluster-api-provider-hetzner/releases/download/${caph_ver}/infrastructure-components.yaml" \
-            "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_ver}/bootstrap-components.yaml" \
-            "https://github.com/k3s-io/cluster-api-k3s/releases/download/${k3s_ver}/control-plane-components.yaml"
-
       - name: Validate Kubernetes manifests
         run: |
           find kubernetes/ -name "*.yaml" \
@@ -53,7 +36,6 @@ jobs:
               -strict \
               -ignore-missing-schemas \
               -schema-location default \
-              -schema-location '/tmp/crd-schemas/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
               -schema-location '/tmp/crds-catalog/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
               -kubernetes-version 1.35.0 \
               -summary
