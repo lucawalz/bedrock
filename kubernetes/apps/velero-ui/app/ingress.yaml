@@ -8,7 +8,7 @@ metadata:
     gethomepage.dev/name: Velero
     gethomepage.dev/group: Observability
     gethomepage.dev/icon: velero.png
-    gethomepage.dev/href: https://velero.syslabs.dev
+    gethomepage.dev/href: https://velero.${cluster_domain}
     gethomepage.dev/podSelector: app.kubernetes.io/name=velero-ui
     gethomepage.dev/statusStyle: "dot"
 spec:
@@ -16,7 +16,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`velero.syslabs.dev`)
+    - match: Host(`velero.${cluster_domain}`)
       kind: Rule
       services:
         - name: velero-ui
