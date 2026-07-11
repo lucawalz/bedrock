@@ -5,7 +5,7 @@ metadata:
   namespace: llm
 spec:
   interval: 30m
-  timeout: 15m
+  timeout: 60m
   chart:
     spec:
       chart: ollama
@@ -61,3 +61,13 @@ spec:
       limits:
         cpu: "10000m"
         memory: "9Gi"
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: ollama-vision
+            patch: |
+              - op: add
+                path: /spec/progressDeadlineSeconds
+                value: 3600
