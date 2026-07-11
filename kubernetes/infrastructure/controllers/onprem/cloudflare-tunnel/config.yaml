@@ -14,8 +14,6 @@ data:
     ingress:
       - hostname: chat.syslabs.dev
         service: https://traefik.traefik.svc.cluster.local:443
-      - hostname: llm.syslabs.dev
-        service: https://traefik.traefik.svc.cluster.local:443
       - hostname: n8n.syslabs.dev
         service: https://traefik.traefik.svc.cluster.local:443
       - hostname: lucawalz.dev
