@@ -8,12 +8,7 @@ metadata:
     policies.kyverno.io/severity: medium
     policies.kyverno.io/subject: Pod
 spec:
-  validationFailureAction: Audit
-  validationFailureActionOverrides:
-    - action: Enforce
-      namespaces:
-        - blog
-        - homepage
+  validationFailureAction: Enforce
   background: true
   rules:
     - name: require-requests-limits
@@ -23,7 +18,7 @@ spec:
               kinds:
                 - Pod
       validate:
-        message: "CPU and memory resource requests and limits are required for every container."
+        message: "CPU and memory requests and a memory limit are required for every container."
         pattern:
           spec:
             containers:
@@ -32,5 +27,4 @@ spec:
                     cpu: "?*"
                     memory: "?*"
                   limits:
-                    cpu: "?*"
                     memory: "?*"
