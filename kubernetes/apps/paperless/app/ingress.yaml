@@ -8,7 +8,7 @@ metadata:
     gethomepage.dev/name: Paperless
     gethomepage.dev/group: Documents
     gethomepage.dev/icon: paperless-ngx.png
-    gethomepage.dev/href: https://paperless.syslabs.dev
+    gethomepage.dev/href: https://paperless.${cluster_domain}
     gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-ngx
     gethomepage.dev/statusStyle: "dot"
 spec:
@@ -16,7 +16,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`paperless.syslabs.dev`)
+    - match: Host(`paperless.${cluster_domain}`)
       kind: Rule
       services:
         - name: paperless-ngx
@@ -33,7 +33,7 @@ metadata:
     gethomepage.dev/name: Paperless-AI
     gethomepage.dev/group: Documents
     gethomepage.dev/icon: paperless-ngx.png
-    gethomepage.dev/href: https://paperless-ai.syslabs.dev
+    gethomepage.dev/href: https://paperless-ai.${cluster_domain}
     gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-ai
     gethomepage.dev/statusStyle: "dot"
 spec:
@@ -41,7 +41,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`paperless-ai.syslabs.dev`)
+    - match: Host(`paperless-ai.${cluster_domain}`)
       kind: Rule
       services:
         - name: paperless-ai
@@ -58,7 +58,7 @@ metadata:
     gethomepage.dev/name: Paperless-GPT
     gethomepage.dev/group: Documents
     gethomepage.dev/icon: paperless-ngx.png
-    gethomepage.dev/href: https://paperless-gpt.syslabs.dev
+    gethomepage.dev/href: https://paperless-gpt.${cluster_domain}
     gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-gpt
     gethomepage.dev/statusStyle: "dot"
 spec:
@@ -66,7 +66,7 @@ spec:
     - web
     - websecure
   routes:
-    - match: Host(`paperless-gpt.syslabs.dev`)
+    - match: Host(`paperless-gpt.${cluster_domain}`)
       kind: Rule
       services:
         - name: paperless-gpt
