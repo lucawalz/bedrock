@@ -66,3 +66,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0063. Return the homelab to a single region after the fleet demonstration](0063-return-to-single-region.md) (accepted, implemented)
 - [0064. Off-node etcd S3 snapshots for the single-node control plane](0064-off-node-etcd-s3-snapshots.md) (accepted)
 - [0065. Adopt CoreDNS into Flux for DNS high availability](0065-coredns-flux-high-availability.md) (accepted)
+- [0066. Standardize app delivery with per-app Kustomizations and shared components](0066-standardize-app-delivery-per-app-kustomizations.md) (accepted)
