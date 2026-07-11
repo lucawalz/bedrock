@@ -30,7 +30,7 @@ spec:
           app:
             image:
               repository: ghcr.io/icereed/paperless-gpt
-              tag: "v0.25.1"
+              tag: "v0.26.1"
             env:
               PAPERLESS_BASE_URL: http://paperless-ngx.paperless.svc.cluster.local:8000
               PAPERLESS_PUBLIC_URL: https://paperless.${cluster_domain}
