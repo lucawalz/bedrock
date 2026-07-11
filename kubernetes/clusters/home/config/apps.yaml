@@ -7,16 +7,10 @@ metadata:
 spec:
   interval: 10m
   path: ./kubernetes/apps
-  prune: false
-  wait: true
+  prune: true
+  wait: false
   sourceRef:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: cluster-cert-manager
-    - name: cluster-issuers
-    - name: cluster-edge-onprem
-    - name: cluster-storage
-    - name: cluster-delivery
     - name: cluster-namespaces
-    - name: cluster-cnpg-db
