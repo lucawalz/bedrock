@@ -1,0 +1,40 @@
+---
+status: accepted
+date: 2026-07-11
+---
+
+# 0066. Standardize app delivery with per-app Kustomizations and shared components
+
+## Context
+
+Every application under `kubernetes/apps/` reconciled through one Flux Kustomization named `cluster-apps`, pointed at `./kubernetes/apps`, which built all eight apps together with `wait: true` and `prune: true`. Adding an app meant hand-authoring roughly seven files and wiring them by copy and paste: a workload manifest, a Traefik `IngressRoute`, a `NetworkPolicy` set, a namespace file, and edits to central kustomization lists. The apps did not even share a shape. Some brought their own upstream chart, some were hand-rolled raw Deployments, and only a few used the bjw-s `app-template` chart, so each new app was a fresh opportunity for the small mistake that keeps a workload from coming up.
+
+The boilerplate concentrated in two files that were copied almost verbatim per app: the Traefik `IngressRoute` and the `NetworkPolicy` set, whose default-deny, allow-dns, and allow-from-traefik policies repeated everywhere and whose only real variation was the app name, the hostname, and the port. The domain `syslabs.dev` was hardcoded in every ingress. There was no variable substitution anywhere, no shared component library, and no per-app reconciliation boundary: a single stalled app held the whole `cluster-apps` layer not-ready, the same single-failure-domain problem that ADR 0058 solved for the infrastructure layer.
+
+## Decision
+
+Adopt the mainstream Flux pattern of a per-app Kustomization plus a small shared component library, and standardize every app on it.
+
+Each app becomes a directory holding a Flux `Kustomization` (`ks.yaml`, in `flux-system`) that points at an `app/` subdirectory carrying the manifests. `cluster-apps` no longer builds the workloads directly; it lays down the eight per-app Kustomizations, each of which reconciles on its own with `wait: true` and `prune: true`. A failure in one app now holds only that app not-ready, and `flux get kustomizations` names the culprit directly. This is the same isolation rationale as 0058, applied one level down.
+
+Cross-cutting resources move into `kubernetes/components/` as Kustomize components, referenced by a single line per app. The `authentik-middleware` component holds the forward-auth `Middleware` that homepage and rackpeek had duplicated. The `network-policies/base` component holds the namespace-wide default-deny and allow-dns shared by most apps. The `network-policies/traefik-ingress` component holds the from-traefik ingress policy parameterized by `${APP}` and `${APP_PORT}`. Per-app variables arrive through Flux `postBuild.substitute` in each `ks.yaml`, and the cluster domain arrives through `postBuild.substituteFrom` a `cluster-settings` ConfigMap, so `syslabs.dev` is written once. The ConfigMap moves to the `flux-system` namespace, where substitution resolves it, and its key is renamed to `cluster_domain` because envsubst identifiers cannot contain a hyphen.
+
+The `IngressRoute` stays a per-app file rather than a component. Its host prefix, service, port, middlewares, route count, and homepage discovery annotations vary independently and are not derivable from the app name, so templating it would be a leaky abstraction; the one shared change is that its host reads `${cluster_domain}`. App-specific network policies that the components do not cover, such as the paperless egress to CloudNativePG and the homepage egress to the Kubernetes API, stay as per-app files alongside the component reference.
+
+Only three apps change chart. ntfy, homepage, and rackpeek move onto `app-template`, the first from an upstream chart and the last two from raw manifests, because those are genuinely a Deployment, a Service, and a mount that the generic chart renders cleanly. The apps whose upstream chart encodes real logic keep it: n8n, paperless-ngx, the two ollama instances, open-webui, and velero-ui. Forcing those onto `app-template` would re-implement their probes, model-pull orchestration, and coordinated volumes by hand, which is exactly the source of come-up failures this change is meant to reduce. blog stays raw manifests: its Flagger canary and Flux image-automation setter marker do not survive being wrapped in a Helm release, and its `ks.yaml` carries no `postBuild` so envsubst never touches the `$imagepolicy` and `$ts` markers. velero-ui keeps its app-scoped network policies and takes no components, because it shares the `velero` namespace with the backup controller and a namespace-wide default-deny would cut the server off.
+
+A pre-merge validation gate makes the substitution indirection safe. A CI job renders every app with `flux build --dry-run`, which applies the inline substitutions, and pipes the result through `kubeconform`, so a broken render fails in the pull request rather than in the cluster. A companion check fails on any unescaped literal `$` in a substituted file, the one real envsubst footgun, which otherwise silently empties a value; the single place it is needed, the homepage `$(MY_POD_IP)` reference, is written `$$(MY_POD_IP)`. The same script backs a local pre-commit hook.
+
+Carry out the cutover as the adopt-then-reprune migration that ADR 0058 established. Set `cluster-apps` to `prune: false`, let the eight per-app Kustomizations adopt the running objects, confirm they report healthy over what they now own, then re-enable `prune: true` in a separate commit. The apps that keep their chart re-home with no disruption. The two raw-to-Helm apps are the exception: Helm refuses to install over a resource it does not already own, so the old raw Deployment and Service for homepage and rackpeek must be pruned before their Helm releases converge, which means those two stateless dashboards restart once pruning is re-enabled.
+
+## Options considered
+
+- Keep the single `cluster-apps` Kustomization and hand-author each app. This is the status quo. It needs no migration but leaves the copy-paste boilerplate, the hardcoded domain, the three divergent app shapes, and the shared failure domain in place, and every new app stays a fresh chance for a come-up failure.
+- Standardize the wiring with a templating engine or a ResourceSet generator. A Flux `ResourceSet` or an external generator could render all apps from one template. For eight apps this is more machinery than the problem warrants, and it moves the applied manifests behind another layer of indirection, which works against the goal of keeping renders easy to read and debug. Rejected as over-engineering for this scale.
+- Adopt per-app Kustomizations with a small fixed set of shared components and a two-variable substitution. This is the chosen path. Components exist only for genuinely repeated resources, the variable set is `APP`, `APP_PORT`, and `cluster_domain`, and everything renders to plain reviewable YAML that the CI gate validates. It removes the boilerplate and the shared failure domain without introducing a generator to maintain.
+
+## Consequences
+
+Onboarding an app drops from hand-authoring roughly seven files to copying a small directory, setting two variables and a hostname, and referencing the shared components. Cross-cutting changes happen in one place: editing the base network policy or the auth middleware updates every app that references it instead of requiring the same edit in eight files. Reconciliation is isolated per app, so one broken app no longer stalls the others and its failure is named directly.
+
+The costs are a thin layer of substitution indirection and more objects to track. The indirection is bounded to three variables and made safe by the validation gate and the dollar-escape check, and the rendered output stays visible through `flux build`. Where there was one Kustomization there are now nine, which is the same trade 0058 made one level up: a little more surface for a lot less coupling. The component API is `v1alpha1`, stable in practice but not yet graduated, which is an accepted dependency.

@@ -118,7 +118,7 @@ On-demand nodes are not added by hand. horizon provisions them directly through 
 
 Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then `cluster-infrastructure`, then `cluster-issuers`, then `cluster-apps`.
 
-To add a service: create its namespace under `namespaces/`, add a HelmRepository under `sources/helm/` if the chart needs a new one, declare the workload as a HelmRelease under `apps/` or `infrastructure/` and list it in the nearest kustomization, and for external access add a Traefik IngressRoute and map the hostname into the Cloudflare tunnel. Encrypt any secret with SOPS into the matching `secrets/` folder. Commit to `main`, and Flux applies it on its next pass.
+To add a service: create its namespace under `namespaces/` and list it in that folder's kustomization, and add a HelmRepository under `sources/helm/` if the chart needs a new one. Then create `apps/<name>/` by copying an existing app: a `ks.yaml` Flux Kustomization that sets `APP`, `APP_PORT`, and the app's dependencies, and an `app/` directory holding the workload, a Traefik IngressRoute whose host reads `${cluster_domain}`, and a `kustomization.yaml` that pulls in the shared `components/` for network policies and forward-auth. Add the directory to `apps/kustomization.yaml`. Encrypt any secret with SOPS into the matching `secrets/` folder. Commit to `main`, and Flux applies it on its next pass.
 
 ## Repository layout
 
