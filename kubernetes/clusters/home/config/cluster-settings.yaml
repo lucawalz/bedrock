@@ -2,8 +2,8 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: cluster-settings
-  namespace: default
+  namespace: flux-system
 data:
-  cluster-domain: "syslabs.dev"
+  cluster_domain: "syslabs.dev"
   timezone: "Europe/Berlin"
 
