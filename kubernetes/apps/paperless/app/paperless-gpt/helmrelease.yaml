@@ -67,6 +67,13 @@ spec:
               capabilities:
                 drop:
                   - ALL
+                add:
+                  - CHOWN
+                  - FOWNER
+                  - DAC_OVERRIDE
+                  - SETUID
+                  - SETGID
+                  - SETPCAP
     defaultPodOptions:
       securityContext:
         fsGroup: 1000
