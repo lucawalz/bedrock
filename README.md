@@ -104,7 +104,8 @@ Change anything under `kubernetes/` by committing to `main`. Flux applies it wit
 $ flux get kustomizations
 NAME                     READY   MESSAGE
 cluster-sources          True    Applied revision: main@sha1:...
-cluster-infrastructure   True    Applied revision: main@sha1:...
+cluster-storage          True    Applied revision: main@sha1:...
+cluster-edge-onprem      True    Applied revision: main@sha1:...
 cluster-apps             True    Applied revision: main@sha1:...
 ```
 
@@ -116,7 +117,7 @@ nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
 
 On-demand nodes are not added by hand. horizon provisions them directly through the hcloud API from the pre-baked snapshot, enrolling each node into the tailnet with a tagged auth key and injecting the join token it needs through cloud-init, and removes them again when they are no longer needed.
 
-Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then `cluster-infrastructure`, then `cluster-issuers`, then `cluster-apps`.
+Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then the platform Kustomizations under `infrastructure/` (`cluster-cert-manager`, `cluster-storage`, `cluster-edge-onprem`, and the rest, each carrying its own `dependsOn`), then `cluster-issuers` on top of cert-manager, and finally `cluster-apps`.
 
 To add a service: create its namespace under `namespaces/` and list it in that folder's kustomization, and add a HelmRepository under `sources/helm/` if the chart needs a new one. Then create `apps/<name>/` by copying an existing app: a `ks.yaml` Flux Kustomization that sets `APP`, `APP_PORT`, and the app's dependencies, and an `app/` directory holding the workload, a Traefik IngressRoute whose host reads `${cluster_domain}`, and a `kustomization.yaml` that pulls in the shared `components/` for network policies and forward-auth. Add the directory to `apps/kustomization.yaml`. Encrypt any secret with SOPS into the matching `secrets/` folder. Commit to `main`, and Flux applies it on its next pass.
 
@@ -130,11 +131,13 @@ hosts/
   master/              control-plane node, with its disk layout and hardware scan
 modules/
   k3s/                 server, agent, and Hetzner burst-agent roles
-  router/              firewall, NAT, and the Tailscale subnet router
+  router/              firewall, NAT, DHCP, and DNS on the Pi
+  tailscale/           the subnet router that advertises the LAN to the tailnet
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets (the K3s join token)
 kubernetes/
-  apps/                workloads Flux reconciles
+  apps/                workloads Flux reconciles, one directory per app
+  components/          shared kustomize components (network policies, forward-auth)
   infrastructure/      the platform, split into controllers/ (operator installs) and configs/ (their custom resources)
   clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and secrets
 ```
@@ -154,7 +157,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Blog | static Hugo site | public (`lucawalz.dev`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
 | Grafana | dashboards for the Prometheus stack | internal |
-| Rancher | cluster management UI | internal |
+| Rancher | cluster management UI | public (`rancher`) |
 | Authentik | single sign-on and identity provider | internal (`auth`) |
 | pgAdmin | Postgres administration | internal |
 | Longhorn | storage management UI | internal |
@@ -163,8 +166,9 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Traefik | router dashboard | internal |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
+| Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 
-Ollama serves the local models on worker-1 and stays internal; models are pulled at runtime rather than pinned in the manifests. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its only declared database backs Authentik, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
+Two Ollama instances serve the local models and stay internal, one pinned to each worker: a general model on worker-1 and a vision model on worker-2, each declared in its HelmRelease and pulled at container startup. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik and Paperless, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
 
 ## Security
 
