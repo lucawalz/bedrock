@@ -53,6 +53,7 @@ spec:
                     name: litellm
                     key: DATABASE_URL
               STORE_MODEL_IN_DB: "True"
+              HOME: /tmp
             probes:
               liveness:
                 enabled: true
@@ -83,6 +84,12 @@ spec:
                   - ALL
               seccompProfile:
                 type: RuntimeDefault
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
     service:
       app:
         controller: litellm
