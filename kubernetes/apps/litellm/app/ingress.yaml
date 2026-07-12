@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: litellm
+  namespace: litellm
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: LiteLLM
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: litellm.png
+    gethomepage.dev/href: https://litellm.${cluster_domain}
+    gethomepage.dev/podSelector: app.kubernetes.io/name=litellm
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`litellm.${cluster_domain}`)
+      kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
+      services:
+        - name: litellm
+          port: 4000
+  tls: {}

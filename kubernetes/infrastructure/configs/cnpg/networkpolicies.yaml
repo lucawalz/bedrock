@@ -54,6 +54,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: paperless
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: litellm
         - podSelector:
             matchLabels:
               app.kubernetes.io/name: pgadmin4

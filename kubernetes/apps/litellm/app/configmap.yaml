@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: litellm-config
+  namespace: litellm
+data:
+  config.yaml: |
+    model_list:
+      - model_name: default-chat
+        litellm_params:
+          model: ollama_chat/qwen2.5:7b
+          api_base: http://ollama.llm.svc.cluster.local:11434
+      - model_name: fast
+        litellm_params:
+          model: ollama_chat/llama3.2:3b
+          api_base: http://ollama.llm.svc.cluster.local:11434
+      - model_name: vision
+        litellm_params:
+          model: ollama/minicpm-v:8b
+          api_base: http://ollama-vision.llm.svc.cluster.local:11434
+      - model_name: embed
+        litellm_params:
+          model: ollama/nomic-embed-text
+          api_base: http://ollama.llm.svc.cluster.local:11434
+    general_settings:
+      master_key: os.environ/LITELLM_MASTER_KEY
+    litellm_settings:
+      drop_params: true
