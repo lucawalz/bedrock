@@ -1,0 +1,48 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: flagger-loadtester
+  namespace: flagger
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: loadtester
+      version: "0.37.0"
+      sourceRef:
+        kind: HelmRepository
+        name: flagger
+        namespace: flux-system
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    fullnameOverride: flagger-loadtester
+    resources:
+      requests:
+        cpu: 10m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+    securityContext:
+      enabled: true
+      context:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 101
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+    podSecurityContext:
+      enabled: true
+      context:
+        runAsNonRoot: true
+        fsGroup: 101
