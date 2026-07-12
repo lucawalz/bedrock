@@ -6,6 +6,7 @@ resources:
 - ingress.yaml
 - recurringjobs.yaml
 - storageclass-disposable.yaml
+- storageclass-retain.yaml
 patches:
 - patch: |-
     - op: add
