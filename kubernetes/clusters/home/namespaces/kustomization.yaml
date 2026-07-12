@@ -26,3 +26,4 @@ resources:
   - reloader.yaml
   - kyverno.yaml
   - flagger.yaml
+  - litellm.yaml

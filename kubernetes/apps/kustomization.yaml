@@ -10,3 +10,4 @@ resources:
   - ntfy
   - paperless
   - velero-ui
+  - litellm

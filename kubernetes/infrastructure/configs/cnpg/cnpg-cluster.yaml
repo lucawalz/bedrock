@@ -36,6 +36,10 @@ spec:
         login: true
         passwordSecret:
           name: pg-paperless
+      - name: litellm
+        login: true
+        passwordSecret:
+          name: pg-litellm
   backup:
     retentionPolicy: "30d"
     barmanObjectStore:

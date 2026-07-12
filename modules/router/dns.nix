@@ -86,6 +86,11 @@ in
             enabled = true;
           }
           {
+            domain = "litellm.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "longhorn.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;

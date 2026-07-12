@@ -246,6 +246,25 @@ data:
           name: RackPeek
           slug: rackpeek
           provider: !KeyOf prov-rackpeek
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-litellm
+        identifiers:
+          name: litellm-forward-auth
+        attrs:
+          name: litellm-forward-auth
+          mode: forward_domain
+          external_host: https://litellm.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-litellm
+        identifiers:
+          slug: litellm
+        attrs:
+          name: LiteLLM
+          slug: litellm
+          provider: !KeyOf prov-litellm
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -260,3 +279,4 @@ data:
             - !KeyOf prov-longhorn
             - !KeyOf prov-rackpeek
             - !KeyOf prov-homepage
+            - !KeyOf prov-litellm
