@@ -1,53 +1,4 @@
 apiVersion: flagger.app/v1beta1
-kind: MetricTemplate
-metadata:
-  name: blog-request-success-rate
-  namespace: blog
-spec:
-  provider:
-    type: prometheus
-    address: http://kube-prometheus-stack-prometheus.monitoring:9090
-  query: |
-    100 - (
-      sum(
-        rate(
-          traefik_service_requests_total{
-            service=~"{{ namespace }}-{{ target }}-canary-[0-9a-zA-Z-]+@kubernetescrd",
-            code=~"5.."
-          }[{{ interval }}]
-        )
-      )
-      /
-      sum(
-        rate(
-          traefik_service_requests_total{
-            service=~"{{ namespace }}-{{ target }}-canary-[0-9a-zA-Z-]+@kubernetescrd"
-          }[{{ interval }}]
-        )
-      ) * 100
-    )
----
-apiVersion: flagger.app/v1beta1
-kind: MetricTemplate
-metadata:
-  name: blog-request-duration
-  namespace: blog
-spec:
-  provider:
-    type: prometheus
-    address: http://kube-prometheus-stack-prometheus.monitoring:9090
-  query: |
-    histogram_quantile(0.99,
-      sum(
-        rate(
-          traefik_service_request_duration_seconds_bucket{
-            service=~"{{ namespace }}-{{ target }}-canary-[0-9a-zA-Z-]+@kubernetescrd"
-          }[{{ interval }}]
-        )
-      ) by (le)
-    ) * 1000
----
-apiVersion: flagger.app/v1beta1
 kind: Canary
 metadata:
   name: blog
@@ -67,18 +18,3 @@ spec:
     threshold: 5
     maxWeight: 50
     stepWeight: 10
-    metrics:
-      - name: blog-request-success-rate
-        templateRef:
-          name: blog-request-success-rate
-          namespace: blog
-        thresholdRange:
-          min: 99
-        interval: 1m
-      - name: blog-request-duration
-        templateRef:
-          name: blog-request-duration
-          namespace: blog
-        thresholdRange:
-          max: 500
-        interval: 1m
