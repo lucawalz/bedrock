@@ -31,10 +31,10 @@ spec:
     resources:
       limits:
         cpu: 2000m
-        memory: 2Gi
+        memory: 4Gi
       requests:
         cpu: 500m
-        memory: 1Gi
+        memory: 1536Mi
     
     # Audit log settings
     auditLog:
