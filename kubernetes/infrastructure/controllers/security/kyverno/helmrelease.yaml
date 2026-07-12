@@ -84,6 +84,7 @@ spec:
       admissionReports:
         enabled: true
       backgroundScan:
+        backgroundScanInterval: 15m
         skipResourceFilters: false
       omitEvents:
         eventTypes:
