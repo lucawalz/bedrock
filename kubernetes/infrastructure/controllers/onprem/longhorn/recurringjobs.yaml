@@ -8,7 +8,7 @@ spec:
   task: snapshot-delete
   groups:
     - default
-  retain: 3
+  retain: 1
   concurrency: 2
 ---
 apiVersion: longhorn.io/v1beta2
@@ -30,7 +30,7 @@ metadata:
   name: backup
   namespace: longhorn-system
 spec:
-  cron: "0 2 * * *"
+  cron: "30 3 * * *"
   task: backup
   groups:
     - default
