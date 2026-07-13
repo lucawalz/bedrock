@@ -14,7 +14,6 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-cnpg-operator
-    - name: cluster-cnpg-barman-plugin
     - name: cluster-secrets
     - name: cluster-namespaces
 ---
