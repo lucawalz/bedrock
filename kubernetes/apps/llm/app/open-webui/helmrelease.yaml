@@ -53,13 +53,6 @@ spec:
           - ALL
       seccompProfile:
         type: RuntimeDefault
-    extraEnvVars:
-      - name: RAG_EMBEDDING_ENGINE
-        value: ollama
-      - name: RAG_EMBEDDING_MODEL
-        value: nomic-embed-text
-      - name: RAG_OLLAMA_BASE_URL
-        value: http://ollama.llm.svc.cluster.local:11434
     ollama:
       enabled: false
     ollamaUrls:
