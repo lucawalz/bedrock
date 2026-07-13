@@ -28,5 +28,6 @@ metadata:
 spec:
   name: litellm
   owner: litellm
+  databaseReclaimPolicy: delete
   cluster:
     name: postgres
