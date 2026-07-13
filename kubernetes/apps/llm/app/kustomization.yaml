@@ -5,6 +5,5 @@ components:
   - ../../../components/network-policies/base
 resources:
   - ollama
-  - ollama-vision
   - open-webui
   - networkpolicies.yaml
