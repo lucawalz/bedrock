@@ -4,4 +4,5 @@ resources:
   - cnpg-cluster.yaml
   - databases.yaml
   - networkpolicies.yaml
+  - podmonitor.yaml
   - scheduledbackup.yaml
