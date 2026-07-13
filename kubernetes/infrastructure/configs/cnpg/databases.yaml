@@ -19,15 +19,3 @@ spec:
   owner: paperless
   cluster:
     name: postgres
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Database
-metadata:
-  name: litellm
-  namespace: postgres
-spec:
-  name: litellm
-  owner: litellm
-  databaseReclaimPolicy: delete
-  cluster:
-    name: postgres
