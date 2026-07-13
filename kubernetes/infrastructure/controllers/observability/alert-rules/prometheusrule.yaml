@@ -35,3 +35,29 @@ spec:
           annotations:
             summary: "Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} failed to reconcile"
             description: "The Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} has not been ready for more than 15 minutes."
+    - name: cnpg.rules
+      rules:
+        - alert: CNPGBackupTooOld
+          expr: time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp{namespace="postgres"}) > 30 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "CloudNativePG in {{ $labels.namespace }} has no recent backup"
+            description: "The newest available CloudNativePG backup in namespace {{ $labels.namespace }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the daily backup schedule."
+        - alert: CNPGBackupTooOldCritical
+          expr: time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp{namespace="postgres"}) > 50 * 3600
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG in {{ $labels.namespace }} has a dangerously stale backup"
+            description: "The newest available CloudNativePG backup in namespace {{ $labels.namespace }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed daily backups."
+        - alert: CNPGWALArchiveFailing
+          expr: (cnpg_pg_stat_archiver_last_failed_time{namespace="postgres"} - cnpg_pg_stat_archiver_last_archived_time{namespace="postgres"}) > 1
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG WAL archiving is failing on {{ $labels.pod }}"
+            description: "WAL archiving for CloudNativePG pod {{ $labels.namespace }}/{{ $labels.pod }} has failed more recently than it last succeeded for over 15 minutes, putting continuous archiving and point-in-time recovery at risk."
