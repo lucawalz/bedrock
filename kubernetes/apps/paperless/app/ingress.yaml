@@ -47,28 +47,3 @@ spec:
         - name: paperless-ai
           port: 3000
   tls: {}
----
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: paperless-gpt
-  namespace: paperless
-  annotations:
-    gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: Paperless-GPT
-    gethomepage.dev/group: Documents
-    gethomepage.dev/icon: paperless-ngx.png
-    gethomepage.dev/href: https://paperless-gpt.${cluster_domain}
-    gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-gpt
-    gethomepage.dev/statusStyle: "dot"
-spec:
-  entryPoints:
-    - web
-    - websecure
-  routes:
-    - match: Host(`paperless-gpt.${cluster_domain}`)
-      kind: Rule
-      services:
-        - name: paperless-gpt
-          port: 8080
-  tls: {}
