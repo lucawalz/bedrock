@@ -46,13 +46,3 @@ spec:
       ports:
         - protocol: TCP
           port: 11434
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: postgres
-          podSelector:
-            matchLabels:
-              cnpg.io/cluster: postgres
-      ports:
-        - protocol: TCP
-          port: 5432
