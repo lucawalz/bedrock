@@ -136,6 +136,11 @@ in
             enabled = true;
           }
           {
+            domain = "rss.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "s3.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
