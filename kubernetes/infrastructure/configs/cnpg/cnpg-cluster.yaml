@@ -36,6 +36,10 @@ spec:
         login: true
         passwordSecret:
           name: pg-paperless
+      - name: miniflux
+        login: true
+        passwordSecret:
+          name: pg-miniflux
   backup:
     retentionPolicy: "30d"
     barmanObjectStore:

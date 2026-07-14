@@ -19,3 +19,14 @@ spec:
   owner: paperless
   cluster:
     name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: miniflux
+  namespace: postgres
+spec:
+  name: miniflux
+  owner: miniflux
+  cluster:
+    name: postgres
