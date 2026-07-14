@@ -27,3 +27,4 @@ resources:
   - kyverno.yaml
   - flagger.yaml
   - litellm.yaml
+  - miniflux.yaml

@@ -11,3 +11,4 @@ resources:
   - paperless
   - velero-ui
   - litellm
+  - miniflux

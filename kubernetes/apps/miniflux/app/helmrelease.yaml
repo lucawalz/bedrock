@@ -1,0 +1,103 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: miniflux
+  namespace: miniflux
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    controllers:
+      miniflux:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/miniflux/miniflux
+              tag: 2.3.2
+            env:
+              BASE_URL: https://rss.syslabs.dev
+              LISTEN_ADDR: 0.0.0.0:8080
+              RUN_MIGRATIONS: "1"
+              CREATE_ADMIN: "1"
+              ADMIN_USERNAME: admin
+              POLLING_FREQUENCY: "30"
+              CLEANUP_ARCHIVE_READ_DAYS: "30"
+              CLEANUP_ARCHIVE_UNREAD_DAYS: "60"
+              CLEANUP_FREQUENCY_HOURS: "24"
+            envFrom:
+              - secretRef:
+                  name: miniflux
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: 8080
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: 8080
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthcheck
+                    port: 8080
+                  failureThreshold: 30
+                  periodSeconds: 5
+            resources:
+              requests:
+                cpu: 25m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+              seccompProfile:
+                type: RuntimeDefault
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: miniflux
+        ports:
+          http:
+            port: 8080
+    persistence:
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
