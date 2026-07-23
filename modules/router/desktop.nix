@@ -72,9 +72,9 @@ let
   dashboardUrlXml = builtins.replaceStrings [ "&" ] [ "&amp;" ] dashboardUrl;
 
   autostart = pkgs.writeShellScript "labwc-autostart" ''
-    ${applyOutput}
+    # pir motion sensor is fried; keep the bar panel off until the replacement arrives
+    ${offOutput}
     ${pkgs.wbg}/bin/wbg --color 1d2021 &
-    ${presenceWatch} &
     deadline=$((SECONDS + 150))
     while [ "$SECONDS" -lt "$deadline" ]; do
       ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
