@@ -71,6 +71,11 @@ in
             enabled = true;
           }
           {
+            domain = "chat.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "flux.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
@@ -97,6 +102,11 @@ in
           }
           {
             domain = "minio.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
+            domain = "n8n.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
           }
