@@ -18,6 +18,8 @@ in
 {
   services.resolved.enable = false;
 
+  networking.resolvconf.useLocalResolver = true;
+
   age.secrets.adguard-admin = {
     file = "${secretsDir}/adguard-admin.age";
     mode = "0400";
