@@ -41,8 +41,8 @@ spec:
               permanent: true
       websecure:
         nodePort: 30443
-        middlewares:
-          - traefik-security-headers@kubernetescrd
+    additionalArguments:
+      - --entryPoints.websecure.http.middlewares=traefik-security-headers@kubernetescrd
     resources:
       requests:
         cpu: "100m"
