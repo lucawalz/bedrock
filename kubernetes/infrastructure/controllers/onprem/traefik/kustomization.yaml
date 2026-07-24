@@ -7,4 +7,6 @@ resources:
   - dashboard-ingress.yaml
   - networkpolicies.yaml
   - pdb.yaml
+  - security-headers.yaml
+  - tlsoption.yaml
 
