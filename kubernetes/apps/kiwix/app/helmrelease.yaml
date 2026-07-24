@@ -50,7 +50,7 @@ spec:
                     return 0
                   fi
                   echo "downloading $name"
-                  wget -q --show-progress -O "$name.part" "$mirror/$dir/$name"
+                  wget -q -O "$name.part" "$mirror/$dir/$name"
                   mv "$name.part" "$name"
                 }
 
