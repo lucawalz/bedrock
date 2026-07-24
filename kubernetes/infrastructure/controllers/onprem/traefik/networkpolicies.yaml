@@ -114,6 +114,9 @@ spec:
               kubernetes.io/metadata.name: miniflux
         - namespaceSelector:
             matchLabels:
+              kubernetes.io/metadata.name: kiwix
+        - namespaceSelector:
+            matchLabels:
               kubernetes.io/metadata.name: litellm
     - to:
         - ipBlock:

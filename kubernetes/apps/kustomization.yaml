@@ -12,3 +12,4 @@ resources:
   - velero-ui
   - litellm
   - miniflux
+  - kiwix
