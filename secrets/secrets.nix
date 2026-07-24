@@ -33,4 +33,8 @@ in
     router
     luca
   ];
+  "grafana-kiosk-url.age".publicKeys = [
+    router
+    luca
+  ];
 }
