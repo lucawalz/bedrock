@@ -9,6 +9,7 @@
     ../../modules/router/firewall.nix
     ../../modules/router/dhcp.nix
     ../../modules/router/dns.nix
+    ../../modules/router/wireless.nix
     ../../modules/router/tailscale.nix
     ../../modules/router/monitoring.nix
     ../../modules/router/display.nix

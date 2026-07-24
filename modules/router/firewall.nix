@@ -13,6 +13,7 @@ in
       internalInterfaces = [
         "vlan20"
         "vlan30"
+        "wlan0"
       ];
     };
 
@@ -25,28 +26,42 @@ in
         "tailscale0"
       ];
 
-      interfaces.vlan20.allowedTCPPorts = [
-        22
-        53
-        3000
-      ];
-
-      interfaces.vlan30 = {
-        allowedTCPPorts = [ 53 ];
-        allowedUDPPorts = [
+      interfaces = {
+        vlan20.allowedTCPPorts = [
+          22
           53
-          67
+          3000
         ];
+
+        vlan30 = {
+          allowedTCPPorts = [ 53 ];
+          allowedUDPPorts = [
+            53
+            67
+          ];
+        };
+
+        wlan0 = {
+          allowedTCPPorts = [ 53 ];
+          allowedUDPPorts = [
+            53
+            67
+          ];
+        };
       };
 
       extraForwardRules = lib.mkMerge [
         (lib.mkBefore ''iifname "vlan20" ip daddr ${homeSubnet} drop'')
         (lib.mkBefore ''iifname "vlan30" ip daddr ${homeSubnet} drop'')
+        (lib.mkBefore ''iifname "wlan0" ip daddr ${homeSubnet} drop'')
         ''iifname "end0" ip saddr ${homeSubnet} oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
         ''iifname "tailscale0" oifname "vlan20" accept''
         ''iifname "vlan20" oifname "tailscale0" accept''
         ''iifname "vlan30" oifname "end0" accept''
         ''iifname "vlan30" oifname "vlan20" drop''
+        ''iifname "wlan0" oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
+        ''iifname "wlan0" oifname "vlan20" drop''
+        ''iifname "wlan0" oifname "end0" accept''
       ];
     };
   };

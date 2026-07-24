@@ -29,6 +29,7 @@ _: {
       "20-end0" = {
         matchConfig.Name = "end0";
         networkConfig.DHCP = "yes";
+        linkConfig.RequiredForOnline = "no";
         vlan = [
           "vlan20"
           "vlan30"
@@ -42,6 +43,11 @@ _: {
       "30-vlan30" = {
         matchConfig.Name = "vlan30";
         address = [ "10.30.0.1/24" ];
+        linkConfig.RequiredForOnline = "no";
+      };
+      "30-wlan0" = {
+        matchConfig.Name = "wlan0";
+        address = [ "10.40.0.1/24" ];
         linkConfig.RequiredForOnline = "no";
       };
     };
