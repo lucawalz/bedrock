@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kiwix-library
+  namespace: kiwix
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn-disposable
+  resources:
+    requests:
+      storage: 32Gi

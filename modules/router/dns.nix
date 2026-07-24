@@ -93,6 +93,11 @@ in
             enabled = true;
           }
           {
+            domain = "kiwix.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "litellm.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;

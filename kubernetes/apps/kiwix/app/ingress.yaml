@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kiwix
+  namespace: kiwix
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Kiwix
+    gethomepage.dev/group: Offline
+    gethomepage.dev/icon: kiwix.png
+    gethomepage.dev/href: https://kiwix.${cluster_domain}
+    gethomepage.dev/podSelector: app.kubernetes.io/name=kiwix
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`kiwix.${cluster_domain}`)
+      kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
+      services:
+        - name: kiwix
+          port: 8080
+  tls: {}

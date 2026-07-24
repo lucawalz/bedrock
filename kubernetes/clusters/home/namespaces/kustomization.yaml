@@ -28,3 +28,4 @@ resources:
   - flagger.yaml
   - litellm.yaml
   - miniflux.yaml
+  - kiwix.yaml
