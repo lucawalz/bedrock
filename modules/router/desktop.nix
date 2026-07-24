@@ -37,8 +37,7 @@ let
 
   kioskUser = "kiosk";
   dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
-  presenceTimeoutSeconds = 300;
-  motionPin = 17;
+  panelAwakeSeconds = 120;
 
   output = "HDMI-A-1";
   mode = "1280x400";
@@ -48,39 +47,20 @@ let
 
   labwcConfigDir = "/etc/labwc";
 
-  applyOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --on --mode ${mode} --transform ${transform}";
-  offOutput = "${pkgs.wlr-randr}/bin/wlr-randr --output ${output} --off";
-
-  motionChip = "gpiochip0";
-
-  presenceWatch = pkgs.writeShellScript "presence-watch" ''
-    awake=1
-    last=$SECONDS
-    while true; do
-      if ${pkgs.libgpiod}/bin/gpioget -c ${motionChip} ${toString motionPin} 2>/dev/null | grep -q "=active"; then
-        last=$SECONDS
-        [ "$awake" = 0 ] && { ${applyOutput}; awake=1; }
-      elif [ "$awake" = 1 ] && [ $(( SECONDS - last )) -ge ${toString presenceTimeoutSeconds} ]; then
-        ${offOutput}
-        awake=0
-      fi
-      sleep 1
-    done
-  '';
+  wlrRandr = "${pkgs.wlr-randr}/bin/wlr-randr";
 
   dashboardArg = lib.escapeShellArg dashboardUrl;
   dashboardUrlXml = builtins.replaceStrings [ "&" ] [ "&amp;" ] dashboardUrl;
 
+  panelCycle = pkgs.writeShellScript "kiosk-panel-cycle" ''
+    ${wlrRandr} --output ${output} --on --mode ${mode} --transform ${transform}
+    sleep ${toString panelAwakeSeconds}
+    ${wlrRandr} --output ${output} --off
+  '';
+
   autostart = pkgs.writeShellScript "labwc-autostart" ''
-    # pir motion sensor is fried; keep the bar panel off until the replacement arrives
-    ${offOutput}
-    ${pkgs.wbg}/bin/wbg --color 1d2021 &
-    deadline=$((SECONDS + 150))
-    while [ "$SECONDS" -lt "$deadline" ]; do
-      ${pkgs.curl}/bin/curl -sf -o /dev/null --max-time 4 ${dashboardArg} && break
-      sleep 3
-    done
-    ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --hide-scrollbars --kiosk ${dashboardArg} &
+    ${pkgs.systemd}/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR XDG_SESSION_TYPE
+    ${pkgs.systemd}/bin/systemctl --user start kiosk-background.service kiosk-browser.service kiosk-panel.service
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -136,17 +116,38 @@ in
     users.users.${kioskUser} = {
       isNormalUser = true;
       home = "/home/${kioskUser}";
-      extraGroups = [ "gpio" ];
     };
 
-    users.groups.gpio = { };
+    systemd.user.services = {
+      kiosk-background = {
+        description = "Bar panel background";
+        serviceConfig = {
+          ExecStart = "${pkgs.wbg}/bin/wbg --color 1d2021";
+          Restart = "always";
+          RestartSec = 5;
+        };
+      };
+
+      kiosk-browser = {
+        description = "Bar panel dashboard browser";
+        serviceConfig = {
+          ExecStart = "${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --hide-scrollbars --kiosk ${dashboardArg}";
+          Restart = "always";
+          RestartSec = 10;
+        };
+      };
+
+      kiosk-panel = {
+        description = "Bar panel wake cycle";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = panelCycle;
+        };
+      };
+    };
 
     services = {
       dbus.enable = true;
-
-      udev.extraRules = ''
-        SUBSYSTEM=="gpio", KERNEL=="gpiochip[0-9]*", GROUP="gpio", MODE="0660"
-      '';
 
       greetd = {
         enable = true;
@@ -177,7 +178,6 @@ in
         pkgs.chromium
         pkgs.wbg
         pkgs.wlr-randr
-        pkgs.libgpiod
         pkgs.libdrm
         pkgs.edid-decode
       ];
