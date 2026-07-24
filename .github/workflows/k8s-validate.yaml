@@ -79,6 +79,31 @@ jobs:
           kyverno apply kubernetes/infrastructure/configs/policies/ \
             --resource kubernetes/apps/blog/app/deployment.yaml
 
+  promtool-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install promtool and yq
+        run: |
+          curl -sSL https://github.com/prometheus/prometheus/releases/download/v3.13.1/prometheus-3.13.1.linux-amd64.tar.gz \
+            | tar xz --strip-components=1 -C /usr/local/bin prometheus-3.13.1.linux-amd64/promtool
+          curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
+          chmod +x /usr/local/bin/yq
+
+      - name: Check and test alert rules
+        run: |
+          rules_dir=kubernetes/infrastructure/controllers/observability/alert-rules
+          for name in slo-blog gap-filler; do
+            case "$name" in
+              slo-blog) src="$rules_dir/slo-blog.yaml" ;;
+              gap-filler) src="$rules_dir/prometheusrule.yaml" ;;
+            esac
+            yq '.spec' "$src" > "tests/promtool/$name-rules.gen.yaml"
+            promtool check rules "tests/promtool/$name-rules.gen.yaml"
+            promtool test rules "tests/promtool/${name}_test.yaml"
+          done
+
   sops-sanity:
     runs-on: ubuntu-latest
     steps:

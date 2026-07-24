@@ -7,9 +7,9 @@ tests:
   - interval: 1m
     name: availability fast burn fires and error budget computes
     input_series:
-      - series: 'traefik_router_requests_total{router="blog-blog-abc123@kubernetescrd", code="200"}'
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="200"}'
         values: '0+95x90'
-      - series: 'traefik_router_requests_total{router="blog-blog-abc123@kubernetescrd", code="500"}'
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="500"}'
         values: '0+5x90'
     promql_expr_test:
       - expr: slo:blog_availability:error_ratio{window="5m"}
@@ -36,9 +36,9 @@ tests:
   - interval: 1m
     name: availability healthy does not fire and budget near full
     input_series:
-      - series: 'traefik_router_requests_total{router="blog-blog-abc123@kubernetescrd", code="200"}'
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="200"}'
         values: '0+99.95x4400'
-      - series: 'traefik_router_requests_total{router="blog-blog-abc123@kubernetescrd", code="500"}'
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="500"}'
         values: '0+0.05x4400'
     promql_expr_test:
       - expr: round(slo:blog_availability:error_budget_remaining_ratio, 0.01)
@@ -57,11 +57,11 @@ tests:
   - interval: 1m
     name: latency fast burn fires when slow fraction exceeds threshold
     input_series:
-      - series: 'traefik_router_request_duration_seconds_bucket{router="blog-blog-abc123@kubernetescrd", le="0.5"}'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.5"}'
         values: '0+80x90'
-      - series: 'traefik_router_request_duration_seconds_bucket{router="blog-blog-abc123@kubernetescrd", le="+Inf"}'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="+Inf"}'
         values: '0+100x90'
-      - series: 'traefik_router_request_duration_seconds_count{router="blog-blog-abc123@kubernetescrd"}'
+      - series: 'traefik_router_request_duration_seconds_count{router="websecure-blog-blog-abc123@kubernetescrd"}'
         values: '0+100x90'
     promql_expr_test:
       - expr: round(slo:blog_latency:error_ratio{window="5m"}, 0.01)
