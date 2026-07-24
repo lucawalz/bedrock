@@ -60,7 +60,7 @@ let
 
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${pkgs.systemd}/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR XDG_SESSION_TYPE
-    ${pkgs.systemd}/bin/systemctl --user start kiosk-background.service kiosk-browser.service kiosk-panel.service
+    ${pkgs.systemd}/bin/systemctl --user start kiosk-browser.service kiosk-panel.service
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -119,15 +119,6 @@ in
     };
 
     systemd.user.services = {
-      kiosk-background = {
-        description = "Bar panel background";
-        serviceConfig = {
-          ExecStart = "${pkgs.wbg}/bin/wbg --color 1d2021";
-          Restart = "always";
-          RestartSec = 5;
-        };
-      };
-
       kiosk-browser = {
         description = "Bar panel dashboard browser";
         serviceConfig = {
@@ -176,7 +167,6 @@ in
         pkgs.foot
         pkgs.fuzzel
         pkgs.chromium
-        pkgs.wbg
         pkgs.wlr-randr
         pkgs.libdrm
         pkgs.edid-decode
