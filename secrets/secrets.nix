@@ -29,4 +29,8 @@ in
     master
     luca
   ];
+  "wifi-passphrase.age".publicKeys = [
+    router
+    luca
+  ];
 }
