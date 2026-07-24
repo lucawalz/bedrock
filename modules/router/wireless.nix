@@ -21,6 +21,7 @@
 
       networks.wlan0 = {
         ssid = "bedrock";
+        apIsolate = true;
         authentication = {
           mode = "wpa2-sha1";
           wpaPasswordFile = config.age.secrets.wifi-passphrase.path;
