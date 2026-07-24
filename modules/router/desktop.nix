@@ -2,6 +2,7 @@
   pkgs,
   lib,
   config,
+  secretsDir ? ../../secrets,
   ...
 }:
 let
@@ -36,7 +37,6 @@ let
       '';
 
   kioskUser = "kiosk";
-  dashboardUrl = "https://grafana.syslabs.dev/d/wallbar/wall-status?kiosk&theme=dark&refresh=30s&autofitpanels&from=now-15m&to=now";
   panelAwakeSeconds = 120;
 
   output = "HDMI-A-1";
@@ -49,8 +49,14 @@ let
 
   wlrRandr = "${pkgs.wlr-randr}/bin/wlr-randr";
 
-  dashboardArg = lib.escapeShellArg dashboardUrl;
-  dashboardUrlXml = builtins.replaceStrings [ "&" ] [ "&amp;" ] dashboardUrl;
+  dashboardUrlFile = config.age.secrets.grafana-kiosk-url.path;
+
+  launchBrowser = pkgs.writeShellScript "kiosk-browser-launch" ''
+    exec ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars \
+      --disable-session-crashed-bubble --disable-background-timer-throttling \
+      --disable-backgrounding-occluded-windows --disable-renderer-backgrounding \
+      --hide-scrollbars --kiosk "$(cat ${dashboardUrlFile})"
+  '';
 
   panelCycle = pkgs.writeShellScript "kiosk-panel-cycle" ''
     ${wlrRandr} --output ${output} --on --mode ${mode} --transform ${transform}
@@ -91,7 +97,7 @@ let
           <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
         </item>
         <item label="Reload dashboard">
-          <action name="Execute" command="${browser} --ozone-platform=wayland --kiosk '${dashboardUrlXml}'" />
+          <action name="Execute" command="${launchBrowser}" />
         </item>
       </menu>
     </openbox_menu>
@@ -109,6 +115,13 @@ in
   options.services.kioskConsole.enable = lib.mkEnableOption "kiosk Wayland console on the bar display";
 
   config = lib.mkIf cfg.enable {
+    age.secrets.grafana-kiosk-url = {
+      file = "${secretsDir}/grafana-kiosk-url.age";
+      mode = "0400";
+      owner = kioskUser;
+      group = "users";
+    };
+
     programs.labwc.enable = true;
 
     security.polkit.enable = true;
@@ -122,7 +135,7 @@ in
       kiosk-browser = {
         description = "Bar panel dashboard browser";
         serviceConfig = {
-          ExecStart = "${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars --disable-session-crashed-bubble --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-renderer-backgrounding --hide-scrollbars --kiosk ${dashboardArg}";
+          ExecStart = launchBrowser;
           Restart = "always";
           RestartSec = 10;
         };
