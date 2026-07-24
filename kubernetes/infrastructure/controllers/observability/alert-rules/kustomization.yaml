@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - cert-manager-servicemonitor.yaml
   - flux-servicemonitor.yaml
+  - velero-servicemonitor.yaml
   - prometheusrule.yaml
   - slo-blog.yaml

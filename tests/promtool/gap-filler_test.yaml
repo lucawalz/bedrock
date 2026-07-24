@@ -1,0 +1,75 @@
+rule_files:
+  - gap-filler-rules.gen.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    name: velero backup past the warning threshold fires warning only
+    input_series:
+      - series: 'velero_backup_last_successful_timestamp{schedule="daily-dr"}'
+        values: '-101000x200'
+    alert_rule_test:
+      - eval_time: 180m
+        alertname: VeleroBackupTooOld
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              schedule: daily-dr
+            exp_annotations:
+              summary: "Velero schedule daily-dr has no recent successful backup"
+              description: "The newest successful Velero backup for schedule daily-dr is 1d 7h 3m 20s old, exceeding the 30 hour warning threshold for the daily backup schedule."
+      - eval_time: 180m
+        alertname: VeleroBackupTooOldCritical
+        exp_alerts: []
+
+  - interval: 1m
+    name: velero backup past the critical threshold fires critical
+    input_series:
+      - series: 'velero_backup_last_successful_timestamp{schedule="daily-dr"}'
+        values: '-190000x200'
+    alert_rule_test:
+      - eval_time: 180m
+        alertname: VeleroBackupTooOldCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              schedule: daily-dr
+            exp_annotations:
+              summary: "Velero schedule daily-dr has a dangerously stale backup"
+              description: "The newest successful Velero backup for schedule daily-dr is 2d 7h 46m 40s old, exceeding the 50 hour critical threshold and indicating several missed daily backups."
+
+  - interval: 1m
+    name: velero backup failures raise an alert
+    input_series:
+      - series: 'velero_backup_failure_total{schedule="daily-dr"}'
+        values: '0x60 1x60'
+      - series: 'velero_backup_validation_failure_total{schedule="daily-dr"}'
+        values: '0x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: VeleroBackupFailing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              schedule: daily-dr
+            exp_annotations:
+              summary: "Velero schedule daily-dr is failing"
+              description: "Velero schedule daily-dr recorded backup or validation failures in the last two hours, so the offsite copy is not being written."
+
+  - interval: 1m
+    name: healthy velero backups raise nothing
+    input_series:
+      - series: 'velero_backup_last_successful_timestamp{schedule="daily-dr"}'
+        values: '0x200'
+      - series: 'velero_backup_failure_total{schedule="daily-dr"}'
+        values: '0x120'
+      - series: 'velero_backup_validation_failure_total{schedule="daily-dr"}'
+        values: '0x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: VeleroBackupFailing
+        exp_alerts: []
+      - eval_time: 90m
+        alertname: VeleroBackupTooOld
+        exp_alerts: []
