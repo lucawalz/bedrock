@@ -40,13 +40,13 @@ spec:
                   dir="$1"
                   prefix="$2"
                   name=$(wget -qO- "$mirror/$dir/" \
-                    | grep -oE "${prefix}[0-9-]+\.zim" | sort -u | tail -1)
+                    | grep -oE "$${prefix}[0-9-]+\.zim" | sort -u | tail -1)
                   if [ -z "$name" ]; then
                     echo "could not resolve $prefix in $dir" >&2
                     return 1
                   fi
-                  if ls "${prefix}"*.zim >/dev/null 2>&1; then
-                    echo "have $(ls ${prefix}*.zim), skipping"
+                  if ls "$${prefix}"*.zim >/dev/null 2>&1; then
+                    echo "have $(ls "$${prefix}"*.zim), skipping"
                     return 0
                   fi
                   echo "downloading $name"
