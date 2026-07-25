@@ -233,7 +233,7 @@ data:
           - name: 'null'
           - name: 'ntfy'
             webhook_configs:
-              - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7B.commonAnnotations.summary%20%7C%20trunc%20200%7D%7D'
+              - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7Bwith%20.commonAnnotations.summary%7D%7D%7B%7B.%7D%7D%7B%7Bend%7D%7D'
                 send_resolved: true
         inhibit_rules:
           - source_matchers:
