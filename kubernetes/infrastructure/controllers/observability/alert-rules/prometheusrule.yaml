@@ -35,6 +35,14 @@ spec:
           annotations:
             summary: "Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} failed to reconcile"
             description: "The Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} has not been ready for more than 15 minutes."
+        - alert: FluxMetricsAbsent
+          expr: absent(flux_resource_info)
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Flux resource metrics have disappeared"
+            description: "Prometheus has held no flux_resource_info series for more than 15 minutes, so FluxReconciliationFailure cannot fire and a stalled delivery pipeline would stay invisible."
     - name: cnpg.rules
       rules:
         - alert: CNPGBackupTooOld
@@ -87,6 +95,16 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} is degraded"
             description: "Longhorn reports volume {{ $labels.volume }} as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
+    - name: kube-state-metrics.rules
+      rules:
+        - alert: KubeStateMetricsAbsent
+          expr: absent(kube_pod_info)
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "kube-state-metrics has stopped reporting"
+            description: "Prometheus has held no kube_pod_info series for more than 15 minutes, so every workload, node and capacity alert derived from kube-state-metrics is unable to fire."
     - name: velero.rules
       rules:
         - alert: VeleroBackupTooOld
