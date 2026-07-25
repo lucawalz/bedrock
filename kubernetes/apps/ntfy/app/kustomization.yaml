@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: ntfy
 components:
   - ../../../components/network-policies/base
+  - ../../../components/authentik-middleware
 resources:
   - helmrelease.yaml
   - ingress.yaml
