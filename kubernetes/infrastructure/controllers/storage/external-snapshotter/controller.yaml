@@ -137,6 +137,13 @@ spec:
         app.kubernetes.io/name: snapshot-controller
     spec:
       serviceAccountName: snapshot-controller
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: snapshot-controller
+              topologyKey: kubernetes.io/hostname
       containers:
         - name: snapshot-controller
           image: registry.k8s.io/sig-storage/snapshot-controller:v8.4.0

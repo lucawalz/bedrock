@@ -44,6 +44,16 @@ spec:
         - local
     admissionController:
       replicas: 2
+      podAntiAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution: []
+        requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                    - admission-controller
+            topologyKey: kubernetes.io/hostname
       resources:
         requests:
           cpu: 100m
