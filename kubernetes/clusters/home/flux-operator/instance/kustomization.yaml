@@ -3,6 +3,18 @@ kind: Kustomization
 namespace: flux-system
 components:
   - ../../../../components/authentik-middleware
+  - ../../../../components/network-policies/internet-egress
+patches:
+  - target:
+      kind: NetworkPolicy
+      name: allow-internet-egress
+    patch: |-
+      # the git remote is reached over ssh, so source and image-automation need port 22 outbound
+      - op: add
+        path: /spec/egress/0/ports/-
+        value:
+          protocol: TCP
+          port: 22
 resources:
   - fluxinstance.yaml
   - ingress.yaml
