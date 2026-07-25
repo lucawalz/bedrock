@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: zot
+  namespace: zot
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`registry.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: zot
+          port: 5000
+  tls: {}
