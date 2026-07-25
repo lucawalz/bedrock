@@ -73,3 +73,55 @@ tests:
       - eval_time: 90m
         alertname: VeleroBackupTooOld
         exp_alerts: []
+
+  - interval: 1m
+    name: longhorn stale backup fires warning but not critical
+    input_series:
+      - series: 'longhorn_volume_last_backup_at{volume="pvc-abc"}'
+        values: '1x1900'
+      - series: 'longhorn_volume_last_backup_at{volume="pvc-never"}'
+        values: '0x1900'
+    alert_rule_test:
+      - eval_time: 1870m
+        alertname: LonghornBackupTooOld
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              volume: pvc-abc
+            exp_annotations:
+              summary: "Longhorn volume pvc-abc has no recent backup"
+              description: "The newest Longhorn backup for volume pvc-abc is 1d 7h 9m 59s old, exceeding the 30 hour warning threshold for the nightly recurring job."
+      - eval_time: 1870m
+        alertname: LonghornBackupTooOldCritical
+        exp_alerts: []
+
+  - interval: 1m
+    name: longhorn degraded volume alerts
+    input_series:
+      - series: 'longhorn_volume_robustness{volume="pvc-abc"}'
+        values: '2x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: LonghornVolumeDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              volume: pvc-abc
+            exp_annotations:
+              summary: "Longhorn volume pvc-abc is degraded"
+              description: "Longhorn reports volume pvc-abc as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
+
+  - interval: 1m
+    name: healthy longhorn raises nothing
+    input_series:
+      - series: 'longhorn_volume_last_backup_at{volume="pvc-abc"}'
+        values: '0x200'
+      - series: 'longhorn_volume_robustness{volume="pvc-abc"}'
+        values: '1x120'
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: LonghornBackupTooOld
+        exp_alerts: []
+      - eval_time: 60m
+        alertname: LonghornVolumeDegraded
+        exp_alerts: []

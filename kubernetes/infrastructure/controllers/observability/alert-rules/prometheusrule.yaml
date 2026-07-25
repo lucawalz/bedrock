@@ -61,6 +61,32 @@ spec:
           annotations:
             summary: "CloudNativePG WAL archiving is failing on {{ $labels.pod }}"
             description: "WAL archiving for CloudNativePG pod {{ $labels.namespace }}/{{ $labels.pod }} has failed more recently than it last succeeded for over 15 minutes, putting continuous archiving and point-in-time recovery at risk."
+    - name: longhorn.rules
+      rules:
+        - alert: LonghornBackupTooOld
+          expr: time() - max by (volume) (longhorn_volume_last_backup_at > 0) > 30 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} has no recent backup"
+            description: "The newest Longhorn backup for volume {{ $labels.volume }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the nightly recurring job."
+        - alert: LonghornBackupTooOldCritical
+          expr: time() - max by (volume) (longhorn_volume_last_backup_at > 0) > 50 * 3600
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} has a dangerously stale backup"
+            description: "The newest Longhorn backup for volume {{ $labels.volume }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed nightly runs."
+        - alert: LonghornVolumeDegraded
+          expr: longhorn_volume_robustness == 2
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} is degraded"
+            description: "Longhorn reports volume {{ $labels.volume }} as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
     - name: velero.rules
       rules:
         - alert: VeleroBackupTooOld
