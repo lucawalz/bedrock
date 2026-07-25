@@ -15,6 +15,7 @@ spec:
         name: traefik
         namespace: flux-system
   values:
+    priorityClassName: system-cluster-critical
     deployment:
       replicas: 2
     affinity:

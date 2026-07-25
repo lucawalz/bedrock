@@ -11,6 +11,7 @@ data:
     # Reduce resource usage for homelab
     prometheus:
       prometheusSpec:
+        priorityClassName: system-cluster-critical
         retention: 7d
         retentionSize: 17GiB
         storageSpec:
@@ -211,6 +212,7 @@ data:
     alertmanager:
       enabled: true
       alertmanagerSpec:
+        priorityClassName: system-cluster-critical
         resources:
           requests:
             cpu: "50m"
