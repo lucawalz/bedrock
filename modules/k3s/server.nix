@@ -25,7 +25,7 @@
       "--etcd-s3-region=eu-central-1"
       "--etcd-s3-endpoint=hel1.your-objectstorage.com"
       "--etcd-s3-folder=etcd-snapshots"
-      "--etcd-snapshot-schedule-cron=0 */12 * * *"
+      "--etcd-snapshot-schedule-cron=\"0 */12 * * *\""
       "--etcd-snapshot-retention=5"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
