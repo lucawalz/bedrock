@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - configmap.yaml
   - helmrelease.yaml
+  - pdb.yaml
 
 

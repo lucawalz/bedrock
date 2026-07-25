@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: csi-resizer
+  namespace: longhorn-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: csi-resizer
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: csi-snapshotter
+  namespace: longhorn-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: csi-snapshotter
