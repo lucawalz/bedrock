@@ -117,9 +117,9 @@ nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
 
 On-demand nodes are not added by hand. horizon provisions them directly through the hcloud API from the pre-baked snapshot, enrolling each node into the tailnet with a tagged auth key and injecting the join token it needs through cloud-init, and removes them again when they are no longer needed.
 
-Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-secrets`, then the platform Kustomizations under `infrastructure/` (`cluster-cert-manager`, `cluster-storage`, `cluster-edge-onprem`, and the rest, each carrying its own `dependsOn`), then `cluster-issuers` on top of cert-manager, and finally `cluster-apps`.
+Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-bootstrap-secrets` and `cluster-secrets`, then the platform Kustomizations under `infrastructure/`, then `cluster-issuers` on top of cert-manager, and finally `cluster-apps`, which fans out into one Kustomization per app. The platform layer is roughly twenty Kustomizations, each carrying its own `dependsOn`; `cluster-cert-manager`, `cluster-storage`, `cluster-edge-onprem`, and `cluster-observability` are examples rather than the whole set. All of them are defined in `kubernetes/clusters/home/config/`, which is the list to read rather than this paragraph.
 
-To add a service: create its namespace under `namespaces/` and list it in that folder's kustomization, and add a HelmRepository under `sources/helm/` if the chart needs a new one. Then create `apps/<name>/` by copying an existing app: a `ks.yaml` Flux Kustomization that sets `APP`, `APP_PORT`, and the app's dependencies, and an `app/` directory holding the workload, a Traefik IngressRoute whose host reads `${cluster_domain}`, and a `kustomization.yaml` that pulls in the shared `components/` for network policies and forward-auth. Add the directory to `apps/kustomization.yaml`. Encrypt any secret with SOPS into the matching `secrets/` folder. Commit to `main`, and Flux applies it on its next pass.
+To add a service: create its namespace under `namespaces/` and list it in that folder's kustomization, and add a HelmRepository under `sources/helm/` if the chart needs a new one. Then create `apps/<name>/` by copying an existing app: a `ks.yaml` Flux Kustomization naming the path, the app's dependencies, and a `postBuild.substituteFrom` on the `cluster-settings` ConfigMap, plus an `app/` directory holding the workload, a Traefik IngressRoute whose host reads `${cluster_domain}`, and a `kustomization.yaml` that pulls in the shared `components/` for network policies and forward-auth. An app that also pulls in the `traefik-ingress` network-policy component sets `APP` and `APP_PORT` in its `ks.yaml`, because that shared policy templates the workload label and the container port from them; an app that only takes the base policies needs neither. Add the directory to `apps/kustomization.yaml`. Any secret the app needs goes into the private `bedrock-secrets` repository rather than this one ([ADR 0060](docs/adr/0060-private-secrets-repo-per-cluster-keys.md)). Commit to `main`, and Flux applies it on its next pass.
 
 ## Repository layout
 
@@ -129,17 +129,23 @@ lib/                   mkHost and mkWorker builders that keep host definitions s
 hosts/
   common/              shared base: boot, locale, networking, users, packages, nix
   master/              control-plane node, with its disk layout and hardware scan
+  router/              the Pi, composed from the router modules
+  router-installer.nix the installer image that writes the Pi's first system
 modules/
   k3s/                 server, agent, and Hetzner burst-agent roles
-  router/              firewall, NAT, DHCP, and DNS on the Pi
+  router/              firewall, NAT, DHCP, DNS, wireless, and the bar-display kiosk
   tailscale/           the subnet router that advertises the LAN to the tailnet
   services/            Longhorn storage prerequisites
-secrets/               agenix-encrypted host secrets (the K3s join token)
+secrets/               agenix-encrypted host secrets: the K3s join token, the router's Tailscale and AdGuard credentials, the etcd S3 credentials, the wifi passphrase, and the kiosk dashboard URL
+infra/packer/          the Packer template that bakes the on-demand node snapshot
+scripts/               the checks CI runs: ADR index, inventory generation, substitution rendering
+tests/                 Kyverno policy tests and promtool alert-rule tests
+docs/                  the ADR log, the cluster inventory, and the disaster recovery runbook
 kubernetes/
   apps/                workloads Flux reconciles, one directory per app
   components/          shared kustomize components (network policies, forward-auth)
   infrastructure/      the platform, split into controllers/ (operator installs) and configs/ (their custom resources)
-  clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and secrets
+  clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and the bootstrap secret that reaches the private secrets repository
 ```
 
 Workers have no directory of their own. `flake.nix` builds them from `lib.mkWorker`, so adding worker-3 takes one line in the flake and one public key in `secrets/secrets.nix`.
@@ -155,27 +161,33 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Open WebUI | chat front-end for the local models | public (`chat`) |
 | n8n | workflow automation | public (`n8n`) |
 | Blog | static Hugo site | public (`lucawalz.dev`) |
-| Homepage | cluster dashboard and links | internal (`home`) |
-| Grafana | dashboards for the Prometheus stack | internal |
 | Rancher | cluster management UI | public (`rancher`) |
+| Homepage | cluster dashboard and links | internal (`home`) |
+| Grafana | dashboards for the Prometheus stack | internal (`grafana`) |
+| Prometheus | metrics store and query browser | internal (`prometheus`) |
+| Alertmanager | alert routing, grouping, and silences | internal (`alertmanager`) |
 | Authentik | single sign-on and identity provider | internal (`auth`) |
-| pgAdmin | Postgres administration | internal |
-| Longhorn | storage management UI | internal |
+| LiteLLM | OpenAI-compatible gateway in front of Ollama | internal (`litellm`) |
+| Miniflux | feed reader | internal (`rss`) |
+| Kiwix | offline library of ZIM archives | internal (`kiwix`) |
+| pgAdmin | Postgres administration | internal (`pgadmin`) |
+| Longhorn | storage management UI | internal (`longhorn`) |
+| MinIO | in-cluster S3 object storage and console | internal (`minio`, `s3`) |
 | Velero | backup and restore UI | internal (`velero`) |
 | RackPeek | physical rack and node overview | internal (`rackpeek`) |
-| Traefik | router dashboard | internal |
+| Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 
-Two Ollama instances serve the local models and stay internal, one pinned to each worker: a general model on worker-1 and a vision model on worker-2, each declared in its HelmRelease and pulled at container startup. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik and Paperless, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
+One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, and Miniflux, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
 
 ## Security
 
 Secrets use two mechanisms, both committed encrypted, never in plaintext:
 
-- Host secrets use agenix, encrypted to each node's SSH host key, so a node decrypts its own secrets at boot with no shared passphrase. `secrets/secrets.nix` lists the recipients; the K3s join token and the router's Tailscale and AdGuard secrets live here.
-- Kubernetes secrets use SOPS with age. Files matching `kubernetes/.*/secrets/.*\.sops\.yaml` are encrypted to the cluster's age recipient and decrypted by Flux in-cluster at reconcile time, grouped under `bootstrap/`, `platform/`, `identity/`, and `apps/`. The encrypted files are safe in a public repository; only the cluster holds the private key.
+- Host secrets use agenix, encrypted to each node's SSH host key, so a node decrypts its own secrets at boot with no shared passphrase. `secrets/secrets.nix` lists the recipients; the K3s join token, the router's Tailscale and AdGuard credentials, the etcd snapshot S3 credentials, the wifi passphrase, and the kiosk dashboard URL live here.
+- Kubernetes secrets use SOPS with age, and they are held in a separate private repository, `bedrock-secrets`, rather than in this one ([ADR 0060](docs/adr/0060-private-secrets-repo-per-cluster-keys.md)). Flux reconciles that repository as a second source through the `cluster-secrets` Kustomization and decrypts it in-cluster at reconcile time. Exactly one SOPS file remains here, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, which carries the read-only deploy key for the private repository and is itself decrypted by the same cluster age key, so the age key stays the only irreducible root.
 
 Editing secrets, re-keying them, and recovering them on a fresh cluster are covered in the [disaster recovery runbook](docs/disaster-recovery.md).
 
@@ -187,11 +199,12 @@ The cluster is reproducible from this repository plus a small set of seeds it ca
 
 ## Continuous integration
 
-Every pull request runs three checks:
+Four workflows run on every pull request, covering four areas:
 
-- `nix flake check` for Nix syntax and module options.
-- `kubeconform` and `kustomize build` for the Kubernetes manifests.
-- a SOPS check that no plaintext secret was committed.
+- The Nix side: formatting with `nixfmt`, linting with `statix` and `deadnix`, and `nix flake check` to evaluate every host configuration.
+- The Kubernetes manifests: `kubeconform` against the upstream and CRD schemas, `kustomize build` over every kustomization, and a render of the per-app Kustomizations with their Flux post-build substitutions applied so an unresolved variable fails a pull request rather than a reconcile.
+- Policy and alerting: the Kyverno policies run against their unit tests and against a first-party manifest, and the Prometheus alert rules are checked and unit-tested with `promtool`.
+- Repository hygiene: a check that no SOPS file was committed unencrypted, a check that the ADR index matches the ADRs on disk, and a regeneration of `docs/inventory.md` that fails on drift. The Renovate configuration is validated on the same trigger.
 
 [Renovate](https://docs.renovatebot.com/) keeps `flake.lock`, Helm chart versions, and GitHub Actions current through automated pull requests.
 
