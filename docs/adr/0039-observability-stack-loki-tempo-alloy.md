@@ -13,7 +13,7 @@ The goal is a single Grafana that answers metrics, logs, and traces together, co
 
 ## Decision
 
-Keep Prometheus as the metrics store and add the rest of the Grafana stack around it: Loki for logs, Tempo for traces, and Grafana Alloy as the collector, all in the existing `monitoring` namespace and reconciled by `cluster-infrastructure`.
+Keep Prometheus as the metrics store and add the rest of the Grafana stack around it: Loki for logs, Tempo for traces, and Grafana Alloy as the collector, all in the existing `monitoring` namespace. Prometheus, Loki, and Tempo are reconciled by `cluster-observability` and Alloy by `cluster-alloy`, the split established in [0058](0058-split-cluster-infrastructure-kustomizations.md).
 
 Alloy runs as a DaemonSet and does two things only: it tails every pod's container logs and writes them to Loki, and it accepts OpenTelemetry traces over OTLP and forwards them to Tempo. Metrics are left entirely to Prometheus, which keeps scraping through the existing ServiceMonitors, and Alloy never touches them. Loki and Tempo each run as a single binary with the filesystem backend on a Longhorn volume, so log and trace data stays replicated across the cluster's own nodes with no S3 or MinIO dependency. Loki keeps fourteen days, Tempo seven. Each component exposes its own metrics back to Prometheus through a ServiceMonitor.
 
