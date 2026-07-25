@@ -6,25 +6,16 @@ on:
   push:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   kubeconform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install kubeconform
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
-            | tar xz -C /usr/local/bin
-
-      - name: Install Flux CRD schemas
-        # Kubeconform needs CRD schemas to validate Flux-specific resources
-        run: |
-          mkdir -p /tmp/flux-schemas
-          curl -sSL https://github.com/fluxcd/flux2/releases/latest/download/flux_install.yaml \
-            | grep -o 'schema\.fluxcd\.io[^"]*' | sort -u || true
-          # Use the community-maintained CRD schema catalog instead
-          git clone --depth=1 https://github.com/datreeio/CRDs-catalog /tmp/crds-catalog
+      - uses: ./.github/actions/kubeconform
 
       - name: Validate Kubernetes manifests
         run: |
@@ -36,7 +27,7 @@ jobs:
               -strict \
               -ignore-missing-schemas \
               -schema-location default \
-              -schema-location '/tmp/crds-catalog/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              -schema-location "$KUBECONFORM_SCHEMA_LOCATION" \
               -kubernetes-version 1.35.0 \
               -summary
         # Skips: gotk-components (generated, large), sops secrets (encrypted, not valid YAML values)
@@ -44,11 +35,14 @@ jobs:
   kustomize-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install kustomize
+        env:
+          # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>.+)$
+          KUSTOMIZE_VERSION: v5.8.1
         run: |
-          curl -sSL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v5.8.1/kustomize_v5.8.1_linux_amd64.tar.gz \
+          curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
             | sudo tar xz -C /usr/local/bin kustomize
 
       - name: Build all kustomizations
@@ -64,11 +58,14 @@ jobs:
   kyverno-policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install kyverno CLI
+        env:
+          # renovate: datasource=github-releases depName=kyverno/kyverno
+          KYVERNO_VERSION: v1.18.1
         run: |
-          curl -sSL https://github.com/kyverno/kyverno/releases/download/v1.18.1/kyverno-cli_v1.18.1_linux_x86_64.tar.gz \
+          curl -sSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" \
             | tar xz -C /usr/local/bin kyverno
 
       - name: Run policy unit tests
@@ -82,13 +79,19 @@ jobs:
   promtool-rules:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install promtool and yq
+        env:
+          # renovate: datasource=github-releases depName=prometheus/prometheus
+          PROMETHEUS_VERSION: v3.13.1
+          # renovate: datasource=github-releases depName=mikefarah/yq
+          YQ_VERSION: v4.53.3
         run: |
-          curl -sSL https://github.com/prometheus/prometheus/releases/download/v3.13.1/prometheus-3.13.1.linux-amd64.tar.gz \
-            | tar xz --strip-components=1 -C /usr/local/bin prometheus-3.13.1.linux-amd64/promtool
-          curl -sSL -o /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/v4.53.3/yq_linux_amd64
+          prometheus_dir="prometheus-${PROMETHEUS_VERSION#v}.linux-amd64"
+          curl -sSL "https://github.com/prometheus/prometheus/releases/download/${PROMETHEUS_VERSION}/${prometheus_dir}.tar.gz" \
+            | tar xz --strip-components=1 -C /usr/local/bin "${prometheus_dir}/promtool"
+          curl -sSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
           chmod +x /usr/local/bin/yq
 
       - name: Check and test alert rules
@@ -107,7 +110,7 @@ jobs:
   sops-sanity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check SOPS files are actually encrypted
         # Prevents accidentally committing decrypted secrets
@@ -124,20 +127,17 @@ jobs:
   flux-substitution:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install flux
-        run: curl -sSL https://fluxcd.io/install.sh | sudo bash
-
-      - name: Install kubeconform
-        run: |
-          curl -sSL https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz \
-            | tar xz -C /usr/local/bin
-
-      - name: Install CRD schemas
-        run: git clone --depth=1 https://github.com/datreeio/CRDs-catalog /tmp/crds-catalog
-
-      - name: Render per-app kustomizations and validate the applied output
         env:
-          KUBECONFORM_SCHEMA_LOCATION: '/tmp/crds-catalog/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+          # renovate: datasource=github-releases depName=fluxcd/flux2
+          FLUX_VERSION: v2.9.3
+        run: |
+          curl -sSL "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz" \
+            | tar xz -C /usr/local/bin flux
+
+      - uses: ./.github/actions/kubeconform
+
+      - name: Render the Flux Kustomizations and validate the applied output
         run: bash scripts/validate-substitution.sh
