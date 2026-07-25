@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: paperless-ngx-7d9f8c6b4-x2k9p
+  namespace: paperless
+spec:
+  containers:
+    - name: paperless-ngx
+      image: ghcr.io/paperless-ngx/paperless-ngx:2.18.4
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          memory: 2Gi

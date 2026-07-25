@@ -36,11 +36,16 @@ spec:
         - metallb-system
         - monitoring
         - velero
-        - cattle-*
+        - cattle-capi-system
+        - cattle-fleet-clusters-system
+        - cattle-fleet-local-system
+        - cattle-fleet-system
+        - cattle-impersonation-system
+        - cattle-system
+        - cattle-turtles-system
+        - cattle-ui-plugin-system
         - fleet-*
         - cluster-fleet-*
-        - p-*
-        - user-*
         - local
     admissionController:
       replicas: 2
@@ -89,6 +94,9 @@ spec:
           cpu: 200m
           memory: 256Mi
     features:
+      policyExceptions:
+        enabled: true
+        namespace: "*"
       policyReports:
         enabled: true
       admissionReports:
