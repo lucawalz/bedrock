@@ -19,7 +19,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
 
       - name: Check formatting
-        run: nix run nixpkgs#nixfmt -- --check $(git ls-files '*.nix')
+        run: git ls-files '*.nix' | xargs nix run nixpkgs#nixfmt -- --check
 
       - name: Run statix
         run: nix run nixpkgs#statix -- check .

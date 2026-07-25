@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: ./.github/actions/kubeconform
+      - uses: ./.github/actions/manifest-tools
 
       - name: Validate Kubernetes manifests
         run: |
@@ -22,7 +22,8 @@ jobs:
             ! -path "*/flux-system/gotk-components.yaml" \
             ! -name "*.sops.yaml" \
             ! -name "values.yaml" \
-            | xargs kubeconform \
+            -print0 \
+            | xargs -0 kubeconform \
               -strict \
               -ignore-missing-schemas \
               -schema-location default \
@@ -36,28 +37,37 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install kustomize
-        env:
-          # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>.+)$
-          KUSTOMIZE_VERSION: v5.8.1
-        run: |
-          curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
-            | sudo tar xz -C /usr/local/bin kustomize
+      - uses: ./.github/actions/manifest-tools
 
       - name: Build all kustomizations
         run: |
-          # Build each kustomization to ensure all resources resolve correctly
           # Skips encrypted secret files that kustomize can't process without SOPS key
-          find kubernetes/ -name "kustomization.yaml" -not -path "*/secrets/*" | while read f; do
-            dir=$(dirname "$f")
-            echo "Building $dir..."
-            kustomize build "$dir" > /dev/null || exit 1
-          done
+          find kubernetes/ -name "kustomization.yaml" -not -path "*/secrets/*" \
+            | while read -r file; do
+                directory="$(dirname "$file")"
+                echo "Building $directory"
+                kustomize build "$directory" > /dev/null || exit 1
+              done
+
+      - name: Check every app directory is deployed
+        run: bash scripts/check-apps-index.sh
+
+  helm-render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/manifest-tools
+
+      - name: Render every HelmRelease and validate the output
+        run: bash scripts/render-helm-releases.sh
 
   kyverno-policy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/manifest-tools
 
       - name: Install kyverno CLI
         env:
@@ -70,28 +80,24 @@ jobs:
       - name: Run policy unit tests
         run: kyverno test tests/policies/
 
-      - name: Apply policies to first-party manifests
-        run: |
-          kyverno apply kubernetes/infrastructure/configs/policies/ \
-            --resource kubernetes/apps/blog/app/deployment.yaml
+      - name: Apply policies to the rendered workloads
+        run: bash scripts/apply-policies.sh
 
   promtool-rules:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Install promtool and yq
+      - uses: ./.github/actions/manifest-tools
+
+      - name: Install promtool
         env:
           # renovate: datasource=github-releases depName=prometheus/prometheus
           PROMETHEUS_VERSION: v3.13.1
-          # renovate: datasource=github-releases depName=mikefarah/yq
-          YQ_VERSION: v4.53.3
         run: |
           prometheus_dir="prometheus-${PROMETHEUS_VERSION#v}.linux-amd64"
           curl -sSL "https://github.com/prometheus/prometheus/releases/download/${PROMETHEUS_VERSION}/${prometheus_dir}.tar.gz" \
             | tar xz --strip-components=1 -C /usr/local/bin "${prometheus_dir}/promtool"
-          curl -sSL -o /usr/local/bin/yq "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-          chmod +x /usr/local/bin/yq
 
       - name: Check and test alert rules
         run: |
@@ -115,12 +121,12 @@ jobs:
         # Prevents accidentally committing decrypted secrets
         run: |
           fail=0
-          for f in $(find kubernetes/ -name "*.sops.yaml"); do
-            if ! grep -q "ENC\[AES256_GCM" "$f"; then
-              echo "ERROR: $f does not appear to be encrypted"
+          while read -r file; do
+            if ! grep -q "ENC\[AES256_GCM" "$file"; then
+              echo "ERROR: $file does not appear to be encrypted"
               fail=1
             fi
-          done
+          done < <(find kubernetes/ -name "*.sops.yaml")
           exit $fail
 
   flux-substitution:
@@ -136,7 +142,7 @@ jobs:
           curl -sSL "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz" \
             | tar xz -C /usr/local/bin flux
 
-      - uses: ./.github/actions/kubeconform
+      - uses: ./.github/actions/manifest-tools
 
       - name: Render the Flux Kustomizations and validate the applied output
         run: bash scripts/validate-substitution.sh

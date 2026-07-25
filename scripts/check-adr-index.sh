@@ -5,7 +5,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 adr_dir="$repo_root/docs/adr"
 index="$adr_dir/README.md"
 
-records="$(cd "$adr_dir" && ls [0-9][0-9][0-9][0-9]-*.md | sort)"
+records="$(find "$adr_dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -exec basename {} \; | sort)"
 linked="$(grep -oE '\(([0-9]{4}-[^)]+\.md)\)' "$index" | tr -d '()' | sort -u)"
 
 missing_from_index=""

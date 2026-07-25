@@ -1,0 +1,59 @@
+name: manifest-tools
+description: Install the pinned manifest toolchain and export the kubeconform schema location
+
+runs:
+  using: composite
+  steps:
+    - name: Install yq
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=mikefarah/yq
+        YQ_VERSION: v4.53.3
+      run: |
+        curl -sSL -o /usr/local/bin/yq \
+          "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
+        chmod +x /usr/local/bin/yq
+
+    - name: Install kustomize
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>.+)$
+        KUSTOMIZE_VERSION: v5.8.1
+      run: |
+        curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
+          | tar xz -C /usr/local/bin kustomize
+
+    - name: Install helm
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=helm/helm
+        HELM_VERSION: v4.2.3
+      run: |
+        curl -sSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
+          | tar xz --strip-components=1 -C /usr/local/bin linux-amd64/helm
+
+    - name: Install kubeconform
+      shell: bash
+      env:
+        # renovate: datasource=github-releases depName=yannh/kubeconform
+        KUBECONFORM_VERSION: v0.8.0
+      run: |
+        curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+          | tar xz -C /usr/local/bin kubeconform
+
+    - name: Fetch the CRD schema catalog
+      shell: bash
+      env:
+        # renovate: datasource=git-refs depName=https://github.com/datreeio/CRDs-catalog branch=main
+        CRDS_CATALOG_COMMIT: dcaa31aa03082906c0325a7a0ee7d5191e9cbe24
+      run: |
+        git init -q /tmp/crds-catalog
+        git -C /tmp/crds-catalog fetch -q --depth=1 \
+          https://github.com/datreeio/CRDs-catalog "${CRDS_CATALOG_COMMIT}"
+        git -C /tmp/crds-catalog checkout -q FETCH_HEAD
+
+    - name: Export the schema location
+      shell: bash
+      run: |
+        echo 'KUBECONFORM_SCHEMA_LOCATION=/tmp/crds-catalog/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+          >> "$GITHUB_ENV"
