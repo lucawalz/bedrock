@@ -45,11 +45,9 @@ spec:
     persistentVolume:
       enabled: true
       size: 30Gi
-      storageClass: longhorn-disposable
+      storageClass: longhorn
       accessModes:
         - ReadWriteOnce
-    nodeSelector:
-      kubernetes.io/hostname: worker-1
     resources:
       requests:
         cpu: "1000m"
