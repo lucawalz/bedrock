@@ -64,7 +64,8 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key, t
    ```
 
    The recovery point is the backup interval. The `daily-dr` schedule runs at 02:00, so up to a day of data is at risk.
-9. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
+9. Admission. Reapply the one setting Flux cannot carry, the `rancher-webhook` replica count and its anti-affinity, which the Rancher-owned chart exposes no value for. The command and the reasoning are in the [admission break-glass runbook](admission-break-glass.md). Until it is applied the cluster runs a single-replica webhook that fails Secret writes cluster-wide when its node is lost.
+10. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
 
 ## Secret recovery
 
@@ -99,6 +100,7 @@ These checks validate the chain on a schedule, without destructively touching th
 
 ## Known gaps
 
+- The `rancher-webhook` replica count and anti-affinity are imperative and are not reconciled, so a rebuild returns to a single replica until step 9 is reapplied.
 - The age key is held only on the operator's workstation, by choice.
 - master's pinned filesystem UUIDs must be regenerated after a disk wipe.
 - A full bare-metal rehearsal, re-imaging spare hardware end to end, and a full reconcile on unlike hardware both depend on a cluster-appropriate overlay that does not exist yet.

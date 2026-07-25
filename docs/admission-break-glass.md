@@ -108,7 +108,9 @@ kubectl -n kyverno get endpoints kyverno-svc
 kubectl -n cattle-system get endpoints rancher-webhook
 ```
 
-An admission webhook with no ready endpoints is a scheduling or health problem, not an admission problem. Kyverno runs two replicas with hard anti-affinity, so a single node loss leaves one serving. rancher-webhook runs a single replica and its chart exposes no way to change that, so a node loss takes it out entirely until the pod is rescheduled.
+An admission webhook with no ready endpoints is a scheduling or health problem, not an admission problem. Kyverno and rancher-webhook both run two replicas with hard anti-affinity, so a single node loss leaves one of each serving.
+
+The rancher-webhook replica count is set imperatively and is the one part of this that Flux does not reconcile. See Restoring rancher-webhook below.
 
 ## Restoring enforcement
 
@@ -144,9 +146,29 @@ Ten entries are `Ignore` by design and are expected in that output at rest. Anyt
 | `rancher.cattle.io` | `rancher.cattle.io.podsecurityadmissionconfigurationtemplates.management.cattle.io` |
 | `rancher.cattle.io` | `rancher.cattle.io.settings.management.cattle.io` |
 
+## Restoring rancher-webhook
+
+The `rancher-webhook` chart contains no `replicas` field and no affinity values, so a second replica cannot be declared through Helm or reconciled by Flux. It is set imperatively instead, and must be reapplied after any rebuild that reinstalls Rancher from scratch:
+
+```
+kubectl -n cattle-system patch deploy/rancher-webhook --type=merge -p '{
+  "spec": {"replicas": 2, "template": {"spec": {"affinity": {"podAntiAffinity":
+    {"requiredDuringSchedulingIgnoredDuringExecution": [{"labelSelector":
+      {"matchLabels": {"app": "rancher-webhook"}},
+      "topologyKey": "kubernetes.io/hostname"}]}}}}}}'
+```
+
+The change survives Rancher upgrades. Both fields are absent from the chart's rendered manifest, so Helm's three-way merge produces no patch entry for either and the live values are left alone. It does not survive a rebuild that installs the chart into an empty cluster, because nothing then carries the value forward.
+
+Confirm the result, which should show two ready pods on two different nodes:
+
+```
+kubectl -n cattle-system get pods -l app=rancher-webhook -o wide
+```
+
 ## Known gaps
 
-- rancher-webhook runs one replica. The chart contains no `replicas` field and no affinity values, so neither a second replica nor placement can be set through Helm. Losing its node means no Secret can be written cluster-wide until the pod is rescheduled.
+- The rancher-webhook replica count and anti-affinity are imperative, for the reason above. Nothing detects their absence, so a rebuild silently returns to one replica until the command is reapplied.
 - The Rancher webhook rules and failure policies are written by the binary at runtime and are not tunable through chart values, so enforcement scope cannot be narrowed declaratively.
 - Whether the rancher-webhook binary recreates a deleted webhook configuration is unverified. Until it is, take a copy before deleting.
 - The `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks are served by the cleanup controller, whose binary has no timeout flag. They stay at a 10 second timeout while the rest of Kyverno runs at 5.
