@@ -109,8 +109,12 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/kiwix/kiwix-serve
+              repository: ghcr.io/kiwix/kiwix-tools
               tag: "3.8.2"
+            command:
+              - /usr/bin/dumb-init
+              - --
+              - /usr/local/bin/kiwix-serve
             args:
               - --port=8080
               - --monitorLibrary
