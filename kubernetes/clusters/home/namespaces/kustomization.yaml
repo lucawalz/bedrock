@@ -29,3 +29,4 @@ resources:
   - litellm.yaml
   - miniflux.yaml
   - kiwix.yaml
+  - zot.yaml
