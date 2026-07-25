@@ -30,6 +30,8 @@ spec:
           - llama3.2:3b
           - qwen2.5:7b
           - nomic-embed-text
+    podAnnotations:
+      backup.velero.io/backup-volumes-excludes: ollama-data
     securityContext:
       allowPrivilegeEscalation: false
       capabilities:
