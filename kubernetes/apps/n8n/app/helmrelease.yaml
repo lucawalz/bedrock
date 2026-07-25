@@ -22,6 +22,7 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
+    existingEncryptionKeySecret: n8n-encryption-key
     strategy:
       type: Recreate
     ingress:
