@@ -96,6 +96,48 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: a single switchover archive failure does not alert
+    input_series:
+      - series: 'cnpg_pg_stat_archiver_failed_count{namespace="postgres", pod="postgres-2"}'
+        values: '0+0x30 1+0x90'
+      - series: 'cnpg_collector_pg_wal_archive_status{namespace="postgres", pod="postgres-2", value="ready"}'
+        values: '0x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: CNPGWALArchiveFailing
+        exp_alerts: []
+      - eval_time: 90m
+        alertname: CNPGWALArchiveBacklog
+        exp_alerts: []
+
+  - interval: 1m
+    name: a sustained archive outage alerts on rate and backlog
+    input_series:
+      - series: 'cnpg_pg_stat_archiver_failed_count{namespace="postgres", pod="postgres-2"}'
+        values: '0+2x180'
+      - series: 'cnpg_collector_pg_wal_archive_status{namespace="postgres", pod="postgres-2", value="ready"}'
+        values: '0+1x180'
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: CNPGWALArchiveFailing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: postgres
+            exp_annotations:
+              summary: "CloudNativePG WAL archiving is failing in postgres"
+              description: "CloudNativePG in namespace postgres recorded 30 failed WAL archive attempts in the last 15 minutes. The archiver retries one stuck segment on a fixed loop, so a sustained rate means continuous archiving has stopped and point-in-time recovery is frozen at the last archived segment. The counters live only on whichever instance is primary and reset when the role moves, so this sums across the namespace rather than tracking a pod."
+      - eval_time: 120m
+        alertname: CNPGWALArchiveBacklog
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: postgres
+            exp_annotations:
+              summary: "CloudNativePG has unarchived WAL segments in postgres"
+              description: "CloudNativePG in namespace postgres has 120 WAL segments waiting to be archived and has not cleared them for 30 minutes. WAL shares the data volume, so a backlog that keeps growing eventually fills it and stops the primary. This measures the backlog directly and carries no counter-reset semantics, so it stays valid across a switchover."
+
+  - interval: 1m
     name: a never backed up volume alerts once past the grace period
     input_series:
       - series: 'longhorn_volume_last_backup_at{volume="pvc-never", pvc="kiwix-library", pvc_namespace="kiwix"}'
