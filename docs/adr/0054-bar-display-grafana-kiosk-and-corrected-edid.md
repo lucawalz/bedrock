@@ -75,3 +75,30 @@ system generation that carries the service. Removing Headlamp leaves one fewer s
 credential, and the most network-exposed host no longer has a path to a `cluster-admin` token at
 all. This supersedes the display-target choice in
 [0051](0051-headlamp-window-into-the-cluster.md); the kiosk session it describes is retained.
+
+## Update 2026-07-25
+
+The EDID half of this record still describes what runs. The kiosk half does not.
+
+Anonymous Grafana access is gone. `auth.anonymous.enabled` is `false` in the kube-prometheus-stack
+values, so Grafana requires a login again and no longer serves read-only dashboards to everything that
+can reach it on the LAN or the tailnet. An earlier attempt to disable it on 2026-07-12 was reverted the
+same day, because with anonymous access removed the panel landed on the Grafana sign-in page and
+reproduced the exact failure that moved it off Headlamp: an unattended display with no keyboard resting
+on a login form.
+
+The panel is now driven by a Grafana public dashboard instead. The bar dashboard is published as its
+own link, and that link is held in an agenix secret, `secrets/grafana-kiosk-url.age`, readable only by
+the `kiosk` user. A wrapper script reads the file at launch and hands its contents to Chromium, so the
+`kiosk-browser` service and the labwc menu entry both go through one place and the URL is no longer a
+literal in `modules/router/desktop.nix`. Rotating the link is an agenix re-key rather than an edit to
+the router's Nix configuration.
+
+The reasoning that chose an unauthenticated view for the panel still holds, because a wall display with
+no input device cannot complete an interactive login and something on the path has to be reachable
+without one. What changed is the scope of that exemption. Anonymous Viewer opened every dashboard to
+anyone who could reach Grafana; a public dashboard link opens exactly one dashboard, and the unguessable
+token in the link is the only credential, which is why the URL is treated as a secret rather than
+committed in the clear. That narrows the decision rather than reversing it, so this record is amended
+rather than superseded, and the word `anonymous` in the title stays as the mechanism chosen on
+2026-06-23.
