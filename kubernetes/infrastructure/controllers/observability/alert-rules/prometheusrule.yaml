@@ -95,6 +95,22 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} has a dangerously stale backup"
             description: "The newest Longhorn backup for volume {{ $labels.volume }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed nightly runs."
+        - alert: LonghornVolumeNeverBackedUp
+          expr: max by (volume, pvc, pvc_namespace) (longhorn_volume_last_backup_at) == 0
+          for: 26h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} has never been backed up"
+            description: "Longhorn has recorded no backup at all for volume {{ $labels.volume }}, claimed by {{ $labels.pvc_namespace }}/{{ $labels.pvc }}, for over 26 hours. The stale-backup alerts cannot see this case because they compare against the newest backup timestamp, which does not exist here. A volume in this state has no restore point whatsoever."
+        - alert: LonghornBackupFailed
+          expr: max by (backup, volume) (longhorn_backup_state) == 4
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn backup {{ $labels.backup }} is in Error state"
+            description: "Longhorn reports backup {{ $labels.backup }} of volume {{ $labels.volume }} in Error state. A failed backup leaves the volume on its previous restore point, or on none at all if this was its first, and the recurring job does not retry until the next scheduled run."
         - alert: LonghornVolumeDegraded
           expr: longhorn_volume_robustness == 2
           for: 30m

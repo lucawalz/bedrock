@@ -96,6 +96,48 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: a never backed up volume alerts once past the grace period
+    input_series:
+      - series: 'longhorn_volume_last_backup_at{volume="pvc-never", pvc="kiwix-library", pvc_namespace="kiwix"}'
+        values: '0x1700'
+      - series: 'longhorn_volume_last_backup_at{volume="pvc-abc", pvc="n8n-data", pvc_namespace="n8n"}'
+        values: '1x1700'
+    alert_rule_test:
+      - eval_time: 1000m
+        alertname: LonghornVolumeNeverBackedUp
+        exp_alerts: []
+      - eval_time: 1610m
+        alertname: LonghornVolumeNeverBackedUp
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              volume: pvc-never
+              pvc: kiwix-library
+              pvc_namespace: kiwix
+            exp_annotations:
+              summary: "Longhorn volume kiwix/kiwix-library has never been backed up"
+              description: "Longhorn has recorded no backup at all for volume pvc-never, claimed by kiwix/kiwix-library, for over 26 hours. The stale-backup alerts cannot see this case because they compare against the newest backup timestamp, which does not exist here. A volume in this state has no restore point whatsoever."
+
+  - interval: 1m
+    name: a longhorn backup in error state alerts
+    input_series:
+      - series: 'longhorn_backup_state{backup="backup-31a1b5625e944c3a", volume="pvc-f4becfb7"}'
+        values: '4x120'
+      - series: 'longhorn_backup_state{backup="backup-completed", volume="pvc-abc"}'
+        values: '3x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: LonghornBackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              backup: backup-31a1b5625e944c3a
+              volume: pvc-f4becfb7
+            exp_annotations:
+              summary: "Longhorn backup backup-31a1b5625e944c3a is in Error state"
+              description: "Longhorn reports backup backup-31a1b5625e944c3a of volume pvc-f4becfb7 in Error state. A failed backup leaves the volume on its previous restore point, or on none at all if this was its first, and the recurring job does not retry until the next scheduled run."
+
+  - interval: 1m
     name: longhorn degraded volume alerts
     input_series:
       - series: 'longhorn_volume_robustness{volume="pvc-abc"}'
