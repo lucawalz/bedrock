@@ -3,6 +3,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: kiwix-library
   namespace: kiwix
+  labels:
+    recurring-job.longhorn.io/source: enabled
+    recurring-job.longhorn.io/snapshot-prune: enabled
+    recurring-job.longhorn.io/filesystem-trim: enabled
 spec:
   accessModes:
     - ReadWriteOnce

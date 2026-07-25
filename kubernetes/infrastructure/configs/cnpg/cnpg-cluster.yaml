@@ -8,6 +8,9 @@ spec:
   inheritedMetadata:
     labels:
       velero.io/exclude-from-backup: "true"
+      recurring-job.longhorn.io/source: enabled
+      recurring-job.longhorn.io/snapshot-prune: enabled
+      recurring-job.longhorn.io/filesystem-trim: enabled
   affinity:
     enablePodAntiAffinity: true
     topologyKey: kubernetes.io/hostname
