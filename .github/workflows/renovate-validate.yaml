@@ -2,9 +2,8 @@ name: renovate-validate
 
 on:
   pull_request:
-    paths:
-      - renovate.json
-      - .github/renovate.json5
+  push:
+    branches: [main]
 
 permissions:
   contents: read
