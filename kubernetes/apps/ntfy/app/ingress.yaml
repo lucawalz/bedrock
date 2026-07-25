@@ -18,6 +18,8 @@ spec:
   routes:
     - match: Host(`ntfy.${cluster_domain}`)
       kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
       services:
         - name: ntfy
           port: 80
