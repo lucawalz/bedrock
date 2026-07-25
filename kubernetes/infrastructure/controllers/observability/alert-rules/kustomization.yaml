@@ -5,5 +5,6 @@ resources:
   - cert-manager-servicemonitor.yaml
   - flux-servicemonitor.yaml
   - velero-servicemonitor.yaml
+  - longhorn-servicemonitor.yaml
   - prometheusrule.yaml
   - slo-blog.yaml
