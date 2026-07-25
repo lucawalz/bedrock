@@ -1,21 +1,18 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: cert-manager
+  name: kyverno
   namespace: monitoring
   labels:
     release: kube-prometheus-stack
 spec:
   namespaceSelector:
     matchNames:
-      - cert-manager
+      - kyverno
   selector:
     matchLabels:
-      app.kubernetes.io/instance: cert-manager
+      app.kubernetes.io/part-of: kyverno
   endpoints:
-    - port: http-metrics
-      interval: 60s
-      path: /metrics
-    - port: metrics
+    - port: metrics-port
       interval: 60s
       path: /metrics

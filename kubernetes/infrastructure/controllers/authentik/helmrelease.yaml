@@ -65,6 +65,13 @@ spec:
               key: github-client-secret
     server:
       replicas: 2
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 60s
+          labels:
+            release: kube-prometheus-stack
       resources:
         requests:
           cpu: 100m

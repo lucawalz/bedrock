@@ -1,21 +1,19 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: cert-manager
+  name: minio
   namespace: monitoring
   labels:
     release: kube-prometheus-stack
 spec:
   namespaceSelector:
     matchNames:
-      - cert-manager
+      - minio
   selector:
     matchLabels:
-      app.kubernetes.io/instance: cert-manager
+      app: minio
+      monitoring: "true"
   endpoints:
-    - port: http-metrics
+    - port: http
       interval: 60s
-      path: /metrics
-    - port: metrics
-      interval: 60s
-      path: /metrics
+      path: /minio/v2/metrics/cluster

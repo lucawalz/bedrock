@@ -14,6 +14,19 @@ spec:
         kind: HelmRepository
         name: metallb
         namespace: flux-system
+  values:
+    prometheus:
+      rbacPrometheus: true
+      serviceAccount: kube-prometheus-stack-prometheus
+      namespace: monitoring
+      serviceMonitor:
+        enabled: true
+        speaker:
+          additionalLabels:
+            release: kube-prometheus-stack
+        controller:
+          additionalLabels:
+            release: kube-prometheus-stack
   install:
     createNamespace: true
     crds: Create

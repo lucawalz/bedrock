@@ -75,6 +75,12 @@ spec:
               capabilities:
                 drop:
                   - ALL
+    service:
+      metrics:
+        controller: cloudflared
+        ports:
+          metrics:
+            port: 2000
     defaultPodOptions:
       priorityClassName: system-cluster-critical
       affinity:
