@@ -43,6 +43,9 @@ jobs:
         with:
           version: "~1.11"
 
+      - name: Generate ephemeral SSH key
+        run: ssh-keygen -t ed25519 -f /tmp/packer_key -N ""
+
       - name: Validate the packer templates
         working-directory: infra/packer
         env:
@@ -50,7 +53,7 @@ jobs:
           PKR_VAR_hcloud_token: validate-only
           PKR_VAR_nixos_commit_sha: ${{ github.sha }}
           PKR_VAR_nixos_hash: validate-only
-          PKR_VAR_ssh_private_key_file: /dev/null
+          PKR_VAR_ssh_private_key_file: /tmp/packer_key
         run: |
           packer init .
           packer fmt -check .

@@ -9,15 +9,68 @@
   },
   "flux": {
     "enabled": true,
-    "fileMatch": ["kubernetes/.+\\.ya?ml$"]
+    "managerFilePatterns": ["/kubernetes/.+\\.ya?ml$/"]
+  },
+  "kubernetes": {
+    "enabled": true,
+    "managerFilePatterns": ["/kubernetes/.+\\.ya?ml$/"]
   },
   "github-actions": {
     "enabled": true
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Update versions annotated with a renovate comment in CI",
+      "managerFilePatterns": ["/^\\.github/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)(?: versioning=(?<versioning>\\S+?))?(?: extractVersion=(?<extractVersion>\\S+?))?\\s+[A-Za-z0-9_-]+?\\s*[:=]\\s*\"?(?<currentValue>[^\"\\s]+)\"?"
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update the Grafana image pinned in a Helm values ConfigMap, which the flux manager cannot see",
+      "managerFilePatterns": ["/^kubernetes/infrastructure/controllers/.+/configmap\\.ya?ml$/"],
+      "matchStrings": ["grafana:[\\s\\S]*?\\n\\s+image:\\s*\\n\\s+tag:\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "grafana/grafana",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Track the CRD schema catalog commit pinned for kubeconform",
+      "managerFilePatterns": ["/^\\.github/actions/manifest-tools/action\\.yml$/"],
+      "matchStrings": ["CRDS_CATALOG_COMMIT:\\s*(?<currentDigest>[0-9a-f]{40})"],
+      "depNameTemplate": "https://github.com/datreeio/CRDs-catalog",
+      "datasourceTemplate": "git-refs",
+      "currentValueTemplate": "main"
+    },
+    {
+      "customType": "regex",
+      "description": "Update the base image and plugin pins in the Packer templates",
+      "managerFilePatterns": ["/^infra/packer/.+\\.pkr\\.hcl$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)(?: versioning=(?<versioning>\\S+?))?\\s+[A-Za-z0-9_-]+?\\s*=\\s*\"[a-z]+-(?<currentValue>[^\"\\s]+)\"",
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)(?: extractVersion=(?<extractVersion>\\S+?))?\\s+version\\s*=\\s*\"=\\s*(?<currentValue>[^\"\\s]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "Update the nixos-anywhere flake reference used by Packer",
+      "managerFilePatterns": ["/^infra/packer/.+\\.pkr\\.hcl$/"],
+      "matchStrings": ["github:nix-community/nixos-anywhere\\?ref=(?<currentValue>[^'\"\\s]+)"],
+      "depNameTemplate": "nix-community/nixos-anywhere",
+      "datasourceTemplate": "github-tags"
+    }
+  ],
   "rebaseWhen": "conflicted",
   "platformAutomerge": true,
   "timezone": "Europe/Berlin",
   "packageRules": [
+    {
+      "description": "Flux image automation owns the blog image tag",
+      "matchFileNames": ["kubernetes/apps/blog/app/deployment.yaml"],
+      "enabled": false
+    },
     {
       "description": "Group all nixpkgs flake updates together",
       "matchManagers": ["nix"],
@@ -66,9 +119,22 @@
         "/^traefik$/",
         "/^authentik$/",
         "/^rancher$/",
-        "/^metallb$/"
+        "/^metallb$/",
+        "/^minio$/",
+        "/^flux-operator$/",
+        "/^kyverno$/",
+        "/^loki$/",
+        "/^tempo$/",
+        "/^alloy$/",
+        "/^paperless-ngx$/",
+        "/^flagger$/"
       ],
       "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false
+    },
+    {
+      "description": "Hold the node image inputs, since a bump rebuilds the snapshot",
+      "matchFileNames": ["infra/packer/**"],
       "automerge": false
     },
     {
