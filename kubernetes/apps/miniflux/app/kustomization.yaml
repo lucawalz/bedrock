@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: miniflux
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/internet-egress
 resources:
   - helmrelease.yaml
   - ingress.yaml
