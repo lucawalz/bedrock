@@ -39,6 +39,7 @@ spec:
           memory: "256Mi"
     webhook:
       replicaCount: 2
+      timeoutSeconds: 5
       affinity:
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
