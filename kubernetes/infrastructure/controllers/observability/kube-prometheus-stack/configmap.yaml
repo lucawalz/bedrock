@@ -46,6 +46,8 @@ data:
       enabled: false
     kubeProxy:
       enabled: false
+    kubeEtcd:
+      enabled: false
 
     defaultRules:
       rules:

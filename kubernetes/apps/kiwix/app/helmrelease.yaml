@@ -5,6 +5,7 @@ metadata:
   namespace: kiwix
 spec:
   interval: 30m
+  timeout: 3h
   chart:
     spec:
       chart: app-template
@@ -50,7 +51,7 @@ spec:
                     return 0
                   fi
                   echo "downloading $${name}"
-                  wget -q -O "$${name}.part" "$${mirror}/$${dir}/$${name}"
+                  wget -q -c -O "$${name}.part" "$${mirror}/$${dir}/$${name}"
                   mv "$${name}.part" "$${name}"
                 }
 
