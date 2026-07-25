@@ -7,7 +7,6 @@ metadata:
     policies.kyverno.io/category: Pod Security Standards (Restricted)
     policies.kyverno.io/severity: medium
     policies.kyverno.io/subject: Pod
-    # the pod is the enforcement point because the companion mutate rule defaults the field there
     pod-policies.kyverno.io/autogen-controllers: none
 spec:
   validationFailureAction: Enforce
