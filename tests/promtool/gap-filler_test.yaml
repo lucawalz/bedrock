@@ -125,3 +125,44 @@ tests:
       - eval_time: 60m
         alertname: LonghornVolumeDegraded
         exp_alerts: []
+
+  - interval: 1m
+    name: a dead exporter raises the absent guards
+    input_series:
+      - series: 'up{job="kube-prometheus-stack-kube-state-metrics"}'
+        values: '0x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KubeStateMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "kube-state-metrics has stopped reporting"
+              description: "Prometheus has held no kube_pod_info series for more than 15 minutes, so every workload, node and capacity alert derived from kube-state-metrics is unable to fire."
+      - eval_time: 30m
+        alertname: FluxMetricsAbsent
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Flux resource metrics have disappeared"
+              description: "Prometheus has held no flux_resource_info series for more than 15 minutes, so FluxReconciliationFailure cannot fire and a stalled delivery pipeline would stay invisible."
+
+  - interval: 1m
+    name: reporting exporters raise nothing
+    input_series:
+      - series: 'kube_pod_info{namespace="monitoring", pod="prometheus-0"}'
+        values: '1x60'
+      - series: 'flux_resource_info{kind="Kustomization", name="apps", exported_namespace="flux-system", ready="True", suspended="False"}'
+        values: '1x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KubeStateMetricsAbsent
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: FluxMetricsAbsent
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: FluxReconciliationFailure
+        exp_alerts: []
