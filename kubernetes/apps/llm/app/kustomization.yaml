@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: llm
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/internet-egress
 resources:
   - ollama
   - open-webui
