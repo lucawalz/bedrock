@@ -284,6 +284,44 @@ data:
           name: ntfy
           slug: ntfy
           provider: !KeyOf prov-ntfy
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-rancher
+        identifiers:
+          name: rancher-forward-auth
+        attrs:
+          name: rancher-forward-auth
+          mode: forward_domain
+          external_host: https://rancher.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-rancher
+        identifiers:
+          slug: rancher
+        attrs:
+          name: Rancher
+          slug: rancher
+          provider: !KeyOf prov-rancher
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-kiwix
+        identifiers:
+          name: kiwix-forward-auth
+        attrs:
+          name: kiwix-forward-auth
+          mode: forward_domain
+          external_host: https://kiwix.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-kiwix
+        identifiers:
+          slug: kiwix
+        attrs:
+          name: Kiwix
+          slug: kiwix
+          provider: !KeyOf prov-kiwix
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -300,3 +338,5 @@ data:
             - !KeyOf prov-homepage
             - !KeyOf prov-litellm
             - !KeyOf prov-ntfy
+            - !KeyOf prov-rancher
+            - !KeyOf prov-kiwix
