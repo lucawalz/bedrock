@@ -175,5 +175,7 @@ The evidence table below records what has actually been exercised. An earlier re
 - The age key is held only on the operator's workstation, by choice. It is simultaneously the SOPS recovery identity and the SSH credential for all four hosts, so losing that machine loses access and decryption in the same event.
 - `basalt-backups` holds the estate twice over, since an etcd snapshot contains the cluster CA material and every Secret, and the Velero backups include `flux-system/sops-age`. It should be treated as a credential store rather than as backup data.
 - Three writers hold delete rights on `basalt-backups` with no object lock and no coordination between their retention policies.
+- kiwix is deliberately not backed up. Its 32 GB of ZIM files are re-downloaded from `download.kiwix.org` by an idempotent init container, so recovery is a redownload rather than a restore. Its backups previously failed at 85 percent anyway.
+- Fifteen orphaned Longhorn `BackupVolume` objects remain for PVCs that no longer exist and will never be pruned. One of them holds the only surviving backup of the ollama volume.
 - master's pinned filesystem UUIDs must be regenerated after a disk wipe.
 - A full bare-metal rehearsal, re-imaging spare hardware end to end, and a full reconcile on unlike hardware both depend on a cluster-appropriate overlay that does not exist yet.
