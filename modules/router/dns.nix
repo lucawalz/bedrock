@@ -153,6 +153,11 @@ in
             enabled = true;
           }
           {
+            domain = "registry.syslabs.dev";
+            answer = "10.20.0.50";
+            enabled = true;
+          }
+          {
             domain = "rss.syslabs.dev";
             answer = "10.20.0.50";
             enabled = true;
