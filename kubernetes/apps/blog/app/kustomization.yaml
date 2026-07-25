@@ -1,8 +1,18 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+components:
+  - ../../../components/network-policies/base
 resources:
   - deployment.yaml
   - ingress.yaml
   - networkpolicies.yaml
   - image-automation.yaml
   - canary.yaml
+# a namespace transformer would relocate the flux image automation resources out of flux-system
+patches:
+  - target:
+      kind: NetworkPolicy
+    patch: |-
+      - op: add
+        path: /metadata/namespace
+        value: blog
