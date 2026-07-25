@@ -140,7 +140,7 @@ secrets/               agenix-encrypted host secrets: the K3s join token, the ro
 infra/packer/          the Packer template that bakes the on-demand node snapshot
 scripts/               the checks CI runs: ADR index, inventory generation, substitution rendering
 tests/                 Kyverno policy tests and promtool alert-rule tests
-docs/                  the ADR log, the cluster inventory, and the disaster recovery runbook
+docs/                  the ADR log, the cluster inventory, and the disaster recovery and admission break-glass runbooks
 kubernetes/
   apps/                workloads Flux reconciles, one directory per app
   components/          shared kustomize components (network policies, forward-auth)
@@ -196,6 +196,8 @@ Several layers of defense-in-depth sit on top. The app namespaces run default-de
 ## Disaster recovery
 
 The cluster is reproducible from this repository plus a small set of seeds it cannot hold: the age key that decrypts the secrets, the host SSH keys, and the Velero backups in Hetzner object storage. The full rebuild from total loss, the recovery seeds, and the procedures for rehearsing recovery without an outage are in the [disaster recovery runbook](docs/disaster-recovery.md).
+
+Admission webhooks are a separate recovery path, because one that is unavailable rejects the very writes needed to repair it. Recognising that failure, relaxing enforcement, and restoring it afterwards are covered in the [admission break-glass runbook](docs/admission-break-glass.md).
 
 ## Continuous integration
 
