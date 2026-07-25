@@ -13,6 +13,11 @@ spec:
     topologyKey: kubernetes.io/hostname
     podAntiAffinityType: required
   enableSuperuserAccess: true
+  postgresql:
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: preferred
   storage:
     size: 8Gi
     storageClass: longhorn
