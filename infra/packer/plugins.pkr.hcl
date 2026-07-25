@@ -1,7 +1,8 @@
 packer {
   required_plugins {
     hcloud = {
-      version = ">= 1.5.0"
+      # renovate: datasource=github-releases depName=hetznercloud/packer-plugin-hcloud extractVersion=^v(?<version>.+)$
+      version = "= 1.7.2"
       source  = "github.com/hetznercloud/hcloud"
     }
   }

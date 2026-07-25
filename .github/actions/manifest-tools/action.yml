@@ -44,7 +44,6 @@ runs:
     - name: Fetch the CRD schema catalog
       shell: bash
       env:
-        # renovate: datasource=git-refs depName=https://github.com/datreeio/CRDs-catalog branch=main
         CRDS_CATALOG_COMMIT: dcaa31aa03082906c0325a7a0ee7d5191e9cbe24
       run: |
         git init -q /tmp/crds-catalog

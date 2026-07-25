@@ -1,5 +1,6 @@
 source "hcloud" "cluster-node" {
-  token                = var.hcloud_token
+  token = var.hcloud_token
+  # renovate: datasource=docker depName=debian versioning=docker
   image                = "debian-12"
   location             = "hel1"
   server_type          = "cpx22"

@@ -19,4 +19,7 @@ jobs:
           node-version: lts/*
 
       - name: Validate renovate config
-        run: npx --yes renovate-config-validator
+        env:
+          # renovate: datasource=npm depName=renovate
+          RENOVATE_VERSION: 43.280.4
+        run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator
