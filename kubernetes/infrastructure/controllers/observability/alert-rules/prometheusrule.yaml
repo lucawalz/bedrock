@@ -106,21 +106,21 @@ spec:
     - name: etcd.rules
       rules:
         - alert: EtcdSnapshotTooOld
-          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true"}) or vector(0)) > 26 * 3600
+          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true", location=~".*/etcd-snapshot-.*"}) or vector(0)) > 26 * 3600
           for: 1h
           labels:
             severity: warning
           annotations:
-            summary: "k3s has recorded no recent etcd snapshot"
-            description: "No usable k3s etcd snapshot has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run."
+            summary: "k3s has recorded no recent scheduled etcd snapshot"
+            description: "No usable k3s etcd snapshot from the schedule has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot taken by hand would otherwise hide a schedule that has stopped running."
         - alert: EtcdSnapshotNotUploaded
-          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true", location=~"s3://.*"}) or vector(0)) > 26 * 3600
+          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true", location=~"s3://.*/etcd-snapshot-.*"}) or vector(0)) > 26 * 3600
           for: 1h
           labels:
             severity: critical
           annotations:
-            summary: "No k3s etcd snapshot has reached object storage"
-            description: "No usable k3s etcd snapshot with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken."
+            summary: "No scheduled k3s etcd snapshot has reached object storage"
+            description: "No usable k3s etcd snapshot from the schedule with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot uploaded by hand would otherwise hide a schedule that has stopped running."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent
