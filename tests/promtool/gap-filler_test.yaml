@@ -160,6 +160,82 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: etcd snapshots that never reach s3 raise the upload alert only
+    input_series:
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-master-1", node="master", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-master-1", ready="true"}'
+        values: '100000x1900'
+    alert_rule_test:
+      - eval_time: 1680m
+        alertname: EtcdSnapshotTooOld
+        exp_alerts: []
+      - eval_time: 1680m
+        alertname: EtcdSnapshotNotUploaded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "No k3s etcd snapshot has reached object storage"
+              description: "No usable k3s etcd snapshot with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken."
+
+  - interval: 1m
+    name: an s3 snapshot that failed to upload does not count as offsite
+    input_series:
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-master-1", node="master", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-master-1", ready="true"}'
+        values: '100000x1900'
+      - series: 'kube_etcdsnapshotfile_created{name="s3-etcd-snapshot-master-1", node="master", location="s3://basalt-backups/etcd-snapshots/etcd-snapshot-master-1", ready="false"}'
+        values: '100000x1900'
+    alert_rule_test:
+      - eval_time: 1680m
+        alertname: EtcdSnapshotTooOld
+        exp_alerts: []
+      - eval_time: 1680m
+        alertname: EtcdSnapshotNotUploaded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "No k3s etcd snapshot has reached object storage"
+              description: "No usable k3s etcd snapshot with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken."
+
+  - interval: 1m
+    name: a stopped snapshot schedule raises both etcd alerts
+    input_series:
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-master-1", node="master", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-master-1", ready="true"}'
+        values: '0x1900'
+    alert_rule_test:
+      - eval_time: 1680m
+        alertname: EtcdSnapshotTooOld
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "k3s has recorded no recent etcd snapshot"
+              description: "No usable k3s etcd snapshot has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run."
+      - eval_time: 1680m
+        alertname: EtcdSnapshotNotUploaded
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "No k3s etcd snapshot has reached object storage"
+              description: "No usable k3s etcd snapshot with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken."
+
+  - interval: 1m
+    name: current local and s3 etcd snapshots raise nothing
+    input_series:
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-master-1", node="master", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-master-1", ready="true"}'
+        values: '100000x1900'
+      - series: 'kube_etcdsnapshotfile_created{name="s3-etcd-snapshot-master-1", node="master", location="s3://basalt-backups/etcd-snapshots/etcd-snapshot-master-1", ready="true"}'
+        values: '100000x1900'
+    alert_rule_test:
+      - eval_time: 1680m
+        alertname: EtcdSnapshotTooOld
+        exp_alerts: []
+      - eval_time: 1680m
+        alertname: EtcdSnapshotNotUploaded
+        exp_alerts: []
+
+  - interval: 1m
     name: a dead exporter raises the absent guards
     input_series:
       - series: 'up{job="kube-prometheus-stack-kube-state-metrics"}'
