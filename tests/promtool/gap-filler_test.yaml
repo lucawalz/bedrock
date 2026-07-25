@@ -127,6 +127,39 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: a cnpg backup wedged in a non-terminal phase alerts
+    input_series:
+      - series: 'kube_cnpg_backup_phase_info{namespace="postgres", name="postgres-daily-20260724030000", phase="walArchivingFailing"}'
+        values: '1x480'
+    alert_rule_test:
+      - eval_time: 300m
+        alertname: CNPGBackupStuck
+        exp_alerts: []
+      - eval_time: 420m
+        alertname: CNPGBackupStuck
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: postgres
+              name: postgres-daily-20260724030000
+              phase: walArchivingFailing
+            exp_annotations:
+              summary: "CloudNativePG backup postgres/postgres-daily-20260724030000 is stuck in phase walArchivingFailing"
+              description: "The CloudNativePG backup postgres/postgres-daily-20260724030000 has been in the non-terminal phase walArchivingFailing for more than 6 hours. CloudNativePG never times such a backup out and a ScheduledBackup refuses to create a new one while a non-terminal backup exists, so every later run is suppressed until this object reaches a terminal phase or is deleted."
+
+  - interval: 1m
+    name: completed cnpg backups raise nothing
+    input_series:
+      - series: 'kube_cnpg_backup_phase_info{namespace="postgres", name="postgres-daily-20260724030000", phase="completed"}'
+        values: '1x480'
+      - series: 'kube_cnpg_backup_phase_info{namespace="postgres", name="postgres-daily-20260723030000", phase="failed"}'
+        values: '1x480'
+    alert_rule_test:
+      - eval_time: 420m
+        alertname: CNPGBackupStuck
+        exp_alerts: []
+
+  - interval: 1m
     name: a dead exporter raises the absent guards
     input_series:
       - series: 'up{job="kube-prometheus-stack-kube-state-metrics"}'
