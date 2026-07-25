@@ -11,6 +11,19 @@
     group = "root";
   };
 
+  networking.firewall = {
+    allowedTCPPorts = [
+      7946
+      9100
+      9120
+      10250
+    ];
+    allowedUDPPorts = [
+      7946
+      8472
+    ];
+  };
+
   # Critical: Systemd dependency ordering for K3s
   systemd.services.k3s = {
     wants = [ "network-online.target" ];
