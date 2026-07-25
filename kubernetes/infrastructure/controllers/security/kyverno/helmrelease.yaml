@@ -24,6 +24,20 @@ spec:
       remediateLastFailure: true
   values:
     config:
+      webhooks:
+        namespaceSelector:
+          matchExpressions:
+            - key: kubernetes.io/metadata.name
+              operator: NotIn
+              values:
+                - kube-system
+                - flux-system
+                - longhorn-system
+                - cert-manager
+                - metallb-system
+                - monitoring
+                - velero
+                - cnpg-system
       resourceFiltersIncludeNamespaces:
         - kube-system
         - kube-node-lease
@@ -49,6 +63,9 @@ spec:
         - local
     admissionController:
       replicas: 2
+      container:
+        extraArgs:
+          webhookTimeout: 5
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution: []
         requiredDuringSchedulingIgnoredDuringExecution:
