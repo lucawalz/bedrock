@@ -13,13 +13,23 @@ metadata:
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
-    - match: Host(`rancher.syslabs.dev`)
+    # agent registration and health probes cannot complete a forward-auth flow, see ADR 0059
+    - match: Host(`rancher.syslabs.dev`) && (PathPrefix(`/ping`) || PathPrefix(`/healthz`) || PathPrefix(`/v3/connect`) || PathPrefix(`/v3/import`))
       kind: Rule
+      priority: 20
       middlewares:
         - name: rancher-forwarded-proto
+      services:
+        - name: rancher
+          port: 80
+    - match: Host(`rancher.syslabs.dev`)
+      kind: Rule
+      priority: 10
+      middlewares:
+        - name: rancher-forwarded-proto
+        - name: authentik-forward-auth
       services:
         - name: rancher
           port: 80
