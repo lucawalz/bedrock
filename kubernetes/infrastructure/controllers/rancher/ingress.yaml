@@ -15,7 +15,7 @@ spec:
   entryPoints:
     - websecure
   routes:
-    # agent registration and health probes cannot complete a forward-auth flow, see ADR 0059
+    # agent registration and health probes cannot complete a forward-auth flow
     - match: Host(`rancher.syslabs.dev`) && (PathPrefix(`/ping`) || PathPrefix(`/healthz`) || PathPrefix(`/v3/connect`) || PathPrefix(`/v3/import`))
       kind: Rule
       priority: 20
