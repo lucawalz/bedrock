@@ -40,15 +40,5 @@
     group = "root";
   };
 
-  # Firewall ports for K3s control plane
-  networking.firewall.allowedTCPPorts = [
-    6443
-    10250
-    9100
-    7946
-  ];
-  networking.firewall.allowedUDPPorts = [
-    8472
-    7946
-  ];
+  networking.firewall.allowedTCPPorts = [ 6443 ];
 }
