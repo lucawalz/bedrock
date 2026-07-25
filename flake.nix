@@ -48,13 +48,6 @@
         };
         worker-1 = lib.mkWorker { workerId = 1; };
         worker-2 = lib.mkWorker { workerId = 2; };
-        pool-node = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            disko.nixosModules.disko
-            ./modules/k3s/pool-node.nix
-          ];
-        };
         cluster-node = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [
