@@ -56,6 +56,9 @@ data:
           - apiGroups: ["postgresql.cnpg.io"]
             resources: ["backups"]
             verbs: ["list", "watch"]
+          - apiGroups: ["k3s.cattle.io"]
+            resources: ["etcdsnapshotfiles"]
+            verbs: ["list", "watch"]
       customResourceState:
         enabled: true
         config:
@@ -78,6 +81,23 @@ data:
                       info:
                         labelsFromPath:
                           phase: [status, phase]
+              - groupVersionKind:
+                  group: k3s.cattle.io
+                  version: v1
+                  kind: ETCDSnapshotFile
+                metricNamePrefix: kube_etcdsnapshotfile
+                labelsFromPath:
+                  name: [metadata, name]
+                  node: [spec, nodeName]
+                  location: [spec, location]
+                  ready: [status, readyToUse]
+                metrics:
+                  - name: created
+                    help: "Creation time of a k3s etcd snapshot"
+                    each:
+                      type: Gauge
+                      gauge:
+                        path: [status, creationTime]
 
     defaultRules:
       rules:

@@ -103,6 +103,24 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} is degraded"
             description: "Longhorn reports volume {{ $labels.volume }} as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
+    - name: etcd.rules
+      rules:
+        - alert: EtcdSnapshotTooOld
+          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true"}) or vector(0)) > 26 * 3600
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "k3s has recorded no recent etcd snapshot"
+            description: "No usable k3s etcd snapshot has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run."
+        - alert: EtcdSnapshotNotUploaded
+          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true", location=~"s3://.*"}) or vector(0)) > 26 * 3600
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "No k3s etcd snapshot has reached object storage"
+            description: "No usable k3s etcd snapshot with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent
