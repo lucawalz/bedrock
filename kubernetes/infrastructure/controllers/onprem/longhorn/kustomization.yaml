@@ -10,6 +10,7 @@ resources:
 - networkpolicies.yaml
 - pdb.yaml
 - recurringjobs.yaml
+- storageclass-cache.yaml
 - storageclass-disposable.yaml
 - storageclass-retain.yaml
 patches:

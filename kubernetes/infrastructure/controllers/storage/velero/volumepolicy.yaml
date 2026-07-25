@@ -10,5 +10,6 @@ data:
       - conditions:
           storageClass:
             - longhorn-disposable
+            - longhorn-cache
         action:
           type: skip
