@@ -1,0 +1,192 @@
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: authentik-restricted
+  namespace: authentik
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - authentik
+          names:
+            - authentik-server
+            - authentik-server-*
+            - authentik-worker
+            - authentik-worker-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: minio-restricted
+  namespace: minio
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - minio
+          names:
+            - minio-minio
+            - minio-minio-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: pgadmin-restricted
+  namespace: postgres
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - postgres
+          names:
+            - pgadmin-pgadmin4
+            - pgadmin-pgadmin4-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: paperless-ngx-drop-capabilities
+  namespace: paperless
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - paperless
+          names:
+            - paperless-ngx
+            - paperless-ngx-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: paperless-run-as-non-root
+  namespace: paperless
+spec:
+  exceptions:
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - paperless
+          names:
+            - paperless-ngx
+            - paperless-ngx-*
+            - paperless-ai
+            - paperless-ai-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: reloader-drop-capabilities
+  namespace: reloader
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - reloader
+          names:
+            - reloader-reloader
+            - reloader-reloader-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: llm-run-as-non-root
+  namespace: llm
+spec:
+  exceptions:
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+            - StatefulSet
+          namespaces:
+            - llm
+          names:
+            - ollama
+            - ollama-*
+            - open-webui
+            - open-webui-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: ntfy-run-as-non-root
+  namespace: ntfy
+spec:
+  exceptions:
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
+            - Deployment
+          namespaces:
+            - ntfy
+          names:
+            - ntfy
+            - ntfy-*

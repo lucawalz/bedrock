@@ -8,9 +8,15 @@ policies:
   - ../../kubernetes/infrastructure/configs/policies/disallow-privilege-escalation.yaml
   - ../../kubernetes/infrastructure/configs/policies/require-drop-all-capabilities.yaml
   - ../../kubernetes/infrastructure/configs/policies/disallow-latest-tag.yaml
+  - ../../kubernetes/infrastructure/configs/policies/mutate-privilege-escalation.yaml
+exceptions:
+  - ../../kubernetes/infrastructure/configs/policies/exceptions.yaml
 resources:
   - resources/compliant.yaml
   - resources/violating.yaml
+  - resources/unset-escalation.yaml
+  - resources/escalating.yaml
+  - resources/exempt.yaml
 results:
   - policy: require-resources
     rule: require-requests-limits
@@ -47,6 +53,12 @@ results:
     kind: Pod
     resources:
       - violating
+    result: pass
+  - policy: disallow-privilege-escalation
+    rule: privilege-escalation
+    kind: Pod
+    resources:
+      - escalating
     result: fail
   - policy: require-drop-all-capabilities
     rule: drop-all-capabilities
@@ -72,3 +84,29 @@ results:
     resources:
       - violating
     result: fail
+  - policy: default-privilege-escalation
+    rule: containers-privilege-escalation
+    kind: Pod
+    resources:
+      - unset-escalation
+    patchedResources: resources/patched-unset-escalation.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    rule: init-containers-privilege-escalation
+    kind: Pod
+    resources:
+      - unset-escalation
+    patchedResources: resources/patched-unset-escalation.yaml
+    result: pass
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - paperless-ngx-7d9f8c6b4-x2k9p
+    result: skip
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - paperless-ngx-7d9f8c6b4-x2k9p
+    result: skip

@@ -17,16 +17,6 @@ spec:
           - resources:
               kinds:
                 - Pod
-      exclude:
-        any:
-          - resources:
-              namespaces:
-                - authentik
-                - llm
-                - minio
-                - ntfy
-                - paperless
-                - postgres
       validate:
         message: "runAsNonRoot must be set to true at the pod or container level."
         anyPattern:
