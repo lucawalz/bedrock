@@ -40,9 +40,11 @@ spec:
       nodeSelector:
         bedrock.io/storage: "true"
     defaultSettings:
+      allowVolumeCreationWithDegradedAvailability: false
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
+      replicaSoftAntiAffinity: false
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       systemManagedComponentsNodeSelector: "bedrock.io/storage:true"
       orphanResourceAutoDeletion: "replica-data;instance"
