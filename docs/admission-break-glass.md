@@ -75,6 +75,14 @@ If `jq` is not available, `kubectl edit` the object and change each `failurePoli
 
 Deletion is the stronger action and is reserved for the case where relaxing the policy is not enough, such as a webhook that is reachable but returns errors, or an object too large to edit under time pressure.
 
+For Kyverno there is a simpler action than either relaxing or deleting. Kyverno removes its own resource webhook configurations when the admission controller shuts down gracefully, so scaling the deployment to zero disarms admission on its own and needs no edit to any webhook object:
+
+```
+kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=0
+```
+
+Scaling it back up recreates and repopulates them within about a second. This is the preferred Kyverno break-glass when the controller is still able to terminate cleanly. It follows that a Kyverno outage only blocks writes when the pods die *without* shutting down cleanly, such as a node loss, an OOM kill or a partition. A graceful scale-down is not a way to rehearse that failure, because it removes the very configurations the failure would leave behind.
+
 Kyverno recreates all ten of its configurations on start, because it runs with `--autoUpdateWebhooks=true` and the chart ships no webhook templates at all. Deleting them is therefore safe and self-healing:
 
 ```
