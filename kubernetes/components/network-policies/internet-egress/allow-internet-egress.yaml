@@ -1,12 +1,9 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-n8n-egress
-  namespace: n8n
+  name: allow-internet-egress
 spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: n8n
+  podSelector: {}
   policyTypes:
     - Egress
   egress:
@@ -16,8 +13,11 @@ spec:
             except:
               - 10.42.0.0/16
               - 10.43.0.0/16
+              - 10.20.0.0/24
+              - 10.30.0.0/24
+              - 192.168.2.0/24
       ports:
         - protocol: TCP
-          port: 443
-        - protocol: TCP
           port: 80
+        - protocol: TCP
+          port: 443

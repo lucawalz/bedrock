@@ -1,8 +1,21 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: postgres
+components:
+  - ../../../components/network-policies/internet-egress
 resources:
   - cnpg-cluster.yaml
   - databases.yaml
   - networkpolicies.yaml
   - podmonitor.yaml
   - scheduledbackup.yaml
+patches:
+  - target:
+      kind: NetworkPolicy
+      name: allow-internet-egress
+    patch: |-
+      - op: replace
+        path: /spec/podSelector
+        value:
+          matchLabels:
+            cnpg.io/cluster: postgres

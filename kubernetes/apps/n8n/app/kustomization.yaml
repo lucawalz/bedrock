@@ -4,9 +4,9 @@ namespace: n8n
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/traefik-ingress
+  - ../../../components/network-policies/internet-egress
 resources:
   - helmrelease.yaml
   - ingress.yaml
-  - networkpolicies.yaml
   - pdb.yaml
   - pvc.yaml

@@ -4,9 +4,9 @@ namespace: kiwix
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/traefik-ingress
+  - ../../../components/network-policies/internet-egress
   - ../../../components/authentik-middleware
 resources:
   - helmrelease.yaml
   - pvc.yaml
-  - networkpolicies.yaml
   - ingress.yaml
