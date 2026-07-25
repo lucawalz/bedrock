@@ -36,6 +36,7 @@ spec:
       configMaps:
         - authentik-blueprints
     global:
+      priorityClassName: system-cluster-critical
       env:
         - name: AUTHENTIK_SECRET_KEY
           valueFrom:
