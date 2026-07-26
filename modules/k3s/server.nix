@@ -20,6 +20,9 @@
       "--node-ip=10.20.0.10"
       "--secrets-encryption"
       "--node-label=bedrock.io/storage=true"
+      "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it
+      "--kubelet-arg=kube-reserved=cpu=800m,memory=4Gi"
+      "--kubelet-arg=system-reserved=cpu=200m,memory=512Mi"
       "--etcd-s3"
       "--etcd-s3-bucket=basalt-backups"
       "--etcd-s3-region=eu-central-1"
@@ -40,5 +43,8 @@
     group = "root";
   };
 
-  networking.firewall.allowedTCPPorts = [ 6443 ];
+  networking.firewall.allowedTCPPorts = [
+    6443
+    2381
+  ];
 }
