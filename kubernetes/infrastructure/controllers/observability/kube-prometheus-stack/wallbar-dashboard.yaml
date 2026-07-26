@@ -8,27 +8,446 @@ metadata:
 data:
   wallbar.json: |
     {
-      "annotations": { "list": [] },
+      "annotations": {
+        "list": []
+      },
       "editable": false,
       "graphTooltip": 0,
       "links": [],
       "panels": [
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "percent", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 90 } ] } }, "overrides": [] }, "gridPos": { "h": 6, "w": 4, "x": 0, "y": 0 }, "id": 1, "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 34, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "100*(1-avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))", "refId": "A" } ], "title": "CPU", "type": "stat" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "percent", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 80 }, { "color": "red", "value": 92 } ] } }, "overrides": [] }, "gridPos": { "h": 6, "w": 4, "x": 4, "y": 0 }, "id": 2, "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 34, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "100*(1-sum(node_memory_MemAvailable_bytes)/sum(node_memory_MemTotal_bytes))", "refId": "A" } ], "title": "Memory", "type": "stat" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "celsius", "min": 30, "max": 90, "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 65 }, { "color": "red", "value": 80 } ] } }, "overrides": [] }, "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }, "id": 9, "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true, "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 14, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "max by (instance) (node_hwmon_temp_celsius{instance!=\"pi-router\"}) * on(instance) group_left(nodename) node_uname_info", "legendFormat": "{{nodename}}", "refId": "A" } ], "title": "CPU Temp", "type": "bargauge" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "decimals": 0, "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 70 }, { "color": "red", "value": 85 } ] } }, "overrides": [] }, "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }, "id": 8, "options": { "displayMode": "gradient", "orientation": "horizontal", "showUnfilled": true, "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 14, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "(1 - node_filesystem_avail_bytes{mountpoint=\"/\",device=~\"/dev/nvme.*\"} / node_filesystem_size_bytes{mountpoint=\"/\",device=~\"/dev/nvme.*\"}) * 100 * on(instance) group_left(nodename) node_uname_info", "legendFormat": "{{nodename}}", "refId": "A" } ], "title": "Storage %", "type": "bargauge" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 3 } ] } }, "overrides": [] }, "gridPos": { "h": 7, "w": 4, "x": 0, "y": 6 }, "id": 3, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 34, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "count(kube_node_status_condition{condition=\"Ready\",status=\"true\"} == 1)", "refId": "A" } ], "title": "Nodes Ready", "type": "stat" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "none", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 1 } ] } }, "overrides": [] }, "gridPos": { "h": 7, "w": 4, "x": 4, "y": 6 }, "id": 4, "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "textMode": "value", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "text": { "valueSize": 34, "titleSize": 13 } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(kube_pod_status_phase{phase=~\"Pending|Failed|Unknown\"}) or vector(0)", "refId": "A" } ], "title": "Unhealthy Pods", "type": "stat" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "Bps", "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1, "fillOpacity": 25, "showPoints": "never", "axisLabel": "", "axisPlacement": "auto", "spanNulls": true } }, "overrides": [ { "matcher": { "id": "byName", "options": "Receive" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] }, { "matcher": { "id": "byName", "options": "Send" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } } ] } ] }, "gridPos": { "h": 7, "w": 8, "x": 8, "y": 6 }, "id": 5, "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "multi", "sort": "none" } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(rate(node_network_receive_bytes_total{device=~\"e.*|en.*\",instance!=\"pi-router\"}[2m]))", "legendFormat": "Receive", "refId": "A" }, { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(rate(node_network_transmit_bytes_total{device=~\"e.*|en.*\",instance!=\"pi-router\"}[2m]))", "legendFormat": "Send", "refId": "B" } ], "title": "Network", "type": "timeseries" },
-        { "datasource": { "type": "prometheus", "uid": "prometheus" }, "fieldConfig": { "defaults": { "unit": "Bps", "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1, "fillOpacity": 25, "showPoints": "never", "axisLabel": "", "axisPlacement": "auto", "spanNulls": true } }, "overrides": [ { "matcher": { "id": "byName", "options": "Read" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ] }, { "matcher": { "id": "byName", "options": "Write" }, "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "yellow" } } ] } ] }, "gridPos": { "h": 7, "w": 8, "x": 16, "y": 6 }, "id": 10, "options": { "legend": { "showLegend": false }, "tooltip": { "mode": "multi", "sort": "none" } }, "targets": [ { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(rate(node_disk_read_bytes_total{device=~\"nvme.*\"}[5m]))", "legendFormat": "Read", "refId": "A" }, { "datasource": { "type": "prometheus", "uid": "prometheus" }, "expr": "sum(rate(node_disk_written_bytes_total{device=~\"nvme.*\"}[5m]))", "legendFormat": "Write", "refId": "B" } ], "title": "Disk I/O", "type": "timeseries" }
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": false,
+                "inspect": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "severity"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 88
+                  },
+                  {
+                    "id": "custom.align",
+                    "value": "right"
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "warning": {
+                            "color": "orange",
+                            "index": 0,
+                            "text": "warning"
+                          },
+                          "critical": {
+                            "color": "red",
+                            "index": 1,
+                            "text": "critical"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "alertname"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "All clear": {
+                            "color": "green",
+                            "index": 0,
+                            "text": "All clear"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "text"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 0,
+            "y": 0
+          },
+          "id": 11,
+          "options": {
+            "showHeader": false,
+            "cellHeight": "md",
+            "footer": {
+              "show": false
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\"} or (label_replace(vector(1),\"alertname\",\"All clear\",\"\",\"\") and on() (count(ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0)) == 0)",
+              "format": "table",
+              "instant": true,
+              "refId": "A"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "pattern": "^(alertname|severity)$"
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "alertname": 0,
+                  "severity": 1
+                }
+              }
+            }
+          ],
+          "title": "Firing alerts",
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 8,
+            "y": 0
+          },
+          "id": 1,
+          "options": {
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 15,
+              "titleSize": 13
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "100 * (1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance!=\"pi-router\"}[5m]))) * on(instance) group_left(nodename) node_uname_info",
+              "legendFormat": "{{nodename}}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 92
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 16,
+            "y": 0
+          },
+          "id": 2,
+          "options": {
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 15,
+              "titleSize": 13
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(1 - node_memory_MemAvailable_bytes{instance!=\"pi-router\"} / node_memory_MemTotal_bytes{instance!=\"pi-router\"}) * 100 * on(instance) group_left(nodename) node_uname_info",
+              "legendFormat": "{{nodename}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Memory",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "celsius",
+              "min": 30,
+              "max": 90,
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 65
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 8,
+            "y": 5
+          },
+          "id": 9,
+          "options": {
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 15,
+              "titleSize": 13
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "max by (instance) (node_hwmon_temp_celsius{instance!=\"pi-router\"}) * on(instance) group_left(nodename) node_uname_info",
+              "legendFormat": "{{nodename}}",
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Temp",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "decimals": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "orange",
+                    "value": 70
+                  },
+                  {
+                    "color": "red",
+                    "value": 85
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 16,
+            "y": 5
+          },
+          "id": 8,
+          "options": {
+            "displayMode": "gradient",
+            "orientation": "horizontal",
+            "showUnfilled": true,
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 15,
+              "titleSize": 13
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+              },
+              "expr": "(1 - node_filesystem_avail_bytes{mountpoint=\"/\",device=~\"/dev/nvme.*\"} / node_filesystem_size_bytes{mountpoint=\"/\",device=~\"/dev/nvme.*\"}) * 100 * on(instance) group_left(nodename) node_uname_info",
+              "legendFormat": "{{nodename}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Storage %",
+          "type": "bargauge"
+        }
       ],
       "refresh": "30s",
       "schemaVersion": 39,
-      "tags": ["wallbar", "kiosk"],
-      "templating": { "list": [] },
-      "time": { "from": "now-1h", "to": "now" },
+      "tags": [
+        "wallbar",
+        "kiosk"
+      ],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
       "timezone": "",
       "title": "Wall Status",
       "uid": "wallbar",
-      "version": 8
+      "version": 11
     }

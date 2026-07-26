@@ -140,6 +140,8 @@ data:
       grafana.ini:
         auth.anonymous:
           enabled: false
+        security:
+          allow_embedding: true
       image:
         tag: "11.2.3"
       deploymentStrategy:

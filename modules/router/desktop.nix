@@ -51,11 +51,26 @@ let
 
   dashboardUrlFile = config.age.secrets.grafana-kiosk-url.path;
 
+  panelWidth = 1280;
+  panelHeight = 400;
+  grafanaHeaderHeight = 68;
+  frameHeight = 600;
+
   launchBrowser = pkgs.writeShellScript "kiosk-browser-launch" ''
+    page="$XDG_RUNTIME_DIR/wall.html"
+    umask 077
+    {
+      printf '<!doctype html><meta charset="utf-8"><style>'
+      printf 'html,body{margin:0;padding:0;width:%dpx;height:%dpx;overflow:hidden;background:#111217}' \
+        ${toString panelWidth} ${toString panelHeight}
+      printf 'iframe{position:absolute;top:-%dpx;left:0;width:%dpx;height:%dpx;border:0}' \
+        ${toString grafanaHeaderHeight} ${toString panelWidth} ${toString frameHeight}
+      printf '</style><iframe src="%s"></iframe>' "$(cat ${dashboardUrlFile})"
+    } > "$page"
     exec ${browser} --ozone-platform=wayland --noerrdialogs --disable-infobars \
       --disable-session-crashed-bubble --disable-background-timer-throttling \
       --disable-backgrounding-occluded-windows --disable-renderer-backgrounding \
-      --hide-scrollbars --kiosk "$(cat ${dashboardUrlFile})"
+      --hide-scrollbars --kiosk "file://$page"
   '';
 
   panelCycle = pkgs.writeShellScript "kiosk-panel-cycle" ''
