@@ -16,18 +16,14 @@ spec:
         name: rancher
         namespace: flux-system
   values:
-    # Disable ingress in Helm chart as we'll manage it separately with Traefik
     ingress:
       enabled: false
-    
-    # TLS will be handled by our own certificate
+
     tls: external
     agentTLSMode: system-store
 
-    # Configure hostname
     hostname: rancher.syslabs.dev
-    
-    # Resource limits
+
     resources:
       limits:
         cpu: 2000m
@@ -35,24 +31,21 @@ spec:
       requests:
         cpu: 500m
         memory: 1536Mi
-    
-    # Audit log settings
+
     auditLog:
       destination: sidecar
       maxAge: 30
       maxBackup: 10
       maxSize: 100
-    
-    # Replica count
+
     replicas: 1
 
-    # Configure admin user from existing secret
     bootstrapPassword: ""
     useExistingSecret: rancher-admin-secret
     existingSecretKey: password
-    
+
   install:
-    createNamespace: false  # We create it separately
+    createNamespace: false
     remediation:
       retries: 3
   upgrade:

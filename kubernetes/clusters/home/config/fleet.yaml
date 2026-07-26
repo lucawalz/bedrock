@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/rancher
   prune: true
   wait: true
@@ -24,6 +25,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/observability
   prune: true
   wait: true
@@ -42,6 +44,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/flux-operator
   prune: true
   wait: true

@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/onprem
   prune: true
   wait: true
@@ -24,6 +25,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/onprem/metallb/config
   prune: true
   wait: true
