@@ -5,6 +5,7 @@ metadata:
   namespace: cloudflare-tunnel
 spec:
   maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app.kubernetes.io/name: cloudflared

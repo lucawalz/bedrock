@@ -5,6 +5,7 @@ metadata:
   namespace: kube-system
 spec:
   maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app.kubernetes.io/name: snapshot-controller

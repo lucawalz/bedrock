@@ -5,6 +5,7 @@ metadata:
   namespace: llm
 spec:
   maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app.kubernetes.io/component: open-webui
