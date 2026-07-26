@@ -42,4 +42,5 @@ while read -r file; do
   resource_args+=(--resource "$file")
 done < <(find kubernetes/apps -path "*/app/*" -name "deployment.yaml")
 
-kyverno apply "$policies" "${resource_args[@]}"
+# PolicyExceptions are only honoured when passed explicitly, so without this CI is stricter than admission.
+kyverno apply "$policies" --exception "$policies/exceptions.yaml" "${resource_args[@]}"
