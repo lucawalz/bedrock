@@ -127,6 +127,40 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} is degraded"
             description: "Longhorn reports volume {{ $labels.volume }} as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
+        - alert: LonghornSchedulingHeadroomLow
+          expr: max by (node) (longhorn_node_storage_scheduled_bytes / longhorn_node_storage_capacity_bytes * 100) > 90
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn node {{ $labels.node }} has little replica scheduling headroom left"
+            description: "Longhorn has already promised {{ $value | printf \"%.0f\" }} percent of the replica capacity on node {{ $labels.node }}. This counts space committed to volumes rather than bytes written, so the disk is not filling up. What it bounds is provisioning: with hard replica anti-affinity and allowVolumeCreationWithDegradedAvailability disabled, once any node reaches 100 percent no new three-replica volume can be created anywhere in the cluster."
+        - alert: LonghornSchedulingHeadroomCritical
+          expr: max by (node) (longhorn_node_storage_scheduled_bytes / longhorn_node_storage_capacity_bytes * 100) > 97
+          for: 30m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn node {{ $labels.node }} is almost out of replica scheduling headroom"
+            description: "Longhorn has promised {{ $value | printf \"%.0f\" }} percent of the replica capacity on node {{ $labels.node }}. New three-replica volume creation is about to fail cluster-wide. Free space by deleting unused volumes or their orphaned replicas, or expand the disk."
+    - name: node.rules
+      rules:
+        - alert: NodeCpuTemperatureHigh
+          expr: max by (instance) (node_hwmon_temp_celsius{instance!="pi-router"}) > 75
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.instance }} is running hot"
+            description: "The hottest sensor on {{ $labels.instance }} has read {{ $value | printf \"%.0f\" }} degrees Celsius for over 15 minutes, well above the 45 to 60 degree band these nodes sit in at rest. The usual causes are a blocked intake, a failing fan or a sustained workload."
+        - alert: NodeCpuTemperatureCritical
+          expr: max by (instance) (node_hwmon_temp_celsius{instance!="pi-router"}) > 85
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.instance }} is close to thermal throttling"
+            description: "The hottest sensor on {{ $labels.instance }} has read {{ $value | printf \"%.0f\" }} degrees Celsius for over 5 minutes. Sustained temperatures at this level throttle the CPU and shorten hardware life."
     - name: etcd.rules
       rules:
         - alert: EtcdSnapshotTooOld

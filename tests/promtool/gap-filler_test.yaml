@@ -419,3 +419,102 @@ tests:
       - eval_time: 30m
         alertname: FluxReconciliationFailure
         exp_alerts: []
+
+  - interval: 1m
+    name: longhorn scheduling headroom past the warning threshold fires warning only
+    input_series:
+      - series: 'longhorn_node_storage_scheduled_bytes{node="worker-1"}'
+        values: '95x200'
+      - series: 'longhorn_node_storage_capacity_bytes{node="worker-1"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornSchedulingHeadroomLow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              node: worker-1
+            exp_annotations:
+              summary: "Longhorn node worker-1 has little replica scheduling headroom left"
+              description: "Longhorn has already promised 95 percent of the replica capacity on node worker-1. This counts space committed to volumes rather than bytes written, so the disk is not filling up. What it bounds is provisioning: with hard replica anti-affinity and allowVolumeCreationWithDegradedAvailability disabled, once any node reaches 100 percent no new three-replica volume can be created anywhere in the cluster."
+      - eval_time: 90m
+        alertname: LonghornSchedulingHeadroomCritical
+        exp_alerts: []
+
+  - interval: 1m
+    name: longhorn scheduling headroom past the critical threshold fires critical
+    input_series:
+      - series: 'longhorn_node_storage_scheduled_bytes{node="worker-1"}'
+        values: '98x200'
+      - series: 'longhorn_node_storage_capacity_bytes{node="worker-1"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornSchedulingHeadroomCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              node: worker-1
+            exp_annotations:
+              summary: "Longhorn node worker-1 is almost out of replica scheduling headroom"
+              description: "Longhorn has promised 98 percent of the replica capacity on node worker-1. New three-replica volume creation is about to fail cluster-wide. Free space by deleting unused volumes or their orphaned replicas, or expand the disk."
+
+  - interval: 1m
+    name: healthy longhorn headroom fires nothing
+    input_series:
+      - series: 'longhorn_node_storage_scheduled_bytes{node="worker-2"}'
+        values: '51x200'
+      - series: 'longhorn_node_storage_capacity_bytes{node="worker-2"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornSchedulingHeadroomLow
+        exp_alerts: []
+
+  - interval: 1m
+    name: node temperature past the warning threshold fires warning only
+    input_series:
+      - series: 'node_hwmon_temp_celsius{instance="master",chip="platform_coretemp_0",sensor="temp1"}'
+        values: '78x200'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: NodeCpuTemperatureHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: master
+            exp_annotations:
+              summary: "Node master is running hot"
+              description: "The hottest sensor on master has read 78 degrees Celsius for over 15 minutes, well above the 45 to 60 degree band these nodes sit in at rest. The usual causes are a blocked intake, a failing fan or a sustained workload."
+      - eval_time: 30m
+        alertname: NodeCpuTemperatureCritical
+        exp_alerts: []
+
+  - interval: 1m
+    name: node temperature past the critical threshold fires critical
+    input_series:
+      - series: 'node_hwmon_temp_celsius{instance="worker-2",chip="platform_coretemp_0",sensor="temp1"}'
+        values: '90x200'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: NodeCpuTemperatureCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: worker-2
+            exp_annotations:
+              summary: "Node worker-2 is close to thermal throttling"
+              description: "The hottest sensor on worker-2 has read 90 degrees Celsius for over 5 minutes. Sustained temperatures at this level throttle the CPU and shorten hardware life."
+
+  - interval: 1m
+    name: the router is excluded from temperature alerting
+    input_series:
+      - series: 'node_hwmon_temp_celsius{instance="pi-router",chip="platform_soc",sensor="temp1"}'
+        values: '90x200'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: NodeCpuTemperatureHigh
+        exp_alerts: []
+      - eval_time: 30m
+        alertname: NodeCpuTemperatureCritical
+        exp_alerts: []
