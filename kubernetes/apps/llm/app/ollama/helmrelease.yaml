@@ -44,7 +44,7 @@ spec:
       enabled: false
     persistentVolume:
       enabled: true
-      size: 30Gi
+      size: 12Gi
       storageClass: longhorn-disposable
       accessModes:
         - ReadWriteOnce
