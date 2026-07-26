@@ -81,7 +81,6 @@ spec:
           additionalLabels:
             release: kube-prometheus-stack
   install:
-    createNamespace: true
     crds: Create
     remediation:
       retries: 3
