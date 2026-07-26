@@ -1,7 +1,12 @@
-{ config, lib, ... }:
+{
+  config,
+  lib,
+  inventory,
+  ...
+}:
 let
   cfg = config.bedrock.tailscaleSubnetRouter;
-  trustedSubnet = "10.20.0.0/24";
+  inherit (inventory) subnet;
 in
 {
   options.bedrock.tailscaleSubnetRouter = {
@@ -31,7 +36,7 @@ in
       inherit (cfg) authKeyFile;
       extraUpFlags = [
         "--login-server=https://controlplane.tailscale.com"
-        "--advertise-routes=${trustedSubnet}"
+        "--advertise-routes=${subnet}"
         "--accept-dns=false"
         "--advertise-tags=tag:cluster"
         "--hostname=${cfg.hostname}"

@@ -2,6 +2,7 @@
   config,
   pkgs,
   lib,
+  inventory,
   secretsDir ? ../../secrets,
   ...
 }:
@@ -40,7 +41,7 @@ in
 
   services.adguardhome = {
     enable = true;
-    host = "10.20.0.1";
+    host = inventory.gateway;
     port = 3000;
     mutableSettings = false;
 
@@ -64,117 +65,117 @@ in
         rewrites = [
           {
             domain = "alertmanager.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "auth.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "chat.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "flux.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "grafana.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "home.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "kiwix.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "litellm.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "longhorn.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "minio.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "n8n.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "ntfy.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "paperless.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "paperless-ai.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "pgadmin.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "prometheus.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "rackpeek.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "rancher.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "registry.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "rss.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "s3.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "traefik.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
           {
             domain = "velero.syslabs.dev";
-            answer = "10.20.0.50";
+            answer = inventory.serviceVip;
             enabled = true;
           }
         ];

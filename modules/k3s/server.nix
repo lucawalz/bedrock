@@ -1,6 +1,7 @@
 # K3s control plane (server) module
 {
   config,
+  inventory,
   secretsDir ? ../../secrets,
   ...
 }:
@@ -16,8 +17,8 @@
       "--disable=traefik" # Using Flux-managed Traefik instead
       "--disable=local-storage" # Using Longhorn instead
       "--disable=coredns"
-      "--tls-san=10.20.0.10"
-      "--node-ip=10.20.0.10"
+      "--tls-san=${inventory.nodes.master}"
+      "--node-ip=${inventory.nodes.master}"
       "--secrets-encryption"
       "--node-label=bedrock.io/storage=true"
       "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it
