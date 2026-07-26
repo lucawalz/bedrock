@@ -6,7 +6,12 @@
   agenix,
   ...
 }:
+let
+  inventory = import ./inventory.nix;
+in
 {
+  inherit inventory;
+
   mkHost =
     {
       hostname,
@@ -18,6 +23,7 @@
       specialArgs = {
         meta = { inherit hostname; };
         secretsDir = "${self}/secrets";
+        inherit inventory;
       };
       modules = [
         disko.nixosModules.disko
@@ -41,6 +47,7 @@
       specialArgs = {
         meta = { inherit hostname; };
         secretsDir = "${self}/secrets";
+        inherit inventory;
       };
       modules = [
         disko.nixosModules.disko
@@ -55,7 +62,7 @@
           networking.hostName = hostname;
           system.stateVersion = "25.05";
 
-          services.k3s.extraFlags = [ "--node-ip=10.20.0.1${toString workerId}" ];
+          services.k3s.extraFlags = [ "--node-ip=${inventory.nodes.${hostname}}" ];
 
           disko.devices = {
             disk = {

@@ -1,7 +1,7 @@
-{ lib, ... }:
+{ lib, inventory, ... }:
 let
   homeSubnet = "192.168.2.0/24";
-  serviceVip = "10.20.0.50";
+  inherit (inventory) serviceVip;
 in
 {
   networking = {

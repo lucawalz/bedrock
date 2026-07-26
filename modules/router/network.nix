@@ -1,4 +1,5 @@
-_: {
+{ inventory, ... }:
+{
   networking = {
     useDHCP = false;
     useNetworkd = true;
@@ -37,7 +38,7 @@ _: {
       };
       "30-vlan20" = {
         matchConfig.Name = "vlan20";
-        address = [ "10.20.0.1/24" ];
+        address = [ "${inventory.gateway}/24" ];
         linkConfig.RequiredForOnline = "routable";
       };
       "30-vlan30" = {

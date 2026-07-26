@@ -1,4 +1,5 @@
-_: {
+{ inventory, ... }:
+{
   services.kea.dhcp4 = {
     enable = true;
     settings = {
@@ -23,32 +24,32 @@ _: {
       subnet4 = [
         {
           id = 1;
-          subnet = "10.20.0.0/24";
+          inherit (inventory) subnet;
           pools = [
-            { pool = "10.20.0.100 - 10.20.0.200"; }
+            { pool = inventory.dhcpPool; }
           ];
           reservations = [
             {
               hw-address = "98:fa:9b:a0:67:b7";
-              ip-address = "10.20.0.10";
+              ip-address = inventory.nodes.master;
             }
             {
               hw-address = "98:fa:9b:a0:63:24";
-              ip-address = "10.20.0.11";
+              ip-address = inventory.nodes.worker-1;
             }
             {
               hw-address = "98:fa:9b:34:bc:10";
-              ip-address = "10.20.0.12";
+              ip-address = inventory.nodes.worker-2;
             }
           ];
           option-data = [
             {
               name = "routers";
-              data = "10.20.0.1";
+              data = inventory.gateway;
             }
             {
               name = "domain-name-servers";
-              data = "10.20.0.1";
+              data = inventory.gateway;
             }
           ];
         }

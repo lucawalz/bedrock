@@ -1,7 +1,8 @@
-_: {
+{ inventory, ... }:
+{
   services.prometheus.exporters.node = {
     enable = true;
-    listenAddress = "10.20.0.1";
+    listenAddress = inventory.gateway;
     port = 9100;
     enabledCollectors = [
       "systemd"
