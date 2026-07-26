@@ -5,5 +5,4 @@ metadata:
   namespace: flux-system
 data:
   cluster_domain: "syslabs.dev"
-  timezone: "Europe/Berlin"
 
