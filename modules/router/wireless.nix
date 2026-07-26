@@ -29,4 +29,6 @@
       };
     };
   };
+
+  systemd.services.hostapd.restartTriggers = [ config.age.secrets.wifi-passphrase.file ];
 }
