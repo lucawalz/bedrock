@@ -145,6 +145,14 @@ spec:
           annotations:
             summary: "No scheduled k3s etcd snapshot has reached object storage"
             description: "No usable k3s etcd snapshot from the schedule with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot uploaded by hand would otherwise hide a schedule that has stopped running."
+        - alert: EtcdWalFsyncSlow
+          expr: histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))) > 0.1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "etcd WAL fsync p99 is above 100ms"
+            description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on master, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent

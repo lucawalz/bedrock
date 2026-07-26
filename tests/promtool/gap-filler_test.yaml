@@ -320,6 +320,39 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: slow etcd wal fsync alerts but healthy fsync does not
+    input_series:
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.016"}'
+        values: '0+60x120'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.128"}'
+        values: '0+60x120'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf"}'
+        values: '0+60x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: EtcdWalFsyncSlow
+        exp_alerts: []
+
+  - interval: 1m
+    name: etcd wal fsync above the threshold alerts
+    input_series:
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.016"}'
+        values: '0+0x120'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.128"}'
+        values: '0+59x120'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf"}'
+        values: '0+60x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: EtcdWalFsyncSlow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "etcd WAL fsync p99 is above 100ms"
+              description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on master, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
+
+  - interval: 1m
     name: on-demand snapshots do not mask a stopped schedule
     input_series:
       - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-master-1", node="master", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-master-1", ready="true"}'
