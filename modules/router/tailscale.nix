@@ -19,4 +19,6 @@
     authKeyFile = config.age.secrets.tailscale-authkey.path;
     acceptRoutes = true;
   };
+
+  systemd.services.tailscaled.restartTriggers = [ config.age.secrets.tailscale-authkey.file ];
 }

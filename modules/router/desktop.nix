@@ -197,6 +197,7 @@ in
     systemd.user.services = {
       kiosk-browser = {
         description = "Bar panel dashboard browser";
+        restartTriggers = [ config.age.secrets.grafana-kiosk-url.file ];
         serviceConfig = {
           ExecStart = launchBrowser;
           Restart = "always";
