@@ -16,7 +16,10 @@ spec:
     topologyKey: kubernetes.io/hostname
     podAntiAffinityType: required
   enableSuperuserAccess: true
+  priorityClassName: system-cluster-critical
   postgresql:
+    parameters:
+      max_slot_wal_keep_size: 2GB
     synchronous:
       method: any
       number: 1

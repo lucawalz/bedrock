@@ -23,6 +23,8 @@ spec:
       retries: 3
       remediateLastFailure: true
   values:
+    global:
+      priorityClassName: system-cluster-critical
     config:
       webhooks:
         namespaceSelector:
@@ -63,6 +65,8 @@ spec:
         - local
     admissionController:
       replicas: 2
+      podDisruptionBudget:
+        unhealthyPodEvictionPolicy: AlwaysAllow
       container:
         extraArgs:
           webhookTimeout: 5

@@ -5,6 +5,7 @@ metadata:
   namespace: cert-manager
 spec:
   maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app.kubernetes.io/instance: cert-manager

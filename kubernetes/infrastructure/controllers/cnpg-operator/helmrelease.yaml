@@ -26,6 +26,7 @@ spec:
   values:
     crds:
       create: true
+    priorityClassName: system-cluster-critical
     replicaCount: 2
     affinity:
       podAntiAffinity:

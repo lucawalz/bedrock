@@ -5,6 +5,7 @@ metadata:
   namespace: kube-system
 spec:
   minAvailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       k8s-app: kube-dns

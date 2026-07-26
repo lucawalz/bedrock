@@ -78,6 +78,13 @@ spec:
         - protocol: TCP
           port: 9187
     - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: postgres
+      ports:
+        - protocol: TCP
+          port: 8000
+    - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
@@ -104,6 +111,8 @@ spec:
       ports:
         - protocol: TCP
           port: 5432
+        - protocol: TCP
+          port: 8000
     - to:
         - namespaceSelector:
             matchLabels:

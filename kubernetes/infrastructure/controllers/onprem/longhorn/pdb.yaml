@@ -5,6 +5,7 @@ metadata:
   namespace: longhorn-system
 spec:
   minAvailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app: csi-resizer
@@ -16,6 +17,7 @@ metadata:
   namespace: longhorn-system
 spec:
   minAvailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
   selector:
     matchLabels:
       app: csi-snapshotter

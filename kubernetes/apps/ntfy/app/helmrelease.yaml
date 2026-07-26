@@ -24,6 +24,7 @@ spec:
   values:
     controllers:
       ntfy:
+        replicas: 2
         containers:
           app:
             image:
@@ -52,6 +53,14 @@ spec:
                   - NET_BIND_SERVICE
     defaultPodOptions:
       priorityClassName: system-cluster-critical
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: ntfy
+                  app.kubernetes.io/instance: ntfy
+              topologyKey: kubernetes.io/hostname
     service:
       app:
         controller: ntfy
