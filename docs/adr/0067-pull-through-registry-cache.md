@@ -48,11 +48,11 @@ The third is that the cache grows without bound. Nothing evicts a cached reposit
 Roll out in this order, after the manifests are pushed and Flux has reconciled the zot HelmRelease to ready. The router goes first so that `registry.syslabs.dev` resolves before any node is told to use it; otherwise every pull pays a DNS failure before falling back.
 
 1. Confirm the cache is serving: `kubectl -n zot get statefulset zot` shows one ready replica, and `curl -s https://registry.syslabs.dev/v2/_catalog` from the LAN returns a JSON body.
-2. Rebuild the router: `nixos-rebuild switch --flake .#router --target-host root@10.20.0.1`, then confirm the rewrite answers with `dig +short registry.syslabs.dev @10.20.0.1`, which must return 10.20.0.50.
+2. Rebuild the router: `nixos-rebuild switch --flake .#router --target-host root@10.20.0.1 --build-host root@10.20.0.10`, then confirm the rewrite answers with `dig +short registry.syslabs.dev @10.20.0.1`, which must return 10.20.0.50.
 3. For worker-1, then worker-2, then master, one at a time and only after the previous node reports Ready:
    - `kubectl cordon <host>`
    - `kubectl drain <host> --ignore-daemonsets --delete-emptydir-data --timeout=15m`
-   - `nixos-rebuild switch --flake .#<host> --target-host root@<ip>` with 10.20.0.11 for worker-1, 10.20.0.12 for worker-2, and 10.20.0.10 for master
+   - `nixos-rebuild switch --flake .#<host> --target-host root@<ip> --build-host root@<ip>` with 10.20.0.11 for worker-1, 10.20.0.12 for worker-2, and 10.20.0.10 for master
    - `kubectl wait --for=condition=Ready node/<host> --timeout=15m`
    - `kubectl uncordon <host>`
    - confirm `ssh root@<ip> cat /var/lib/rancher/k3s/agent/etc/containerd/certs.d/docker.io/hosts.toml` lists `registry.syslabs.dev` as a host with a rewrite block and `registry-1.docker.io` as the `server` line

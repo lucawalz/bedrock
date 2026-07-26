@@ -69,8 +69,10 @@ A fresh cluster is brought up in two stages: the hosts, then Flux.
 1. Install NixOS on each machine and apply its configuration. For an existing host, build the configuration and push it over SSH:
 
    ```
-   nixos-rebuild switch --flake .#master --target-host root@<master-ip>
+   nixos-rebuild switch --flake .#master --target-host root@<master-ip> --build-host root@<master-ip>
    ```
+
+   `--build-host` is not optional here. See [Rebuilding a host](#rebuilding-a-host).
 
 2. Fork this repository, then seed Flux once against the fork so the cluster reconciles from a repo under the operator's own control:
 
@@ -112,8 +114,16 @@ cluster-apps             True    Applied revision: main@sha1:...
 Update a physical node after editing its NixOS configuration:
 
 ```
-nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip>
+nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip> --build-host root@10.20.0.10
 ```
+
+### Rebuilding a host
+
+`--target-host` on its own builds the closure on the machine the command runs from. From an arm64 macOS workstation that fails for every host in this repository, because it can produce neither the x86_64-linux closure the cluster nodes need nor the aarch64-linux one the router needs. `--build-host` moves the build to a machine that can.
+
+Master is the build host for day-to-day work, and `boot.binfmt.emulatedSystems` on master covers the router's aarch64 closure as well as the nodes' own. During a cold rebuild, when master does not exist yet, point `--build-host` at the target itself.
+
+Do not prefix the command with `sudo`. With both hosts set, nothing is built or activated locally, so local root is never needed, and sudo relocates `$HOME` to `/var/root`, which holds no SSH key for the cluster. The same cause makes a `builders` line in a user-level `nix.conf` inert.
 
 On-demand nodes are not added by hand. horizon provisions them directly through the hcloud API from the pre-baked snapshot, enrolling each node into the tailnet with a tagged auth key and injecting the join token it needs through cloud-init, and removes them again when they are no longer needed.
 
