@@ -27,6 +27,9 @@ spec:
     service:
       type: ClusterIP
       port: 80
+      targetPort: 8080
+    containerPorts:
+      http: 8080
     ingress:
       enabled: false
     existingSecret: pgadmin-admin-secret
@@ -34,6 +37,9 @@ spec:
       pgadminPasswordKey: password
     env:
       email: admin@syslabs.dev
+      variables:
+        - name: PGADMIN_LISTEN_PORT
+          value: "8080"
     persistentVolume:
       enabled: true
       size: 10Gi
