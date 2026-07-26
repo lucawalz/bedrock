@@ -48,9 +48,40 @@ data:
     kubeProxy:
       enabled: false
     kubeEtcd:
-      enabled: false
+      enabled: true
+      endpoints:
+        - 10.20.0.10
+
+    prometheusOperator:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 64Mi
+        limits:
+          memory: 256Mi
+      prometheusConfigReloader:
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            memory: 64Mi
+
+    prometheus-node-exporter:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
 
     kube-state-metrics:
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          memory: 192Mi
       rbac:
         extraRules:
           - apiGroups: ["postgresql.cnpg.io"]
@@ -260,7 +291,13 @@ data:
 
     alertmanager:
       enabled: true
+      podDisruptionBudget:
+        enabled: true
+        minAvailable: 1
+        unhealthyPodEvictionPolicy: AlwaysAllow
       alertmanagerSpec:
+        replicas: 2
+        podAntiAffinity: hard
         priorityClassName: system-cluster-critical
         resources:
           requests:
