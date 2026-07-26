@@ -100,17 +100,7 @@ jobs:
             | tar xz --strip-components=1 -C /usr/local/bin "${prometheus_dir}/promtool"
 
       - name: Check and test alert rules
-        run: |
-          rules_dir=kubernetes/infrastructure/controllers/observability/alert-rules
-          for name in slo-blog gap-filler; do
-            case "$name" in
-              slo-blog) src="$rules_dir/slo-blog.yaml" ;;
-              gap-filler) src="$rules_dir/prometheusrule.yaml" ;;
-            esac
-            yq '.spec' "$src" > "tests/promtool/$name-rules.gen.yaml"
-            promtool check rules "tests/promtool/$name-rules.gen.yaml"
-            promtool test rules "tests/promtool/${name}_test.yaml"
-          done
+        run: bash scripts/check-alert-rules.sh
 
   sops-sanity:
     runs-on: ubuntu-latest

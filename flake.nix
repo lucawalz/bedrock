@@ -90,6 +90,7 @@
             gnumake
             git
             yq-go
+            prometheus.cli
           ];
         };
 
@@ -111,6 +112,7 @@
             zstd
             git
             yq-go
+            prometheus.cli
           ];
         };
     };
