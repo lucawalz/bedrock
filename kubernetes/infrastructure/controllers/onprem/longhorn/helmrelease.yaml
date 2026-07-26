@@ -24,7 +24,7 @@ spec:
     timeout: 15m
     remediation:
       retries: 3
-      remediateLastFailure: true
+      remediateLastFailure: false
   interval: 30m0s
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
