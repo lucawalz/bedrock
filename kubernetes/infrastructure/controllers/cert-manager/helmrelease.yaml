@@ -56,7 +56,6 @@ spec:
           cpu: "200m"
           memory: "128Mi"
   install:
-    createNamespace: true
     crds: Create
     remediation:
       retries: 3

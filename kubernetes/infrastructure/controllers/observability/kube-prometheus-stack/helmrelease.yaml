@@ -18,7 +18,6 @@ spec:
       name: prometheus-values
       optional: true
   install:
-    createNamespace: true
     timeout: 20m
     remediation:
       retries: 3
