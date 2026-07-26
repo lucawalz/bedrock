@@ -518,3 +518,103 @@ tests:
       - eval_time: 30m
         alertname: NodeCpuTemperatureCritical
         exp_alerts: []
+
+  - interval: 1m
+    name: container memory past the warning threshold fires warning only
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="authentik",pod="authentik-server-0",container="server"}'
+        values: '90x200'
+      - series: 'kube_pod_container_resource_limits{namespace="authentik",pod="authentik-server-0",container="server",resource="memory"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: authentik
+              pod: authentik-server-0
+              container: server
+            exp_annotations:
+              summary: "Container server in authentik/authentik-server-0 is close to its memory limit"
+              description: "Container server has held above 85 percent of its memory limit for 30 minutes, currently 90%. Exceeding the limit is an immediate OOMKill rather than a gradual slowdown, so this is the only warning available before the container is terminated. Either the limit was set below what the workload needs or the workload is leaking."
+      - eval_time: 60m
+        alertname: ContainerMemoryAtLimit
+        exp_alerts: []
+
+  - interval: 1m
+    name: container memory past the critical threshold fires critical
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="llm",pod="open-webui-0",container="open-webui"}'
+        values: '98x200'
+      - series: 'kube_pod_container_resource_limits{namespace="llm",pod="open-webui-0",container="open-webui",resource="memory"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: ContainerMemoryAtLimit
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: llm
+              pod: open-webui-0
+              container: open-webui
+            exp_annotations:
+              summary: "Container open-webui in llm/open-webui-0 is about to be OOMKilled"
+              description: "Container open-webui has held above 95 percent of its memory limit for 10 minutes, currently 98%. Raise the limit or restart the workload before the kernel does it."
+
+  - interval: 1m
+    name: a container comfortably inside its memory limit fires nothing
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="monitoring",pod="loki-0",container="loki"}'
+        values: '40x200'
+      - series: 'kube_pod_container_resource_limits{namespace="monitoring",pod="loki-0",container="loki",resource="memory"}'
+        values: '100x200'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts: []
+      - eval_time: 60m
+        alertname: ContainerMemoryAtLimit
+        exp_alerts: []
+
+  - interval: 1m
+    name: a container with no declared limit is not evaluated
+    input_series:
+      - series: 'container_memory_working_set_bytes{namespace="longhorn-system",pod="longhorn-ui-0",container="longhorn-ui"}'
+        values: '900x200'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: ContainerMemoryNearLimit
+        exp_alerts: []
+
+  - interval: 1m
+    name: a restart whose previous instance was OOMKilled fires critical
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="metallb-system",pod="metallb-controller-0",container="controller"}'
+        values: '0+1x200'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="metallb-system",pod="metallb-controller-0",container="controller",reason="OOMKilled"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: ContainerOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: metallb-system
+              pod: metallb-controller-0
+              container: controller
+            exp_annotations:
+              summary: "Container controller in metallb-system/metallb-controller-0 was OOMKilled"
+              description: "Container controller restarted in the last hour and its previous instance was terminated for exceeding its memory limit. The limit is wrong or the workload is leaking; the container will keep being killed until one of the two is corrected."
+
+  - interval: 1m
+    name: a restart for a reason other than OOM does not fire
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="blog",pod="blog-0",container="blog"}'
+        values: '0+1x200'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="blog",pod="blog-0",container="blog",reason="Error"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: ContainerOOMKilled
+        exp_alerts: []
