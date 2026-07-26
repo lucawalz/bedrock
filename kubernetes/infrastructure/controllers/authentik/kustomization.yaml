@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: authentik
 
 components:
+  - ../../../components/network-policies/base
   - ../../../components/network-policies/internet-egress
 
 resources:
