@@ -43,10 +43,10 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key, t
 3. Hosts. Get a minimal NixOS with SSH onto each node, then push its configuration:
 
    ```
-   nixos-rebuild switch --flake .#master --target-host root@<ip>
+   nixos-rebuild switch --flake .#master --target-host root@<ip> --build-host root@<ip>
    ```
 
-   `disko` wipes and formats the disk. Two recovery details: master's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
+   `--build-host` points at the target itself because no other machine exists yet to build on, and without it the build runs on the workstation, which cannot produce a Linux closure. `disko` wipes and formats the disk. Two recovery details: master's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
 4. K3s. The master starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` host entry and the shared token, so the join does not depend on router DNS. This yields an empty three-node cluster.
 5. Flux. Seed it once against the repository:
 
@@ -113,7 +113,9 @@ Derived from the mechanisms as configured, not negotiated with anyone. They desc
 | Everything declared in Git | Flux reconciliation | Zero, the repository is the source of truth | Bounded by reconciliation, not by restore |
 | Total cluster loss | All of the above, plus hardware | The worst of the above, so up to 24 hours | Eight to twenty hours with spare hardware on hand, indefinite without it |
 
-Two caveats belong with these numbers. The recovery points assume the mechanisms are working, and no restore has yet been proven, so the recovery times are estimates rather than measurements. And in-cluster alerting cannot detect total cluster loss: every alerting component runs on the same three nodes behind the same ingress, so the failure that matters most is the one nothing will report.
+One case is worse than the table implies. Losing **master** is a full outage of both data and external access, not a degradation, and it lasts until master returns. Failure injection on 2026-07-26 established why: CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API before starting Postgres, so with the single API server gone every database instance refuses to start regardless of which node holds the primary; and MetalLB's speaker needs the API to see Services, so it stops announcing the load balancer address and nothing answers ARP for it. Recovery once master boots is about five minutes. Losing either worker is genuinely a degradation: the database primary fails over in around 30 seconds and ingress continues.
+
+Two further caveats belong with these numbers. The recovery points assume the mechanisms are working, and no restore has yet been proven, so the recovery times are estimates rather than measurements. And in-cluster alerting cannot detect total cluster loss: every alerting component runs on the same three nodes behind the same ingress, so the failure that matters most is the one nothing will report.
 
 ## Secret recovery
 
@@ -169,7 +171,10 @@ The evidence table below records what has actually been exercised. An earlier re
 
 ## Known gaps
 
-- No restore has ever been performed, for any mechanism. Every recovery time in this document is an estimate.
+- No restore has ever been performed, for any mechanism. The recovery times for the restore mechanisms are estimates; the node-loss figures were measured on 2026-07-26.
+- Alertmanager cannot recover from a node loss on its own. It has no PersistentVolumeClaim, so Longhorn's `nodeDownPodDeletionPolicy` does not cover it, and nothing force-deletes the pod stranded on an unreachable node. Alert evaluation returns after about 16 minutes when Prometheus is force-deleted and rescheduled; alert delivery stays down until the node returns or the pod is deleted by hand.
+- worker-2 cannot be drained while it holds the only replica of a volume. Longhorn's `block-if-contains-last-replica` policy correctly refuses, so the node is not patchable without moving `data-zot-0` and `kiwix-library` to a replicated class or forcing the drain.
+- A mass reschedule can outlast the event that caused it. Draining master took 38 seconds and the estate took 45 minutes to settle, because every rescheduled pod pulled images through the registry cache at once and containerd does not fall back to the upstream registry when the mirror is merely slow.
 - 2026-07-24 is a hole in every backup mechanism at once. Velero's run failed validation because the backup storage location was unavailable, no CloudNativePG base backup was taken, and Longhorn produced no backups. Point-in-time recovery across that day depends on WAL continuity that has not been verified.
 - The `rancher-webhook` replica count and anti-affinity are imperative and are not reconciled, so a rebuild returns to a single replica until step 9 is reapplied.
 - The age key is held only on the operator's workstation, by choice. It is simultaneously the SOPS recovery identity and the SSH credential for all four hosts, so losing that machine loses access and decryption in the same event.

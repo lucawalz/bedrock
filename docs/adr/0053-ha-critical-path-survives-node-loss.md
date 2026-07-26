@@ -32,4 +32,13 @@ Monitoring and DNS are left as they are, by design. Loki and Tempo stay single-r
 
 ## Consequences
 
+**Correction, 2026-07-26, from failure injection.** The claim below holds for the loss of either worker but **not for master**, and the distinction is structural rather than a placement mistake.
+
+Powering off either worker behaved as this record describes: ingress kept serving, and the CloudNativePG primary failed over in about 29 seconds with writes never stopping. Powering off master took down both the databases and all external access, for two reasons that no amount of replication inside the cluster can fix while there is one API server:
+
+- CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API to learn its role before it starts Postgres. With the API server gone, every instance on every node retried `get cluster` and never started a postmaster, so all three databases were unwritable even though the primary was on a surviving worker.
+- MetalLB's speaker needs the API to see Services. It went blind and stopped announcing, so nothing answered ARP for the load balancer address. Traefik and the application pods were healthy and simply unreachable.
+
+Losing master is therefore a full outage of data and access lasting until it returns, not a degradation. The honest scope of this record is single **worker** loss. Closing the master gap needs a three-server control plane, which is tracked separately and deliberately deferred.
+
 The cluster now serves ingress, authentication, and its database through the loss of any single node. Resource use rises with the extra replicas, comfortably within the nodes' headroom. Any future change to the number of CloudNativePG instances depends on the replication NetworkPolicy staying in place; removing the port 5432 intra-cluster rule would silently break replica joins again. DNS and the monitoring backends still see a brief gap on node loss while their single pods reschedule, which is accepted.
