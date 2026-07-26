@@ -54,6 +54,34 @@ spec:
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
+  name: minio-post-job
+  namespace: minio
+spec:
+  exceptions:
+    - policyName: require-drop-all-capabilities
+      ruleNames:
+        - "*"
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+    - policyName: require-resources
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Job
+            - Pod
+          namespaces:
+            - minio
+          names:
+            - minio-minio-post-job
+            - minio-minio-post-job-*
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
   name: pgadmin-restricted
   namespace: postgres
 spec:
