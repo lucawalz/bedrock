@@ -1,44 +1,6 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: velero-default-deny
-  namespace: velero
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: velero
-  policyTypes:
-    - Ingress
-    - Egress
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-velero-dns
-  namespace: velero
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: velero
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kube-system
-          podSelector:
-            matchLabels:
-              k8s-app: kube-dns
-      ports:
-        - protocol: TCP
-          port: 53
-        - protocol: UDP
-          port: 53
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-velero-apiserver-egress
   namespace: velero
 spec:
