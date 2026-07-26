@@ -75,9 +75,9 @@ spec:
       resources:
         requests:
           cpu: 100m
-          memory: 512Mi
+          memory: 640Mi
         limits:
-          memory: 768Mi
+          memory: 1Gi
     worker:
       replicas: 2
       resources:
