@@ -28,10 +28,14 @@
     };
   };
 
-  boot.kernelParams = [
-    "console=ttyS0,115200"
-    "console=tty1"
-  ];
+  boot = {
+    loader.generic-extlinux-compatible.configurationLimit = 10;
+
+    kernelParams = [
+      "console=ttyS0,115200"
+      "console=tty1"
+    ];
+  };
 
   system.stateVersion = "25.05";
 }
