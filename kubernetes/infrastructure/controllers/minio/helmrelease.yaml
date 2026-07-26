@@ -23,7 +23,7 @@ spec:
   upgrade:
     remediation:
       retries: 3
-      remediateLastFailure: true
+      remediateLastFailure: false
   values:
     mode: standalone
     replicas: 1
