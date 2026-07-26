@@ -1,0 +1,45 @@
+name: nix-build-router
+
+# The router is the single network SPOF and the only aarch64 host, and its closure carries the
+# Wayland kiosk, so a cold build is slow. It builds when its own inputs change and weekly otherwise,
+# rather than on every pull request.
+on:
+  pull_request:
+    paths:
+      - hosts/router/**
+      - hosts/router-installer.nix
+      - modules/router/**
+      - modules/tailscale/**
+      - lib/**
+      - flake.nix
+      - flake.lock
+      - .github/workflows/nix-build-router.yaml
+  push:
+    branches: [main]
+    paths:
+      - hosts/router/**
+      - hosts/router-installer.nix
+      - modules/router/**
+      - modules/tailscale/**
+      - lib/**
+      - flake.nix
+      - flake.lock
+      - .github/workflows/nix-build-router.yaml
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Build router toplevel
+        run: nix build --no-link --print-out-paths '.#nixosConfigurations.router.config.system.build.toplevel'
