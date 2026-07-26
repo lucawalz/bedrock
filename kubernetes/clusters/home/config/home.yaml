@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/configs/cnpg
   prune: true
   wait: true
@@ -24,6 +25,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/authentik
   prune: true
   wait: true
@@ -44,6 +46,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/pgadmin
   prune: true
   wait: true
@@ -62,6 +65,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/minio
   prune: true
   wait: true
@@ -80,6 +84,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/configs/reaper
   prune: true
   wait: true
@@ -96,6 +101,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/clusters/home/flux-operator/instance
   prune: true
   wait: true

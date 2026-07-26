@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/clusters/home/namespaces
   prune: true
   wait: true

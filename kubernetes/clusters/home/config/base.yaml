@@ -6,6 +6,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/cert-manager
   prune: true
   wait: true
@@ -24,6 +25,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/configs/cert-manager-issuers
   prune: true
   wait: true
@@ -41,6 +43,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/storage
   prune: true
   wait: true
@@ -59,6 +62,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/cnpg-operator
   prune: true
   wait: true
@@ -76,6 +80,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/security
   prune: true
   wait: true
@@ -94,6 +99,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/delivery
   prune: true
   wait: true
@@ -112,6 +118,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/configs/notifications
   prune: true
   wait: true
@@ -130,6 +137,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/alloy
   prune: true
   wait: true
@@ -148,6 +156,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 10m
+  retryInterval: 1m
   path: ./kubernetes/infrastructure/controllers/coredns
   prune: true
   wait: true
