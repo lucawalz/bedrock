@@ -32,6 +32,12 @@ spec:
     longhornManager:
       nodeSelector:
         bedrock.io/storage: "true"
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          memory: 512Mi
     longhornDriver:
       nodeSelector:
         bedrock.io/storage: "true"
@@ -45,8 +51,19 @@ spec:
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
       replicaSoftAntiAffinity: false
+      storageMinimalAvailablePercentage: 25
+      storageOverProvisioningPercentage: 100
+      storageReservedPercentageForDefaultDisk: 30
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       systemManagedComponentsNodeSelector: "bedrock.io/storage:true"
+      systemManagedCSIComponentsResourceLimits: >-
+        {"csi-attacher":{"requests":{"cpu":"25m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-provisioner":{"requests":{"cpu":"25m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-resizer":{"requests":{"cpu":"25m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "csi-snapshotter":{"requests":{"cpu":"25m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
+        "longhorn-csi-plugin":{"requests":{"cpu":"50m","memory":"64Mi"},"limits":{"memory":"256Mi"}},
+        "node-driver-registrar":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"64Mi"}},
+        "longhorn-liveness-probe":{"requests":{"cpu":"10m","memory":"32Mi"},"limits":{"memory":"64Mi"}}}
       orphanResourceAutoDeletion: "replica-data;instance"
     persistence:
       defaultClass: true
