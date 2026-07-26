@@ -41,3 +41,17 @@ jobs:
         run: nix flake check --no-build
         # --no-build evaluates all modules and catches Nix errors without
         # spending 20+ minutes building the full system closure
+
+  build-x86:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        host: [master, worker-1, worker-2]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Build ${{ matrix.host }} toplevel
+        run: nix build --no-link --print-out-paths ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
