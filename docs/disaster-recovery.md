@@ -39,7 +39,13 @@ There is no `cluster-infrastructure`, `cluster-networking` or `cluster-monitorin
 The order matters: network, then hosts, then K3s, then Flux, then the age key, then data.
 
 1. Recover the seeds above: the age key, the Hetzner bucket and its credentials, the repository, the host keys if they were backed up, and a bootable NixOS installer.
-2. Router first. Flash the Pi from the `router-installer` SD image. It brings up the VLANs, DHCP, DNS, and the gateway that the rest of the network needs.
+2. Router first, in two steps. The `router-installer` SD image is a bare bootable Pi with SSH and the operator key, nothing more: it carries no VLANs, no DHCP, no DNS and no gateway, because `kea` and `adguardhome` are absent from it and `netdevs` is empty. Flash it, reach the Pi on whatever address the upstream network hands it, then push the real configuration, which is what actually brings up the network:
+
+   ```
+   nixos-rebuild switch --flake .#router --target-host root@<ip> --build-host root@<ip>
+   ```
+
+   `--build-host` points at the Pi itself because no other machine exists yet and a workstation cannot produce the aarch64 Linux closure. Expect this build to be slow on the Pi. Until it completes there is no VLAN 20, so nothing else in this procedure can start.
 3. Hosts. Get a minimal NixOS with SSH onto each node, then push its configuration:
 
    ```
@@ -183,4 +189,5 @@ The evidence table below records what has actually been exercised. An earlier re
 - kiwix is deliberately not backed up. Its 32 GB of ZIM files are re-downloaded from `download.kiwix.org` by an idempotent init container, so recovery is a redownload rather than a restore. Its backups previously failed at 85 percent anyway.
 - Fifteen orphaned Longhorn `BackupVolume` objects remain for PVCs that no longer exist and will never be pruned. One of them holds the only surviving backup of the ollama volume.
 - master's pinned filesystem UUIDs must be regenerated after a disk wipe.
+- The operator has no remote management path that survives the Pi. Every route to VLAN 20 runs through it, and the SSH jump host named in `./CLAUDE.md` is not an alternative, because port 22 is opened on `vlan20` only and `end0` is not a trusted interface, so that jump host is reachable solely over the tunnel it would be replacing. From the home LAN the router forwards nothing into VLAN 20 except the service VIP on 80 and 443. This was hit on 2026-07-26: tailscaled on the Pi kept its coordination-server session while passing no WireGuard traffic, so the Tailscale app still showed the router online while the estate was unreachable, and recovery needed a physical power cycle. The cluster itself was unaffected throughout. Adding Tailscale to master would give an independent path; it needs master added to the `tailscale-authkey.age` recipients and a reusable auth key, since the current key is encrypted to the router and the operator only.
 - A full bare-metal rehearsal, re-imaging spare hardware end to end, and a full reconcile on unlike hardware both depend on a cluster-appropriate overlay that does not exist yet.
