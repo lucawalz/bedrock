@@ -1,9 +1,12 @@
 # Shared K3s configuration for both server and agent nodes
 {
+  pkgs,
   secretsDir ? ../../secrets,
   ...
 }:
 {
+  services.k3s.package = pkgs.k3s_1_35;
+
   age.secrets.k3s-token = {
     file = "${secretsDir}/k3s-token.age";
     mode = "0400";
@@ -65,6 +68,8 @@
   services.k3s.extraFlags = [
     "--kubelet-arg=image-gc-high-threshold=70"
     "--kubelet-arg=image-gc-low-threshold=55"
+    # k3s ships only imagefs and nodefs thresholds, so without this memory pressure OOM kills rather than evicting
+    "--kubelet-arg=eviction-hard=memory.available<500Mi,nodefs.available<5%,imagefs.available<5%"
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
   ];
 }
