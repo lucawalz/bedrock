@@ -19,6 +19,15 @@ spec:
     multitenant: false
     networkPolicy: false
     domain: "cluster.local"
+  kustomize:
+    patches:
+      - target:
+          kind: Deployment
+          name: kustomize-controller
+        patch: |
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --feature-gates=StrictPostBuildSubstitutions=true
   sync:
     kind: GitRepository
     url: "ssh://git@github.com/lucawalz/bedrock"
