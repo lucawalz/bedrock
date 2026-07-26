@@ -223,6 +223,7 @@ in
 
     systemd.user.timers.kiosk-watchdog = {
       description = "Probe the estate for the bar panel";
+      wantedBy = [ "timers.target" ];
       timerConfig = {
         OnStartupSec = "1min";
         OnUnitActiveSec = "${toString probeIntervalSeconds}s";
