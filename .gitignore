@@ -22,6 +22,8 @@ result-*
 !secrets/secrets.nix
 !secrets/**/*.age
 !kubernetes/**/bootstrap-secrets/**/*.sops.yaml
+# the leading glob also matches the sops config itself, which holds only public recipients
+!.sops.yaml
 
 # macOS
 .DS_Store
