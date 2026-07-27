@@ -48,8 +48,6 @@ spec:
       storageClass: longhorn-disposable
       accessModes:
         - ReadWriteOnce
-    nodeSelector:
-      kubernetes.io/hostname: worker-2
     resources:
       requests:
         cpu: "250m"
