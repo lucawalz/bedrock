@@ -31,6 +31,8 @@
   boot = {
     loader.generic-extlinux-compatible.configurationLimit = 10;
 
+    zfs.forceImportRoot = false;
+
     kernelParams = [
       "console=ttyS0,115200"
       "console=tty1"
