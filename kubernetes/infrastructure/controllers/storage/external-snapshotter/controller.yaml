@@ -146,7 +146,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: snapshot-controller
-          image: registry.k8s.io/sig-storage/snapshot-controller:v8.4.0
+          image: registry.k8s.io/sig-storage/snapshot-controller:v8.6.0
           args:
             - "--v=5"
             - "--leader-election=true"
