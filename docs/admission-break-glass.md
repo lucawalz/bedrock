@@ -2,13 +2,13 @@
 
 How to recover the cluster when an admission webhook refuses the writes needed to fix it.
 
-Validating and mutating webhooks sit in front of the API server. A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims, because the API server rejects the request when it cannot reach the backend. The recovery action is therefore always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
+A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims. The recovery is always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
 
-Two properties decide the blast radius, and both are visible on the configuration object: the `failurePolicy`, and the `namespaceSelector` that decides which namespaces the webhook is consulted for. A `Fail` webhook with an empty selector reaches everywhere.
+Blast radius is set by two fields on the configuration object: `failurePolicy`, and the `namespaceSelector` deciding where the webhook is consulted. A `Fail` webhook with an empty selector reaches everywhere.
 
 ## Recognising the failure
 
-The symptom is a write that fails with a message naming the webhook rather than the resource. Examples:
+The symptom is a write that fails with a message naming the webhook rather than the resource:
 
 ```
 Internal error occurred: failed calling webhook "validate.kyverno.svc-fail": failed to call webhook: Post "https://kyverno-svc.kyverno.svc:443/...": context deadline exceeded
@@ -18,9 +18,9 @@ Internal error occurred: failed calling webhook "validate.kyverno.svc-fail": fai
 Internal error occurred: failed calling webhook "rancher.cattle.io.secrets": ... connect: connection refused
 ```
 
-A webhook failure is distinguishable from a policy rejection. A policy rejection names the rule that refused and is a deliberate answer from a healthy webhook. A webhook failure names the transport and means the backend was unreachable. Only the second case calls for this runbook.
+A policy rejection names the rule that refused and is a deliberate answer from a healthy webhook. A webhook failure names the transport. Only the second calls for this runbook.
 
-Confirm which webhooks are capable of blocking before changing anything:
+Confirm which webhooks can block before changing anything:
 
 ```
 kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations \
@@ -29,7 +29,7 @@ kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations \
 
 ## The webhooks that can block recovery
 
-Every configuration below has `failurePolicy: Fail`, so each converts its own outage into a write outage for the resources it claims. The first two rows reach across resource kinds and are the ones that block general recovery. The rest claim only their own custom resources, which means they block recovery of their own subsystem and nothing else.
+All of these are `failurePolicy: Fail`. The first two rows reach across resource kinds and block general recovery; the rest claim only their own custom resources, so each blocks recovery of its own subsystem.
 
 | Configuration | Owner | What it blocks while unavailable |
 | --- | --- | --- |
@@ -43,15 +43,15 @@ Every configuration below has `failurePolicy: Fail`, so each converts its own ou
 | `cert-manager-webhook` validating and mutating | cert-manager | `cert-manager.io` and `acme.cert-manager.io` resources, so certificate issuance and renewal |
 | `capi-validating-webhook-configuration`, `capi-mutating-webhook-configuration` | CAPI | Cluster API resources only, which hold no workload in this estate |
 
-The subsystem webhooks are circular in a way worth noting: a Longhorn outage blocks the Longhorn resource writes needed to repair it, and the same holds for CNPG and MetalLB. Relaxing the failure policy is the way out of each, and the procedure below applies unchanged with the configuration name substituted.
+The subsystem webhooks are circular: a Longhorn outage blocks the Longhorn writes needed to repair it, and the same holds for CNPG and MetalLB. The procedure below applies unchanged with the configuration name substituted.
 
-The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring`, `velero` and `cnpg-system`. Recovery work inside those namespaces proceeds during a Kyverno outage, which is what makes a Kyverno failure self-serviceable. Work anywhere else does not.
+The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring`, `velero` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
 
-The Rancher configuration has no such exclusion. Its `rancher.cattle.io.secrets` mutating webhook claims Secret CREATE, UPDATE and DELETE in every namespace with `failurePolicy: Fail`, so while rancher-webhook is down no Secret can be written anywhere. That blocks cert-manager renewal, Flux SOPS decryption, CNPG and any Velero restore.
+The Rancher configuration has no such exclusion. Its `rancher.cattle.io.secrets` mutating webhook claims Secret CREATE, UPDATE and DELETE in every namespace, so while rancher-webhook is down no Secret can be written anywhere. That blocks cert-manager renewal, Flux SOPS decryption, CNPG and any Velero restore.
 
 ## Disabling enforcement
 
-Prefer relaxing the failure policy over deleting the configuration. Setting every webhook in a configuration to `Ignore` leaves the object, its rules and its CA bundle intact, so the change is reversible by hand and is overwritten with the correct value once the owning controller starts and reconciles the object again.
+Prefer relaxing the failure policy over deleting the configuration: the object, its rules and its CA bundle stay intact, and the owning controller overwrites the value when it reconciles.
 
 Kyverno:
 
@@ -69,21 +69,21 @@ for k in validatingwebhookconfiguration mutatingwebhookconfiguration; do
 done
 ```
 
-If `jq` is not available, `kubectl edit` the object and change each `failurePolicy` field by hand. The field appears once per webhook entry, and the Rancher validating configuration carries 31 of them.
+Without `jq`, `kubectl edit` the object and change each `failurePolicy` by hand. The field appears once per webhook entry, and the Rancher validating configuration carries 31.
 
 ## Deleting the configuration
 
-Deletion is the stronger action and is reserved for the case where relaxing the policy is not enough, such as a webhook that is reachable but returns errors, or an object too large to edit under time pressure.
+Reserved for a webhook that is reachable but returns errors, or an object too large to edit under time pressure.
 
-For Kyverno there is a simpler action than either relaxing or deleting. Kyverno removes its own resource webhook configurations when the admission controller shuts down gracefully, so scaling the deployment to zero disarms admission on its own and needs no edit to any webhook object:
+For Kyverno there is a simpler action than either. Kyverno removes its own resource webhook configurations when the admission controller shuts down gracefully, so scaling to zero disarms admission with no edit to any webhook object:
 
 ```
 kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=0
 ```
 
-Scaling it back up recreates and repopulates them within about a second. This is the preferred Kyverno break-glass when the controller is still able to terminate cleanly. It follows that a Kyverno outage only blocks writes when the pods die *without* shutting down cleanly, such as a node loss, an OOM kill or a partition. A graceful scale-down is not a way to rehearse that failure, because it removes the very configurations the failure would leave behind.
+Scaling back up recreates them within about a second. It follows that a Kyverno outage only blocks writes when the pods die *without* shutting down cleanly, such as node loss, an OOM kill or a partition, and that a graceful scale-down cannot rehearse that failure, because it removes the very configurations the failure would leave behind.
 
-Kyverno recreates all ten of its configurations on start, because it runs with `--autoUpdateWebhooks=true` and the chart ships no webhook templates at all. Deleting them is therefore safe and self-healing:
+Kyverno recreates all ten configurations on start, because it runs with `--autoUpdateWebhooks=true` and the chart ships no webhook templates. Deleting them is safe and self-healing:
 
 ```
 kubectl delete validatingwebhookconfigurations,mutatingwebhookconfigurations \
@@ -96,18 +96,18 @@ Restarting the admission controller rewrites them:
 kubectl -n kyverno rollout restart deployment kyverno-admission-controller
 ```
 
-The Rancher configurations are different and deletion is not recommended without a restore path in hand. The `rancher-webhook` chart creates both objects as empty shells and the rancher-webhook binary writes the rules, failure policies and timeouts into them at runtime. Whether the binary recreates an object that has been deleted outright, rather than updating one that already exists, is not established. Before deleting either object, take a copy so it can be restored by hand:
+The Rancher configurations are different. The chart creates both objects as empty shells and the binary writes the rules, failure policies and timeouts at runtime; whether it recreates an object deleted outright is not established. Take a copy first:
 
 ```
 kubectl get validatingwebhookconfiguration rancher.cattle.io -o yaml > rancher-validating.yaml
 kubectl get mutatingwebhookconfiguration rancher.cattle.io -o yaml > rancher-mutating.yaml
 ```
 
-If the objects do not return after the webhook recovers, reapply those copies, or force Rancher to reinstall its system chart by deleting the `rancher-webhook` app so the systemcharts controller recreates it.
+If the objects do not return after the webhook recovers, reapply those copies, or delete the `rancher-webhook` app so the systemcharts controller reinstalls it.
 
 ## Repairing the backend
 
-With enforcement relaxed, the blocked writes succeed and the underlying fault can be addressed normally. The usual causes are the workload being unschedulable, the service having no ready endpoints, or an expired serving certificate.
+With enforcement relaxed, the blocked writes succeed. The usual causes are an unschedulable workload, a service with no ready endpoints, or an expired serving certificate.
 
 ```
 kubectl -n kyverno get pods -l app.kubernetes.io/component=admission-controller
@@ -116,22 +116,18 @@ kubectl -n kyverno get endpoints kyverno-svc
 kubectl -n cattle-system get endpoints rancher-webhook
 ```
 
-An admission webhook with no ready endpoints is a scheduling or health problem, not an admission problem. Kyverno and rancher-webhook both run two replicas with hard anti-affinity, so a single node loss leaves one of each serving.
-
-The rancher-webhook replica count is set imperatively and is the one part of this that Flux does not reconcile. See Restoring rancher-webhook below.
+No ready endpoints is a scheduling or health problem, not an admission problem. Kyverno and rancher-webhook both run two replicas with hard anti-affinity, so a single node loss leaves one of each serving. The rancher-webhook replica count is imperative and is the one part Flux does not reconcile; see Restoring rancher-webhook.
 
 ## Restoring enforcement
 
-Enforcement must be put back deliberately. A cluster left with `Ignore` policies is a cluster whose policies are advisory.
-
-Restarting the owning controller is the reliable route, because each controller rewrites its own configurations:
+A cluster left with `Ignore` policies is a cluster whose policies are advisory. Restarting the owning controller is the reliable route, because each rewrites its own configurations:
 
 ```
 kubectl -n kyverno rollout restart deployment kyverno-admission-controller
 kubectl -n cattle-system rollout restart deployment rancher-webhook
 ```
 
-Then confirm no webhook was left relaxed:
+Then confirm none was left relaxed:
 
 ```
 kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations \
@@ -156,7 +152,7 @@ Ten entries are `Ignore` by design and are expected in that output at rest. Anyt
 
 ## Restoring rancher-webhook
 
-The `rancher-webhook` chart contains no `replicas` field and no affinity values, so a second replica cannot be declared through Helm or reconciled by Flux. It is set imperatively instead, and must be reapplied after any rebuild that reinstalls Rancher from scratch:
+The chart contains no `replicas` field and no affinity values, so a second replica cannot be declared through Helm or reconciled by Flux. Reapply after any rebuild that reinstalls Rancher from scratch:
 
 ```
 kubectl -n cattle-system patch deploy/rancher-webhook --type=merge -p '{
@@ -166,9 +162,9 @@ kubectl -n cattle-system patch deploy/rancher-webhook --type=merge -p '{
       "topologyKey": "kubernetes.io/hostname"}]}}}}}}'
 ```
 
-The change survives Rancher upgrades. Both fields are absent from the chart's rendered manifest, so Helm's three-way merge produces no patch entry for either and the live values are left alone. It does not survive a rebuild that installs the chart into an empty cluster, because nothing then carries the value forward.
+The change survives Rancher upgrades, because both fields are absent from the rendered manifest and Helm's three-way merge emits no patch for them. It does not survive a rebuild into an empty cluster.
 
-Confirm the result, which should show two ready pods on two different nodes:
+Confirm two ready pods on two different nodes:
 
 ```
 kubectl -n cattle-system get pods -l app=rancher-webhook -o wide
