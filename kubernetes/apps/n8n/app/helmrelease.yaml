@@ -23,6 +23,15 @@ spec:
       remediateLastFailure: true
   values:
     existingEncryptionKeySecret: n8n-encryption-key
+    db:
+      type: postgresdb
+    externalPostgresql:
+      host: postgres-rw.postgres.svc.cluster.local
+      port: 5432
+      database: n8n
+      username: n8n
+      existingSecret: n8n-postgres
+      existingSecretPasswordKey: DB_POSTGRESDB_PASSWORD
     strategy:
       type: Recreate
     ingress:
