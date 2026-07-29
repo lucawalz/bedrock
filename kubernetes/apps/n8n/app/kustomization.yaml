@@ -7,6 +7,7 @@ components:
   - ../../../components/network-policies/internet-egress
 resources:
   - helmrelease.yaml
+  - networkpolicies.yaml
   - ingress.yaml
   - pdb.yaml
   - pvc.yaml

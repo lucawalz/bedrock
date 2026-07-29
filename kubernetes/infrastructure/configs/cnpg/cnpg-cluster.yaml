@@ -51,6 +51,14 @@ spec:
         login: true
         passwordSecret:
           name: pg-miniflux
+      - name: n8n
+        login: true
+        passwordSecret:
+          name: pg-n8n
+      - name: open-webui
+        login: true
+        passwordSecret:
+          name: pg-open-webui
   backup:
     retentionPolicy: "30d"
     barmanObjectStore:
