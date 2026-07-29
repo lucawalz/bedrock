@@ -21,4 +21,4 @@ Host secrets use agenix, encrypted to each node's SSH host key, declared in `sec
 
 ## Consequences
 
-Each layer uses the right tool, and nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both, and the age key custody matters: whoever holds the age private key can decrypt the cluster secrets, so that key is the thing that actually has to be protected.
+Each layer uses the right tool, and nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both. Age key custody also matters: whoever holds the age private key can decrypt the cluster secrets, so that key is the thing that actually has to be protected.

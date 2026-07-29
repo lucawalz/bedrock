@@ -81,7 +81,7 @@ For Kyverno there is a simpler action than either. Kyverno removes its own resou
 kubectl -n kyverno scale deployment kyverno-admission-controller --replicas=0
 ```
 
-Scaling back up recreates them within about a second. It follows that a Kyverno outage only blocks writes when the pods die *without* shutting down cleanly, such as node loss, an OOM kill or a partition, and that a graceful scale-down cannot rehearse that failure, because it removes the very configurations the failure would leave behind.
+Scaling back up recreates them within about a second. It follows that a Kyverno outage only blocks writes when the pods die *without* shutting down cleanly, such as node loss, an OOM kill or a partition. A graceful scale-down cannot rehearse that failure, because it removes the very configurations the failure would leave behind.
 
 Kyverno recreates all ten configurations on start, because it runs with `--autoUpdateWebhooks=true` and the chart ships no webhook templates. Deleting them is safe and self-healing:
 

@@ -11,12 +11,12 @@ date: 2026-06-23
 `headlamp.syslabs.dev`, which sits behind Authentik forward-auth
 ([0038](0038-authentik-sso-for-internal-dashboards.md)). The panel is a wall display with no
 keyboard or mouse, so an unattended session has no way to clear the Authentik login and rests
-forever on the sign-in page rather than on the cluster view it was built to show.
+forever on the sign-in page.
 
 A second problem surfaced during hardware bring-up. The desktop session pillarboxed, leaving black
 bars down both sides, because the Wisecoco panel's factory EDID carries a malformed 1280x400
 preferred timing that the kernel drops. With no valid native mode advertised, the desktop fell back
-to a synthesized custom mode the panel could not lock, while the boot console filled the panel only
+to a synthesized custom mode the panel could not lock. The boot console filled the panel only
 by selecting a standard mode that the panel's own scaler stretches to fit. Neither path gave a
 true 1:1 1280x400 picture.
 
@@ -70,7 +70,7 @@ The panel shows live cluster status with no interactive login to clear, which is
 wall display needs. The corrected timing was confirmed on the panel during bring-up: at 41.5 MHz
 with an even horizontal total the board renders a true 1:1 1280x400 picture with no bars. The
 override runs from a service ordered before greetd, so it is re-applied on every session start and
-holds without a bootloader or kernel change; the router still needs one reboot to activate the
+holds without a bootloader or kernel change. The router still needs one reboot to activate the
 system generation that carries the service. Removing Headlamp leaves one fewer standing cluster
 credential, and the most network-exposed host no longer has a path to a `cluster-admin` token at
 all. This supersedes the display-target choice in
@@ -83,7 +83,7 @@ The EDID half of this record still describes what runs. The kiosk half does not.
 Anonymous Grafana access is gone. `auth.anonymous.enabled` is `false` in the kube-prometheus-stack
 values, so Grafana requires a login again and no longer serves read-only dashboards to everything that
 can reach it on the LAN or the tailnet. An earlier attempt to disable it on 2026-07-12 was reverted the
-same day, because with anonymous access removed the panel landed on the Grafana sign-in page and
+same day. With anonymous access removed the panel landed on the Grafana sign-in page and
 reproduced the exact failure that moved it off Headlamp: an unattended display with no keyboard resting
 on a login form.
 
@@ -97,8 +97,8 @@ the router's Nix configuration.
 The reasoning that chose an unauthenticated view for the panel still holds, because a wall display with
 no input device cannot complete an interactive login and something on the path has to be reachable
 without one. What changed is the scope of that exemption. Anonymous Viewer opened every dashboard to
-anyone who could reach Grafana; a public dashboard link opens exactly one dashboard, and the unguessable
+anyone who could reach Grafana. A public dashboard link opens exactly one dashboard, and the unguessable
 token in the link is the only credential, which is why the URL is treated as a secret rather than
 committed in the clear. That narrows the decision rather than reversing it, so this record is amended
-rather than superseded, and the word `anonymous` in the title stays as the mechanism chosen on
+rather than superseded. The word `anonymous` in the title stays as the mechanism chosen on
 2026-06-23.
