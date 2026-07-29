@@ -20,8 +20,6 @@ These cannot live in the repository and must be kept somewhere that survives the
 
 External account tokens for Hetzner, Cloudflare, and Tailscale are stored as SOPS secrets, so they return once the age key is present, but the accounts and their issuers live outside the repository.
 
-The age private key is held only on the operator's workstation, by choice. That is an accepted single point of failure: if both the workstation and the cluster are lost, the encrypted secrets are unrecoverable and must be reissued from their sources.
-
 ## Reconciliation order
 
 Flux applies the cluster in dependency order, and a layer whose dependencies are not ready waits rather than failing:
@@ -32,27 +30,25 @@ Flux applies the cluster in dependency order, and a layer whose dependencies are
 4. A second tier waits on specific parts of the first: `cluster-cnpg-db` on `cluster-cnpg-operator`, `cluster-issuers` on `cluster-cert-manager`, `cluster-metallb` on `cluster-edge-onprem`, `cluster-policies` on `cluster-security`, `cluster-flux` on `cluster-flux-operator`.
 5. `cluster-apps` creates one Kustomization per application ([ADR 0066](adr/0066-standardize-app-delivery-per-app-kustomizations.md)). Each waits on `cluster-edge-onprem`, and those backed by Postgres also wait on `cluster-cnpg-db`.
 
-There is no `cluster-infrastructure`, `cluster-networking` or `cluster-monitoring`. Earlier revisions of this document named them and they have never existed under those names.
-
 ## Full rebuild from total loss
 
-The order matters: network, then hosts, then K3s, then Flux, then the age key, then data.
+The order matters: network, then hosts, then K3s, then Flux, then the age key, then data. Every `nixos-rebuild` here points `--build-host` at the target itself, because no other machine exists yet and a workstation cannot produce a Linux closure; see [Rebuilding a host](../README.md#rebuilding-a-host).
 
 1. Recover the seeds above: the age key, the Hetzner bucket and its credentials, the repository, the host keys if they were backed up, and a bootable NixOS installer.
-2. Router first, in two steps. The `router-installer` SD image is a bare bootable Pi with SSH and the operator key, nothing more: it carries no VLANs, no DHCP, no DNS and no gateway, because `kea` and `adguardhome` are absent from it and `netdevs` is empty. Flash it, reach the Pi on whatever address the upstream network hands it, then push the real configuration, which is what actually brings up the network:
+2. Router first, in two steps. The `router-installer` SD image is a bare bootable Pi with SSH and the operator key: no VLANs, no DHCP, no DNS and no gateway, because `kea` and `adguardhome` are absent from it and `netdevs` is empty. Flash it, reach the Pi on whatever address the upstream network hands it, then push the real configuration, which is what brings up the network:
 
    ```
    nixos-rebuild switch --flake .#router --target-host root@<ip> --build-host root@<ip>
    ```
 
-   `--build-host` points at the Pi itself because no other machine exists yet and a workstation cannot produce the aarch64 Linux closure. Expect this build to be slow on the Pi. Until it completes there is no VLAN 20, so nothing else in this procedure can start.
+   Expect this build to be slow on the Pi. Until it completes there is no VLAN 20, so nothing else can start.
 3. Hosts. Get a minimal NixOS with SSH onto each node, then push its configuration:
 
    ```
    nixos-rebuild switch --flake .#master --target-host root@<ip> --build-host root@<ip>
    ```
 
-   `--build-host` points at the target itself because no other machine exists yet to build on, and without it the build runs on the workstation, which cannot produce a Linux closure. `disko` wipes and formats the disk. Two recovery details: master's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
+   `disko` wipes and formats the disk. Two recovery details: master's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
 4. K3s. The master starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` host entry and the shared token, so the join does not depend on router DNS. This yields an empty three-node cluster.
 5. Flux. Seed it once against the repository:
 
@@ -73,17 +69,15 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key, t
    velero restore create --from-backup <latest-daily-dr>
    ```
 
-   The recovery point is the backup interval. The `daily-dr` schedule runs at 02:00, so up to a day of data is at risk.
-9. Admission. Reapply the one setting Flux cannot carry, the `rancher-webhook` replica count and its anti-affinity, which the Rancher-owned chart exposes no value for. The command and the reasoning are in the [admission break-glass runbook](admission-break-glass.md). Until it is applied the cluster runs a single-replica webhook that fails Secret writes cluster-wide when its node is lost.
+   The `daily-dr` schedule runs at 02:00, so up to a day of data is at risk.
+9. Admission. Reapply the `rancher-webhook` replica count and anti-affinity, which the Rancher-owned chart exposes no value for. The command and reasoning are in the [admission break-glass runbook](admission-break-glass.md). Until applied, a single-replica webhook fails Secret writes cluster-wide when its node is lost.
 10. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
 
 ## Restoring etcd from a snapshot
 
-K3s snapshots etcd on a twelve-hourly schedule and uploads each snapshot to `s3://basalt-backups/etcd-snapshots/`, keeping five. A snapshot restores the whole Kubernetes API state: every object, including the ones Flux would otherwise rebuild. It is the right tool when the API server has state that cannot be reconciled back, and the wrong tool when the manifests alone would recover the cluster.
+K3s snapshots etcd twelve-hourly to `s3://basalt-backups/etcd-snapshots/`, keeping five. A snapshot restores the whole Kubernetes API state, including objects Flux would otherwise rebuild. It is the right tool when the API server holds state that cannot be reconciled back, and the wrong tool when the manifests alone would recover the cluster.
 
-The server token governs everything about this procedure. K3s stores the cluster CA material and, because `--secrets-encryption` is enabled, the AES keys from `encryption-config.json` inside etcd, keyed off the token. Restoring a snapshot under a different token yields a cluster that starts, serves, and returns ciphertext for every Secret. It does not error at restore time. Recover the token from `secrets/k3s-token.age` before touching a snapshot, and confirm it is the token that was in force when the snapshot was taken.
-
-List what exists, locally and in object storage:
+The server token governs this procedure. Restoring a snapshot under a different token yields a cluster that starts, serves, and returns ciphertext for every Secret, without erroring at restore time. Recover the token from `secrets/k3s-token.age` first and confirm it was in force when the snapshot was taken.
 
 ```
 k3s etcd-snapshot ls
@@ -100,15 +94,15 @@ k3s server \
   --secrets-encryption
 ```
 
-`--secrets-encryption` must be passed here as well, or the API server starts without the encryption provider and cannot read what it restored. To pull the snapshot straight from object storage instead of a local file, add `--etcd-s3 --etcd-s3-bucket=basalt-backups --etcd-s3-region=eu-central-1 --etcd-s3-endpoint=hel1.your-objectstorage.com --etcd-s3-folder=etcd-snapshots`, with the credentials from `/run/agenix/etcd-s3-credentials`.
+`--secrets-encryption` must be passed here too, or the API server starts without the encryption provider and cannot read what it restored. To pull the snapshot straight from object storage, add `--etcd-s3 --etcd-s3-bucket=basalt-backups --etcd-s3-region=eu-central-1 --etcd-s3-endpoint=hel1.your-objectstorage.com --etcd-s3-folder=etcd-snapshots`, with the credentials from `/run/agenix/etcd-s3-credentials`.
 
-The command exits once the reset completes. Start k3s normally afterwards, then rejoin the workers, because `--cluster-reset` drops every peer from the member list. Verify the restore by reading a Secret rather than by listing objects: `kubectl -n flux-system get secret sops-age -o jsonpath='{.data}'` returning decodable data proves the token, the encryption config and the snapshot all agree.
+The command exits once the reset completes. Start k3s normally, then rejoin the workers, because `--cluster-reset` drops every peer. Verify by reading a Secret rather than listing objects: `kubectl -n flux-system get secret sops-age -o jsonpath='{.data}'` returning decodable data proves the token, the encryption config and the snapshot all agree.
 
-Rehearsing this without an outage requires care. A restored snapshot contains the live estate's MetalLB pools, Flux sources, Longhorn backup target, cert-manager issuers and CNPG cluster. A rehearsal host that runs a kubelet on VLAN 20 will therefore claim the same load balancer addresses, reconcile against the live repository, and archive WAL into the live object-storage path. Rehearse only on an isolated host started with `--disable-agent`, so no kubelet registers and no workload runs, and with no route to VLAN 20. Treat that host as holding production secrets and destroy it afterwards.
+Rehearsing this is hazardous. A restored snapshot contains the live estate's MetalLB pools, Flux sources, Longhorn backup target, cert-manager issuers and CNPG cluster, so a rehearsal host on VLAN 20 will claim the same load balancer addresses, reconcile against the live repository, and archive WAL into the live object-storage path. Rehearse only on an isolated host started with `--disable-agent`, so no kubelet registers and no workload runs, and with no route to VLAN 20. Treat that host as holding production secrets and destroy it afterwards.
 
 ## Recovery objectives
 
-Derived from the mechanisms as configured, not negotiated with anyone. They describe what the estate currently achieves.
+Derived from the mechanisms as configured. They describe what the estate currently achieves.
 
 | Data class | Mechanism | Recovery point | Recovery time |
 | --- | --- | --- | --- |
@@ -119,13 +113,11 @@ Derived from the mechanisms as configured, not negotiated with anyone. They desc
 | Everything declared in Git | Flux reconciliation | Zero, the repository is the source of truth | Bounded by reconciliation, not by restore |
 | Total cluster loss | All of the above, plus hardware | The worst of the above, so up to 24 hours | Eight to twenty hours with spare hardware on hand, indefinite without it |
 
-One case is worse than the table implies. Losing **master** is a full outage of both data and external access, not a degradation, and it lasts until master returns. Failure injection on 2026-07-26 established why: CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API before starting Postgres, so with the single API server gone every database instance refuses to start regardless of which node holds the primary; and MetalLB's speaker needs the API to see Services, so it stops announcing the load balancer address and nothing answers ARP for it. Recovery once master boots is about five minutes. Losing either worker is genuinely a degradation: the database primary fails over in around 30 seconds and ingress continues.
+Losing **master** is worse than the table implies: a full outage of both data and external access, lasting until master returns. CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API before starting Postgres, so with the single API server gone every database instance refuses to start regardless of which node holds the primary; and MetalLB's speaker needs the API to see Services, so it stops announcing the load balancer address. Recovery once master boots is about five minutes. Losing either worker is genuinely a degradation: the primary fails over in around 30 seconds and ingress continues.
 
-Two further caveats belong with these numbers. The recovery points assume the mechanisms are working, and no restore has yet been proven, so the recovery times are estimates rather than measurements. And in-cluster alerting cannot detect total cluster loss: every alerting component runs on the same three nodes behind the same ingress, so the failure that matters most is the one nothing will report.
+The recovery points assume the mechanisms work, and no restore has been proven, so the recovery times are estimates rather than measurements. In-cluster alerting also cannot detect total cluster loss: every alerting component runs on the same three nodes behind the same ingress.
 
 ## Secret recovery
-
-Two mechanisms, recovered differently.
 
 Host secrets use agenix. Each `.age` file under `secrets/` is encrypted to the SSH host keys of the machines that need it, plus the operator key, and a node decrypts its own secrets at boot. `secrets/secrets.nix` lists which recipients can open each secret. If a host key is lost with the hardware, re-key:
 
@@ -136,17 +128,15 @@ Host secrets use agenix. Each `.age` file under `secrets/` is encrypted to the S
 
 Burst nodes do not use agenix; their join token and server address arrive through provisioning metadata.
 
-Cluster secrets use SOPS with age and live in the separate private `bedrock-secrets` repository, not in this one ([ADR 0060](adr/0060-private-secrets-repo-per-cluster-keys.md)). Files matching `clusters/home/.*\.sops\.yaml` have their `data` and `stringData` encrypted to the recipient in that repository's `.sops.yaml`, and the `cluster-secrets` Kustomization decrypts them at apply time with the `sops-age` secret. Secrets are grouped under `bootstrap/`, `platform/`, `identity/`, and `apps/`, each with its own kustomization listing its files explicitly. The Hetzner token in `bootstrap/hcloud.sops.yaml` is shared with the vigil project, so rotation must be coordinated across both. Edit a secret in place with `sops <path>`; add a new one by encrypting it and listing it in the folder kustomization.
+Cluster secrets use SOPS with age and live in the private `bedrock-secrets` repository ([ADR 0060](adr/0060-private-secrets-repo-per-cluster-keys.md)). Files matching `clusters/home/.*\.sops\.yaml` have their `data` and `stringData` encrypted to the recipient in that repository's `.sops.yaml`, and `cluster-secrets` decrypts them at apply time with the `sops-age` secret. Secrets are grouped under `bootstrap/`, `platform/`, `identity/`, and `apps/`, each with its own kustomization listing its files explicitly. The Hetzner token in `bootstrap/hcloud.sops.yaml` is shared with the vigil project, so rotation must be coordinated across both. Edit in place with `sops <path>`; add a new one by encrypting it and listing it in the folder kustomization.
 
-Exactly one SOPS file remains in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, which carries the read-only deploy key for the private repository and is decrypted by the same cluster age key. That key is therefore the only irreducible root: it opens the bootstrap secret, which opens the secrets repository, which holds everything else.
+Exactly one SOPS file remains in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, carrying the read-only deploy key for the private repository and decrypted by the same cluster age key. That key is the only irreducible root: it opens the bootstrap secret, which opens the secrets repository, which holds everything else.
 
 Two secrets are deliberately outside both repositories. The Rancher `cattle-system/bootstrap-secret` is generated by the chart on first install. The n8n encryption key was also chart-generated until it was moved into `bedrock-secrets` as `n8n-encryption-key`, because a chart-minted key is regenerated on a cold start and would leave every restored n8n credential undecryptable.
 
 ## Rehearsing recovery without an outage
 
-These checks validate the chain on a schedule, without destructively touching the live cluster.
-
-The evidence table below records what has actually been exercised. An earlier revision of this document stated that all of these had been run and passed. That was not true: no restore has ever been performed for any mechanism, and there has never been a Velero `Restore` object in this cluster. Entries move from untested to a date only when a drill has genuinely run.
+These checks validate the chain on a schedule, without destructively touching the live cluster. Entries move from untested to a date only when a drill has genuinely run.
 
 | Mechanism | Last proven | Result |
 | --- | --- | --- |
@@ -161,9 +151,9 @@ The evidence table below records what has actually been exercised. An earlier re
 | Re-key to new host keys | never | Untested |
 | Fresh-cluster GitOps bootstrap | never | Untested |
 
-- Age key decrypts. `sops -d` of a committed secret succeeds with the operator key. Proves the master seed.
-- Host configurations build. `nix eval .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath` for each host, or `nixos-rebuild build`. Proves the OS layer is coherent.
-- Re-key works. Decrypt a host secret with the operator identity, re-encrypt it to a freshly generated key, and decrypt with the new key. Proves the new-hardware re-key path.
+- Age key decrypts. `sops -d` of a committed secret succeeds with the operator key.
+- Host configurations build. `nix eval .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath` for each host, or `nixos-rebuild build`.
+- Re-key works. Decrypt a host secret with the operator identity, re-encrypt it to a freshly generated key, and decrypt with the new key.
 - Backups restore. Restore a namespace into a temporary one and confirm the workload and any volume return:
 
   ```
@@ -172,8 +162,8 @@ The evidence table below records what has actually been exercised. An earlier re
     --include-cluster-resources=false
   ```
 
-  Confirm the pods run and any restored PersistentVolumeClaim binds with a healthy volume, then delete the temporary namespace. Three constraints make this narrower than it looks. The `velero` CLI is not installed on the operator workstation, so the drill either installs it or applies a `Restore` object directly. `--include-cluster-resources=false` is not optional: a daily backup holds around 2800 objects including cluster-scoped ones, and restoring those would overwrite live CRDs, ClusterRoles and webhook configurations. And the target namespace must not be one whose workloads depend on a Kyverno `PolicyException`, because exceptions match on the original namespace name and do not follow a remap, so the restored pods are rejected at admission. `n8n` is the correct drill target; `authentik`, `llm`, `minio`, `ntfy`, `paperless` and `postgres` are not.
-- Fresh-cluster GitOps bootstrap. On a throwaway cluster such as `kind`, install Flux, create the `sops-age` secret from the operator key, point a GitRepository at this repository, and reconcile a SOPS-decrypting Kustomization. The secrets materialize as live Kubernetes Secrets, which proves the bootstrap and decryption path end to end. The full app set does not reconcile on unlike hardware, because the manifests assume the home storage, load balancer, addressing, and overlay; reconciling the whole stack elsewhere needs a cluster-appropriate overlay, the same overlay a standing cloud peer would use.
+  Three constraints narrow this. The `velero` CLI is not installed on the operator workstation, so the drill either installs it or applies a `Restore` object directly. `--include-cluster-resources=false` is not optional: a daily backup holds around 2800 objects including cluster-scoped ones, and restoring those would overwrite live CRDs, ClusterRoles and webhook configurations. And the target namespace must not be one whose workloads depend on a Kyverno `PolicyException`, because exceptions match on the original namespace name and do not follow a remap, so the restored pods are rejected at admission. `n8n` is the correct drill target; `authentik`, `llm`, `minio`, `ntfy`, `paperless` and `postgres` are not.
+- Fresh-cluster GitOps bootstrap. On a throwaway cluster such as `kind`, install Flux, create the `sops-age` secret from the operator key, point a GitRepository at this repository, and reconcile a SOPS-decrypting Kustomization. The secrets materializing as live Secrets proves the bootstrap and decryption path end to end. The full app set does not reconcile on unlike hardware, because the manifests assume the home storage, load balancer, addressing and overlay.
 
 ## Known gaps
 
