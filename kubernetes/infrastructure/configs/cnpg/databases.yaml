@@ -30,3 +30,25 @@ spec:
   owner: miniflux
   cluster:
     name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: n8n
+  namespace: postgres
+spec:
+  name: n8n
+  owner: n8n
+  cluster:
+    name: postgres
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: open-webui
+  namespace: postgres
+spec:
+  name: open-webui
+  owner: open-webui
+  cluster:
+    name: postgres
