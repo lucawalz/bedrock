@@ -69,3 +69,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0066. Standardize app delivery with per-app Kustomizations and shared components](0066-standardize-app-delivery-per-app-kustomizations.md) (accepted)
 - [0067. Cache upstream container images with an in-cluster pull-through registry](0067-pull-through-registry-cache.md) (accepted)
 - [0068. Commit Postgres writes to a quorum of one standby, preferring availability](0068-cnpg-quorum-synchronous-replication.md) (accepted)
+- [0069. Record the Longhorn prerequisites that NixOS does not provide](0069-longhorn-prerequisites-on-nixos.md) (accepted, implemented)
