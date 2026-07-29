@@ -11,6 +11,8 @@ metadata:
     pod-policies.kyverno.io/autogen-controllers: none
 spec:
   background: false
+  webhookConfiguration:
+    failurePolicy: Ignore
   rules:
     - name: containers-privilege-escalation
       match:
