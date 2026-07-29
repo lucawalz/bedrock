@@ -8,6 +8,13 @@ spec:
   template:
     ttl: 168h0m0s
     storageLocation: default
+    includeClusterResources: true
+    includedResources:
+      - secrets
+      - persistentvolumeclaims
+      - persistentvolumes
+      - volumesnapshots
+      - volumesnapshotcontents
     resourcePolicy:
       kind: configmap
       name: skip-disposable-volumes
