@@ -7,11 +7,11 @@ date: 2026-06-12
 
 ## Context
 
-The homelab needed a real layer-3 router and firewall to put the cluster on its own DMZ and, later, to face the public internet. The existing edge devices cannot do this: the Telekom Speedport has no VLANs or inter-network rules, and the TP-Link TL-SG108E only tags VLANs at layer 2. The spare hardware for the job is a Raspberry Pi 4B, which is aarch64. Every other host in this repository is already declared in NixOS and reconciled from Git, so the router had to fit that model rather than become a hand-configured exception.
+The homelab needed a real layer-3 router and firewall to put the cluster on its own DMZ and, later, to face the public internet. The existing edge devices cannot do this: the Telekom Speedport has no VLANs or inter-network rules, and the TP-Link TL-SG108E only tags VLANs at layer 2. The spare hardware for the job is a Raspberry Pi 4B, which is aarch64. Every other host in this repository is already declared in NixOS and reconciled from Git, so the router had to fit that model.
 
 ## Decision
 
-The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. OPNsense was the main alternative and was rejected: it ships only for amd64 on a FreeBSD base and does not run on the aarch64 Pi, so choosing it would have meant buying x86 hardware for a job the Pi already does. NixOS keeps the router under the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes.
+The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. OPNsense was the main alternative and was rejected: it ships only for amd64 on a FreeBSD base and does not run on the aarch64 Pi. Choosing it would have meant buying x86 hardware for a job the Pi already does. NixOS keeps the router under the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes.
 
 ## Options considered
 

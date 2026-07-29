@@ -7,11 +7,11 @@ date: 2025-10-24
 
 ## Context
 
-The cluster runs on three Lenovo ThinkCentre m920q mini PCs, not a datacenter. Each has limited CPU and memory, so the control plane has to leave room for actual workloads. The hosts are already declared in NixOS, so whatever Kubernetes distribution is chosen has to install and upgrade cleanly from a NixOS module rather than a pile of imperative steps.
+The cluster runs on three Lenovo ThinkCentre m920q mini PCs. Each has limited CPU and memory, so the control plane has to leave room for actual workloads. The hosts are already declared in NixOS, so whatever Kubernetes distribution is chosen has to install and upgrade cleanly from a NixOS module.
 
 ## Decision
 
-The cluster is K3s, declared through `modules/k3s/` and run on NixOS hosts. K3s ships as a single binary with a sane set of defaults, which keeps the footprint small enough for three small machines and keeps the NixOS module thin: enable the service, set the role, point it at the join token.
+The cluster is K3s, declared through `modules/k3s/` and run on NixOS hosts. K3s ships as a single binary with a sane set of defaults, which keeps the footprint small enough for three small machines. It also keeps the NixOS module thin: enable the service, set the role, point it at the join token.
 
 ## Options considered
 
@@ -22,4 +22,4 @@ The cluster is K3s, declared through `modules/k3s/` and run on NixOS hosts. K3s 
 
 ## Consequences
 
-The overhead is low and node configuration stays declarative. The cost is that K3s bundles components this project does not want: its own servicelb and Traefik are disabled with `--disable`, and local-storage is dropped in favor of Longhorn. Those bundled defaults have to be turned off deliberately, and replacements wired in through Flux.
+The overhead is low and node configuration stays declarative. The cost is that K3s bundles components this project does not want: its own servicelb and Traefik are disabled with `--disable`, and local-storage is dropped in favor of Longhorn. Those bundled defaults have to be turned off, and replacements wired in through Flux.

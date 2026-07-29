@@ -62,30 +62,30 @@ mounting a custom template into the container.
 
 ## Update 2026-07-25
 
-Two implementation details recorded above no longer hold. Both were changed to remove a dependency
-rather than to revisit the decision, so this record is amended rather than superseded.
+Two implementation details recorded above no longer hold. Both were changed to remove a dependency,
+so this record is amended rather than superseded.
 
 The deployment no longer uses the `oci://codeberg.org/wrenix/helm-charts/ntfy` chart. Since 2026-07-11
 ntfy is deployed from the bjw-s `app-template` chart at major version 5, running the upstream
 `docker.io/binwiederhier/ntfy` image, currently `v2.26.3`, with `serve` as its argument. The estate had
 by then standardized on `app-template` for workloads that need a plain Deployment, a Service, and no
-chart-specific behaviour, and ntfy is exactly that shape, so it moved onto the shared chart with every
+chart-specific behaviour. That is exactly ntfy's shape, so it moved onto the shared chart with every
 other app of its kind. The consequence recorded above about depending on a single-maintainer community
-chart is retired with it: the chart is now the same one the rest of the estate already tracks through
+chart is retired with it. The chart is now the same one the rest of the estate already tracks through
 Renovate, and the only version that has to be watched for ntfy itself is the upstream image tag. The
 wrenix HelmRepository was removed from `sources/helm/` once nothing referenced it.
 
 Alertmanager no longer posts to ntfy's built-in `alertmanager` template. Since 2026-06-18 the receiver
 is a plain webhook to `/alerts?tpl=yes` with the title and message supplied as URL-encoded Go templates
 in the query string, defined inline in the kube-prometheus-stack values ConfigMap. The change was made
-to send a compact notification: the title renders status, alert name, and the number of alerts in the
+to send a compact notification. The title renders status, alert name, and the number of alerts in the
 group, and the message renders severity and the summary annotation, which is what fits on a phone
 without opening the alert. `send_resolved: true` is unchanged, and the
 `Watchdog`/`InfoInhibitor` sub-route still goes to `null`. Grafana's own unified alerting posts to the
 same endpoint with its own title and message templates. The cost is that the format now lives in this
-repository as a percent-encoded string rather than in the ntfy container, which is harder to read in
-review but is the reason it can be changed by a commit at all.
+repository as a percent-encoded string rather than in the ntfy container. That is harder to read in
+review, but it is the reason the format can be changed by a commit at all.
 
-The decisions on running without authentication and without persistence are unchanged and still rest
+The decisions on running without authentication and without persistence are unchanged. They still rest
 on the same reasoning: the service carries no public DNS record, its NetworkPolicy admits only Traefik,
 the monitoring namespace, and flux-system, and it is reachable only over the overlay or the LAN.

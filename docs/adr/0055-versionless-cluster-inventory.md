@@ -15,7 +15,7 @@ The hosted Renovate app cannot run `gen-inventory.sh` as a post-upgrade task, an
 
 ## Decision
 
-Drop the version column. The inventory now lists component, namespace, and chart only: a stable topology map of what runs where, not a snapshot of pinned revisions.
+Drop the version column. The inventory now lists component, namespace, and chart only: a stable topology map of what runs where.
 
 The chart version stays solely in the HelmRelease manifest, recoverable from Git like any other declared state and reconciled to the cluster by Flux. A disaster recovery restores from the same manifests, so the table never needed its own copy of the number.
 

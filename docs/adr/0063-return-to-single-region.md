@@ -9,7 +9,7 @@ date: 2026-07-06
 
 The multi-region fleet layout in [0061](0061-multi-region-fleet-layout.md) was built to demonstrate proper multi-region production GitOps for a university presentation and a blog post, not for operational use. The homelab is three bare-metal nodes run by one operator, running a second region is uneconomical, and there is no requirement for one. The fleet layout is byte-identical for the home cluster and every cloud region is declared but unprovisioned, so it costs nothing to run. Once the presentation and the post are delivered, though, it is standing structure with no consumer: an edge profile with a single archetype in use, region values that vary against nothing, and spoke entrypoints no cluster reconciles. Carried indefinitely on a single-operator homelab, that reads as generality without a purpose.
 
-The work done along the way that genuinely improved the homelab is independent of the fleet layout and is worth keeping: the CloudNativePG Barman disaster recovery and Velero backups, the architecture-decision-record consolidation, the retirement of the elastic autoscaler in [0062](0062-retire-elastic-cluster-autoscaler.md), and the general hardening. The cross-region machinery is not.
+The work done along the way that improved the homelab is independent of the fleet layout and is worth keeping: the CloudNativePG Barman disaster recovery and Velero backups, the architecture-decision-record consolidation, the retirement of the elastic autoscaler in [0062](0062-retire-elastic-cluster-autoscaler.md), and the general hardening. The cross-region machinery is not.
 
 ## Decision
 

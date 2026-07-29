@@ -7,9 +7,9 @@ date: 2026-06-17
 
 ## Context
 
-CAPH provisions burst and reserved nodes from a single Hetzner snapshot built by the node-image pipeline. That image was shaped exclusively for joining the home cluster as a burst worker. It bakes a hard `agent` role into the k3s service and gates startup behind a tailscale-authkey wait, with all node networking pinned to the `tailscale0` interface. The image cannot form a fresh control plane: a server has no agent to join, the role is wrong, and the tailscale gate blocks boot when no authkey is delivered. A test cluster provisioned a server from this image and k3s never started, because the augment service waited for a tailscale address that never arrived and the baked `agent` role would have been wrong even if it had.
+CAPH provisions burst and reserved nodes from a single Hetzner snapshot built by the node-image pipeline. That image was shaped exclusively for joining the home cluster as a burst worker. It bakes a hard `agent` role into the k3s service and gates startup behind a tailscale-authkey wait, with all node networking pinned to the `tailscale0` interface. The image cannot form a fresh control plane: a server has no agent to join, the role is wrong, and the tailscale gate blocks boot when no authkey is delivered. A test cluster provisioned a server from this image and k3s never started. The augment service waited for a tailscale address that never arrived, and the baked `agent` role would have been wrong even if it had.
 
-Provisioning a separate standalone cluster, rather than a burst pool inside the home cluster, needs an image that can take either role at runtime and that networks over the Hetzner private NIC instead of a tailnet.
+Provisioning a separate standalone cluster needs an image that can take either role at runtime and that networks over the Hetzner private NIC instead of a tailnet.
 
 ## Decision
 

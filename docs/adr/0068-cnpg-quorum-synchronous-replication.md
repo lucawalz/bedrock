@@ -39,7 +39,7 @@ postgresql:
 
 **Leave replication asynchronous.** The status quo, and the cheapest. Rejected because it was never chosen: it was inherited from a default, and the window it opens is unbounded by anything the estate measures. Writing the choice down is most of the value here, whichever way it goes.
 
-**`dataDurability: required` with `number: 1`.** Genuinely stronger: a commit is never acknowledged unless a second node holds it. Rejected because at three nodes with one operator, a node reboot during routine maintenance would stop writes to three applications until it returned. The estate has no on-call rotation and no second site, so an availability failure is more likely to cause real harm than the narrow durability window it closes.
+**`dataDurability: required` with `number: 1`.** Stronger: a commit is never acknowledged unless a second node holds it. Rejected because at three nodes with one operator, a node reboot during routine maintenance would stop writes to three applications until it returned. The estate has no on-call rotation and no second site, so an availability failure is more likely to cause real harm than the narrow durability window it closes.
 
 **`number: 2`.** Rejected for the same reason, more severely: it removes single-node-loss tolerance altogether.
 
@@ -47,7 +47,7 @@ postgresql:
 
 ## Consequences
 
-A commit now waits for one standby to confirm receipt before returning, so write latency includes a network round trip within VLAN 20 rather than only a local flush. On a wired local network between three nodes this is sub-millisecond, and the workloads are low-throughput, so the cost is not expected to be observable.
+A commit now waits for one standby to confirm receipt before returning, so write latency includes a network round trip within VLAN 20. On a wired local network between three nodes this is sub-millisecond, and the workloads are low-throughput, so the cost is not expected to be observable.
 
 Losing one node leaves one standby able to acknowledge and the guarantee intact. Losing two leaves the primary writing asynchronously and still serving, which is the behaviour `preferred` is chosen for, and it happens silently. `pg_stat_replication` reporting `sync_state: async` on a running cluster is the signal that the guarantee has degraded, and nothing currently alerts on it.
 

@@ -7,7 +7,7 @@ date: 2026-06-22
 
 ## Context
 
-The zoned network in [0015](0015-zoned-network-on-a-nixos-router.md) and [0016](0016-concrete-zoned-ip-scheme.md) put a TP-Link TL-SG108E in front of the Raspberry Pi router as a plain layer-2 VLAN tagger. The Pi reaches everything over a single trunk cable: the home LAN untagged on the native VLAN to the Speedport, VLAN 20 tagged for the cluster, and VLAN 30 tagged for the DMZ. Two things about that switch were unsatisfying. The Pi drew its power from a separate USB-C brick, so the router depended on two cables and two power sources where one would do. And the switch took its management address from the Speedport over DHCP, which these Easy Smart switches renew unreliably; when the lease lapsed the switch fell off the network and its web UI became unreachable.
+The zoned network in [0015](0015-zoned-network-on-a-nixos-router.md) and [0016](0016-concrete-zoned-ip-scheme.md) put a TP-Link TL-SG108E in front of the Raspberry Pi router as a plain layer-2 VLAN tagger. The Pi reaches everything over a single trunk cable: the home LAN untagged on the native VLAN to the Speedport, VLAN 20 tagged for the cluster, and VLAN 30 tagged for the DMZ. Two things about that switch were unsatisfying. The Pi drew its power from a separate USB-C brick, so the router depended on two cables and two power sources where one would do. And the switch took its management address from the Speedport over DHCP, which these Easy Smart switches renew unreliably. When the lease lapsed the switch fell off the network and its web UI became unreachable.
 
 The physical port assignment was also never written down. The repository documented the IP scheme and the firewall zones but not which switch port carried which device, so a rewire had nothing to check against.
 
@@ -15,7 +15,7 @@ The physical port assignment was also never written down. The repository documen
 
 Replace the TL-SG108E with its PoE sibling, the TP-Link TL-SG108PE, and power the Pi over the trunk cable it already uses. The PE has four 802.3af/at PoE+ ports on ports 1 to 4, up to 30 W each within a 64 W budget. The Pi carries a Waveshare PoE+ HAT that draws around 20 W with a small status screen on its USB-A output, well inside a single port's allowance. The layer-2 tagging is unchanged from [0016](0016-concrete-zoned-ip-scheme.md); only the hardware and the cabling around power change.
 
-The switch takes a static management address, `192.168.2.212` on the home LAN with gateway `192.168.2.1`, so it no longer depends on the Speedport renewing a lease. Its configuration persists to flash on apply, and an off-switch backup file is kept for a one-shot restore after a factory reset.
+The switch takes a static management address, `192.168.2.212` on the home LAN with gateway `192.168.2.1`, so it does not depend on the Speedport renewing a lease. Its configuration persists to flash on apply, and an off-switch backup file is kept for a one-shot restore after a factory reset.
 
 The port map is now recorded:
 

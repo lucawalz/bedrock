@@ -7,15 +7,15 @@ date: 2026-06-21
 
 ## Context
 
-ADR 0044 defined availability and latency SLOs for the blog from Traefik's per-router RED metrics, with multi-burn-rate alerting. Those SLIs were built to become a delivery gate, not just a dashboard. The remaining gap was progressive delivery: rolling a new blog version gradually and rolling it back automatically when it breaches the same objectives that page a human.
+ADR 0044 defined availability and latency SLOs for the blog from Traefik's per-router RED metrics, with multi-burn-rate alerting. Those SLIs were built to become a delivery gate. The remaining gap was progressive delivery: rolling a new blog version gradually and rolling it back automatically when it breaches the same objectives that page a human.
 
 The blog is served on the home cluster behind Traefik. The multi-cluster work (ADR 0047) puts a copy on EKS behind an ALB, but the ALB exposes no Prometheus metrics and Flagger has no native ALB analysis provider, whereas Traefik is a first-class Flagger provider. Progressive delivery therefore belongs on the home cluster, where it reuses the existing Traefik SLO metrics directly and is unaffected by the AWS teardown.
 
 ## Decision
 
-Run Flagger on the home cluster with the Traefik provider and canary the blog. Flagger creates primary and canary Deployments and Services and a weighted Traefik service; the blog IngressRoute routes through that weighted service. Canary analysis steps traffic in increments and gates each step on two checks expressed as Flagger MetricTemplates against the existing Prometheus: request success rate at or above 99 percent, and p99 request duration at or below 500 milliseconds, matching the objectives in ADR 0044. Breaching the threshold for the configured number of intervals rolls the release back automatically.
+Run Flagger on the home cluster with the Traefik provider and canary the blog. Flagger creates primary and canary Deployments and Services and a weighted Traefik service; the blog IngressRoute routes through that weighted service. Canary analysis steps traffic in increments and gates each step on two checks expressed as Flagger MetricTemplates against the existing Prometheus. Request success rate must stay at or above 99 percent, and p99 request duration at or below 500 milliseconds, matching the objectives in ADR 0044. Breaching the threshold for the configured number of intervals rolls the release back automatically.
 
-The analysis reads per-service Traefik metrics scoped to the canary service, not the per-router metric the SLO rule uses. The router metric aggregates primary and canary traffic and cannot isolate the new version, so the SLO PrometheusRule from ADR 0044 keeps keying on the router for top-line monitoring while the canary keys on the service for promotion decisions. The IngressRoute keeps its name, so the router label is unchanged and the SLO rule continues to fire as before.
+The analysis reads per-service Traefik metrics scoped to the canary service, not the per-router metric the SLO rule uses. The router metric aggregates primary and canary traffic and cannot isolate the new version. The SLO PrometheusRule from ADR 0044 therefore keeps keying on the router for top-line monitoring, while the canary keys on the service for promotion decisions. The IngressRoute keeps its name, so the router label is unchanged and the SLO rule continues to fire as before.
 
 ## Options considered
 

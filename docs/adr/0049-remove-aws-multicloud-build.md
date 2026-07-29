@@ -7,9 +7,9 @@ date: 2026-06-21
 
 ## Context
 
-The AWS work across ADRs 0035, 0036, 0042, and 0047 built a managed EKS cluster reconciled by its own GitOps peer, ran it as an ephemeral autoscaling cluster, and delivered the blog to it as a live second cluster behind an ALB. It served its purpose: the multi-cluster continuous-delivery story was proven end to end and captured for write-up. The cluster was always meant to be torn down once that was done.
+The AWS work across ADRs 0035, 0036, 0042, and 0047 built a managed EKS cluster reconciled by its own GitOps peer and ran it as an ephemeral autoscaling cluster. It delivered the blog to that cluster as a live second cluster behind an ALB. It served its purpose: the multi-cluster continuous-delivery story was proven end to end and captured for write-up. The cluster was always meant to be torn down once that was done.
 
-Two facts settled how far the teardown should go. There is no AWS S3 backup in use: Velero has backed up to Hetzner object storage since ADR 0009, and the only S3 reference was the ephemeral demo backup location from 0042, which pointed at a bucket that no longer exists. And the gitops-peer ClusterResourceSet from 0035 has no remaining consumer, because Hetzner scaling joins nodes to the existing cluster through CAPH rather than running a separate GitOps peer.
+Two facts settled how far the teardown should go. There is no AWS S3 backup in use: Velero has backed up to Hetzner object storage since ADR 0009. The only S3 reference was the ephemeral demo backup location from 0042, which pointed at a bucket that no longer exists. And the gitops-peer ClusterResourceSet from 0035 has no remaining consumer, because Hetzner scaling joins nodes to the existing cluster through CAPH rather than running a separate GitOps peer.
 
 ## Decision
 
@@ -25,4 +25,4 @@ Backups stay on Hetzner object storage as decided in ADR 0009; nothing about Vel
 
 ## Consequences
 
-The repository describes what actually runs: home K3s, Hetzner burst scaling, and Hetzner-backed backups, with no AWS account dependency and nothing billing. The proven multi-cloud capability is preserved as history in these records, so it can be rebuilt deliberately rather than left running. Reintroducing a cloud peer later means restoring the provider, credentials, and gitops-peer rather than un-suspending dormant manifests, which is the correct cost for standing infrastructure.
+The repository describes what actually runs: home K3s, Hetzner burst scaling, and Hetzner-backed backups, with no AWS account dependency and nothing billing. The proven multi-cloud capability is preserved as history in these records, so it can be rebuilt rather than left running. Reintroducing a cloud peer later means restoring the provider, credentials, and gitops-peer rather than un-suspending dormant manifests, which is the correct cost for standing infrastructure.

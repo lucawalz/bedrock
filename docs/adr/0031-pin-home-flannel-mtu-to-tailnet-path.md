@@ -27,7 +27,7 @@ The override lives in `common.nix`, which both the server and agent modules impo
 
 ## Consequences
 
-All home nodes carry a flannel.1 MTU of 1230, matching the burst node and the tailnet path, so cross-node pod packets no longer exceed the tunnel and pod-networked workloads on burst nodes stop being black-holed. Home-to-home pod traffic now also runs at 1230 rather than 1450; the lower MTU costs a small amount of per-packet efficiency on the LAN but keeps a single overlay MTU across the whole cluster, which is simpler than a per-node split and removes the failure mode entirely. The net-conf file becomes the source of truth for the home overlay's pod CIDR and backend, so any future change to either must be made there as well as in k3s.
+All home nodes carry a flannel.1 MTU of 1230, matching the burst node and the tailnet path, so cross-node pod packets no longer exceed the tunnel and pod-networked workloads on burst nodes stop being black-holed. Home-to-home pod traffic now also runs at 1230 rather than 1450. The lower MTU costs a small amount of per-packet efficiency on the LAN but keeps a single overlay MTU across the whole cluster, which is simpler than a per-node split and removes the failure mode entirely. The net-conf file becomes the source of truth for the home overlay's pod CIDR and backend, so any future change to either must be made there as well as in k3s.
 
 A live measurement this session set the value. Flannel writes `FLANNEL_MTU` as the net-conf MTU less the 50-byte vxlan header, so the field must carry the outer 1280 to land a 1230 device; an earlier 1230 in the field produced a 1180 device. The 1230 overlay plus the header is 1280, the `tailscale0` path MTU, so the overlay fits its worst leg with nothing to spare.
 
@@ -35,8 +35,8 @@ Applying a changed flannel MTU requires recreating flannel.1. It is a persistent
 
 ## Follow-up
 
-This pin is an interim mitigation, not the architectural fix. The home-to-home tax from 1450 down to 1230 is unavoidable within a single flannel overlay: flannel carries one MTU per overlay and has no per-peer MTU, so the overlay must fit its worst path, the 1280 tailnet tunnel to the burst nodes.
+This pin is an interim mitigation, not the architectural fix. The home-to-home tax from 1450 down to 1230 is unavoidable within a single flannel overlay. Flannel carries one MTU per overlay and has no per-peer MTU, so the overlay must fit its worst path, the 1280 tailnet tunnel to the burst nodes.
 
-The root-cause fix is topological: stop stretching one flat flannel overlay across the VPN tunnel, for example by giving the burst nodes their own cluster or overlay joined through a gateway, so home-to-home traffic keeps its native 1450 and only the cross-site leg pays the tunnel cost. That work is deferred to the planned CAPH v1.2 and CAPI upgrade tracked in ADR 0030.
+The root-cause fix is topological: stop stretching one flat flannel overlay across the VPN tunnel, for example by giving the burst nodes their own cluster or overlay joined through a gateway. Home-to-home traffic would then keep its native 1450, and only the cross-site leg would pay the tunnel cost. That work is deferred to the planned CAPH v1.2 and CAPI upgrade tracked in ADR 0030.
 
 Raising the Tailscale tunnel MTU was considered and rejected. A larger tunnel would recover the marginal efficiency but sacrifices Tailscale's DERP-fallback robustness, which is not a trade worth making for an overlay this small.

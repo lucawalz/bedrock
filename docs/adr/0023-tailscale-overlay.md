@@ -7,7 +7,7 @@ date: 2026-06-15
 
 ## Context
 
-[0010](0010-wireguard-overlay.md) put a self-hosted WireGuard hub on the NixOS router so the admin workstation and the cloud burst nodes could reach the cluster over a private overlay. In practice the hub carried real cost. Every peer was a hand-managed entry in the router config, each burst node needed key material injected at provisioning time and a oneshot service to raise `wg0` before k3s could start, and the home line had to act as a fixed WireGuard endpoint whose public address could not live in committed config. The overlay worked, but it was the most fragile and least automatic part of the setup, and it stood in the way of moving burst capacity onto Cluster API.
+[0010](0010-wireguard-overlay.md) put a self-hosted WireGuard hub on the NixOS router so the admin workstation and the cloud burst nodes could reach the cluster over a private overlay. In practice the hub carried real cost. Every peer was a hand-managed entry in the router config, and each burst node needed key material injected at provisioning time and a oneshot service to raise `wg0` before k3s could start. The home line had to act as a fixed WireGuard endpoint whose public address could not live in committed config. The overlay worked, but it was the most fragile and least automatic part of the setup, and it stood in the way of moving burst capacity onto Cluster API.
 
 ## Decision
 
@@ -15,7 +15,7 @@ Tailscale replaces the self-hosted WireGuard hub. The Pi router runs as a Tailsc
 
 Superseded in part by [ADR 0032](0032-drop-worker-2-standby-subnet-router.md): the worker-2 standby subnet router described in this paragraph has been removed, leaving the Pi as the sole subnet router.
 
-worker-2 runs a standby subnet router advertising the same `10.20.0.0/24` prefix, so the Pi is no longer a single point of failure for tailnet access to the lab. Tailscale fails over between two nodes advertising one prefix on its own, with no virtual IP or keepalive to operate. The subnet-router configuration is a shared NixOS module (`modules/tailscale/subnet-router.nix`) parameterised per host; the primary on the Pi sets `--accept-routes`, the standby on worker-2 deliberately does not, since a subnet router that accepts the prefix it serves forms a routing loop. Both share `tag:cluster` and the `--accept-dns=false` posture. The standby authenticates with its own auth key, scoped to the worker-2 host key in the secrets model from [0007](0007-agenix-sops-secrets.md).
+worker-2 runs a standby subnet router advertising the same `10.20.0.0/24` prefix, so the Pi is no longer a single point of failure for tailnet access to the lab. Tailscale fails over between two nodes advertising one prefix on its own, with no virtual IP or keepalive to operate. The subnet-router configuration is a shared NixOS module (`modules/tailscale/subnet-router.nix`) parameterised per host. The primary on the Pi sets `--accept-routes` and the standby on worker-2 does not, since a subnet router that accepts the prefix it serves forms a routing loop. Both share `tag:cluster` and the `--accept-dns=false` posture. The standby authenticates with its own auth key, scoped to the worker-2 host key in the secrets model from [0007](0007-agenix-sops-secrets.md).
 
 ## Options considered
 
