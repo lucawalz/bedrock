@@ -24,6 +24,12 @@ spec:
   values:
     fullnameOverride: open-webui
     replicaCount: 1
+    extraEnvVars:
+      - name: DATABASE_URL
+        valueFrom:
+          secretKeyRef:
+            name: open-webui-postgres
+            key: DATABASE_URL
     resources:
       requests:
         cpu: 100m
