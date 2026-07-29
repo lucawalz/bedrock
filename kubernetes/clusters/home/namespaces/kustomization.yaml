@@ -30,3 +30,5 @@ resources:
   - miniflux.yaml
   - kiwix.yaml
   - zot.yaml
+  - default.yaml
+  - default-serviceaccounts.yaml
