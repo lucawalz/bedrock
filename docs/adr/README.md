@@ -2,8 +2,6 @@
 
 These records capture the significant architecture decisions behind the bedrock homelab and the workloads that run on it. They follow the MADR format: a short context, the decision, the options weighed, and the consequences. Each record's status reflects whether the decision is shipped (accepted), accepted but not yet implemented, still open (proposed), or no longer in force (rejected, or superseded by a later record).
 
-Number 0056 was never used. The sequence runs from 0001 to 0070 with that single gap, and no record was written, withdrawn or lost.
-
 - [0001. Run the cluster as K3s on NixOS hosts](0001-k3s-on-nixos.md) (accepted)
 - [0002. Declare hosts with NixOS flakes, reconcile the cluster with Flux](0002-nixos-flakes-flux-gitops.md) (accepted)
 - [0003. Run the edge router on NixOS instead of OPNsense](0003-nixos-router-over-opnsense.md) (accepted)
