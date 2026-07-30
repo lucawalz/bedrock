@@ -1,7 +1,8 @@
 { lib, inventory, ... }:
 let
   homeSubnet = "192.168.2.0/24";
-  inherit (inventory) serviceVip;
+  inherit (inventory) nodes serviceVip;
+  nodeAddresses = lib.concatStringsSep ", " (lib.attrValues nodes);
 in
 {
   networking = {
@@ -55,7 +56,11 @@ in
         (lib.mkBefore ''iifname "vlan30" ip daddr ${homeSubnet} drop'')
         (lib.mkBefore ''iifname "wlan0" ip daddr ${homeSubnet} drop'')
         ''iifname "end0" ip saddr ${homeSubnet} oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
-        ''iifname "tailscale0" oifname "vlan20" accept''
+        ''iifname "tailscale0" oifname "vlan20" ip daddr { ${nodeAddresses} } tcp dport 22 accept''
+        ''iifname "tailscale0" oifname "vlan20" ip daddr ${nodes.master} tcp dport 6443 accept''
+        ''iifname "tailscale0" oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
+        ''iifname "tailscale0" oifname "vlan20" icmp type echo-request accept''
+        ''iifname "tailscale0" oifname "vlan20" drop''
         ''iifname "vlan20" oifname "tailscale0" accept''
         ''iifname "vlan30" oifname "end0" accept''
         ''iifname "vlan30" oifname "vlan20" drop''

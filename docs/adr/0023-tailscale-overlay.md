@@ -17,6 +17,8 @@ Superseded in part by [ADR 0032](0032-drop-worker-2-standby-subnet-router.md): t
 
 worker-2 runs a standby subnet router advertising the same `10.20.0.0/24` prefix, so the Pi is no longer a single point of failure for tailnet access to the lab. Tailscale fails over between two nodes advertising one prefix on its own, with no virtual IP or keepalive to operate. The subnet-router configuration is a shared NixOS module (`modules/tailscale/subnet-router.nix`) parameterised per host. The primary on the Pi sets `--accept-routes` and the standby on worker-2 does not, since a subnet router that accepts the prefix it serves forms a routing loop. Both share `tag:cluster` and the `--accept-dns=false` posture. The standby authenticates with its own auth key, scoped to the worker-2 host key in the secrets model from [0007](0007-agenix-sops-secrets.md).
 
+**Update (2026-07-30):** the blanket reachability in the first paragraph is withdrawn. A tailnet peer no longer reaches every port on the advertised prefix; forwarding from `tailscale0` into VLAN 20 is an explicit port allowlist per [0012](0012-bulletproof-router-hardening.md). Subnet-router advertisement and peer onboarding are unchanged.
+
 ## Options considered
 
 - Tailscale, chosen. A managed control plane removes peer bookkeeping, gives burst nodes a one-line join, and fits the Cluster API direction. The cost is a third party in the control plane, though not in the data path between peers.
