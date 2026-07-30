@@ -85,6 +85,22 @@ spec:
           annotations:
             summary: "CloudNativePG has unarchived WAL segments in {{ $labels.namespace }}"
             description: "CloudNativePG in namespace {{ $labels.namespace }} has {{ $value | printf \"%.0f\" }} WAL segments waiting to be archived and has not cleared them for 30 minutes. WAL shares the data volume, so a backlog that keeps growing eventually fills it and stops the primary. This measures the backlog directly and carries no counter-reset semantics, so it stays valid across a switchover."
+        - alert: CNPGStandbyNotStreaming
+          expr: cnpg_pg_replication_is_wal_receiver_up{namespace="postgres"} == 0 and on (namespace, pod) cnpg_pg_replication_in_recovery{namespace="postgres"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CloudNativePG standby {{ $labels.namespace }}/{{ $labels.pod }} has stopped streaming"
+            description: "The standby {{ $labels.namespace }}/{{ $labels.pod }} has no WAL receiver, so it is no longer replicating from the primary. Nothing else reports this: the pod stays Running and Ready because the instance manager is healthy, readyInstances still counts it, and quorum synchronous replication is satisfied by the remaining standby, so writes never degrade. A standby in this state silently stops being a copy of the data. The match on cnpg_pg_replication_in_recovery excludes the primary, which reports no WAL receiver by definition."
+        - alert: CNPGStreamingReplicasBelowExpected
+          expr: cnpg_pg_replication_streaming_replicas{namespace="postgres"} < 2 and on (namespace, pod) cnpg_pg_replication_in_recovery{namespace="postgres"} == 0
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG primary {{ $labels.namespace }}/{{ $labels.pod }} sees only {{ $value }} streaming standbys"
+            description: "The primary {{ $labels.namespace }}/{{ $labels.pod }} has been streaming to fewer than the two standbys a three instance cluster expects for an hour, so the cluster is running on reduced redundancy. This is measured from the primary deliberately, because CNPGStandbyNotStreaming needs the broken standby to keep exporting metrics and cannot fire when its exporter is gone entirely."
     - name: longhorn.rules
       rules:
         - alert: LonghornBackupTooOld
