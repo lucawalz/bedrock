@@ -50,6 +50,7 @@ spec:
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
+      freezeFilesystemForSnapshot: true
       replicaSoftAntiAffinity: false
       storageMinimalAvailablePercentage: 25
       storageOverProvisioningPercentage: 100

@@ -69,7 +69,7 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key, t
    velero restore create --from-backup <latest-daily-dr>
    ```
 
-   Volume contents come from Longhorn, not from Velero. `longhorn-snapshot-vsc` sets `type: snap`, so the CSI path Velero uses takes a local Longhorn snapshot, which does not survive the loss of the cluster. The off-site copy of every volume in the `default` group is the Longhorn backup taken nightly at 03:30 with a retain of 7, restored through the Longhorn UI or a `Volume` with `fromBackup` set. Postgres is separate again and comes from Barman.
+   Volume contents come from Longhorn, not from Velero. `longhorn-snapshot-vsc` sets `type: snap`, so the CSI path Velero uses takes a local Longhorn snapshot, which does not survive the loss of the cluster. The off-site copy of every volume in the `default` group is the Longhorn backup taken nightly at 03:30 with a retain of 30, restored through the Longhorn UI or a `Volume` with `fromBackup` set. `freeze-filesystem-for-snapshot` is on, so the snapshot each backup is taken from is filesystem-consistent rather than crash-consistent. Postgres is separate again and comes from Barman.
 
    The `daily-dr` schedule runs at 02:00, so up to a day of object state is at risk.
 9. Admission. Reapply the `rancher-webhook` replica count and anti-affinity, which the Rancher-owned chart exposes no value for. The command and reasoning are in the [admission break-glass runbook](admission-break-glass.md). Until applied, a single-replica webhook fails Secret writes cluster-wide when its node is lost.
@@ -109,7 +109,7 @@ Derived from the mechanisms as configured. They describe what the estate current
 | Data class | Mechanism | Recovery point | Recovery time |
 | --- | --- | --- | --- |
 | Postgres databases | CloudNativePG base backups daily at 03:00 with continuous WAL archiving to `basalt-cnpg-backups`, 30 day retention | About five minutes, bounded by WAL shipping | Restore into a new cluster, minutes to hours depending on replay distance |
-| Longhorn volumes | Recurring job nightly at 03:30, retain 7 | Up to 24 hours | Minutes per volume |
+| Longhorn volumes | Recurring job nightly at 03:30, retain 30 | Up to 24 hours | Minutes per volume |
 | Cluster API state | etcd snapshots every twelve hours, retain 5, uploaded to `basalt-backups` | Up to 12 hours | Under an hour on surviving hardware |
 | Kubernetes objects | Velero daily at 02:00, 168 hour TTL, scoped to Secrets and PVC or PV bindings | Up to 24 hours | Minutes per namespace |
 | Everything declared in Git | Flux reconciliation | Zero, the repository is the source of truth | Bounded by reconciliation, not by restore |
