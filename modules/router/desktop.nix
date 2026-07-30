@@ -58,6 +58,7 @@ let
   probeIntervalSeconds = 30;
   probeTimeoutSeconds = 10;
   failuresBeforeAlarm = 3;
+  panelLitSeconds = 120;
 
   pageFile = "$XDG_RUNTIME_DIR/wall.html";
   stateFile = "$XDG_RUNTIME_DIR/kiosk-state";
@@ -131,6 +132,10 @@ let
 
   panelOn = pkgs.writeShellScript "kiosk-panel-on" ''
     ${wlrRandr} --output ${output} --on --mode ${mode} --transform ${transform}
+  '';
+
+  panelOff = pkgs.writeShellScript "kiosk-panel-off" ''
+    ${wlrRandr} --output ${output} --off
   '';
 
   autostart = pkgs.writeShellScript "labwc-autostart" ''
@@ -216,6 +221,15 @@ in
         serviceConfig = {
           Type = "oneshot";
           ExecStart = panelOn;
+          ExecStartPost = "${pkgs.systemd}/bin/systemctl --user --no-block restart kiosk-panel-off.timer";
+        };
+      };
+
+      kiosk-panel-off = {
+        description = "Bar panel power off";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = panelOff;
         };
       };
 
@@ -228,13 +242,23 @@ in
       };
     };
 
-    systemd.user.timers.kiosk-watchdog = {
-      description = "Probe the estate for the bar panel";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnStartupSec = "1min";
-        OnUnitActiveSec = "${toString probeIntervalSeconds}s";
-        AccuracySec = "5s";
+    systemd.user.timers = {
+      kiosk-watchdog = {
+        description = "Probe the estate for the bar panel";
+        wantedBy = [ "timers.target" ];
+        timerConfig = {
+          OnStartupSec = "1min";
+          OnUnitActiveSec = "${toString probeIntervalSeconds}s";
+          AccuracySec = "5s";
+        };
+      };
+
+      kiosk-panel-off = {
+        description = "Blank the bar panel after its lit window";
+        timerConfig = {
+          OnActiveSec = "${toString panelLitSeconds}s";
+          AccuracySec = "5s";
+        };
       };
     };
 
