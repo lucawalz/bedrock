@@ -20,9 +20,6 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: paperless
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: n8n
       ports:
         - protocol: TCP
           port: 4000

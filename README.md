@@ -29,7 +29,7 @@ The point of the project is to keep a real cluster reproducible and reviewable. 
 
 ## Architecture
 
-The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `n8n`, `rancher`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
+The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `rancher`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
 Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. Capacity beyond the three local nodes is added on demand by horizon, which reads a SOPS-encrypted hcloud token and creates a reserved server directly through the hcloud API from a pre-baked snapshot. The node enrolls into the tailnet headlessly with a reusable, ephemeral auth key tagged `tag:burst` and joins the cluster as another K3s agent over the tailnet; horizon deletes the server and its Node object together when it is no longer needed. The elastic autoscaler that once scaled a pool from zero on pending-pod pressure was retired in [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md).
 
@@ -169,7 +169,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Service | Purpose | Access |
 |---------|---------|--------|
 | Open WebUI | chat front-end for the local models | public (`chat`) |
-| n8n | workflow automation | public (`n8n`) |
 | Blog | static Hugo site | public (`lucawalz.dev`) |
 | Rancher | cluster management UI | public (`rancher`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
@@ -190,7 +189,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 
-One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, and Miniflux, and pgAdmin connects to it as a client. n8n keeps its own state in the chart-default SQLite.
+One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, Miniflux, and Open WebUI, and pgAdmin connects to it as a client.
 
 ## Security
 

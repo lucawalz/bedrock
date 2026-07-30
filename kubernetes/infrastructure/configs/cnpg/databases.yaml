@@ -39,6 +39,7 @@ metadata:
 spec:
   name: n8n
   owner: n8n
+  databaseReclaimPolicy: delete
   cluster:
     name: postgres
 ---
