@@ -98,19 +98,25 @@ let
 
   wallWatchdog = pkgs.writeShellScript "kiosk-watchdog" ''
     current="$(cat ${stateFile} 2>/dev/null || echo reachable)"
+    previousFailures="$(cat ${failureFile} 2>/dev/null || echo 0)"
+    reload=0
     if ${pkgs.curl}/bin/curl -sS -o /dev/null --max-time ${toString probeTimeoutSeconds} \
       "$(cat ${dashboardUrlFile})"; then
       ${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S %Z' > ${lastContactFile}
       echo 0 > ${failureFile}
       next=reachable
+      if [ "$previousFailures" -gt 0 ]; then reload=1; fi
     else
-      failures=$(( $(cat ${failureFile} 2>/dev/null || echo 0) + 1 ))
+      failures=$(( previousFailures + 1 ))
       echo "$failures" > ${failureFile}
       if [ "$failures" -ge ${toString failuresBeforeAlarm} ]; then next=unreachable; else next="$current"; fi
     fi
-    if [ "$next" != "$current" ]; then
+    if [ "$next" != "$current" ] || [ ! -f ${stateFile} ]; then
       echo "$next" > ${stateFile}
       ${renderPage} "$next"
+      reload=1
+    fi
+    if [ "$reload" -eq 1 ]; then
       ${pkgs.systemd}/bin/systemctl --user restart kiosk-browser.service
     fi
   '';
