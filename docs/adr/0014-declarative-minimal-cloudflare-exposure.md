@@ -29,6 +29,9 @@ The exposure surface is now reproducible from the repository and narrowed to thr
 
 The tunnel no longer carries the three hosts named above. It carries four, `chat`, `n8n`, `lucawalz.dev`, and `rancher`, and no longer carries `llm`. Two later decisions changed the list without amending this record, and a third change pruned a route that had gone dead, so the count in the title and in the Decision has not matched the config since 2026-06-14.
 
+**Update 2026-07-31:** the tunnel now carries three hosts. `n8n` was removed with the application
+itself, which had never been used and held no workflows, credentials or executions.
+
 `lucawalz.dev` joined on 2026-06-14. The blog first went out at `blog.syslabs.dev` and moved to the apex the same day under [0021](0021-public-blog-portfolio-domain.md), since folded into the consolidated blog record [0019](0019-self-hosted-static-blog.md). The apex falls outside the `*.syslabs.dev` wildcard certificate Traefik serves as its default, so that one ingress rule carries `noTLSVerify` on its origin request.
 
 `rancher.syslabs.dev` joined on 2026-07-05 under [0059](0059-outbound-only-peers-via-public-rancher.md), so that a peer cluster could register outward against the hub without an inbound path into home. It is guarded by Cloudflare Access with multi-factor authentication on the human-facing paths, with a second, narrow Access application bypassing only the agent registration paths. That is a wider exposure than the workload-only hosts this record contemplated, and the compensating control is Access rather than the tunnel itself.
