@@ -80,5 +80,6 @@
     # k3s ships only imagefs and nodefs thresholds, so without this memory pressure OOM kills rather than evicting
     "--kubelet-arg=eviction-hard=memory.available<500Mi,nodefs.available<5%,imagefs.available<5%"
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
+    "--protect-kernel-defaults=true"
   ];
 }
