@@ -56,6 +56,7 @@ spec:
       storageOverProvisioningPercentage: 100
       storageReservedPercentageForDefaultDisk: 30
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
+      nodeDrainPolicy: block-for-eviction-if-contains-last-replica
       systemManagedComponentsNodeSelector: "bedrock.io/storage:true"
       systemManagedCSIComponentsResourceLimits: >-
         {"csi-attacher":{"requests":{"cpu":"25m","memory":"32Mi"},"limits":{"memory":"128Mi"}},
