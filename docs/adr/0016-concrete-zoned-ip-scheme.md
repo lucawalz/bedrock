@@ -24,6 +24,8 @@ The router is the single inter-zone gateway and enforces default-deny between zo
 
 **Update (2026-06-26):** the WireGuard `10.100.0.0/24` admin and burst overlay was retired and replaced by a Tailscale overlay per [0023](0023-tailscale-overlay.md).
 
+**Update (2026-07-30):** the Tailscale overlay that replaced it is not a trusted zone toward VLAN 20. Forwarding into the cluster zone is an explicit port allowlist per [0012](0012-bulletproof-router-hardening.md), so the trust sentence above applies to the cluster zone alone.
+
 ## Options considered
 
 - Zone-encoding scheme under `10.0.0.0/8` with the VLAN id as the second octet, chosen. The address of a host names its zone at a glance, and the wider private block leaves room for more zones without renumbering.

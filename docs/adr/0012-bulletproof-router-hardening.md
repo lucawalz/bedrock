@@ -13,6 +13,8 @@ The router is the inter-zone gateway and, with the tunnel kept under [0014](0014
 
 The router is hardened declaratively. The firewall defaults to deny between zones, with explicit allows for the trusted cluster and WireGuard zones and a default-deny posture for everything else. No management services, not SSH, DNS, DHCP, or the AdGuard interface, listen where they are not wanted, and only the required ports are forwarded. The rules live in the same flake as the rest of the router, in `modules/router/firewall.nix`.
 
+**Update (2026-07-30):** the Tailscale overlay is no longer trusted toward VLAN 20. Forwarding from `tailscale0` into the cluster zone was a single blanket accept, so any tailnet peer reached every port on every VLAN 20 host, which made the overlay an exception to the default-deny posture this record establishes. It is now an explicit allowlist: SSH to the three nodes, the Kubernetes API on master, the service VIP on 80 and 443, and IPv4 echo requests, with everything else dropped. The router's own input path stays trusted on `tailscale0`, because SSH to the router and DNS from AdGuard both arrive there, and removing that trust severs both in the same rebuild with physical console as the only recovery.
+
 ## Options considered
 
 - Declarative hardening on the NixOS router, chosen. A small, observable surface, defined in the same flake as everything else.
