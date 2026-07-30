@@ -88,6 +88,16 @@ spec:
         - protocol: TCP
           port: 8000
     - from:
+        - ipBlock:
+            cidr: 10.42.0.0/32
+        - ipBlock:
+            cidr: 10.42.1.0/32
+        - ipBlock:
+            cidr: 10.42.2.0/32
+      ports:
+        - protocol: TCP
+          port: 8000
+    - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: monitoring
