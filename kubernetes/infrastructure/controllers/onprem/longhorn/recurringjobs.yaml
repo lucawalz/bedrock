@@ -34,5 +34,5 @@ spec:
   task: backup
   groups:
     - default
-  retain: 7
+  retain: 30
   concurrency: 2
