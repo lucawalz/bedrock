@@ -29,7 +29,7 @@ spec:
           fetch:
             image:
               repository: alpine
-              tag: "3.23"
+              tag: "3.24"
             command:
               - sh
               - -euc
