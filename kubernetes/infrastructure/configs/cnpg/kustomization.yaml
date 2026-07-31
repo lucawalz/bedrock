@@ -4,6 +4,7 @@ namespace: postgres
 components:
   - ../../../components/network-policies/internet-egress
 resources:
+  - objectstore.yaml
   - cnpg-cluster.yaml
   - databases.yaml
   - networkpolicies.yaml

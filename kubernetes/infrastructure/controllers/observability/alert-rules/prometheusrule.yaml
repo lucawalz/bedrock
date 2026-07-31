@@ -46,7 +46,7 @@ spec:
     - name: cnpg.rules
       rules:
         - alert: CNPGBackupTooOld
-          expr: time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp{namespace="postgres"}) > 30 * 3600
+          expr: time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="postgres"}) > 30 * 3600
           for: 1h
           labels:
             severity: warning
@@ -54,7 +54,7 @@ spec:
             summary: "CloudNativePG in {{ $labels.namespace }} has no recent backup"
             description: "The newest available CloudNativePG backup in namespace {{ $labels.namespace }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the daily backup schedule."
         - alert: CNPGBackupTooOldCritical
-          expr: time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp{namespace="postgres"}) > 50 * 3600
+          expr: time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="postgres"}) > 50 * 3600
           for: 1h
           labels:
             severity: critical
