@@ -38,6 +38,7 @@ spec:
               CREATE_ADMIN: "1"
               ADMIN_USERNAME: admin
               POLLING_FREQUENCY: "30"
+              POLLING_PARSING_ERROR_LIMIT: "0"
               CLEANUP_ARCHIVE_READ_DAYS: "30"
               CLEANUP_ARCHIVE_UNREAD_DAYS: "60"
               CLEANUP_FREQUENCY_HOURS: "24"
