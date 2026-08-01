@@ -19,5 +19,4 @@ spec:
       kind: configmap
       name: skip-disposable-volumes
     excludedNamespaces:
-      - paperless
       - monitoring
