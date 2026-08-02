@@ -15,7 +15,7 @@ spec:
         name: lucawalz
         namespace: flux-system
   install:
-    crds: CreateReplace
+    crds: Create
     remediation:
       retries: 3
   upgrade:
