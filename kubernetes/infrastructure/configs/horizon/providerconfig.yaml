@@ -1,0 +1,19 @@
+apiVersion: horizon.dev/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: hetzner
+spec:
+  type: hetzner
+  hetzner:
+    credentialsSecretRef:
+      name: horizon-hetzner
+      key: token
+    cloudInitSecretRef:
+      name: horizon-cloud-init
+      key: cloud-init
+    imageSelector:
+      caph-image-name: bedrock-cluster-node
+  watchdog:
+    renewInterval: 1m
+    slack: 2m
+    maxLifetime: 8h
