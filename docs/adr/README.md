@@ -27,7 +27,7 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0023. Replace the self-hosted WireGuard overlay with Tailscale](0023-tailscale-overlay.md) (accepted)
 - [0024. Let the cluster-autoscaler own the burst pool replica count](0024-autoscaler-owned-burst-pool.md) (superseded by 0041)
 - [0025. Split burst capacity into elastic and reserved node pools](0025-elastic-and-reserved-node-pools.md) (superseded by 0041)
-- [0026. Prune orphan burst node objects with an in-cluster reaper](0026-orphan-node-reaper.md) (superseded by 0041)
+- [0026. Prune orphan burst node objects with an in-cluster reaper](0026-orphan-node-reaper.md) (superseded by 0041 and 0071)
 - [0027. Guarantee a usable CAPI node snapshot at all times](0027-durable-capi-node-snapshot-pipeline.md) (accepted)
 - [0028. Route alerts and reconciliation failures to a self-hosted ntfy](0028-self-hosted-ntfy-alerting.md) (accepted)
 - [0029. Promote a single CAPH-selectable node snapshot](0029-single-selectable-capi-node-snapshot.md) (superseded by 0063)
@@ -71,3 +71,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0068. Commit Postgres writes to a quorum of one standby, preferring availability](0068-cnpg-quorum-synchronous-replication.md) (accepted)
 - [0069. Record the Longhorn prerequisites that NixOS does not provide](0069-longhorn-prerequisites-on-nixos.md) (accepted, implemented)
 - [0070. Leave the Rancher-owned namespaces outside Flux](0070-rancher-owned-namespaces-outside-flux.md) (accepted)
+- [0071. Deploy the horizon operator from its published OCI chart](0071-deploy-horizon-operator-from-published-chart.md) (accepted)

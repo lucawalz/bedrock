@@ -28,3 +28,9 @@ The service account gains a namespaced Role in `longhorn-system` granting get, l
 ## Consequences
 
 Stranded Longhorn nodes and their instance manager records clear within one reaper interval of a scale-down without operator action, the warning stream stops, and the alert that surfaced the problem stops firing on it. The reaper now reads and patches `longhorn.io` nodes, a small widening of its blast radius. It is bounded to setting one boolean false on records whose backing Kubernetes Node is already gone, so a live or briefly-unreachable node is never touched. The reaper depends on the `longhorn.io` API being reachable for the storage pass, and degrades to a logged skip when it is not. The poll interval bounds the lag, so a record can sit stranded for up to ten minutes before it is finalized, which is acceptable for cleanup.
+
+## Update 2026-08-02
+
+This pass is the only one left. [0071](0071-deploy-horizon-operator-from-published-chart.md) gives Node deletion to the horizon operator and strips the Kubernetes Node pass from the CronJob, which is renamed from `node-reaper` to `longhorn-node-finalizer` to match what it does. The decision here is unaffected: the finalize logic, the schedule, the zero-replica safety left to Longhorn, and the degrade-to-skip behaviour on a Longhorn outage are all unchanged.
+
+Two details in this record are now stale. The pass no longer runs after a Node deletion pass, so the state it corrects is produced by the horizon operator rather than by the reaper itself, which is the case the first option weighed here already anticipated for crashed and autoscaler-driven nodes. The cluster-scoped grant on core `nodes` narrows from get, list, and delete to get, since the backing-node existence check is all that still uses it.
