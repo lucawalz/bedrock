@@ -23,6 +23,3 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: false
-  values:
-    ui:
-      enabled: false
