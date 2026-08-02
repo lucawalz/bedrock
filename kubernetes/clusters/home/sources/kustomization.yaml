@@ -26,3 +26,4 @@ resources:
   - helm/flagger.yaml
   - helm/minio.yaml
   - helm/zot.yaml
+  - helm/lucawalz.yaml

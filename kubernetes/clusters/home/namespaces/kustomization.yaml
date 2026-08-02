@@ -29,5 +29,6 @@ resources:
   - miniflux.yaml
   - kiwix.yaml
   - zot.yaml
+  - horizon-system.yaml
   - default.yaml
   - default-serviceaccounts.yaml
