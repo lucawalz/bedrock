@@ -72,3 +72,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0069. Record the Longhorn prerequisites that NixOS does not provide](0069-longhorn-prerequisites-on-nixos.md) (accepted, implemented)
 - [0070. Leave the Rancher-owned namespaces outside Flux](0070-rancher-owned-namespaces-outside-flux.md) (accepted)
 - [0071. Deploy the horizon operator from its published OCI chart](0071-deploy-horizon-operator-from-published-chart.md) (accepted)
+- [0072. Bound the blast radius of burst nodes that carry a delete-capable Hetzner credential](0072-burst-node-credential-blast-radius.md) (accepted)
