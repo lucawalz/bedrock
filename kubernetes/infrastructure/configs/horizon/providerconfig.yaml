@@ -13,6 +13,8 @@ spec:
       key: cloud-init
     imageSelector:
       caph-image-name: bedrock-cluster-node
+    firewalls:
+      - horizon-burst
   watchdog:
     renewInterval: 1m
     slack: 2m
