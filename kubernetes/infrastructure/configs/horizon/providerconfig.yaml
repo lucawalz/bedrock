@@ -11,6 +11,9 @@ spec:
     cloudInitSecretRef:
       name: horizon-cloud-init
       key: cloud-init
+    nodeCredentialSecretRef:
+      name: horizon-hetzner
+      key: token
     imageSelector:
       caph-image-name: bedrock-cluster-node
     firewalls:
