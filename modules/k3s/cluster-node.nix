@@ -69,7 +69,7 @@ in
       authKeyFile = tailscaleAuthKeyPath;
       extraUpFlags = [
         "--accept-routes"
-        "--advertise-tags=tag:peer"
+        "--advertise-tags=tag:burst"
       ];
     };
 
