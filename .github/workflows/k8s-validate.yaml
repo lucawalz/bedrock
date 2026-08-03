@@ -16,6 +16,12 @@ jobs:
 
       - uses: ./.github/actions/manifest-tools
 
+      # The catalog carries third-party CRDs only, so anything this repository installs is derived here instead.
+      - name: Derive schemas for the CRDs this repository installs
+        run: |
+          RENDER_OUTPUT_DIR="$RUNNER_TEMP/rendered" bash scripts/render-helm-releases.sh > /dev/null
+          bash scripts/gen-crd-schemas.sh "$RUNNER_TEMP/crd-schemas" kubernetes "$RUNNER_TEMP/rendered"
+
       - name: Validate Kubernetes manifests
         run: |
           find kubernetes/ -name "*.yaml" \
@@ -27,6 +33,7 @@ jobs:
               -strict \
               -ignore-missing-schemas \
               -schema-location default \
+              -schema-location "$RUNNER_TEMP/crd-schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
               -schema-location "$KUBECONFORM_SCHEMA_LOCATION" \
               -kubernetes-version 1.35.0 \
               -summary
