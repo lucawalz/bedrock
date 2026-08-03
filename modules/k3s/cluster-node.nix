@@ -39,11 +39,6 @@ in
     hostName = "";
     useDHCP = true;
     firewall = {
-      allowedTCPPorts = [
-        6443
-        10250
-      ];
-      allowedUDPPorts = [ 8472 ];
       checkReversePath = "loose";
       trustedInterfaces = [ tailscaleIface ];
     };
