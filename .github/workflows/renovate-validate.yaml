@@ -21,5 +21,5 @@ jobs:
       - name: Validate renovate config
         env:
           # renovate: datasource=npm depName=renovate
-          RENOVATE_VERSION: 44.10.0
+          RENOVATE_VERSION: 44.11.1
         run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator
