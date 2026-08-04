@@ -26,7 +26,7 @@ spec:
     replicaCount: 1
     image:
       repository: ghcr.io/project-zot/zot
-      tag: v2.1.18
+      tag: v2.1.19
     service:
       type: ClusterIP
       port: 5000
