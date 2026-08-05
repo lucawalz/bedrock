@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, implemented
 date: 2026-07-06
 ---
 
