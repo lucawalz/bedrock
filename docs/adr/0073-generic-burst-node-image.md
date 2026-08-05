@@ -1,5 +1,5 @@
 ---
-status: accepted, implemented
+status: accepted
 date: 2026-08-05
 ---
 
@@ -36,6 +36,8 @@ The role-agnostic parts of the k3s estate, the sysctls, firewall ports, k3s syst
 
 ## Consequences
 
-A burst node now runs the k3s version, kubelet flags, and registry mirror configuration the estate declares, because the unit that enforces them is the one the NixOS module builds rather than a raw binary invocation next to it. The duplication [0069](0069-longhorn-prerequisites-on-nixos.md) recorded between `cluster-node.nix` and `storage.nix` is narrower than before: the kubelet and sysctl portion is gone, resolved by `estate.nix`, while the `openiscsi` block and the `/usr/local/bin` symlink remain duplicated on purpose, for the reasons above.
+A burst node built from a snapshot at the new hash runs the k3s version, kubelet flags, and registry mirror configuration the estate declares, because the unit that enforces them is the one the NixOS module builds rather than a raw binary invocation next to it. The duplication [0069](0069-longhorn-prerequisites-on-nixos.md) recorded between `cluster-node.nix` and `storage.nix` is narrower than before: the kubelet and sysctl portion is gone, resolved by `estate.nix`, while the `openiscsi` block and the `/usr/local/bin` symlink remain duplicated on purpose, for the reasons above.
 
 The snapshot hash changes with this commit, from `8657c791c471da2498414b9bc596ed420f76b21f` to `37c3787db1c2806bc32aa0c7c5448e9c68c3165e`, and every snapshot built after it carries a new name. That is expected: the pipeline was already due to rebuild for the launcher removal and the k3s version pin, and the hash list omitting `estate.nix` would otherwise have let a future estate-only change go unbuilt while claiming the current snapshot still matched it.
+
+None of this is in effect yet. Building and promoting a snapshot from the new hash is a separate step, not taken as part of this record. Until the pipeline runs and a new snapshot is promoted, `horizon`'s `ProviderConfig` still selects whatever snapshot was promoted before this change, and a burst node created today still boots the launcher, the static IQN, and none of the estate configuration.
