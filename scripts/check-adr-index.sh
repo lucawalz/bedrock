@@ -14,7 +14,29 @@ front_matter_status() {
 }
 
 index_status() {
-  grep -F "($1)" "$index" | sed -n 's/.*(\(.*\))[[:space:]]*$/\1/p'
+  awk -v link="]($1)" '
+    substr($0, 1, 2) != "- " { next }
+    index($0, link) == 0 { next }
+    {
+      rest = substr($0, index($0, link) + length(link))
+      sub(/^[[:space:]]+/, "", rest)
+      sub(/[[:space:]]+$/, "", rest)
+      if (substr(rest, 1, 1) == "(" && substr(rest, length(rest), 1) == ")") {
+        print substr(rest, 2, length(rest) - 2)
+      }
+      exit
+    }
+  ' "$index"
+}
+
+leading_status_token() {
+  printf '%s' "$1" | sed \
+    -e 's/^[[:space:]]*//' \
+    -e 's/[[:space:]]*$//' \
+    -e 's/^"\(.*\)"$/\1/' \
+    -e "s/^'\(.*\)'\$/\1/" \
+    -e 's/,.*$//' \
+    -e 's/[[:space:]]*$//'
 }
 
 records="$(find "$adr_dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -exec basename {} \; | sort)"
@@ -41,9 +63,9 @@ for l in $linked; do
   fi
   recorded="$(front_matter_status "$adr_dir/$l")"
   indexed="$(index_status "$l")"
-  if [ -z "$recorded" ]; then
+  if [ -z "$(leading_status_token "$recorded")" ]; then
     status_drift="$status_drift$l declares no status in its front matter"$'\n'
-  elif [ "$recorded" != "$indexed" ]; then
+  elif [ "$(leading_status_token "$recorded")" != "$(leading_status_token "$indexed")" ]; then
     status_drift="$status_drift$l records \"$recorded\" but the index says \"$indexed\""$'\n'
   fi
 done
