@@ -9,6 +9,7 @@ inputs=(
   HEAD:flake.nix
   HEAD:flake.lock
   HEAD:modules/k3s/cluster-node.nix
+  HEAD:modules/k3s/estate.nix
   HEAD:modules/k3s/hetzner-scaffolding.nix
   HEAD:infra/packer
 )
