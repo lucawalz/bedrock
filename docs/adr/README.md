@@ -5,7 +5,7 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0001. Run the cluster as K3s on NixOS hosts](0001-k3s-on-nixos.md) (accepted)
 - [0002. Declare hosts with NixOS flakes, reconcile the cluster with Flux](0002-nixos-flakes-flux-gitops.md) (accepted)
 - [0003. Run the edge router on NixOS instead of OPNsense](0003-nixos-router-over-opnsense.md) (accepted)
-- [0004. Isolate the cluster on a VLAN 20 DMZ](0004-dmz-vlan-segmentation.md) (accepted, addressing superseded by 0016)
+- [0004. Isolate the cluster on a VLAN 20 DMZ](0004-dmz-vlan-segmentation.md) (accepted)
 - [0005. Use Longhorn for replicated block storage](0005-longhorn-storage.md) (accepted)
 - [0006. Issue certificates with cert-manager over Cloudflare DNS-01](0006-cert-manager-dns01.md) (accepted)
 - [0007. Split secrets between agenix for hosts and SOPS for the cluster](0007-agenix-sops-secrets.md) (accepted)
