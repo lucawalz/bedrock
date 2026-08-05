@@ -21,8 +21,11 @@ in
     };
 
     tag = lib.mkOption {
-      type = lib.types.str;
-      description = "ACL tag advertised by this device, in tag:name form. The auth key must be minted for the same tag.";
+      type = lib.types.enum [
+        "tag:cluster"
+        "tag:burst"
+      ];
+      description = "ACL tag advertised by this device. The auth key must be minted for the same tag, and the tailnet ACL must already grant it, so the set is closed to the tags the estate defines.";
     };
 
     acceptRoutes = lib.mkOption {
