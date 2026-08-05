@@ -53,16 +53,31 @@ in
         disko.nixosModules.disko
         agenix.nixosModules.default
         ../hosts/common
-        ({ ... }: {
+        ({ config, secretsDir, ... }: {
           imports = [
             ../modules/k3s/agent.nix
             ../modules/services/storage.nix
+            ../modules/tailscale/client.nix
           ];
 
           networking.hostName = hostname;
           system.stateVersion = "25.05";
 
           services.k3s.extraFlags = [ "--node-ip=${inventory.nodes.${hostname}}" ];
+
+          age.secrets.tailscale-authkey = {
+            file = "${secretsDir}/tailscale-authkey-${hostname}.age";
+            mode = "0400";
+            owner = "root";
+            group = "root";
+          };
+
+          bedrock.tailscaleClient = {
+            enable = true;
+            inherit hostname;
+            authKeyFile = config.age.secrets.tailscale-authkey.path;
+            tag = "tag:cluster";
+          };
 
           disko.devices = {
             disk = {
