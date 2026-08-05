@@ -21,6 +21,18 @@ in
     router
     luca
   ];
+  "tailscale-authkey-master.age".publicKeys = [
+    master
+    luca
+  ];
+  "tailscale-authkey-worker-1.age".publicKeys = [
+    worker-1
+    luca
+  ];
+  "tailscale-authkey-worker-2.age".publicKeys = [
+    worker-2
+    luca
+  ];
   "adguard-admin.age".publicKeys = [
     router
     luca
