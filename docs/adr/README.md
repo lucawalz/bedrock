@@ -73,3 +73,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0070. Leave the Rancher-owned namespaces outside Flux](0070-rancher-owned-namespaces-outside-flux.md) (accepted)
 - [0071. Deploy the horizon operator from its published OCI chart](0071-deploy-horizon-operator-from-published-chart.md) (accepted)
 - [0072. Bound the blast radius of burst nodes that carry a delete-capable Hetzner credential](0072-burst-node-credential-blast-radius.md) (accepted)
+- [0073. Make the burst node image generic and let horizon supply the join](0073-generic-burst-node-image.md) (accepted, implemented)
