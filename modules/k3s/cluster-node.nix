@@ -3,10 +3,13 @@ let
   k3sConfigPath = "/etc/rancher/k3s/config.yaml";
   metadataBase = "http://169.254.169.254/hetzner/v1/metadata";
   configWaitSeconds = 540;
+  metadataAttempts = 30;
+  metadataRetryDelaySeconds = 2;
   tailscaleAuthKeyPath = "/etc/tailscale/authkey";
   tailscaleIface = "tailscale0";
   iscsiInitiatorNamePath = "/etc/iscsi/initiatorname.iscsi";
   iscsiIqnPrefix = "iqn.2016-04.com.open-iscsi";
+  placeholderHostname = "localhost";
 in
 {
   imports = [
@@ -79,14 +82,21 @@ in
           TimeoutStartSec = 120;
         };
         script = ''
+          set -eu
           NAME=""
           i=0
-          while [ $i -lt 30 ]; do
+          while [ $i -lt ${toString metadataAttempts} ]; do
             NAME=$(${pkgs.curl}/bin/curl -fsS --max-time 5 ${metadataBase}/hostname 2>/dev/null || true)
-            [ -n "$NAME" ] && break
-            i=$((i+1)); sleep 2
+            if [ -n "$NAME" ]; then
+              break
+            fi
+            i=$((i+1)); sleep ${toString metadataRetryDelaySeconds}
           done
-          [ -n "$NAME" ] && ${pkgs.systemd}/bin/hostnamectl set-hostname "$NAME" || true
+          if [ -z "$NAME" ]; then
+            echo "hetzner metadata served no hostname after ${toString metadataAttempts} attempts" >&2
+            exit 1
+          fi
+          ${pkgs.systemd}/bin/hostnamectl set-hostname "$NAME"
         '';
       };
 
@@ -107,7 +117,12 @@ in
           RemainAfterExit = true;
         };
         script = ''
+          set -eu
           HOSTNAME=$(${pkgs.coreutils}/bin/cat /proc/sys/kernel/hostname)
+          if [ -z "$HOSTNAME" ] || [ "$HOSTNAME" = "${placeholderHostname}" ]; then
+            echo "refusing to derive an iSCSI initiator name from hostname '$HOSTNAME'" >&2
+            exit 1
+          fi
           ${pkgs.coreutils}/bin/rm -f ${iscsiInitiatorNamePath}
           printf 'InitiatorName=%s:%s\n' "${iscsiIqnPrefix}" "$HOSTNAME" > ${iscsiInitiatorNamePath}
         '';
