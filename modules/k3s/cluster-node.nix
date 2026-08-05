@@ -1,14 +1,18 @@
-{ lib, pkgs, ... }:
+{ pkgs, ... }:
 let
   k3sConfigPath = "/etc/rancher/k3s/config.yaml";
   metadataBase = "http://169.254.169.254/hetzner/v1/metadata";
   configWaitSeconds = 540;
   tailscaleAuthKeyPath = "/etc/tailscale/authkey";
   tailscaleIface = "tailscale0";
-  tailscaleWaitSeconds = 540;
+  iscsiInitiatorNamePath = "/etc/iscsi/initiatorname.iscsi";
+  iscsiIqnPrefix = "iqn.2016-04.com.open-iscsi";
 in
 {
-  imports = [ ./hetzner-scaffolding.nix ];
+  imports = [
+    ./estate.nix
+    ./hetzner-scaffolding.nix
+  ];
 
   networking = {
     hostName = "";
@@ -35,7 +39,7 @@ in
 
     openiscsi = {
       enable = true;
-      name = "iqn.2016-04.com.open-iscsi:bedrock-cluster-node";
+      name = "${iscsiIqnPrefix}:bedrock-cluster-node";
     };
 
     tailscale = {
@@ -51,7 +55,6 @@ in
     k3s = {
       enable = true;
       role = "agent";
-      package = pkgs.k3s_1_35;
     };
   };
 
@@ -91,18 +94,24 @@ in
         after = [
           "tailscaled.service"
           "hetzner-set-hostname.service"
+          "cloud-final.service"
         ];
         wants = [ "tailscaled.service" ];
-        serviceConfig.TimeoutStartSec = lib.mkForce 600;
-        preStart = ''
-          DEADLINE=$(( $(date +%s) + ${toString tailscaleWaitSeconds} ))
-          while [ ! -s ${tailscaleAuthKeyPath} ]; do
-            if [ "$(date +%s)" -ge "$DEADLINE" ]; then
-              echo "${tailscaleAuthKeyPath} not present within ${toString tailscaleWaitSeconds}s" >&2
-              exit 1
-            fi
-            sleep 2
-          done
+      };
+
+      openiscsi-set-initiator-name = {
+        description = "Set the iSCSI initiator name from the discovered hostname";
+        after = [ "hetzner-set-hostname.service" ];
+        before = [ "iscsid.service" ];
+        wantedBy = [ "multi-user.target" ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          HOSTNAME=$(${pkgs.coreutils}/bin/cat /proc/sys/kernel/hostname)
+          ${pkgs.coreutils}/bin/rm -f ${iscsiInitiatorNamePath}
+          printf 'InitiatorName=%s:%s\n' "${iscsiIqnPrefix}" "$HOSTNAME" > ${iscsiInitiatorNamePath}
         '';
       };
 
