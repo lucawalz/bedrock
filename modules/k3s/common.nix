@@ -59,5 +59,8 @@
 
   services.k3s.extraFlags = [
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
+    "--flannel-iface=tailscale0"
   ];
+
+  systemd.services.k3s.after = [ "tailscaled-autoconnect.service" ];
 }
