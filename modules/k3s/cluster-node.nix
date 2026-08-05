@@ -5,6 +5,8 @@ let
   configWaitSeconds = 540;
   metadataAttempts = 30;
   metadataRetryDelaySeconds = 2;
+  metadataTimeoutSeconds = 5;
+  metadataDeadlineSeconds = metadataAttempts * (metadataTimeoutSeconds + metadataRetryDelaySeconds);
   tailscaleAuthKeyPath = "/etc/tailscale/authkey";
   tailscaleIface = "tailscale0";
   iscsiInitiatorNamePath = "/etc/iscsi/initiatorname.iscsi";
@@ -79,14 +81,14 @@ in
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
-          TimeoutStartSec = 120;
+          TimeoutStartSec = metadataDeadlineSeconds;
         };
         script = ''
           set -eu
           NAME=""
           i=0
           while [ $i -lt ${toString metadataAttempts} ]; do
-            NAME=$(${pkgs.curl}/bin/curl -fsS --max-time 5 ${metadataBase}/hostname 2>/dev/null || true)
+            NAME=$(${pkgs.curl}/bin/curl -fsS --max-time ${toString metadataTimeoutSeconds} ${metadataBase}/hostname 2>/dev/null || true)
             if [ -n "$NAME" ]; then
               break
             fi
