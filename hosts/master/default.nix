@@ -1,4 +1,10 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  secretsDir ? ../../secrets,
+  ...
+}:
 let
   kubeHelm = pkgs.wrapHelm pkgs.kubernetes-helm {
     plugins = with pkgs.kubernetes-helmPlugins; [
@@ -15,10 +21,25 @@ in
     ./hardware-configuration.nix
     ../../modules/k3s/server.nix
     ../../modules/services/storage.nix
+    ../../modules/tailscale/client.nix
   ];
 
   networking.hostName = "master";
   system.stateVersion = "25.05";
+
+  age.secrets.tailscale-authkey = {
+    file = "${secretsDir}/tailscale-authkey-master.age";
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
+  bedrock.tailscaleClient = {
+    enable = true;
+    hostname = "master";
+    authKeyFile = config.age.secrets.tailscale-authkey.path;
+    tag = "tag:cluster";
+  };
 
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
