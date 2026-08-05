@@ -51,6 +51,7 @@ in
     k3s = {
       enable = true;
       role = "agent";
+      package = pkgs.k3s_1_35;
     };
   };
 
