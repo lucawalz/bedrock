@@ -92,11 +92,9 @@ in
 
       tailscaled-autoconnect = {
         after = [
-          "tailscaled.service"
           "hetzner-set-hostname.service"
           "cloud-final.service"
         ];
-        wants = [ "tailscaled.service" ];
       };
 
       openiscsi-set-initiator-name = {
@@ -157,14 +155,10 @@ in
 
       k3s = {
         after = [
-          "network-online.target"
           "cloud-final.service"
           "k3s-cluster-config-augment.service"
         ];
-        wants = [
-          "network-online.target"
-          "k3s-cluster-config-augment.service"
-        ];
+        wants = [ "k3s-cluster-config-augment.service" ];
       };
     };
   };

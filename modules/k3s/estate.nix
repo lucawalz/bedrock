@@ -11,11 +11,6 @@
     "kernel.keys.root_maxbytes" = 25000000;
   };
 
-  systemd.services.k3s = {
-    wants = [ "network-online.target" ];
-    after = [ "network-online.target" ];
-  };
-
   services.k3s.extraFlags = [
     "--kubelet-arg=image-gc-high-threshold=70"
     "--kubelet-arg=image-gc-low-threshold=55"
