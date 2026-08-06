@@ -3,7 +3,7 @@ source "hcloud" "cluster-node" {
   # renovate: datasource=docker depName=debian versioning=docker
   image                = "debian-12"
   location             = "hel1"
-  server_type          = "cpx22"
+  server_type          = "cx23"
   ssh_username         = "root"
   ssh_private_key_file = var.ssh_private_key_file
 
