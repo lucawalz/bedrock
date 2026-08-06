@@ -9,13 +9,14 @@ spec:
       name: horizon-hetzner
       key: token
     cloudInitSecretRef:
-      name: horizon-cloud-init-stock
+      name: horizon-cloud-init
       key: cloud-init
     nodeCredentialSecretRef:
       name: horizon-hetzner
       key: token
     image:
-      name: ubuntu-24.04
+      selector:
+        caph-image-name: bedrock-cluster-node
     joinTokenSecretRef:
       name: horizon-join-token
       key: token
