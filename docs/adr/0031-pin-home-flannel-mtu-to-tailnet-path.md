@@ -40,3 +40,11 @@ This pin is an interim mitigation, not the architectural fix. The home-to-home t
 The root-cause fix is topological: stop stretching one flat flannel overlay across the VPN tunnel, for example by giving the burst nodes their own cluster or overlay joined through a gateway. Home-to-home traffic would then keep its native 1450, and only the cross-site leg would pay the tunnel cost. That work is deferred to the planned CAPH v1.2 and CAPI upgrade tracked in ADR 0030.
 
 Raising the Tailscale tunnel MTU was considered and rejected. A larger tunnel would recover the marginal efficiency but sacrifices Tailscale's DERP-fallback robustness, which is not a trade worth making for an overlay this small.
+
+## Update 2026-08-06
+
+[0074](0074-home-nodes-on-the-tailnet.md) supersedes the premise this record reasons from, not its decision. The home nodes are tailnet members now, they carry a `tailscale0`, and flannel binds to it on every node in the cluster. Two passages above no longer hold: the Context's statement that the home nodes have no `tailscale0` and derive their MTU from the 1500-byte LAN, and the rejected option of setting `flannel-iface: tailscale0` on them, which was rejected only because there was no interface for flannel to bind.
+
+The MTU pin stands and is unchanged. `flannel-net-conf.json` still carries the outer 1280, and it now agrees exactly with what a `tailscale0`-bound flannel derives on its own: measured after the migration, `tailscale0` is 1280 and `flannel.1` is 1230 on all three home nodes. The reasoning here for why the field carries 1280 rather than 1230 is still why the file reads as it does, and the pod CIDR and vxlan backend it declares are still the source of truth for the overlay.
+
+Two further parts are overtaken. The instruction to delete `flannel.1` and `cni0` before restarting k3s belongs to a change where the pod-facing MTU moved; [0074](0074-home-nodes-on-the-tailnet.md) deletes `flannel.1` alone, because removing `cni0` detaches every running pod's veth with nothing to reattach it. And the Follow-up is closed the other way. The home-to-home tax is now permanent rather than interim: pod traffic between home nodes rides the tunnel, so it does not recover 1450, and the deferred topological split into a separate burst cluster or overlay was weighed again and rejected in favour of one flat tailnet overlay.
