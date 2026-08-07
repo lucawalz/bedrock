@@ -22,8 +22,6 @@ spec:
       key: token
     firewalls:
       - horizon-burst
-    sshKeys:
-      - bedrock-capi
   watchdog:
     renewInterval: 1m
     slack: 2m
