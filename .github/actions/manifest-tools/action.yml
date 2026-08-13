@@ -27,7 +27,7 @@ runs:
       shell: bash
       env:
         # renovate: datasource=github-releases depName=helm/helm
-        HELM_VERSION: v4.2.3
+        HELM_VERSION: v4.2.4
       run: |
         curl -sSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
           | tar xz --strip-components=1 -C /usr/local/bin linux-amd64/helm
