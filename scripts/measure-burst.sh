@@ -741,7 +741,6 @@ cleanup() {
   trap - EXIT
   trap '' INT TERM HUP QUIT
   set +e
-  echo "measure-burst: cleanup: verifying no server remains for lease ${name}" >&2
 
   restore_operator || exit_code=1
 
@@ -749,7 +748,13 @@ cleanup() {
     kubectl get capacitylease "$name" -o json >"$lease_json_path" 2>/dev/null
   fi
 
-  if [ "$lease_applied" -eq 1 ] && [ "$dry_run" -eq 0 ]; then
+  if [ "$dry_run" -eq 1 ]; then
+    exit "$exit_code"
+  fi
+
+  echo "measure-burst: cleanup: verifying no server remains for lease ${name}" >&2
+
+  if [ "$lease_applied" -eq 1 ]; then
     kubectl delete capacitylease "$name" --ignore-not-found --wait=false >/dev/null 2>&1
   fi
 
@@ -778,10 +783,8 @@ cleanup() {
       echo "measure-burst: FATAL ${count} server(s) still exist for lease ${name} after ${CLEANUP_MAX_WAIT_S}s" >&2
     fi
     echo "measure-burst: inspect with: hcloud server list -l ${LEASE_LABEL_KEY}=${name}" >&2
-    if [ "$dry_run" -eq 0 ]; then
-      echo "measure-burst: forcing hcloud delete as last resort" >&2
-      force_delete_lease_servers
-    fi
+    echo "measure-burst: forcing hcloud delete as last resort" >&2
+    force_delete_lease_servers
     exit_code=1
   fi
 
