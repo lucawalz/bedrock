@@ -23,7 +23,9 @@ readonly WATCHDOG_WALLCLOCK_BUFFER_S=300
 readonly CLEANUP_MAX_WAIT_S=300
 readonly CLEANUP_POLL_INTERVAL_S=5
 readonly READINESS_SIGNAL_MAX_WAIT_S=900
+readonly HETZNER_POLL_FAILURE_LIMIT=5
 readonly INJECTION_JOB_MAX_WAIT_S=300
+readonly OPERATOR_RESTORE_SETTLE_S=180
 readonly MAX_LEASE_NAME_LENGTH=50
 
 readonly HETZNER_SECRET_NAMESPACE="horizon-system"
@@ -223,6 +225,7 @@ operator_scaled_down=0
 original_operator_replicas=""
 injected=0
 server_ever_seen=0
+hetzner_poll_failures=0
 start_epoch=0
 start_iso=""
 operator_log_captured_until=""
@@ -333,10 +336,21 @@ hetzner_active_count() {
   echo "$n"
 }
 
+# A failed query must never leave the seen map looking like an empty estate, because that reads as a teardown the harness would then report as measured.
 poll_hetzner() {
   local json count sname sstatus found s
-  json=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json)
-  count=$(printf '%s' "$json" | jq 'length')
+  if ! json=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json 2>/dev/null) ||
+    ! count=$(printf '%s' "$json" | jq 'length' 2>/dev/null) || [ -z "$count" ]; then
+    hetzner_poll_failures=$((hetzner_poll_failures + 1))
+    emit_event hetzner "$name" poll-failed "$hetzner_poll_failures"
+    if [ "$hetzner_poll_failures" -ge "$HETZNER_POLL_FAILURE_LIMIT" ]; then
+      echo "measure-burst: FATAL the Hetzner API failed ${hetzner_poll_failures} times in a row and it is the only authority on whether a server still bills" >&2
+      exit 1
+    fi
+    echo "measure-burst: WARNING Hetzner API query failed (${hetzner_poll_failures} in a row)" >&2
+    return 1
+  fi
+  hetzner_poll_failures=0
   [ "$count" -gt 0 ] && server_ever_seen=1
 
   local seen_names=()
@@ -768,6 +782,26 @@ preflight_node_access() {
   echo "measure-burst: node-access probe accepted, proceeding" >&2
 }
 
+observe_until() {
+  local deadline="$1"
+  local hetzner_fresh
+  while :; do
+    hetzner_fresh=0
+    poll_hetzner && hetzner_fresh=1
+    poll_lease
+    poll_node
+    maybe_inject
+
+    if [ "$hetzner_fresh" -eq 1 ] && [ "$server_ever_seen" -eq 1 ] && [ "$(hetzner_active_count)" -eq 0 ]; then
+      return 0
+    fi
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      return 1
+    fi
+    sleep "$POLL_INTERVAL_S"
+  done
+}
+
 real_run() {
   start_epoch=$(date +%s)
   start_iso=$(date -u -d "@${start_epoch}" +%Y-%m-%dT%H:%M:%SZ)
@@ -780,34 +814,26 @@ real_run() {
   apply_lease
   emit_event harness "$name" lease-applied "$scenario"
 
-  local duration_s max_wait elapsed
-  duration_s=$(parse_duration_to_seconds "$duration")
+  local max_wait
   max_wait="${max_wait_override:-$((duration_s + BOOT_BUFFER_S + TEARDOWN_BUFFER_S + WATCHDOG_WALLCLOCK_BUFFER_S))}"
 
-  while :; do
-    poll_hetzner
-    poll_lease
-    poll_node
-    maybe_inject
+  if observe_until "$((start_epoch + max_wait))"; then
+    echo "measure-burst: hetzner reports zero servers for ${name}; teardown observed at $(($(date +%s) - start_epoch))s" >&2
+  elif [ "$operator_scaled_down" -eq 1 ]; then
+    echo "measure-burst: reached ${max_wait}s with no teardown while the operator is scaled to zero, which is the expected result for scenario=${scenario}" >&2
+  else
+    echo "measure-burst: WARNING reached ${max_wait}s with no confirmed teardown; investigate before assuming a leak" >&2
+  fi
 
-    elapsed=$(($(date +%s) - start_epoch))
-
-    if [ "$server_ever_seen" -eq 1 ] && [ "$(hetzner_active_count)" -eq 0 ]; then
-      echo "measure-burst: hetzner reports zero servers for ${name}; teardown observed at ${elapsed}s" >&2
-      break
+  if [ "$operator_scaled_down" -eq 1 ]; then
+    echo "measure-burst: restoring the operator and observing collection for up to ${OPERATOR_RESTORE_SETTLE_S}s so the artefacts cover the window" >&2
+    restore_operator || true
+    if observe_until "$(($(date +%s) + OPERATOR_RESTORE_SETTLE_S))"; then
+      echo "measure-burst: teardown observed after the operator returned, at $(($(date +%s) - start_epoch))s" >&2
+    else
+      echo "measure-burst: WARNING no teardown within ${OPERATOR_RESTORE_SETTLE_S}s of the operator returning" >&2
     fi
-
-    if [ "$elapsed" -ge "$max_wait" ]; then
-      if [ "$scenario" = both ]; then
-        echo "measure-burst: scenario=both reached ${max_wait}s with no teardown; this is the expected F3 result (spec-2 design 5.5), cleanup will restore the operator and confirm collection" >&2
-      else
-        echo "measure-burst: WARNING reached ${max_wait}s with no confirmed teardown; investigate before assuming a leak" >&2
-      fi
-      break
-    fi
-
-    sleep "$POLL_INTERVAL_S"
-  done
+  fi
 
   export_artifacts
 }
