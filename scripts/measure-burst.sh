@@ -433,9 +433,27 @@ run_injection_job() {
 inject_control_plane() {
   capture_operator_log_so_far
   original_operator_replicas=$(kubectl -n "$OPERATOR_NAMESPACE" get deploy "$OPERATOR_DEPLOYMENT" -o jsonpath='{.spec.replicas}')
+  if ! [[ "$original_operator_replicas" =~ $POSITIVE_INTEGER_PATTERN ]]; then
+    die "cannot read the replica count of ${OPERATOR_NAMESPACE}/${OPERATOR_DEPLOYMENT}, got '${original_operator_replicas}'; refusing to scale it to zero with no way back"
+  fi
   kubectl -n "$OPERATOR_NAMESPACE" scale "deploy/${OPERATOR_DEPLOYMENT}" --replicas=0
   operator_scaled_down=1
   emit_event injection operator scaled-to-zero "$original_operator_replicas"
+}
+
+restore_operator() {
+  [ "$operator_scaled_down" -eq 1 ] || return 0
+  local observed
+  kubectl -n "$OPERATOR_NAMESPACE" scale "deploy/${OPERATOR_DEPLOYMENT}" --replicas="$original_operator_replicas" >/dev/null 2>&1
+  observed=$(kubectl -n "$OPERATOR_NAMESPACE" get deploy "$OPERATOR_DEPLOYMENT" -o jsonpath='{.spec.replicas}' 2>/dev/null) || observed=""
+  if [ "$observed" != "$original_operator_replicas" ]; then
+    echo "measure-burst: FATAL ${OPERATOR_NAMESPACE}/${OPERATOR_DEPLOYMENT} reads '${observed}' replicas, not the recorded ${original_operator_replicas}" >&2
+    echo "measure-burst: restore it by hand now: kubectl -n ${OPERATOR_NAMESPACE} scale deploy/${OPERATOR_DEPLOYMENT} --replicas=${original_operator_replicas}" >&2
+    return 1
+  fi
+  operator_scaled_down=0
+  echo "measure-burst: operator restored to ${original_operator_replicas} replicas and verified" >&2
+  emit_event harness operator restored "$original_operator_replicas"
 }
 
 inject_agent() {
@@ -568,48 +586,76 @@ export_artifacts() {
   write_run_params
 }
 
+count_lease_servers() {
+  local listing count
+  listing=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json 2>/dev/null) || return 1
+  count=$(printf '%s' "$listing" | jq 'length' 2>/dev/null) || return 1
+  case "$count" in
+  '' | *[!0-9]*) return 1 ;;
+  esac
+  echo "$count"
+}
+
+force_delete_lease_servers() {
+  local ids id
+  ids=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json 2>/dev/null | jq -r '.[].id' 2>/dev/null) || ids=""
+  if [ -z "$ids" ]; then
+    echo "measure-burst: FATAL could not list servers to force-delete; delete them by hand now" >&2
+    return 1
+  fi
+  for id in $ids; do
+    hcloud server delete "$id" || echo "measure-burst: FATAL forced delete of server ${id} failed, delete it by hand now" >&2
+  done
+}
+
+# Cleanup is the only guarantee that a billed server is gone, so it disables errexit and ignores interrupts to make sure no single failure can skip the paths below.
 cleanup() {
   local exit_code=$?
-  trap - EXIT INT TERM
+  trap - EXIT
+  trap '' INT TERM
+  set +e
   echo "measure-burst: cleanup: verifying no server remains for lease ${name}" >&2
 
-  if [ "$operator_scaled_down" -eq 1 ]; then
-    kubectl -n "$OPERATOR_NAMESPACE" scale "deploy/${OPERATOR_DEPLOYMENT}" --replicas="$original_operator_replicas" \
-      || echo "measure-burst: WARNING failed to restore operator to ${original_operator_replicas} replicas, restore by hand" >&2
-  fi
+  restore_operator || exit_code=1
 
   if [ "$lease_dumped" -eq 0 ] && [ "$lease_applied" -eq 1 ]; then
-    kubectl get capacitylease "$name" -o json >"$lease_json_path" 2>/dev/null || true
+    kubectl get capacitylease "$name" -o json >"$lease_json_path" 2>/dev/null
   fi
 
   if [ "$lease_applied" -eq 1 ] && [ "$dry_run" -eq 0 ]; then
-    kubectl delete capacitylease "$name" --ignore-not-found --wait=false >/dev/null 2>&1 || true
+    kubectl delete capacitylease "$name" --ignore-not-found --wait=false >/dev/null 2>&1
   fi
 
-  local remaining="$((CLEANUP_MAX_WAIT_S / CLEANUP_POLL_INTERVAL_S))" count=0
+  local remaining="$((CLEANUP_MAX_WAIT_S / CLEANUP_POLL_INTERVAL_S))" count="unknown"
   while [ "$remaining" -gt 0 ]; do
-    count=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json | jq 'length')
-    if [ "$count" -eq 0 ]; then
+    count=$(count_lease_servers) || count="unknown"
+    if [ "$count" = 0 ]; then
       emit_event harness "$name" cleanup-verified zero-servers
       break
     fi
-    emit_event harness "$name" cleanup-poll "${count}-servers-remain"
+    if [ "$count" = unknown ]; then
+      emit_event harness "$name" cleanup-poll hetzner-query-failed
+    else
+      emit_event harness "$name" cleanup-poll "${count}-servers-remain"
+    fi
     remaining=$((remaining - 1))
     sleep "$CLEANUP_POLL_INTERVAL_S"
   done
 
-  if [ "$count" -gt 0 ]; then
-    echo "measure-burst: FATAL ${count} server(s) still exist for lease ${name} after ${CLEANUP_MAX_WAIT_S}s" >&2
+  if [ "$count" = 0 ]; then
+    echo "measure-burst: verified zero servers for lease ${name}" >&2
+  else
+    if [ "$count" = unknown ]; then
+      echo "measure-burst: FATAL could not determine how many servers exist for lease ${name} after ${CLEANUP_MAX_WAIT_S}s" >&2
+    else
+      echo "measure-burst: FATAL ${count} server(s) still exist for lease ${name} after ${CLEANUP_MAX_WAIT_S}s" >&2
+    fi
     echo "measure-burst: inspect with: hcloud server list -l ${LEASE_LABEL_KEY}=${name}" >&2
     if [ "$dry_run" -eq 0 ]; then
       echo "measure-burst: forcing hcloud delete as last resort" >&2
-      hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json | jq -r '.[].id' | while read -r id; do
-        hcloud server delete "$id" || echo "measure-burst: FATAL forced delete of server ${id} failed, delete by hand now" >&2
-      done
+      force_delete_lease_servers
     fi
     exit_code=1
-  else
-    echo "measure-burst: verified zero servers for lease ${name}" >&2
   fi
 
   exit "$exit_code"
