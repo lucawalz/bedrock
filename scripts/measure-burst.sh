@@ -106,9 +106,9 @@ require_value() {
 }
 
 require_pattern() {
-  local flag="$1" value="$2" pattern="$3" expectation="$4"
+  local subject="$1" value="$2" pattern="$3" expectation="$4"
   if ! [[ "$value" =~ $pattern ]]; then
-    die "${flag} must be ${expectation}, got '${value}'"
+    die "${subject} must be ${expectation}, got '${value}'"
   fi
 }
 
@@ -404,6 +404,8 @@ poll_lease() {
       [ "$n" = "$node" ] && known=1 && break
     done
     if [ "$known" -eq 0 ]; then
+      require_pattern "the nodeName reported in .status.instances[]" "$node" "$DNS_LABEL_PATTERN" \
+        "a lowercase alphanumeric DNS label, because it is interpolated into a privileged Job manifest"
       node_names+=("$node")
       emit_event lease "$name" nodeName "$node"
     fi
