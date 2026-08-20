@@ -776,7 +776,8 @@ preflight_node_access() {
     echo "measure-burst: admission control rejected the injection Job in namespace ${INJECTION_NAMESPACE}:" >&2
     # shellcheck disable=SC2001
     echo "$result" | sed 's/^/  /' >&2
-    echo "measure-burst: no lease was applied; see task-12-report.md for what would need to change" >&2
+    echo "measure-burst: no lease was applied and nothing was billed" >&2
+    echo "measure-burst: scenario=${scenario} needs a namespace that admits a privileged hostPID pod; either relax admission for ${INJECTION_NAMESPACE} or run scenario=none or control-plane, which need no on-node access" >&2
     exit 1
   fi
   echo "measure-burst: node-access probe accepted, proceeding" >&2
