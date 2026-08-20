@@ -76,3 +76,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0073. Make the burst node image generic and let horizon supply the join](0073-generic-burst-node-image.md) (accepted)
 - [0074. Put the home nodes on the tailnet and move flannel onto tailscale0](0074-home-nodes-on-the-tailnet.md) (accepted)
 - [0075. Prepend curl and GNU coreutils to the cloud-init stage PATH ahead of busybox](0075-cloud-init-stage-path-on-nixos.md) (accepted)
+- [0076. Run the burst measurement harness's privileged injection Jobs in the monitoring namespace](0076-burst-measurement-injection-in-monitoring.md) (accepted)
