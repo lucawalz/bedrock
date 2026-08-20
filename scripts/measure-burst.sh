@@ -22,6 +22,7 @@ readonly TEARDOWN_BUFFER_S=300
 readonly WATCHDOG_WALLCLOCK_BUFFER_S=300
 readonly CLEANUP_MAX_WAIT_S=300
 readonly CLEANUP_POLL_INTERVAL_S=5
+readonly READINESS_SIGNAL_MAX_WAIT_S=900
 readonly MAX_LEASE_NAME_LENGTH=50
 
 readonly HETZNER_SECRET_NAMESPACE="horizon-system"
@@ -64,7 +65,7 @@ Options:
   --replicas N                default 1
   --provider-ref NAME         default hetzner
   --teardown-grace DURATION   default 2m
-  --injection-offset SECONDS  seconds after readyAt to inject (default 30)
+  --injection-offset SECONDS  seconds after the node is ready to inject (default 30)
   --out-dir DIR                artefact root (default <repo>/var/measure-burst-runs)
   --max-wait SECONDS           override the safety timeout on the poll loop
   --dry-run                    exercise polling and export without creating a server
@@ -224,6 +225,8 @@ server_ever_seen=0
 start_epoch=0
 start_iso=""
 operator_log_captured_until=""
+ready_epoch=""
+ready_source=""
 node_names=()
 declare -A hetzner_seen
 declare -A lease_seen
@@ -343,14 +346,25 @@ poll_hetzner() {
   done
 }
 
+record_ready_instant() {
+  local epoch="$1" source="$2"
+  [ "$ready_source" = lease-readyAt ] && return 0
+  ready_epoch="$epoch"
+  ready_source="$source"
+  emit_event harness "$name" ready-instant "$(date -u -d "@${epoch}" +%Y-%m-%dT%H:%M:%SZ) via ${source}"
+}
+
 poll_lease() {
-  local json field value node known n
+  local json field value node known n readyat_epoch
   json=$(kubectl get capacitylease "$name" -o json 2>/dev/null) || return 0
   for field in phase acceptedAt readyAt expiresAt releasedAt instanceType; do
     value=$(printf '%s' "$json" | jq -r --arg f "$field" '.status[$f] // empty')
     if [ -n "$value" ] && [ "${lease_seen[$field]:-}" != "$value" ]; then
       emit_event lease "$name" "$field" "$value"
       lease_seen[$field]="$value"
+      if [ "$field" = readyAt ] && readyat_epoch=$(date -u -d "$value" +%s 2>/dev/null); then
+        record_ready_instant "$readyat_epoch" lease-readyAt
+      fi
     fi
   done
 
@@ -376,6 +390,9 @@ poll_node() {
     if [ -n "$ready" ] && [ "${node_seen[$node,ready]:-}" != "$ready" ]; then
       emit_event node "$node" ready "$ready"
       node_seen[$node,ready]="$ready"
+      if [ "$ready" = True ] && [ -z "$ready_epoch" ]; then
+        record_ready_instant "$(date +%s)" node-ready-transition
+      fi
     fi
     if [ -n "$armed" ] && [ "${node_seen[$node,armed]:-}" != "$armed" ]; then
       emit_event node "$node" watchdog-armed "$armed"
@@ -453,11 +470,17 @@ perform_injection() {
 maybe_inject() {
   [ "$scenario" = none ] && return 0
   [ "$injected" -eq 1 ] && return 0
-  [ -z "${lease_seen[readyAt]:-}" ] && return 0
-  [ "${#node_names[@]}" -eq 0 ] && return 0
-  local ready_epoch now_epoch
-  ready_epoch=$(date -u -d "${lease_seen[readyAt]}" +%s)
+  local now_epoch
   now_epoch=$(date +%s)
+  if [ -z "$ready_epoch" ]; then
+    if [ $((now_epoch - start_epoch)) -ge "$READINESS_SIGNAL_MAX_WAIT_S" ]; then
+      echo "measure-burst: FATAL neither .status.readyAt nor a node Ready=True transition appeared within ${READINESS_SIGNAL_MAX_WAIT_S}s" >&2
+      echo "measure-burst: scenario=${scenario} has no instant to inject against, so the run would measure nothing; aborting into cleanup" >&2
+      exit 1
+    fi
+    return 0
+  fi
+  [ "${#node_names[@]}" -eq 0 ] && return 0
   if [ $((now_epoch - ready_epoch)) -ge "$injection_offset_s" ]; then
     perform_injection
     injected=1
