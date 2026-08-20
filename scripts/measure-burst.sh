@@ -271,7 +271,8 @@ YAML
 }
 
 build_injection_job_manifest() {
-  local job="$1" node="$2" host_cmd="$3"
+  local job="$1" node="$2" host_cmd="$3" indented_host_cmd
+  indented_host_cmd=$(printf '%s\n' "$host_cmd" | sed 's/^/              /')
   cat <<YAML
 apiVersion: batch/v1
 kind: Job
@@ -301,7 +302,20 @@ spec:
           image: ${INJECTION_JOB_IMAGE}
           securityContext:
             privileged: true
-          command: ["nsenter", "--target", "1", "--mount", "--uts", "--ipc", "--net", "--pid", "--", "sh", "-c", "${host_cmd}"]
+          command:
+            - nsenter
+            - --target
+            - "1"
+            - --mount
+            - --uts
+            - --ipc
+            - --net
+            - --pid
+            - --
+            - sh
+            - -c
+            - |
+${indented_host_cmd}
 YAML
 }
 
@@ -457,17 +471,39 @@ restore_operator() {
 }
 
 inject_agent() {
-  local node outcome
+  local node outcome host_cmd
+  host_cmd=$(cat <<SH
+systemctl stop ${WATCHDOG_UNIT}
+if systemctl is-active --quiet ${WATCHDOG_UNIT}; then
+  echo "${WATCHDOG_UNIT} is still active after stop"
+  exit 1
+fi
+echo "${WATCHDOG_UNIT} stopped"
+SH
+  )
   for node in "${node_names[@]:-}"; do
-    outcome=$(run_injection_job "$node" agent "systemctl stop ${WATCHDOG_UNIT}")
+    outcome=$(run_injection_job "$node" agent "$host_cmd")
     emit_event injection "$node" watchdog-stop "$outcome"
   done
 }
 
+# The agent reads its token once at process start and builds its API client from that copy, so revoking the file alone leaves the running process authenticated.
 inject_node_token() {
-  local node outcome
+  local node outcome host_cmd
+  host_cmd=$(cat <<SH
+before=\$(systemctl show -p InvocationID --value ${WATCHDOG_UNIT})
+printf revoked > ${WATCHDOG_TOKEN_PATH}
+systemctl restart ${WATCHDOG_UNIT}
+after=\$(systemctl show -p InvocationID --value ${WATCHDOG_UNIT})
+if [ -z "\$after" ] || [ "\$after" = "\$before" ]; then
+  echo "${WATCHDOG_UNIT} did not restart, the running agent still holds the old token"
+  exit 1
+fi
+echo "${WATCHDOG_UNIT} restarted, invocation \$before to \$after"
+SH
+  )
   for node in "${node_names[@]:-}"; do
-    outcome=$(run_injection_job "$node" token "printf revoked > ${WATCHDOG_TOKEN_PATH}")
+    outcome=$(run_injection_job "$node" token "$host_cmd")
     emit_event injection "$node" token-revoke "$outcome"
   done
 }
