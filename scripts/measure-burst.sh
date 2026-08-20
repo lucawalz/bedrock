@@ -23,6 +23,7 @@ readonly WATCHDOG_WALLCLOCK_BUFFER_S=300
 readonly CLEANUP_MAX_WAIT_S=300
 readonly CLEANUP_POLL_INTERVAL_S=5
 readonly READINESS_SIGNAL_MAX_WAIT_S=900
+readonly INJECTION_JOB_MAX_WAIT_S=300
 readonly MAX_LEASE_NAME_LENGTH=50
 
 readonly HETZNER_SECRET_NAMESPACE="horizon-system"
@@ -422,25 +423,54 @@ capture_operator_log_so_far() {
   operator_log_captured_until="$until"
 }
 
+await_job_outcome() {
+  local job="$1" deadline="$2" json condition
+  while :; do
+    if json=$(kubectl -n "$INJECTION_NAMESPACE" get job "$job" -o json 2>/dev/null); then
+      condition=$(printf '%s' "$json" | jq -r '[.status.conditions[]? | select(.status=="True") | select(.type=="Complete" or .type=="Failed") | .type][0] // empty')
+      case "$condition" in
+      Complete)
+        echo succeeded
+        return 0
+        ;;
+      Failed)
+        echo failed
+        return 0
+        ;;
+      esac
+    fi
+    if [ "$(date +%s)" -ge "$deadline" ]; then
+      echo mechanism-timeout
+      return 0
+    fi
+    sleep "$POLL_INTERVAL_S"
+  done
+}
+
 run_injection_job() {
-  local node="$1" suffix="$2" host_cmd="$3" job
+  local node="$1" suffix="$2" host_cmd="$3" job outcome
   job="${name}-inject-${suffix}"
-  local outcome
   build_injection_job_manifest "$job" "$node" "$host_cmd" | kubectl apply -f - >/dev/null
-  if kubectl -n "$INJECTION_NAMESPACE" wait "job/${job}" --for=condition=complete --timeout=60s >/dev/null 2>&1; then
-    outcome=succeeded
-  elif kubectl -n "$INJECTION_NAMESPACE" wait "job/${job}" --for=condition=failed --timeout=10s >/dev/null 2>&1; then
-    outcome=failed
-    echo "measure-burst: WARNING injection job ${job} failed" >&2
-  else
-    outcome=timeout
-    echo "measure-burst: WARNING injection job ${job} did not reach a terminal condition in time" >&2
-  fi
+  outcome=$(await_job_outcome "$job" "$(($(date +%s) + INJECTION_JOB_MAX_WAIT_S))")
   {
     echo "=== ${job} (${outcome}) ==="
     kubectl -n "$INJECTION_NAMESPACE" logs "job/${job}" --tail=50 2>&1
   } >>"$injection_log_path"
-  kubectl -n "$INJECTION_NAMESPACE" delete job "$job" --ignore-not-found --wait=false >/dev/null
+  case "$outcome" in
+  failed)
+    echo "measure-burst: WARNING injection job ${job} ran and failed; see ${injection_log_path}" >&2
+    kubectl -n "$INJECTION_NAMESPACE" delete job "$job" --ignore-not-found --wait=false >/dev/null
+    ;;
+  mechanism-timeout)
+    echo "measure-burst: WARNING injection job ${job} did not reach a terminal condition within ${INJECTION_JOB_MAX_WAIT_S}s" >&2
+    echo "measure-burst: WARNING the injection mechanism, not the system under test, is unmeasured for this run" >&2
+    echo "measure-burst: leaving ${INJECTION_NAMESPACE}/${job} in place for inspection; delete it by hand once read" >&2
+    echo "=== ${job} retained for inspection, no terminal condition ===" >>"$injection_log_path"
+    ;;
+  *)
+    kubectl -n "$INJECTION_NAMESPACE" delete job "$job" --ignore-not-found --wait=false >/dev/null
+    ;;
+  esac
   echo "$outcome"
 }
 
@@ -558,6 +588,7 @@ export_prometheus() {
   done
   if [ "$ready" -ne 1 ]; then
     echo "measure-burst: WARNING prometheus port-forward not ready, skipping range-query export" >&2
+    emit_event harness "$name" export-prometheus port-forward-unavailable
     kill "$pf_pid" 2>/dev/null || true
     wait "$pf_pid" 2>/dev/null || true
     return 0
@@ -565,18 +596,26 @@ export_prometheus() {
 
   end_epoch=$(date +%s)
   series=$(curl -sf --get "http://127.0.0.1:${PROM_LOCAL_PORT}/api/v1/label/__name__/values" \
-    --data-urlencode 'match[]={__name__=~"^horizon_"}' | jq -r '.data[]?')
+    --data-urlencode 'match[]={__name__=~"^horizon_"}' 2>/dev/null | jq -r '.data[]?' 2>/dev/null) || series=""
   if [ -z "$series" ]; then
     echo "measure-burst: no horizon_ series in Prometheus for this window" >&2
   fi
+  local exported=0 failed=0
   for name_i in $series; do
-    curl -sf --get "http://127.0.0.1:${PROM_LOCAL_PORT}/api/v1/query_range" \
+    if curl -sf --get "http://127.0.0.1:${PROM_LOCAL_PORT}/api/v1/query_range" \
       --data-urlencode "query=${name_i}" \
       --data-urlencode "start=${start_epoch}" \
       --data-urlencode "end=${end_epoch}" \
       --data-urlencode "step=15s" \
-      -o "${prom_dir}/${name_i}.json" || echo "measure-burst: WARNING range query failed for ${name_i}" >&2
+      -o "${prom_dir}/${name_i}.json"; then
+      exported=$((exported + 1))
+    else
+      failed=$((failed + 1))
+      rm -f "${prom_dir}/${name_i}.json"
+      echo "measure-burst: WARNING range query failed for ${name_i}" >&2
+    fi
   done
+  emit_event harness "$name" export-prometheus "${exported}-series-${failed}-failed"
 
   kill "$pf_pid" 2>/dev/null || true
   wait "$pf_pid" 2>/dev/null || true
@@ -585,8 +624,10 @@ export_prometheus() {
 export_hetzner_pricing() {
   if curl -sf -H "Authorization: Bearer ${HCLOUD_TOKEN}" "$HETZNER_PRICING_URL" -o "$hetzner_pricing_path"; then
     echo "measure-burst: wrote current Hetzner pricing to ${hetzner_pricing_path} (rates at export time, not a historical invoice: the Cloud API exposes no per-resource usage/invoice endpoint reachable with a project token)" >&2
+    emit_event harness "$name" export-pricing ok
   else
     echo "measure-burst: WARNING Hetzner pricing endpoint unreachable, skipping" >&2
+    emit_event harness "$name" export-pricing failed
   fi
 }
 
@@ -609,6 +650,16 @@ write_run_params() {
 JSON
 }
 
+run_export() {
+  local label="$1"
+  shift
+  if "$@"; then
+    return 0
+  fi
+  echo "measure-burst: WARNING the ${label} export failed; the remaining exports still run" >&2
+  emit_event harness "$name" export-failed "$label" || true
+}
+
 export_artifacts() {
   echo "measure-burst: exporting artefacts to ${run_dir}" >&2
   if kubectl get capacitylease "$name" -o json >"$lease_json_path" 2>/dev/null; then
@@ -616,10 +667,10 @@ export_artifacts() {
   else
     echo '{"note":"lease no longer exists at export time"}' >"$lease_json_path"
   fi
-  capture_operator_log_so_far
-  export_prometheus
-  export_hetzner_pricing
-  write_run_params
+  run_export operator-log capture_operator_log_so_far
+  run_export prometheus export_prometheus
+  run_export hetzner-pricing export_hetzner_pricing
+  run_export run-params write_run_params
 }
 
 count_lease_servers() {
