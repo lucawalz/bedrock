@@ -709,11 +709,11 @@ force_delete_lease_servers() {
   done
 }
 
-# Cleanup is the only guarantee that a billed server is gone, so it disables errexit and ignores interrupts to make sure no single failure can skip the paths below.
+# Cleanup is the only guarantee that a billed server is gone, so it disables errexit and ignores the signals a closed terminal or an impatient operator sends.
 cleanup() {
   local exit_code=$?
   trap - EXIT
-  trap '' INT TERM
+  trap '' INT TERM HUP QUIT
   set +e
   echo "measure-burst: cleanup: verifying no server remains for lease ${name}" >&2
 
@@ -761,7 +761,7 @@ cleanup() {
 
   exit "$exit_code"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT INT TERM HUP
 
 preflight_node_access() {
   case "$scenario" in
