@@ -237,7 +237,14 @@ declare -A lease_seen
 declare -A node_seen
 
 write_csv_row() {
-  printf '%s,%s,%s,%s,%s,%s\n' "$1" "$2" "$3" "$4" "$5" "$6" >>"$csv_path"
+  local field row=""
+  for field in "$@"; do
+    case "$field" in
+    *[,\"]* | *$'\n'*) field="\"${field//\"/\"\"}\"" ;;
+    esac
+    row+="${row:+,}${field}"
+  done
+  printf '%s\n' "$row" >>"$csv_path"
 }
 
 emit_event() {
