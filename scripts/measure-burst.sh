@@ -32,7 +32,7 @@ readonly HETZNER_SECRET_NAMESPACE="horizon-system"
 readonly HETZNER_SECRET_NAME="horizon-hetzner"
 readonly OPERATOR_NAMESPACE="horizon-system"
 readonly OPERATOR_DEPLOYMENT="horizon"
-# horizon-system enforces PodSecurity baseline and three Kyverno policies that all reject the privileged hostPID pod node access needs; monitoring is already relaxed for node-exporter, and docs/adr/0076 records why it is borrowed rather than widened.
+# The operator's own namespace rejects the privileged hostPID pod that on-node injection needs, and this one already admits node-level agents.
 readonly INJECTION_NAMESPACE="monitoring"
 readonly LEASE_LABEL_KEY="horizon.dev/lease"
 readonly BURST_TAINT_KEY="horizon.dev/burst"
