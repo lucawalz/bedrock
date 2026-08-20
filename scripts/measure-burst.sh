@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+readonly MINIMUM_BASH_MAJOR=4
+if [ -z "${BASH_VERSINFO:-}" ] || [ "${BASH_VERSINFO[0]}" -lt "$MINIMUM_BASH_MAJOR" ]; then
+  echo "measure-burst: bash ${MINIMUM_BASH_MAJOR} or newer is required for associative arrays; run it inside 'nix develop', which provides one" >&2
+  exit 1
+fi
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
@@ -16,6 +22,7 @@ readonly TEARDOWN_BUFFER_S=300
 readonly WATCHDOG_WALLCLOCK_BUFFER_S=300
 readonly CLEANUP_MAX_WAIT_S=300
 readonly CLEANUP_POLL_INTERVAL_S=5
+readonly MAX_LEASE_NAME_LENGTH=50
 
 readonly HETZNER_SECRET_NAMESPACE="horizon-system"
 readonly HETZNER_SECRET_NAME="horizon-hetzner"
@@ -78,67 +85,28 @@ out_dir="$DEFAULT_OUT_DIR"
 max_wait_override=""
 dry_run=0
 
-while [ $# -gt 0 ]; do
+die() {
+  echo "measure-burst: $1" >&2
+  exit 1
+}
+
+require_value() {
+  local flag="$1"
+  shift
+  if [ "$#" -eq 0 ] || [ -z "$1" ]; then
+    die "${flag} requires a value"
+  fi
   case "$1" in
-  --name) name="$2"; shift 2 ;;
-  --region) region="$2"; shift 2 ;;
-  --size) size="$2"; shift 2 ;;
-  --duration) duration="$2"; shift 2 ;;
-  --replicas) replicas="$2"; shift 2 ;;
-  --scenario) scenario="$2"; shift 2 ;;
-  --provider-ref) provider_ref="$2"; shift 2 ;;
-  --teardown-grace) teardown_grace="$2"; shift 2 ;;
-  --injection-offset) injection_offset_s="$2"; shift 2 ;;
-  --out-dir) out_dir="$2"; shift 2 ;;
-  --max-wait) max_wait_override="$2"; shift 2 ;;
-  --dry-run) dry_run=1; shift ;;
-  -h | --help) usage; exit 0 ;;
-  *)
-    echo "measure-burst: unknown argument: $1" >&2
-    usage >&2
-    exit 1
-    ;;
+  --*) die "${flag} requires a value, got the flag '$1'" ;;
   esac
-done
+}
 
-case "$scenario" in
-none | control-plane | agent | both | node-token) ;;
-"")
-  echo "measure-burst: --scenario is required" >&2
-  exit 1
-  ;;
-*)
-  echo "measure-burst: unknown scenario '${scenario}', must be one of: none control-plane agent both node-token" >&2
-  exit 1
-  ;;
-esac
-
-if [ "$dry_run" -eq 1 ]; then
-  region="${region:-hel1}"
-  size="${size:-cx23}"
-  duration="${duration:-10m}"
-else
-  if [ -z "$region" ] || [ -z "$size" ] || [ -z "$duration" ]; then
-    echo "measure-burst: --region, --size and --duration are required outside --dry-run" >&2
-    exit 1
+require_pattern() {
+  local flag="$1" value="$2" pattern="$3" expectation="$4"
+  if ! [[ "$value" =~ $pattern ]]; then
+    die "${flag} must be ${expectation}, got '${value}'"
   fi
-fi
-
-if [ -z "$name" ]; then
-  name="measure-$(date +%Y%m%d%H%M%S)-${scenario}"
-fi
-
-for tool in kubectl hcloud jq curl; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "measure-burst: $tool is not on PATH; enter the dev shell or install it" >&2
-    exit 1
-  fi
-done
-
-if ! date -u -d "@0" +%Y-%m-%dT%H:%M:%SZ >/dev/null 2>&1; then
-  echo "measure-burst: GNU date is required (coreutils); enter the nix devshell" >&2
-  exit 1
-fi
+}
 
 parse_duration_to_seconds() {
   local original="$1" remaining="$1" total=0 num unit
@@ -153,11 +121,82 @@ parse_duration_to_seconds() {
     esac
   done
   if [ -n "$remaining" ] || [ "$total" -eq 0 ]; then
-    echo "measure-burst: cannot parse duration '${original}'" >&2
+    echo "measure-burst: cannot parse duration '${original}', expected whole hour, minute and second parts such as 10m or 1h30m" >&2
     return 1
   fi
   echo "$total"
 }
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+  --name) require_value "$@"; name="$2"; shift 2 ;;
+  --region) require_value "$@"; region="$2"; shift 2 ;;
+  --size) require_value "$@"; size="$2"; shift 2 ;;
+  --duration) require_value "$@"; duration="$2"; shift 2 ;;
+  --replicas) require_value "$@"; replicas="$2"; shift 2 ;;
+  --scenario) require_value "$@"; scenario="$2"; shift 2 ;;
+  --provider-ref) require_value "$@"; provider_ref="$2"; shift 2 ;;
+  --teardown-grace) require_value "$@"; teardown_grace="$2"; shift 2 ;;
+  --injection-offset) require_value "$@"; injection_offset_s="$2"; shift 2 ;;
+  --out-dir) require_value "$@"; out_dir="$2"; shift 2 ;;
+  --max-wait) require_value "$@"; max_wait_override="$2"; shift 2 ;;
+  --dry-run) dry_run=1; shift ;;
+  -h | --help) usage; exit 0 ;;
+  *)
+    echo "measure-burst: unknown argument: $1" >&2
+    usage >&2
+    exit 1
+    ;;
+  esac
+done
+
+case "$scenario" in
+none | control-plane | agent | both | node-token) ;;
+"") die "--scenario is required" ;;
+*) die "unknown scenario '${scenario}', must be one of: none control-plane agent both node-token" ;;
+esac
+
+if [ "$dry_run" -eq 1 ]; then
+  region="${region:-hel1}"
+  size="${size:-cx23}"
+  duration="${duration:-10m}"
+elif [ -z "$region" ] || [ -z "$size" ] || [ -z "$duration" ]; then
+  die "--region, --size and --duration are required outside --dry-run"
+fi
+
+if [ -z "$name" ]; then
+  name="measure-$(date +%Y%m%d%H%M%S)-${scenario}"
+fi
+
+readonly DNS_LABEL_PATTERN='^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
+readonly POSITIVE_INTEGER_PATTERN='^[1-9][0-9]*$'
+readonly NON_NEGATIVE_INTEGER_PATTERN='^(0|[1-9][0-9]*)$'
+
+require_pattern --name "$name" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric DNS label"
+if [ "${#name}" -gt "$MAX_LEASE_NAME_LENGTH" ]; then
+  die "--name must be at most ${MAX_LEASE_NAME_LENGTH} characters so derived Job names stay valid, got ${#name}"
+fi
+require_pattern --region "$region" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner region such as hel1"
+require_pattern --size "$size" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner server type such as cx23"
+require_pattern --provider-ref "$provider_ref" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric object name"
+require_pattern --replicas "$replicas" "$POSITIVE_INTEGER_PATTERN" "a positive whole number"
+require_pattern --injection-offset "$injection_offset_s" "$NON_NEGATIVE_INTEGER_PATTERN" "a whole number of seconds"
+if [ -n "$max_wait_override" ]; then
+  require_pattern --max-wait "$max_wait_override" "$POSITIVE_INTEGER_PATTERN" "a positive whole number of seconds"
+fi
+
+duration_s=$(parse_duration_to_seconds "$duration") || die "--duration is not a duration this harness can measure"
+parse_duration_to_seconds "$teardown_grace" >/dev/null || die "--teardown-grace is not a duration this harness can measure"
+
+for tool in kubectl hcloud jq curl; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    die "$tool is not on PATH; run this script inside 'nix develop', which provides it"
+  fi
+done
+
+if ! date -u -d "@0" +%Y-%m-%dT%H:%M:%SZ >/dev/null 2>&1; then
+  die "GNU date is required; run this script inside 'nix develop', which provides coreutils"
+fi
 
 hcloud_token="$(kubectl get secret "$HETZNER_SECRET_NAME" -n "$HETZNER_SECRET_NAMESPACE" -o jsonpath='{.data.token}' | base64 -d)"
 if [ -z "$hcloud_token" ]; then
