@@ -336,32 +336,50 @@ hetzner_active_count() {
   echo "$n"
 }
 
+record_hetzner_poll_failure() {
+  hetzner_poll_failures=$((hetzner_poll_failures + 1))
+  emit_event hetzner "$name" poll-failed "$hetzner_poll_failures"
+  if [ "$hetzner_poll_failures" -ge "$HETZNER_POLL_FAILURE_LIMIT" ]; then
+    echo "measure-burst: FATAL the Hetzner API failed ${hetzner_poll_failures} times in a row and it is the only authority on whether a server still bills" >&2
+    exit 1
+  fi
+  echo "measure-burst: WARNING ${1} (${hetzner_poll_failures} in a row)" >&2
+}
+
 # A failed query must never leave the seen map looking like an empty estate, because that reads as a teardown the harness would then report as measured.
 poll_hetzner() {
-  local json count sname sstatus found s
+  local json count rows sname sstatus found s i
   if ! json=$(hcloud server list -l "${LEASE_LABEL_KEY}=${name}" -o json 2>/dev/null) ||
-    ! count=$(printf '%s' "$json" | jq 'length' 2>/dev/null) || [ -z "$count" ]; then
-    hetzner_poll_failures=$((hetzner_poll_failures + 1))
-    emit_event hetzner "$name" poll-failed "$hetzner_poll_failures"
-    if [ "$hetzner_poll_failures" -ge "$HETZNER_POLL_FAILURE_LIMIT" ]; then
-      echo "measure-burst: FATAL the Hetzner API failed ${hetzner_poll_failures} times in a row and it is the only authority on whether a server still bills" >&2
-      exit 1
-    fi
-    echo "measure-burst: WARNING Hetzner API query failed (${hetzner_poll_failures} in a row)" >&2
+    ! count=$(printf '%s' "$json" | jq 'length' 2>/dev/null) ||
+    ! [[ "$count" =~ $NON_NEGATIVE_INTEGER_PATTERN ]] ||
+    ! rows=$(printf '%s' "$json" | jq -r '.[] | [.name, .status] | @tsv' 2>/dev/null); then
+    record_hetzner_poll_failure "the Hetzner API query failed"
     return 1
   fi
+
+  local seen_names=() seen_statuses=()
+  while IFS=$'\t' read -r sname sstatus; do
+    [ -n "$sname" ] && [ -n "$sstatus" ] || continue
+    seen_names+=("$sname")
+    seen_statuses+=("$sstatus")
+  done <<<"$rows"
+
+  if [ "${#seen_names[@]}" -ne "$count" ]; then
+    record_hetzner_poll_failure "the Hetzner listing claimed ${count} servers but described ${#seen_names[@]}"
+    return 1
+  fi
+
   hetzner_poll_failures=0
   [ "$count" -gt 0 ] && server_ever_seen=1
 
-  local seen_names=()
-  while IFS=$'\t' read -r sname sstatus; do
-    [ -n "$sname" ] || continue
-    seen_names+=("$sname")
+  for i in "${!seen_names[@]}"; do
+    sname="${seen_names[$i]}"
+    sstatus="${seen_statuses[$i]}"
     if [ "${hetzner_seen[$sname]:-}" != "$sstatus" ]; then
       emit_event hetzner "$sname" status "$sstatus"
       hetzner_seen[$sname]="$sstatus"
     fi
-  done < <(printf '%s' "$json" | jq -r '.[] | [.name, .status] | @tsv')
+  done
 
   for s in "${!hetzner_seen[@]}"; do
     found=0
