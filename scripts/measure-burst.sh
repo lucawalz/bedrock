@@ -565,20 +565,26 @@ perform_injection() {
   esac
 }
 
+abort_without_injection_target() {
+  echo "measure-burst: FATAL ${1} within ${READINESS_SIGNAL_MAX_WAIT_S}s" >&2
+  echo "measure-burst: scenario=${scenario} has nothing to inject against, so the run would measure nothing; aborting into cleanup" >&2
+  exit 1
+}
+
 maybe_inject() {
   [ "$scenario" = none ] && return 0
   [ "$injected" -eq 1 ] && return 0
   local now_epoch
   now_epoch=$(date +%s)
-  if [ -z "$ready_epoch" ]; then
-    if [ $((now_epoch - start_epoch)) -ge "$READINESS_SIGNAL_MAX_WAIT_S" ]; then
-      echo "measure-burst: FATAL neither .status.readyAt nor a node Ready=True transition appeared within ${READINESS_SIGNAL_MAX_WAIT_S}s" >&2
-      echo "measure-burst: scenario=${scenario} has no instant to inject against, so the run would measure nothing; aborting into cleanup" >&2
-      exit 1
+  if [ -z "$ready_epoch" ] || [ "${#node_names[@]}" -eq 0 ]; then
+    if [ $((now_epoch - start_epoch)) -lt "$READINESS_SIGNAL_MAX_WAIT_S" ]; then
+      return 0
     fi
-    return 0
+    if [ -z "$ready_epoch" ]; then
+      abort_without_injection_target "neither .status.readyAt nor a node Ready=True transition appeared"
+    fi
+    abort_without_injection_target "the lease reported readiness but no instance carried a nodeName"
   fi
-  [ "${#node_names[@]}" -eq 0 ] && return 0
   if [ $((now_epoch - ready_epoch)) -ge "$injection_offset_s" ]; then
     perform_injection
     injected=1
