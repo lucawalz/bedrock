@@ -91,6 +91,11 @@
             git
             yq-go
             prometheus.cli
+            hcloud
+            jq
+            curl
+            coreutils
+            bashInteractive
           ];
         };
 
@@ -113,6 +118,11 @@
             git
             yq-go
             prometheus.cli
+            hcloud
+            jq
+            curl
+            coreutils
+            bashInteractive
           ];
         };
     };
