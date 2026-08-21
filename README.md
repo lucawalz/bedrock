@@ -148,7 +148,7 @@ modules/
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets: the K3s join token, the router's Tailscale and AdGuard credentials, the etcd S3 credentials, the wifi passphrase, and the kiosk dashboard URL
 infra/packer/          the Packer template that bakes the on-demand node snapshot
-scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering) plus the horizon burst-node measurement harness
+scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering) plus the horizon burst-node measurement harness and the fixed synthetic quantum that measures cost per unit of work
 tests/                 Kyverno policy tests and promtool alert-rule tests
 docs/                  the ADR log, the cluster inventory, and the disaster recovery and admission break-glass runbooks
 kubernetes/
