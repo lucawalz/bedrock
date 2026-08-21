@@ -77,3 +77,4 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0074. Put the home nodes on the tailnet and move flannel onto tailscale0](0074-home-nodes-on-the-tailnet.md) (accepted)
 - [0075. Prepend curl and GNU coreutils to the cloud-init stage PATH ahead of busybox](0075-cloud-init-stage-path-on-nixos.md) (accepted)
 - [0076. Run the burst measurement harness's privileged injection Jobs in the monitoring namespace](0076-burst-measurement-injection-in-monitoring.md) (accepted)
+- [0077. Run the M4 policy arms concurrently, and make the quantum and its reference answer independent of arm order](0077-run-the-m4-policy-arms-concurrently.md) (accepted)
