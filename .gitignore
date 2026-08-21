@@ -48,3 +48,6 @@ tests/promtool/*.gen.yaml
 # run-quantum.sh per-run artefacts
 /var/quantum-runs/
 
+# measure-policy.sh per-run artefacts
+/var/measure-policy-runs/
+
