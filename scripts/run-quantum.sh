@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+readonly PROGRAM_NAME="run-quantum"
+
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=lib/measure.sh
+. "${repo_root}/scripts/lib/measure.sh"
 cd "$repo_root"
 
 readonly QUANTUM_SOURCE="${repo_root}/scripts/quantum.py"
@@ -14,13 +18,12 @@ readonly DEFAULT_MAX_WAIT_S=1800
 
 readonly POOL_LABEL_KEY="horizon.dev/pool"
 readonly POOL_LABEL_VALUE="reserved"
-readonly BURST_TAINT_KEY="horizon.dev/burst"
 readonly QUANTUM_LABEL_KEY="horizon.dev/quantum"
+readonly HOSTNAME_LABEL_KEY="kubernetes.io/hostname"
 
 readonly PROGRAM_MOUNT_PATH="/opt/quantum"
 readonly BACKOFF_LIMIT=2
 readonly JOB_TTL_S=3600
-readonly POLL_INTERVAL_S=5
 readonly MAX_NAME_LENGTH=52
 readonly CPU_REQUEST="500m"
 readonly MEMORY_REQUEST="64Mi"
@@ -45,6 +48,7 @@ Options:
   --name NAME               job and ConfigMap name (default: quantum-<timestamp>)
   --namespace NAMESPACE     default monitoring
   --replicas N              units of work, one per node (default 1)
+  --nodes NAME[,NAME...]    pin the units to these node names instead of the pool label
   --shard-iterations N      override the calibrated work parameter
   --seed N                  override the fixed input
   --workers N               cap the worker processes, for calibration only
@@ -61,12 +65,18 @@ burst label. A measurement run never uses it: without the selector the Job can
 land on a permanent node and measure the wrong machine. --workers exists for
 the same reason, to measure per-core throughput without occupying a whole node;
 a measurement run leaves it unset so the quantum uses every core it is given.
+
+--nodes exists because the pool label is shared by every burst node in the
+estate. Two leases running side by side both carry it, so a campaign that runs
+several leases at once must name the nodes of its own lease or risk measuring
+another lease's machine.
 USAGE
 }
 
 name=""
 namespace="$DEFAULT_NAMESPACE"
 replicas="$DEFAULT_REPLICAS"
+nodes=""
 shard_iterations=""
 seed=""
 workers=""
@@ -77,34 +87,12 @@ relax_targeting=0
 render_only=0
 keep=0
 
-die() {
-  echo "run-quantum: $1" >&2
-  exit 1
-}
-
-require_value() {
-  local flag="$1"
-  shift
-  if [ "$#" -eq 0 ] || [ -z "$1" ]; then
-    die "${flag} requires a value"
-  fi
-  case "$1" in
-  --*) die "${flag} requires a value, got the flag '$1'" ;;
-  esac
-}
-
-require_pattern() {
-  local subject="$1" value="$2" pattern="$3" expectation="$4"
-  if ! [[ "$value" =~ $pattern ]]; then
-    die "${subject} must be ${expectation}, got '${value}'"
-  fi
-}
-
 while [ $# -gt 0 ]; do
   case "$1" in
   --name) require_value "$@"; name="$2"; shift 2 ;;
   --namespace) require_value "$@"; namespace="$2"; shift 2 ;;
   --replicas) require_value "$@"; replicas="$2"; shift 2 ;;
+  --nodes) require_value "$@"; nodes="$2"; shift 2 ;;
   --shard-iterations) require_value "$@"; shard_iterations="$2"; shift 2 ;;
   --seed) require_value "$@"; seed="$2"; shift 2 ;;
   --workers) require_value "$@"; workers="$2"; shift 2 ;;
@@ -127,10 +115,6 @@ if [ -z "$name" ]; then
   name="quantum-$(date +%Y%m%d%H%M%S)"
 fi
 
-readonly DNS_LABEL_PATTERN='^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
-readonly POSITIVE_INTEGER_PATTERN='^[1-9][0-9]*$'
-readonly SHA256_HEX_PATTERN='^[0-9a-f]{64}$'
-
 require_pattern --name "$name" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric DNS label"
 if [ "${#name}" -gt "$MAX_NAME_LENGTH" ]; then
   die "--name must be at most ${MAX_NAME_LENGTH} characters so derived pod names stay valid, got ${#name}"
@@ -151,6 +135,21 @@ if [ -n "$expect_checksum" ]; then
   require_pattern --expect-checksum "$expect_checksum" "$SHA256_HEX_PATTERN" "a lowercase 64-character sha256 digest"
 fi
 
+pinned_nodes=()
+if [ -n "$nodes" ]; then
+  if [ "$relax_targeting" -eq 1 ]; then
+    die "--nodes and --relax-targeting contradict each other; pick the pinned nodes or no targeting at all"
+  fi
+  IFS=',' read -r -a pinned_nodes <<<"$nodes"
+  for node in "${pinned_nodes[@]}"; do
+    require_pattern "each name in --nodes" "$node" "$DNS_LABEL_PATTERN" \
+      "a lowercase alphanumeric DNS label, because it is interpolated into a generated manifest"
+  done
+  if [ "${#pinned_nodes[@]}" -lt "$replicas" ]; then
+    die "--nodes names ${#pinned_nodes[@]} node(s) for ${replicas} unit(s); one unit per node cannot be satisfied"
+  fi
+fi
+
 [ -r "$QUANTUM_SOURCE" ] || die "cannot read ${QUANTUM_SOURCE}"
 
 render_optional_env() {
@@ -162,12 +161,35 @@ render_optional_env() {
 YAML
 }
 
+render_node_affinity() {
+  [ -n "$nodes" ] || return 0
+  local node
+  cat <<YAML
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: ${HOSTNAME_LABEL_KEY}
+                    operator: In
+                    values:
+YAML
+  for node in "${pinned_nodes[@]}"; do
+    echo "                      - ${node}"
+  done
+}
+
 # The taint value is the lease name, so the toleration matches the key with Exists rather than a value it cannot know in advance.
 render_targeting() {
-  [ "$relax_targeting" -eq 1 ] && return 0
-  cat <<YAML
+  if [ "$relax_targeting" -eq 1 ]; then
+    return 0
+  fi
+  if [ -z "$nodes" ]; then
+    cat <<YAML
       nodeSelector:
         ${POOL_LABEL_KEY}: ${POOL_LABEL_VALUE}
+YAML
+  fi
+  cat <<YAML
       tolerations:
         - key: ${BURST_TAINT_KEY}
           operator: Exists
@@ -210,12 +232,13 @@ spec:
     spec:
       restartPolicy: Never
       affinity:
+$(render_node_affinity)
         podAntiAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             - labelSelector:
                 matchLabels:
                   ${QUANTUM_LABEL_KEY}: ${name}
-              topologyKey: kubernetes.io/hostname
+              topologyKey: ${HOSTNAME_LABEL_KEY}
 $(render_targeting)
       securityContext:
         runAsNonRoot: true
@@ -269,9 +292,7 @@ if [ "$render_only" -eq 1 ]; then
   exit 0
 fi
 
-for tool in kubectl jq; do
-  command -v "$tool" >/dev/null 2>&1 || die "$tool is not on PATH; run this script inside 'nix develop', which provides it"
-done
+require_tools kubectl jq
 
 run_dir="${out_dir}/${name}"
 mkdir -p "$run_dir"
@@ -302,6 +323,7 @@ write_run_params() {
   "name": "${name}",
   "namespace": "${namespace}",
   "replicas": ${replicas},
+  "nodes": "${nodes}",
   "shardIterations": "${shard_iterations}",
   "seed": "${seed}",
   "workers": "${workers}",
@@ -351,7 +373,7 @@ report_pending_pods() {
 }
 
 verify_results() {
-  local count checksums distinct nodes distinct_nodes
+  local count checksums distinct nodes_seen distinct_nodes
   count=$(wc -l <"$results_path" | tr -d ' ')
   if [ "$count" -ne "$replicas" ]; then
     echo "run-quantum: FATAL collected ${count} result lines for ${replicas} requested units" >&2
@@ -371,8 +393,8 @@ verify_results() {
     return 1
   fi
 
-  nodes=$(jq -r '.node' "$results_path")
-  distinct_nodes=$(printf '%s\n' "$nodes" | sort -u | wc -l | tr -d ' ')
+  nodes_seen=$(jq -r '.node' "$results_path")
+  distinct_nodes=$(printf '%s\n' "$nodes_seen" | sort -u | wc -l | tr -d ' ')
   if [ "$distinct_nodes" -ne "$replicas" ]; then
     echo "run-quantum: FATAL ${replicas} units ran across ${distinct_nodes} distinct nodes; the replicas arm would be invalid" >&2
     return 1
@@ -386,7 +408,7 @@ verify_results() {
 build_manifest >"$manifest_path"
 write_run_params
 
-echo "run-quantum: applying ${namespace}/${name} (replicas=${replicas}, targeting=$([ "$relax_targeting" -eq 1 ] && echo relaxed || echo burst-nodes))" >&2
+echo "run-quantum: applying ${namespace}/${name} (replicas=${replicas}, targeting=$([ "$relax_targeting" -eq 1 ] && echo relaxed || echo "${nodes:-burst-nodes}"))" >&2
 kubectl apply -f "$manifest_path" >/dev/null
 applied=1
 
