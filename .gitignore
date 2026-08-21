@@ -45,3 +45,6 @@ tests/promtool/*.gen.yaml
 # measure-burst.sh per-run artefacts
 /var/measure-burst-runs/
 
+# run-quantum.sh per-run artefacts
+/var/quantum-runs/
+
