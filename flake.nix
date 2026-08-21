@@ -95,6 +95,7 @@
             jq
             curl
             coreutils
+            python3
             bashInteractive
           ];
         };
@@ -122,6 +123,7 @@
             jq
             curl
             coreutils
+            python3
             bashInteractive
           ];
         };
