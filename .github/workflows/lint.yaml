@@ -31,7 +31,7 @@ jobs:
             | tar xz -C /usr/local/bin actionlint
 
       - name: Lint shell scripts
-        run: shellcheck scripts/*.sh
+        run: shellcheck -x --source-path=SCRIPTDIR scripts/*.sh
 
       - name: Lint workflows
         run: actionlint -color
