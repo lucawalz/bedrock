@@ -38,4 +38,11 @@ build {
       "until ssh -i ${var.ssh_private_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o ServerAliveInterval=15 -o ServerAliveCountMax=4 -o BatchMode=yes root@${build.Host} 'cloud-init status --wait >/dev/null 2>&1 || true; sync'; do sleep 15; done"
     ]
   }
+
+  # every clone of this snapshot boots with whatever identity the install left behind, so two registering at once resolve to one Tailscale node and the loser silently loses its route; the host keys go last because sshd needs them to accept any further connection
+  provisioner "shell-local" {
+    inline = [
+      "ssh -i ${var.ssh_private_key_file} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=10 -o BatchMode=yes root@${build.Host} 'set -eu; : > /etc/machine-id; rm -f /var/lib/dbus/machine-id; rm -rf /var/lib/tailscale; test ! -s /etc/machine-id; test ! -e /var/lib/tailscale/tailscaled.state; echo cleared machine-id and tailscale state; rm -f /etc/ssh/ssh_host_*_key /etc/ssh/ssh_host_*_key.pub; sync'"
+    ]
+  }
 }
