@@ -18,9 +18,7 @@ spec:
   routes:
     - match: Host(`horizon.syslabs.dev`)
       kind: Rule
-      middlewares:
-        - name: authentik-forward-auth
       services:
-        - name: horizon-interface
-          port: 8082
+        - name: horizon-oauth2-proxy
+          port: 4180
   tls: {}

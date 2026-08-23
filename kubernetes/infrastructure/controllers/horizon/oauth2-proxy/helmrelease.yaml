@@ -1,0 +1,107 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: horizon-oauth2-proxy
+  namespace: horizon-system
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    controllers:
+      horizon-oauth2-proxy:
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: quay.io/oauth2-proxy/oauth2-proxy
+              tag: v7.15.4
+            args:
+              - --provider=oidc
+              - --provider-display-name=Authentik
+              - --oidc-issuer-url=https://auth.syslabs.dev/application/o/horizon/
+              - --client-id=horizon-interface
+              - --redirect-url=https://horizon.syslabs.dev/oauth2/callback
+              - --upstream=http://horizon-interface.horizon-system.svc.cluster.local:8082
+              - --http-address=0.0.0.0:4180
+              - --scope=openid profile email
+              - --email-domain=*
+              - --code-challenge-method=S256
+              - --pass-authorization-header=true
+              - --pass-access-token=false
+              - --skip-provider-button=true
+              - --reverse-proxy=true
+              - --cookie-secure=true
+              - --silence-ping-logging=true
+            env:
+              OAUTH2_PROXY_CLIENT_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: horizon-oauth2-proxy
+                    key: client-secret
+              OAUTH2_PROXY_COOKIE_SECRET:
+                valueFrom:
+                  secretKeyRef:
+                    name: horizon-oauth2-proxy
+                    key: cookie-secret
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: 4180
+                  initialDelaySeconds: 10
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /ping
+                    port: 4180
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 25m
+                memory: 64Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: horizon-oauth2-proxy
+        ports:
+          http:
+            port: 4180
