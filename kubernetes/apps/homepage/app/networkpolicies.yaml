@@ -27,8 +27,15 @@ spec:
     - to:
         - ipBlock:
             cidr: 10.20.0.50/32
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
       ports:
         - protocol: TCP
           port: 443
         - protocol: TCP
           port: 80
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 8443
