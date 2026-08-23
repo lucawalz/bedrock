@@ -23,6 +23,7 @@ spec:
   values:
     controllers:
       rackpeek:
+        strategy: RollingUpdate
         initContainers:
           seed-config:
             image:

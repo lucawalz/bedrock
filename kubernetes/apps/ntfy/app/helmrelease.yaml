@@ -24,6 +24,7 @@ spec:
   values:
     controllers:
       ntfy:
+        strategy: RollingUpdate
         replicas: 2
         containers:
           app:

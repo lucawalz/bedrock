@@ -25,6 +25,7 @@ spec:
       createDefaultServiceAccount: false
     controllers:
       homepage:
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         serviceAccount:
