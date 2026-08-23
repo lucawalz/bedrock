@@ -124,7 +124,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-flux
         identifiers:
@@ -144,7 +143,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-traefik
         identifiers:
@@ -164,7 +162,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-prometheus
         identifiers:
@@ -184,7 +181,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-alertmanager
         identifiers:
@@ -204,7 +200,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-longhorn
         identifiers:
@@ -224,7 +219,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-homepage
         identifiers:
@@ -244,7 +238,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-rackpeek
         identifiers:
@@ -264,7 +257,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-litellm
         identifiers:
@@ -284,7 +276,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-ntfy
         identifiers:
@@ -304,7 +295,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-rancher
         identifiers:
@@ -324,7 +314,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-kiwix
         identifiers:
@@ -344,7 +333,6 @@ data:
           cookie_domain: .syslabs.dev
           authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
           invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-          signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
       - model: authentik_core.application
         id: app-horizon
         identifiers:
