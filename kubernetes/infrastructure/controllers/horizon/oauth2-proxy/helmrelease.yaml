@@ -48,6 +48,7 @@ spec:
               - --skip-provider-button=true
               - --reverse-proxy=true
               - --cookie-secure=true
+              - --cookie-refresh=30m
               - --silence-ping-logging=true
             env:
               OAUTH2_PROXY_CLIENT_SECRET:
