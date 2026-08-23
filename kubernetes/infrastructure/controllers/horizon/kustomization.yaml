@@ -6,3 +6,4 @@ resources:
   - oauth2-proxy
   - networkpolicies.yaml
   - ingress.yaml
+  - rbac.yaml
