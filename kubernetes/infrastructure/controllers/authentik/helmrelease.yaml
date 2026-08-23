@@ -63,6 +63,11 @@ spec:
             secretKeyRef:
               name: authentik
               key: github-client-secret
+        - name: HORIZON_OAUTH2_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: authentik
+              key: horizon-oauth2-client-secret
     server:
       replicas: 2
       metrics:
