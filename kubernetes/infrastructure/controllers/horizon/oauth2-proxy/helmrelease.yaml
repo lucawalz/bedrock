@@ -41,6 +41,7 @@ spec:
               - --http-address=0.0.0.0:4180
               - --scope=openid profile email
               - --email-domain=*
+              - --insecure-oidc-allow-unverified-email=true
               - --code-challenge-method=S256
               - --pass-authorization-header=true
               - --pass-access-token=false
