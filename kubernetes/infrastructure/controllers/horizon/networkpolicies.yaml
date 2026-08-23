@@ -159,8 +159,6 @@ spec:
       ports:
         - protocol: TCP
           port: 8082
-    # Authentik is reached through the ingress address so the issued token's issuer matches the configured one.
-    # The service address is translated to the traefik pod before egress is evaluated, so naming the pods is what admits it.
     - to:
         - ipBlock:
             cidr: 10.20.0.50/32
