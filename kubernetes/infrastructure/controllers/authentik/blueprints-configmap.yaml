@@ -322,6 +322,25 @@ data:
           name: Kiwix
           slug: kiwix
           provider: !KeyOf prov-kiwix
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-horizon
+        identifiers:
+          name: horizon-forward-auth
+        attrs:
+          name: horizon-forward-auth
+          mode: forward_domain
+          external_host: https://horizon.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-horizon
+        identifiers:
+          slug: horizon
+        attrs:
+          name: horizon
+          slug: horizon
+          provider: !KeyOf prov-horizon
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -340,3 +359,4 @@ data:
             - !KeyOf prov-ntfy
             - !KeyOf prov-rancher
             - !KeyOf prov-kiwix
+            - !KeyOf prov-horizon

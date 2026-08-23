@@ -118,6 +118,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: zot
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: horizon-system
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32
