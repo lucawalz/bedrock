@@ -106,8 +106,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      app.kubernetes.io/name: horizon
-      app.kubernetes.io/component: interface
+      app.kubernetes.io/name: horizon-oauth2-proxy
   policyTypes:
     - Ingress
   ingress:
@@ -117,4 +116,53 @@ spec:
               kubernetes.io/metadata.name: traefik
       ports:
         - protocol: TCP
+          port: 4180
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-oauth2-proxy-to-interface
+  namespace: horizon-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: horizon
+      app.kubernetes.io/component: interface
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: horizon-oauth2-proxy
+      ports:
+        - protocol: TCP
           port: 8082
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-oauth2-proxy-egress
+  namespace: horizon-system
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: horizon-oauth2-proxy
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: horizon
+              app.kubernetes.io/component: interface
+      ports:
+        - protocol: TCP
+          port: 8082
+    # Authentik is reached through the ingress address so the issued token's issuer matches the configured one.
+    - to:
+        - ipBlock:
+            cidr: 10.20.0.50/32
+      ports:
+        - protocol: TCP
+          port: 443

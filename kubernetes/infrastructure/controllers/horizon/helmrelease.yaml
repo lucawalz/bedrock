@@ -23,3 +23,16 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: false
+  values:
+    ui:
+      enabled: true
+      externalOrigin: https://horizon.syslabs.dev
+      oidc:
+        issuer: https://auth.syslabs.dev/application/o/horizon/
+        audience: horizon-interface
+      rbac:
+        impersonateUsers:
+          - lucawalz
+      networkPolicy:
+        # The only admissible source is one pod set inside this namespace, which the chart's namespace list cannot express.
+        enabled: false
