@@ -333,6 +333,9 @@ data:
           client_secret: !Env HORIZON_OAUTH2_CLIENT_SECRET
           issuer_mode: per_provider
           sub_mode: user_username
+          # The field defaults to an empty list, which permits no grant at all rather than the usual ones.
+          grant_types:
+            - authorization_code
           # The interface reads its identity claims from the id_token alone, so they have to be embedded in it.
           include_claims_in_id_token: true
           signing_key: !Find [authentik_crypto.certificatekeypair, [name, authentik Self-signed Certificate]]
