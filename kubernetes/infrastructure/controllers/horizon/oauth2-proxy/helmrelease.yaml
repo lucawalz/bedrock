@@ -24,6 +24,7 @@ spec:
   values:
     controllers:
       horizon-oauth2-proxy:
+        strategy: RollingUpdate
         annotations:
           reloader.stakater.com/auto: "true"
         containers:
