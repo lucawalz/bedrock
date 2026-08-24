@@ -39,7 +39,7 @@ spec:
               - --redirect-url=https://horizon.syslabs.dev/oauth2/callback
               - --upstream=http://horizon-interface.horizon-system.svc.cluster.local:8082
               - --http-address=0.0.0.0:4180
-              - --scope=openid profile email
+              - --scope=openid profile email offline_access
               - --email-domain=*
               - --insecure-oidc-allow-unverified-email=true
               - --code-challenge-method=S256
