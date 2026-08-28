@@ -1,40 +1,11 @@
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: horizon-lease-operator
-rules:
-  - apiGroups:
-      - horizon.dev
-    resources:
-      - capacityleases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  - apiGroups:
-      - horizon.dev
-    resources:
-      - capacityleases/status
-    verbs:
-      - get
-  - apiGroups:
-      - horizon.dev
-    resources:
-      - providerconfigs
-    verbs:
-      - get
-      - list
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: horizon-lease-operator
+  name: horizon-interface-operator
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: horizon-lease-operator
+  name: horizon-interface-operator
 subjects:
   - apiGroup: rbac.authorization.k8s.io
     kind: User
