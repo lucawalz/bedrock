@@ -30,7 +30,7 @@ Once continuous archiving is confirmed healthy and a base backup has completed, 
 
 ## Consequences
 
-Postgres gains point-in-time recovery: a base backup plus a continuous WAL stream can replay the database to any moment inside the 30 day window, which the volume snapshot could never do. The recovery path is now database-consistent rather than crash-consistent. The cost is a dedicated bucket and a scoped S3 key that must exist before the cluster reconciles, and an operator action to create and encrypt them. The `cnpg-backup-s3` secret with keys `ACCESS_KEY_ID` and `ACCESS_SECRET_KEY` must be written to `kubernetes/clusters/home/secrets/apps/cnpg-backup-s3.sops.yaml` in namespace `postgres`, SOPS-encrypted, and added to that directory's kustomization before the change is pushed. Without it the archiver cannot authenticate.
+Postgres gains point-in-time recovery: a base backup plus a continuous WAL stream can replay the database to any moment inside the 30 day window, which the volume snapshot could never do. The recovery path is now database-consistent rather than crash-consistent. The cost is a dedicated bucket and a scoped S3 key that must exist before the cluster reconciles, and an operator action to create and encrypt them, recorded in the disaster-recovery runbook. Without it the archiver cannot authenticate.
 
 The egress rule is load-bearing and comes first: without outbound 443 the archiver fails quietly and the WAL backlog grows on the primary. The Velero narrowing is staged after Barman is verified, because it removes the only prior Postgres backup. It must not land until the continuous-archiving status is healthy and a base backup has completed. Until then the two coexist and Postgres is doubly protected.
 
