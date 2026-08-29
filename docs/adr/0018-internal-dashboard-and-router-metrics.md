@@ -26,3 +26,5 @@ The Pi router gains a node_exporter for host metrics, binding to the VLAN 20 add
 ## Consequences
 
 The dashboard is reproducible from the repository like every other workload, and a read-only role keeps its cluster access narrow. Setting `HOMEPAGE_ALLOWED_HOSTS` and keeping it off the tunnel means it stays an internal surface reached over WireGuard or the LAN through split-horizon DNS. The router now reports host and tunnel metrics into Prometheus without any new inbound exposure, so it finally appears in Grafana and on the dashboard. A Pi wall-display kiosk, a cage session running Chromium pinned to the dashboard, is deferred until the physical screen is connected and left as future work, with no configuration carried for it.
+
+**Update (2026-06-15):** the sentence above naming WireGuard as a reachability path is stale. WireGuard was retired the same day by [0023](0023-tailscale-overlay.md); the dashboard is now reached over the Tailscale overlay or the LAN through split-horizon DNS.
