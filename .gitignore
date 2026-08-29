@@ -51,3 +51,8 @@ tests/promtool/*.gen.yaml
 # measure-policy.sh per-run artefacts
 /var/measure-policy-runs/
 
+# Agent tool directories
+.superpowers/
+.playwright-mcp/
+.worktrees/
+
