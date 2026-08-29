@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, premise superseded by 0074
 date: 2026-06-17
 ---
 

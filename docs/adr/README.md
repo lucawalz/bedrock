@@ -2,6 +2,8 @@
 
 These records capture the significant architecture decisions behind the bedrock homelab and the workloads that run on it. They follow the MADR format: a short context, the decision, the options weighed, and the consequences. Each record's status reflects whether the decision is shipped (accepted), accepted but not yet implemented, still open (proposed), or no longer in force (rejected, or superseded by a later record).
 
+Number 0056 was never used. No record was written, withdrawn, or lost.
+
 - [0001. Run the cluster as K3s on NixOS hosts](0001-k3s-on-nixos.md) (accepted)
 - [0002. Declare hosts with NixOS flakes, reconcile the cluster with Flux](0002-nixos-flakes-flux-gitops.md) (accepted)
 - [0003. Run the edge router on NixOS instead of OPNsense](0003-nixos-router-over-opnsense.md) (accepted)
@@ -43,7 +45,7 @@ These records capture the significant architecture decisions behind the bedrock 
 - [0039. Observability stack with Loki, Tempo, and Grafana Alloy](0039-observability-stack-loki-tempo-alloy.md) (accepted)
 - [0040. Finalize orphaned Longhorn nodes in the burst node reaper](0040-reap-orphaned-longhorn-nodes.md) (accepted)
 - [0041. Autoscale Hetzner burst nodes with the native cluster-autoscaler provider](0041-hetzner-autoscaling-native-provider.md) (superseded by 0062)
-- [0042. Run AWS as an ephemeral autoscaling EKS cluster with an S3 backup foothold](0042-ephemeral-eks-autoscaling-and-s3-foothold.md) (superseded by 0049)
+- [0042. Run AWS as an ephemeral autoscaling EKS cluster with an ephemeral S3 backup demo](0042-ephemeral-eks-autoscaling-and-s3-foothold.md) (superseded by 0049)
 - [0043. Accepted production-readiness trade-offs](0043-triage-production-readiness-findings.md) (accepted)
 - [0044. Define service SLOs with multi-burn-rate error-budget alerting](0044-slo-error-budget-burn-rate-alerting.md) (accepted)
 - [0045. Govern workloads with Kyverno policy-as-code in audit-first rollout](0045-kyverno-policy-as-code-governance.md) (accepted, audit-first rollout superseded by 2026-07-29 correction)
