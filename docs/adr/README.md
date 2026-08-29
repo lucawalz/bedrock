@@ -1,6 +1,6 @@
 # Architecture decision records
 
-These records capture the significant architecture decisions behind the bedrock homelab and the workloads that run on it. They follow the MADR format: a short context, the decision, the options weighed, and the consequences. Each record's status reflects whether the decision is shipped (accepted), accepted but not yet implemented, still open (proposed), or no longer in force (rejected, or superseded by a later record).
+These records capture the significant architecture decisions behind the bedrock homelab and the workloads that run on it. They follow the MADR format: a short context, the decision, the options weighed, and the consequences. Each record's status reflects whether the decision is shipped (accepted), accepted but not yet implemented, still open (proposed), or no longer in force (rejected, or superseded by a later record). A superseded record is kept at full length rather than trimmed to a pointer, because the reasoning that was later overturned is what makes it worth keeping.
 
 Number 0056 was never used. No record was written, withdrawn, or lost.
 
