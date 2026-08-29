@@ -37,7 +37,7 @@ Applying a changed flannel MTU requires recreating flannel.1. It is a persistent
 
 This pin is an interim mitigation, not the architectural fix. The home-to-home tax from 1450 down to 1230 is unavoidable within a single flannel overlay. Flannel carries one MTU per overlay and has no per-peer MTU, so the overlay must fit its worst path, the 1280 tailnet tunnel to the burst nodes.
 
-The root-cause fix is topological: stop stretching one flat flannel overlay across the VPN tunnel, for example by giving the burst nodes their own cluster or overlay joined through a gateway. Home-to-home traffic would then keep its native 1450, and only the cross-site leg would pay the tunnel cost. That work is deferred to the planned CAPH v1.2 and CAPI upgrade tracked in ADR 0030.
+The root-cause fix is topological: stop stretching one flat flannel overlay across the VPN tunnel, for example by giving the burst nodes their own cluster or overlay joined through a gateway. Home-to-home traffic would then keep its native 1450, and only the cross-site leg would pay the tunnel cost. That work is deferred to the planned CAPH v1.2 and CAPI upgrade.
 
 Raising the Tailscale tunnel MTU was considered and rejected. A larger tunnel would recover the marginal efficiency but sacrifices Tailscale's DERP-fallback robustness, which is not a trade worth making for an overlay this small.
 
