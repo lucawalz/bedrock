@@ -146,7 +146,7 @@ A rebuilt host can carry a stale `/var/lib/tailscale/tailscaled.state` from an e
 
 `tailscaled.service` restarts on a NixOS activation that changes it, taking the tunnel interface with it and orphaning `flannel.1`, which stays bound to an interface that no longer exists and is not recreated automatically. After a Tailscale package bump, check each node's `flannel.alpha.coreos.com/public-ip` annotation and delete `flannel.1` on any node where it has drifted, to force a rebind.
 
-The four Tailscale auth keys backing this join, the Pi router's and one per home node, were minted reusable rather than single-use and are valid until 3 November. Revoke each once its node has enrolled, which is what restores the one-key-one-node property the per-host split is meant to provide.
+The three Tailscale auth keys minted for this join, one per home node, are reusable rather than single-use and are valid until 3 November. Revoke each once its node has enrolled, which is what restores the one-key-one-node property the per-host split is meant to provide. This does not apply to the Pi router's own key, which was not minted for this join.
 
 Burst nodes rely on the same `tailscaled-autoconnect` unit at its systemd default of 90 seconds, wide enough for a Hetzner server to reach the coordination server ([ADR 0073](adr/0073-generic-burst-node-image.md)). If a burst node is ever seen failing that unit on timeout rather than on an authentication error, the timeout is the first thing to raise.
 
