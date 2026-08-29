@@ -29,14 +29,38 @@ index_status() {
   ' "$index"
 }
 
-leading_status_token() {
+index_title() {
+  awk -v link="]($1)" '
+    substr($0, 1, 2) != "- " { next }
+    index($0, link) == 0 { next }
+    {
+      pos = index($0, link)
+      before = substr($0, 1, pos - 1)
+      bstart = index(before, "[")
+      title = substr(before, bstart + 1)
+      sub(/^[0-9][0-9][0-9][0-9]\. /, "", title)
+      print title
+      exit
+    }
+  ' "$index"
+}
+
+file_title() {
+  awk '
+    /^# [0-9][0-9][0-9][0-9]\. / {
+      sub(/^# [0-9][0-9][0-9][0-9]\. /, "")
+      print
+      exit
+    }
+  ' "$1"
+}
+
+normalize_status() {
   printf '%s' "$1" | sed \
     -e 's/^[[:space:]]*//' \
     -e 's/[[:space:]]*$//' \
     -e 's/^"\(.*\)"$/\1/' \
-    -e "s/^'\(.*\)'\$/\1/" \
-    -e 's/,.*$//' \
-    -e 's/[[:space:]]*$//'
+    -e "s/^'\(.*\)'\$/\1/"
 }
 
 records="$(find "$adr_dir" -maxdepth 1 -name '[0-9][0-9][0-9][0-9]-*.md' -exec basename {} \; | sort)"
@@ -57,17 +81,46 @@ for l in $linked; do
 done
 
 status_drift=""
+title_drift=""
 for l in $linked; do
   if [ ! -f "$adr_dir/$l" ]; then
     continue
   fi
   recorded="$(front_matter_status "$adr_dir/$l")"
   indexed="$(index_status "$l")"
-  if [ -z "$(leading_status_token "$recorded")" ]; then
+  if [ -z "$(normalize_status "$recorded")" ]; then
     status_drift="$status_drift$l declares no status in its front matter"$'\n'
-  elif [ "$(leading_status_token "$recorded")" != "$(leading_status_token "$indexed")" ]; then
+  elif [ "$(normalize_status "$recorded")" != "$(normalize_status "$indexed")" ]; then
     status_drift="$status_drift$l records \"$recorded\" but the index says \"$indexed\""$'\n'
   fi
+
+  file_heading="$(file_title "$adr_dir/$l")"
+  index_link_text="$(index_title "$l")"
+  if [ -z "$file_heading" ]; then
+    title_drift="$title_drift$l has no \"# NNNN. Title\" heading to compare"$'\n'
+  elif [ "$file_heading" != "$index_link_text" ]; then
+    title_drift="$title_drift$l heading reads \"$file_heading\" but the index says \"$index_link_text\""$'\n'
+  fi
+done
+
+allowlisted_gaps="0056"
+numbering_gaps=""
+prev_num=""
+for f in $records; do
+  num="${f%%-*}"
+  num_dec=$((10#$num))
+  if [ -n "$prev_num" ]; then
+    expected=$((prev_num + 1))
+    while [ "$expected" -lt "$num_dec" ]; do
+      gap="$(printf '%04d' "$expected")"
+      case " $allowlisted_gaps " in
+        *" $gap "*) ;;
+        *) numbering_gaps="$numbering_gaps$gap"$'\n' ;;
+      esac
+      expected=$((expected + 1))
+    done
+  fi
+  prev_num="$num_dec"
 done
 
 status=0
@@ -84,6 +137,16 @@ fi
 if [ -n "$status_drift" ]; then
   echo "ADR statuses that disagree with docs/adr/README.md:"
   printf '%s' "$status_drift" | sed 's/^/  - /'
+  status=1
+fi
+if [ -n "$title_drift" ]; then
+  echo "ADR titles that disagree with docs/adr/README.md:"
+  printf '%s' "$title_drift" | sed 's/^/  - /'
+  status=1
+fi
+if [ -n "$numbering_gaps" ]; then
+  echo "ADR numbering gaps not on the allowlist ($allowlisted_gaps):"
+  printf '%s' "$numbering_gaps" | sed 's/^/  - /'
   status=1
 fi
 
