@@ -5,6 +5,8 @@ date: 2026-06-15
 
 # 0025. Split burst capacity into elastic and reserved node pools
 
+> Superseded by [0041](0041-hetzner-autoscaling-native-provider.md), which replaces the elastic and reserved CAPI pools with autoscaler node-groups plus horizon-provisioned reserved capacity under the native provider.
+
 ## Context
 
 [0024](0024-autoscaler-owned-burst-pool.md) handed the single `burst-workers` MachineDeployment to the cluster-autoscaler so pending-pod pressure could grow and shrink it on its own. That covers demand-driven capacity, but it leaves no place for nodes that should exist on a schedule rather than in response to pressure: a pool an operator pins up by hand for a planned batch run or a maintenance window, holds at a fixed size, and pins back down when the work is done. Folding both behaviours into one pool is a contradiction, because the autoscaler treats every node it discovers as fungible and will drain a hand-pinned node the moment it looks idle. The two scaling authorities need two pools.

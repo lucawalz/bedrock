@@ -5,6 +5,8 @@ date: 2026-06-17
 
 # 0033. Adopt a custom ExternalControlPlane object for the burst cluster
 
+> Superseded by [0041](0041-hetzner-autoscaling-native-provider.md), which retires the whole CAPI-for-Hetzner stack, including this ExternalControlPlane object, in favor of the native autoscaler provider.
+
 ## Context
 
 [0030](0030-externally-managed-control-plane.md) accepted a status nudge as the way to move the `burst` Cluster past initialization. horizon patches `status.initialization.controlPlaneInitialized=true` on the Cluster so infrastructure provisioning proceeds against the externally run k3s control plane at `10.20.0.10:6443`. The nudge is imperative, runs outside GitOps, and the core CAPI cluster controller still computes `ControlPlaneInitialized=False` because no control-plane object exposes the contract it reads.

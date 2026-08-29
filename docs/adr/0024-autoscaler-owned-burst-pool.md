@@ -5,6 +5,8 @@ date: 2026-06-15
 
 # 0024. Let the cluster-autoscaler own the burst pool replica count
 
+> Superseded by [0041](0041-hetzner-autoscaling-native-provider.md), which retires the whole CAPI-for-Hetzner stack in favor of the native Hetzner autoscaler provider.
+
 ## Context
 
 The `burst-workers` MachineDeployment in `caph-system` provisions cloud worker nodes through Cluster API when the home cluster runs out of room. Bedrock committed `spec.replicas: 0` on that MachineDeployment, and the cluster-capi Flux kustomization reconciled the field on every pass. The in-cluster cluster-autoscaler from [0023](0023-tailscale-overlay.md)'s Cluster API direction is meant to grow and shrink the pool in response to pending-pod pressure, and horizon scales it directly during a burst. A live test on 2026-06-15 confirmed the conflict: any scale-up was reverted to zero within minutes by Flux server-side apply, and the freshly provisioned burst node was deprovisioned before it could carry work. Two controllers were fighting for the same field, and the GitOps reconcile always won.
