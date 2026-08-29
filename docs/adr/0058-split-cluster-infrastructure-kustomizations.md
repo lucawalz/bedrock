@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, Kustomization names superseded, successor unrecorded
 date: 2026-07-06
 ---
 
