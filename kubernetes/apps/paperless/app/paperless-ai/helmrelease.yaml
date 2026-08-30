@@ -32,7 +32,7 @@ spec:
               repository: ghcr.io/clusterzx/paperless-ai
               tag: "3.0.9"
             env:
-              TZ: Europe/Vienna
+              TZ: Europe/Berlin
               PAPERLESS_API_URL: http://paperless-ngx.paperless.svc.cluster.local:8000/api
               PAPERLESS_URL: http://paperless-ngx.paperless.svc.cluster.local:8000
               PAPERLESS_USERNAME: admin
