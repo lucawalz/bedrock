@@ -81,3 +81,4 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0076. Run the burst measurement harness's privileged injection Jobs in the monitoring namespace](0076-burst-measurement-injection-in-monitoring.md) (accepted)
 - [0077. Run the M4 policy arms concurrently, and make the quantum and its reference answer independent of arm order](0077-run-the-m4-policy-arms-concurrently.md) (accepted)
 - [0078. Put the horizon interface behind oauth2-proxy and an Authentik OAuth2 provider](0078-horizon-interface-behind-oauth2-proxy.md) (accepted)
+- [0079. Expose Grocy publicly with a path-scoped forward-auth bypass](0079-public-grocy-with-scoped-api-bypass.md) (accepted)
