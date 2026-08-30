@@ -19,6 +19,7 @@ readonly LEASE_LABEL_KEY="horizon.dev/lease"
 readonly BURST_TAINT_KEY="horizon.dev/burst"
 readonly WATCHDOG_ARMED_ANNOTATION="horizon.dev/watchdog-armed"
 readonly HETZNER_PRICING_URL="https://api.hetzner.cloud/v1/pricing"
+readonly PROVIDER_CONFIG_RESOURCE="providerconfig"
 
 readonly DNS_LABEL_PATTERN='^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
 readonly POSITIVE_INTEGER_PATTERN='^[1-9][0-9]*$'
@@ -72,6 +73,20 @@ require_tools() {
 require_gnu_date() {
   if ! date -u -d "@0" +%Y-%m-%dT%H:%M:%SZ >/dev/null 2>&1; then
     die "GNU date is required; run this script inside 'nix develop', which provides coreutils"
+  fi
+}
+
+require_available_instance_type() {
+  local provider_ref="$1" region="$2" size="$3" json match
+  json=$(kubectl get "$PROVIDER_CONFIG_RESOURCE" "$provider_ref" -o json 2>/dev/null) ||
+    die "cannot read ${PROVIDER_CONFIG_RESOURCE}/${provider_ref} to validate --region/--size against the live catalogue"
+  match=$(printf '%s' "$json" | jq -r --arg region "$region" --arg size "$size" \
+    '[.status.instanceTypes[]? | select(.region == $region and .name == $size)][0] // empty')
+  if [ -z "$match" ]; then
+    die "'${size}' in region '${region}' is not in ${PROVIDER_CONFIG_RESOURCE}/${provider_ref}'s published catalogue; see .status.instanceTypes on that object for what is offered in this region"
+  fi
+  if [ "$(printf '%s' "$match" | jq -r '.available')" != "true" ]; then
+    die "'${size}' in region '${region}' is in the catalogue but the provider marks it unavailable; pick a different size from ${PROVIDER_CONFIG_RESOURCE}/${provider_ref}'s .status.instanceTypes"
   fi
 }
 
