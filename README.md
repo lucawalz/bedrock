@@ -190,6 +190,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | horizon | burst capacity leases and the machine catalogue | internal (`horizon`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
+| Home Assistant | smart-home hub, currently a Withings scale | internal (`ha`) |
 
 One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, Miniflux, and Open WebUI, and pgAdmin connects to it as a client.
 
