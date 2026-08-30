@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: home-assistant
+  namespace: home-assistant
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Home Assistant
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: home-assistant.png
+    gethomepage.dev/href: https://ha.${cluster_domain}
+    gethomepage.dev/podSelector: app.kubernetes.io/name=home-assistant
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - web
+    - websecure
+  routes:
+    - match: Host(`ha.${cluster_domain}`)
+      kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
+      services:
+        - name: home-assistant
+          port: 8123
+  tls: {}
