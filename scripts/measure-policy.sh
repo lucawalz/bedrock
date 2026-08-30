@@ -24,7 +24,8 @@ readonly DEFAULT_REPLICAS=1
 readonly DEFAULT_PROVIDER_REF="hetzner"
 readonly DEFAULT_TEARDOWN_GRACE="2m"
 readonly DEFAULT_MIN_CPU=2
-readonly DEFAULT_MIN_MEMORY="4Gi"
+# Hetzner reports memoryBytes in decimal GB, so a Gi floor excludes the very machine size the baseline arm pins.
+readonly DEFAULT_MIN_MEMORY="4G"
 readonly DEFAULT_ARCHITECTURE="x86"
 readonly DEFAULT_QUANTUM_NAMESPACE="monitoring"
 readonly DEFAULT_OUT_DIR="${repo_root}/var/measure-policy-runs"
@@ -73,7 +74,7 @@ Options:
   --region REGION             default hel1
   --size SIZE                 baseline pin (default cpx22)
   --min-cpu N                 policy arms, default 2
-  --min-memory QUANTITY       policy arms, default 4Gi
+  --min-memory QUANTITY       policy arms, default 4G
   --architecture ARCH         x86|arm, default x86
   --cpu-type TYPE             shared|dedicated, unset by default
   --replicas N                default 1
@@ -428,6 +429,8 @@ require_gnu_date
 load_hcloud_token
 if [ -z "$strategy" ]; then
   require_available_instance_type "$provider_ref" "$region" "$size"
+else
+  require_known_region "$provider_ref" "$region"
 fi
 
 run_dir="${out_dir}/${name}"
