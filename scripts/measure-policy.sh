@@ -18,7 +18,7 @@ readonly STRATEGY_POLICY_A="LowestPrice"
 readonly STRATEGY_POLICY_B="LowestPricePerCore"
 
 readonly DEFAULT_REGION="hel1"
-readonly DEFAULT_SIZE="cx23"
+readonly DEFAULT_SIZE="cpx22"
 readonly DEFAULT_DURATION="20m"
 readonly DEFAULT_REPLICAS=1
 readonly DEFAULT_PROVIDER_REF="hetzner"
@@ -71,7 +71,7 @@ Options:
   --arm ARM                   baseline|policy-a|policy-b (required)
   --name NAME                 lease name (default: m4-<arm>-r<replicas>-<stamp>-<random>)
   --region REGION             default hel1
-  --size SIZE                 baseline pin (default cx23)
+  --size SIZE                 baseline pin (default cpx22)
   --min-cpu N                 policy arms, default 2
   --min-memory QUANTITY       policy arms, default 4Gi
   --architecture ARCH         x86|arm, default x86
@@ -240,22 +240,22 @@ run_self_test() {
   assert_integer_equals "billed hours for 3600 seconds" "$(billed_hours 3600)" 1
   assert_integer_equals "billed hours for 3601 seconds" "$(billed_hours 3601)" 2
 
-  local cx23_hourly=0.0088 ipv4_hourly=0.0008 cost
-  cost=$(render_cost_json "$(synthetic_machines_json 1 612)" "$cx23_hourly" "$ipv4_hourly" 1 1 300)
-  assert_integer_equals "sub-hour cx23 billed hours" "$(printf '%s' "$cost" | jq -r '.billedHoursTotal')" 1
-  assert_number_close "sub-hour cx23 total" "$(printf '%s' "$cost" | jq -r '.totalCostNet')" 0.0096
-  assert_number_close "sub-hour cx23 cost per quantum" "$(printf '%s' "$cost" | jq -r '.costPerQuantumNet')" 0.0096
+  local shared_hourly=0.0088 ipv4_hourly=0.0008 cost
+  cost=$(render_cost_json "$(synthetic_machines_json 1 612)" "$shared_hourly" "$ipv4_hourly" 1 1 300)
+  assert_integer_equals "sub-hour billed hours" "$(printf '%s' "$cost" | jq -r '.billedHoursTotal')" 1
+  assert_number_close "sub-hour total" "$(printf '%s' "$cost" | jq -r '.totalCostNet')" 0.0096
+  assert_number_close "sub-hour cost per quantum" "$(printf '%s' "$cost" | jq -r '.costPerQuantumNet')" 0.0096
   assert_number_close "quanta per hour per euro at 300s" "$(printf '%s' "$cost" | jq -r '.quantaPerHourPerEuroNet')" 1250
 
-  cost=$(render_cost_json "$(synthetic_machines_json 1 3540)" "$cx23_hourly" "$ipv4_hourly" 1 1 300)
+  cost=$(render_cost_json "$(synthetic_machines_json 1 3540)" "$shared_hourly" "$ipv4_hourly" 1 1 300)
   assert_integer_equals "59 minute billed hours" "$(printf '%s' "$cost" | jq -r '.billedHoursTotal')" 1
   assert_number_close "59 minute total" "$(printf '%s' "$cost" | jq -r '.totalCostNet')" 0.0096
 
-  cost=$(render_cost_json "$(synthetic_machines_json 1 3660)" "$cx23_hourly" "$ipv4_hourly" 1 1 300)
+  cost=$(render_cost_json "$(synthetic_machines_json 1 3660)" "$shared_hourly" "$ipv4_hourly" 1 1 300)
   assert_integer_equals "61 minute billed hours" "$(printf '%s' "$cost" | jq -r '.billedHoursTotal')" 2
   assert_number_close "61 minute total" "$(printf '%s' "$cost" | jq -r '.totalCostNet')" 0.0192
 
-  cost=$(render_cost_json "$(synthetic_machines_json 3 612)" "$cx23_hourly" "$ipv4_hourly" 3 3 300)
+  cost=$(render_cost_json "$(synthetic_machines_json 3 612)" "$shared_hourly" "$ipv4_hourly" 3 3 300)
   assert_integer_equals "three replica billed hours" "$(printf '%s' "$cost" | jq -r '.billedHoursTotal')" 3
   assert_number_close "three replica total" "$(printf '%s' "$cost" | jq -r '.totalCostNet')" 0.0288
   assert_number_close "three replica cost per quantum" "$(printf '%s' "$cost" | jq -r '.costPerQuantumNet')" 0.0096
@@ -290,7 +290,7 @@ if [ "${#name}" -gt "$MAX_LEASE_NAME_LENGTH" ]; then
   die "--name must be at most ${MAX_LEASE_NAME_LENGTH} characters so the derived quantum Job name stays valid, got ${#name}"
 fi
 require_pattern --region "$region" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner region such as hel1"
-require_pattern --size "$size" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner server type such as cx23"
+require_pattern --size "$size" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner server type such as cpx22"
 require_pattern --provider-ref "$provider_ref" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric object name"
 require_pattern --quantum-namespace "$quantum_namespace" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric DNS label"
 require_pattern --replicas "$replicas" "$POSITIVE_INTEGER_PATTERN" "a positive whole number"
@@ -426,6 +426,9 @@ fi
 require_tools kubectl hcloud jq curl
 require_gnu_date
 load_hcloud_token
+if [ -z "$strategy" ]; then
+  require_available_instance_type "$provider_ref" "$region" "$size"
+fi
 
 run_dir="${out_dir}/${name}"
 mkdir -p "$run_dir"

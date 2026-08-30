@@ -43,7 +43,7 @@ automatically.
 
 Required (unless --dry-run, which fills in defaults):
   --region REGION             Hetzner region, e.g. hel1
-  --size SIZE                 Hetzner server type, e.g. cx23
+  --size SIZE                 Hetzner server type, e.g. cpx22
   --duration DURATION         CapacityLease duration, e.g. 10m (5m..8h)
 
 Always required:
@@ -106,7 +106,7 @@ esac
 
 if [ "$dry_run" -eq 1 ]; then
   region="${region:-hel1}"
-  size="${size:-cx23}"
+  size="${size:-cpx22}"
   duration="${duration:-10m}"
 elif [ -z "$region" ] || [ -z "$size" ] || [ -z "$duration" ]; then
   die "--region, --size and --duration are required outside --dry-run"
@@ -121,7 +121,7 @@ if [ "${#name}" -gt "$MAX_LEASE_NAME_LENGTH" ]; then
   die "--name must be at most ${MAX_LEASE_NAME_LENGTH} characters so derived Job names stay valid, got ${#name}"
 fi
 require_pattern --region "$region" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner region such as hel1"
-require_pattern --size "$size" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner server type such as cx23"
+require_pattern --size "$size" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric Hetzner server type such as cpx22"
 require_pattern --provider-ref "$provider_ref" "$DNS_LABEL_PATTERN" "a lowercase alphanumeric object name"
 require_pattern --replicas "$replicas" "$POSITIVE_INTEGER_PATTERN" "a positive whole number"
 require_pattern --injection-offset "$injection_offset_s" "$NON_NEGATIVE_INTEGER_PATTERN" "a whole number of seconds"
@@ -135,6 +135,7 @@ parse_duration_to_seconds "$teardown_grace" >/dev/null || die "--teardown-grace 
 require_tools kubectl hcloud jq curl
 require_gnu_date
 load_hcloud_token
+require_available_instance_type "$provider_ref" "$region" "$size"
 
 run_dir="${out_dir}/${name}"
 mkdir -p "$run_dir"
