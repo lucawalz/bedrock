@@ -322,6 +322,44 @@ data:
           name: Kiwix
           slug: kiwix
           provider: !KeyOf prov-kiwix
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-home-assistant
+        identifiers:
+          name: home-assistant-forward-auth
+        attrs:
+          name: home-assistant-forward-auth
+          mode: forward_domain
+          external_host: https://ha.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-home-assistant
+        identifiers:
+          slug: home-assistant
+        attrs:
+          name: Home Assistant
+          slug: home-assistant
+          provider: !KeyOf prov-home-assistant
+      - model: authentik_providers_proxy.proxyprovider
+        id: prov-grocy
+        identifiers:
+          name: grocy-forward-auth
+        attrs:
+          name: grocy-forward-auth
+          mode: forward_domain
+          external_host: https://grocy.syslabs.dev
+          cookie_domain: .syslabs.dev
+          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      - model: authentik_core.application
+        id: app-grocy
+        identifiers:
+          slug: grocy
+        attrs:
+          name: Grocy
+          slug: grocy
+          provider: !KeyOf prov-grocy
       - model: authentik_providers_oauth2.oauth2provider
         id: prov-horizon
         identifiers:
@@ -376,3 +414,5 @@ data:
             - !KeyOf prov-ntfy
             - !KeyOf prov-rancher
             - !KeyOf prov-kiwix
+            - !KeyOf prov-home-assistant
+            - !KeyOf prov-grocy

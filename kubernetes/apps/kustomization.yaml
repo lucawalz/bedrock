@@ -12,3 +12,5 @@ resources:
   - litellm/ks.yaml
   - miniflux/ks.yaml
   - kiwix/ks.yaml
+  - home-assistant/ks.yaml
+  - grocy/ks.yaml
