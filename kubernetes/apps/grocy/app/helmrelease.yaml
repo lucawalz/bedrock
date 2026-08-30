@@ -1,0 +1,103 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: grocy
+  namespace: grocy
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.x"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+      remediateLastFailure: true
+  values:
+    controllers:
+      grocy:
+        strategy: Recreate
+        containers:
+          app:
+            image:
+              repository: ghcr.io/bbx0/grocy
+              tag: "4.7.0"
+            env:
+              GROCY_MODE: production
+              GROCY_DATAPATH: /data
+              GROCY_BASE_URL: /
+              GROCY_CURRENCY: EUR
+              GROCY_DEFAULT_LOCALE: en
+              GROCY_ENERGY_UNIT: kcal
+              TZ: Europe/Berlin
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /login
+                    port: 8080
+                  initialDelaySeconds: 20
+                  periodSeconds: 30
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /login
+                    port: 8080
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /login
+                    port: 8080
+                  failureThreshold: 30
+                  periodSeconds: 5
+            resources:
+              requests:
+                cpu: 25m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: grocy
+        ports:
+          http:
+            port: 8080
+    persistence:
+      data:
+        existingClaim: grocy-data
+        globalMounts:
+          - path: /data
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp
