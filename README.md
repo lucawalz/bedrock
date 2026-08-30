@@ -182,10 +182,12 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | pgAdmin | Postgres administration | internal (`pgadmin`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
 | MinIO | in-cluster S3 object storage and console | internal (`minio`, `s3`) |
+| Zot | in-cluster OCI registry | internal (`registry`) |
 | Velero | backup and restore UI | internal (`velero`) |
 | RackPeek | physical rack and node overview | internal (`rackpeek`) |
 | Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
+| horizon | burst capacity leases and the machine catalogue | internal (`horizon`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 
