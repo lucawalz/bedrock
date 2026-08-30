@@ -44,7 +44,7 @@ runs:
     - name: Fetch the CRD schema catalog
       shell: bash
       env:
-        CRDS_CATALOG_COMMIT: 52b0261318acc7dd0b66e032759b1f218216b980
+        CRDS_CATALOG_COMMIT: 866b2653a5334db9aed20ad74701e20fd464471b
       run: |
         git init -q /tmp/crds-catalog
         git -C /tmp/crds-catalog fetch -q --depth=1 \
