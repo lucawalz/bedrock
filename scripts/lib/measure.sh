@@ -76,10 +76,31 @@ require_gnu_date() {
   fi
 }
 
+fetch_provider_config_json() {
+  local provider_ref="$1" json error
+  if json=$(kubectl get "$PROVIDER_CONFIG_RESOURCE" "$provider_ref" -o json 2>/dev/null); then
+    printf '%s' "$json"
+    return 0
+  fi
+  error=$(kubectl get "$PROVIDER_CONFIG_RESOURCE" "$provider_ref" -o json 2>&1 >/dev/null | head -1)
+  die "cannot read ${PROVIDER_CONFIG_RESOURCE}/${provider_ref} to validate --region/--size against the live catalogue: ${error}"
+}
+
+require_known_region() {
+  local provider_ref="$1" region="$2" json="${3:-}" is_known regions
+  [ -n "$json" ] || json=$(fetch_provider_config_json "$provider_ref")
+  is_known=$(printf '%s' "$json" | jq -r --arg region "$region" \
+    '[.status.instanceTypes[]?.region] | unique | any(. == $region)')
+  if [ "$is_known" != "true" ]; then
+    regions=$(printf '%s' "$json" | jq -r '[.status.instanceTypes[]?.region] | unique | join(", ")')
+    die "region '${region}' is not offered by ${PROVIDER_CONFIG_RESOURCE}/${provider_ref}; it offers: ${regions}"
+  fi
+}
+
 require_available_instance_type() {
   local provider_ref="$1" region="$2" size="$3" json match
-  json=$(kubectl get "$PROVIDER_CONFIG_RESOURCE" "$provider_ref" -o json 2>/dev/null) ||
-    die "cannot read ${PROVIDER_CONFIG_RESOURCE}/${provider_ref} to validate --region/--size against the live catalogue"
+  json=$(fetch_provider_config_json "$provider_ref")
+  require_known_region "$provider_ref" "$region" "$json"
   match=$(printf '%s' "$json" | jq -r --arg region "$region" --arg size "$size" \
     '[.status.instanceTypes[]? | select(.region == $region and .name == $size)][0] // empty')
   if [ -z "$match" ]; then
