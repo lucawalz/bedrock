@@ -33,7 +33,10 @@ spec:
             command:
               - sh
               - -c
-              - test -f /config/configuration.yaml || cp /config-seed/configuration.yaml /config-seed/automations.yaml /config-seed/scripts.yaml /config-seed/scenes.yaml /config/
+              - |
+                test -f /config/configuration.yaml || cp /config-seed/configuration.yaml /config-seed/automations.yaml /config-seed/scripts.yaml /config-seed/scenes.yaml /config/
+                # the proxy settings live in the storage entry; a yaml http block is ignored and is removed upstream in 2027.2.0
+                test -f /config/.storage/http || { mkdir -p /config/.storage && cp /config-seed/http /config/.storage/http; }
             resources:
               requests:
                 cpu: 10m
