@@ -36,6 +36,15 @@ spec:
               GROCY_CURRENCY: EUR
               GROCY_DEFAULT_LOCALE: en
               GROCY_ENERGY_UNIT: kcal
+              GROCY_FEATURE_FLAG_RECIPES: "false"
+              GROCY_FEATURE_FLAG_RECIPES_MEALPLAN: "false"
+              GROCY_FEATURE_FLAG_CHORES: "false"
+              GROCY_FEATURE_FLAG_CHORES_ASSIGNMENTS: "false"
+              GROCY_FEATURE_FLAG_TASKS: "false"
+              GROCY_FEATURE_FLAG_BATTERIES: "false"
+              GROCY_FEATURE_FLAG_EQUIPMENT: "false"
+              GROCY_FEATURE_FLAG_CALENDAR: "false"
+              GROCY_FEATURE_FLAG_STOCK_PRICE_TRACKING: "false"
               TZ: Europe/Berlin
               PHP_INI_SCAN_DIR: /usr/local/etc/php/conf.d:/php-conf.d
             probes:
