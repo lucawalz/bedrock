@@ -37,6 +37,7 @@ spec:
               GROCY_DEFAULT_LOCALE: en
               GROCY_ENERGY_UNIT: kcal
               TZ: Europe/Berlin
+              PHP_INI_SCAN_DIR: /usr/local/etc/php/conf.d:/php-conf.d
             probes:
               liveness:
                 enabled: true
@@ -97,6 +98,12 @@ spec:
         existingClaim: grocy-data
         globalMounts:
           - path: /data
+      php-config:
+        type: configMap
+        name: grocy-php-config
+        globalMounts:
+          - path: /php-conf.d
+            readOnly: true
       tmp:
         type: emptyDir
         globalMounts:
