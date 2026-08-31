@@ -5,7 +5,6 @@ components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/traefik-ingress
   - ../../../components/network-policies/internet-egress
-  - ../../../components/authentik-middleware
 resources:
   - helmrelease.yaml
   - configmap.yaml
