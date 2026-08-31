@@ -8,5 +8,6 @@ components:
   - ../../../components/authentik-middleware
 resources:
   - helmrelease.yaml
+  - configmap.yaml
   - pvc.yaml
   - ingress.yaml

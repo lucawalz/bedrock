@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grocy-php-config
+  namespace: grocy
+data:
+  zzz-timezone.ini: |
+    date.timezone = Europe/Berlin
