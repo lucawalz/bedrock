@@ -100,7 +100,7 @@ jobs:
       - name: Install promtool
         env:
           # renovate: datasource=github-releases depName=prometheus/prometheus
-          PROMETHEUS_VERSION: v3.13.2
+          PROMETHEUS_VERSION: v3.14.0
         run: |
           prometheus_dir="prometheus-${PROMETHEUS_VERSION#v}.linux-amd64"
           curl -sSL "https://github.com/prometheus/prometheus/releases/download/${PROMETHEUS_VERSION}/${prometheus_dir}.tar.gz" \
