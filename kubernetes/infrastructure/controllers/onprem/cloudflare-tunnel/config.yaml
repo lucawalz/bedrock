@@ -21,4 +21,6 @@ data:
           noTLSVerify: true
       - hostname: rancher.syslabs.dev
         service: https://traefik.traefik.svc.cluster.local:443
+      - hostname: grocy.syslabs.dev
+        service: https://traefik.traefik.svc.cluster.local:443
       - service: http_status:404
