@@ -16,18 +16,9 @@ spec:
     - web
     - websecure
   routes:
-    # the native app authenticates with an API key and cannot complete a forward-auth flow
-    - match: Host(`grocy.${cluster_domain}`) && PathPrefix(`/api/`)
-      kind: Rule
-      priority: 20
-      services:
-        - name: grocy
-          port: 8080
+    # forward auth would redirect to an internally resolvable host, which a client outside the tailnet cannot reach
     - match: Host(`grocy.${cluster_domain}`)
       kind: Rule
-      priority: 10
-      middlewares:
-        - name: authentik-forward-auth
       services:
         - name: grocy
           port: 8080

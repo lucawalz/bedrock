@@ -42,3 +42,33 @@ Authentik and Grocy both present a login, so first use in a browser prompts twic
 Cloudflare Access policies and the DNS record stay dashboard-managed, which [0014](0014-declarative-minimal-cloudflare-exposure.md) records as deliberate, so two pieces of this exposure live outside the GitOps loop and depend on dashboard discipline.
 
 The API key never expires by default. Rotating it means generating a new one in the interface and updating the client, and nothing in the repository tracks that it happened.
+
+## Update 2026-08-31
+
+The Traefik forward-auth gate described above was removed on the day it was
+deployed. It could never have worked for a browser outside the network: Authentik
+issues its redirect to `auth.syslabs.dev`, which has no public DNS record and is
+not carried by the tunnel, so a client on mobile data authenticated against
+Cloudflare Access and then landed on a hostname it could not resolve. The pattern
+was copied from the rancher route, where the flaw is latent because the public
+paths there are used by an unattended agent that never follows the redirect.
+
+The route is now a single rule with no middleware. The layered argument is
+unchanged in substance but the layers moved. Cloudflare Access gates the browser
+interface from outside, with a policy requiring a named identity, the GitHub login
+method, and a German source country. The narrow Access application still bypasses
+only the `/api/` prefix for the native client. Grocy's own login gates the
+interface everywhere, including on the tailnet, and its `BaseAuthMiddleware` still
+returns a bare 401 for any unauthenticated request under `/api/`. The path-scoped
+bypass therefore survives at the edge rather than at the router.
+
+Two consequences follow. Reaching the interface from the tailnet no longer
+involves single sign-on, so Grocy's own credential is the only gate there, which
+matches how `chat.syslabs.dev` has always worked and is the estate's established
+pattern for a public human-facing application. And the double login recorded above
+is gone, so the reference to [0038](0038-authentik-sso-for-internal-dashboards.md)
+no longer applies to this record.
+
+The proxy provider and application that Authentik held for this host were removed
+in the same change, since a provider for an application that never calls it is
+drift rather than configuration.
