@@ -28,7 +28,7 @@ spec:
               type: RuntimeDefault
           containers:
             - name: longhorn-node-finalizer
-              image: alpine/k8s:1.36.2
+              image: alpine/k8s:1.37.0
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
