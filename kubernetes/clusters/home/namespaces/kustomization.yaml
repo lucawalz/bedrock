@@ -30,7 +30,6 @@ resources:
   - kiwix.yaml
   - zot.yaml
   - horizon-system.yaml
-  - grocy.yaml
   - home-assistant.yaml
   - default.yaml
   - default-serviceaccounts.yaml
