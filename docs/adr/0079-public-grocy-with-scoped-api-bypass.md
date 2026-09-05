@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0080
 date: 2026-08-31
 ---
 
 # 0079. Expose Grocy publicly with a path-scoped forward-auth bypass
+
+> Superseded by [0080](0080-retire-grocy.md).
 
 ## Context
 
