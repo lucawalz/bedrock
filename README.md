@@ -171,7 +171,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Open WebUI | chat front-end for the local models | public (`chat`) |
 | Blog | static Hugo site | public (`lucawalz.dev`) |
 | Rancher | cluster management UI | public (`rancher`) |
-| Grocy | grocery, fridge and expiry tracking | public (`grocy`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
 | Grafana | dashboards for the Prometheus stack | internal (`grafana`) |
 | Prometheus | metrics store and query browser | internal (`prometheus`) |
