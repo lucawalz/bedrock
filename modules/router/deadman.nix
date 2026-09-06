@@ -11,12 +11,25 @@ let
   stateDir = "/run/deadman";
   stampFile = "${stateDir}/last-contact";
 
-  watchdogRepeatIntervalSeconds = 12 * 60 * 60;
-  missedContactsTolerated = 2;
-  staleBufferSeconds = 60 * 60;
-  thresholdSeconds = watchdogRepeatIntervalSeconds * missedContactsTolerated + staleBufferSeconds;
+  alertmanagerWatchdogRepeatIntervalSeconds = 5 * 60;
+  missedBeatsTolerated = 4;
+  # the threshold must stay above alertmanager's watchdog repeat interval, or a healthy estate reports stale
+  thresholdSeconds = alertmanagerWatchdogRepeatIntervalSeconds * missedBeatsTolerated;
 
-  checkIntervalSeconds = 60 * 60;
+  checkIntervalSeconds = 5 * 60;
+
+  hardening = {
+    NoNewPrivileges = true;
+    ProtectSystem = "strict";
+    ProtectHome = true;
+    PrivateTmp = true;
+    ProtectKernelTunables = true;
+    ProtectKernelModules = true;
+    ProtectControlGroups = true;
+    RestrictSUIDSGID = true;
+    RestrictAddressFamilies = [ "AF_UNIX" ];
+    ReadWritePaths = [ stateDir ];
+  };
 
   receive = pkgs.writeShellScript "deadman-receive" ''
     set -u
@@ -75,7 +88,7 @@ in
       services = {
         "deadman@" = {
           description = "Record one alertmanager deadman contact";
-          serviceConfig = {
+          serviceConfig = hardening // {
             Type = "oneshot";
             StandardInput = "socket";
             StandardOutput = "socket";
@@ -85,7 +98,7 @@ in
 
         deadman-check = {
           description = "Check the alertmanager deadman for staleness";
-          serviceConfig = {
+          serviceConfig = hardening // {
             Type = "oneshot";
             ExecStart = check;
           };
@@ -96,9 +109,9 @@ in
         description = "Periodically check the alertmanager deadman for staleness";
         wantedBy = [ "timers.target" ];
         timerConfig = {
-          OnStartupSec = "5min";
+          OnStartupSec = "30s";
           OnUnitActiveSec = "${toString checkIntervalSeconds}s";
-          AccuracySec = "1min";
+          AccuracySec = "5s";
         };
       };
     };
