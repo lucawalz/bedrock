@@ -13,7 +13,6 @@ resources:
   - helm/grafana.yaml
   - helm/cloudnative-pg.yaml
   - helm/rancher.yaml
-  - helm/velero.yaml
   - helm/ollama.yaml
   - helm/open-webui.yaml
   - helm/pgadmin.yaml

@@ -8,7 +8,6 @@ resources:
   - blog/ks.yaml
   - ntfy/ks.yaml
   - paperless/ks.yaml
-  - velero-ui/ks.yaml
   - litellm/ks.yaml
   - miniflux/ks.yaml
   - kiwix/ks.yaml
