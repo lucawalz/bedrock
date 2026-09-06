@@ -3,7 +3,7 @@ status: proposed
 date: 2026-09-06
 ---
 
-# 0083. Rename the control-plane node from master to cp-1
+# 0083. Rename the control-plane node from master to control-plane-1
 
 ## Context
 
@@ -36,11 +36,11 @@ it if the restart does not produce a healthy single-member cluster under the new
 
 ## Decision
 
-Rename the control-plane node from `master` to `cp-1`, but not yet: this record's status is
+Rename the control-plane node from `master` to `control-plane-1`, but not yet: this record's status is
 `proposed`, not `accepted`, because the rename depends on preconditions that do not hold today.
 Nothing in this pass has been deployed. The owner has not pushed, so the live cluster is still
 running every pre-change configuration this pass produced, and performing a rename against an
-undeployed, unverified estate would leave the repository describing `cp-1` while the cluster
+undeployed, unverified estate would leave the repository describing `control-plane-1` while the cluster
 answers to `master`, breaking the CoreDNS `NodeHosts` entry and the agent join target the moment
 Flux reconciled. The rename needs a deployed and healthy estate underneath it and a fresh, verified
 etcd snapshot taken immediately before it starts, and neither exists yet.

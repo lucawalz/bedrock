@@ -18,12 +18,12 @@ A fire, a theft or a flood therefore takes the cluster and every copy of its dat
 | One node lost | Yes | Volumes have replicas elsewhere, workloads reschedule, and the Postgres primary fails over in about 30 seconds |
 | Anything declared in this repository | Yes | Flux reconciles it back. This is most of the estate |
 | Any cluster Secret | Yes | Held as SOPS ciphertext in the private `bedrock-secrets` repository, given the age key |
-| cp-1's disk lost, taking etcd | Only from a snapshot copied off cp-1 beforehand | K3s writes its snapshots to the same disk as the datastore, so the failure that loses one loses the other |
+| control-plane-1's disk lost, taking etcd | Only from a snapshot copied off control-plane-1 beforehand | K3s writes its snapshots to the same disk as the datastore, so the failure that loses one loses the other |
 | A volume deleted or corrupted in place | Only for the volumes the snapshot job covers, and only back to the last nightly snapshot | The `snapshot` RecurringJob covers 12 of the cluster's 19 volumes, each stating that membership through a direct label declared in git: the four paperless-ngx volumes, paperless-ai, open-webui, home-assistant-config, grafana and the three postgres volumes. `data-zot-0` is covered too, but only through Longhorn's implicit `default` group, because the zot chart exposes no field to set a label on the volume it creates. Minio, pgadmin, ollama, kiwix-library, loki, tempo and prometheus carry an explicit exclusion label instead and have no snapshot at all. Where it runs, the job takes a snapshot at 03:30 and `snapshot-prune` retains the last 7; replication alone copies the write to all three replicas and cannot undo it. A postgres snapshot is crash-consistent only, recoverable through CloudNativePG's own WAL replay on the common restart-after-crash path but not to an arbitrary point inside a lost transaction ([ADR 0057](adr/0057-cnpg-barman-dr-and-velero-scope.md)) |
 | A Postgres logical fault, a bad migration, a dropped table | Up to 24 hours if caught the same day, none beyond a week | Point-in-time recovery went with Barman, so nothing replays the write-ahead log to an arbitrary moment. The postgres volumes carry the `snapshot` job directly, so a revert to 03:30 is possible, but it is crash-consistent, rolls back all three instances together, and loses every write since ([ADR 0057](adr/0057-cnpg-barman-dr-and-velero-scope.md)) |
 | Loss of the building | No | Nothing is off-site |
 
-Two of those rows are worth acting on rather than reading. Copying a recent etcd snapshot off cp-1 by hand is the only thing standing between a cp-1 disk failure and a rebuild from an empty cluster. And the cluster age key now exists only on the operator workstation and inside the cluster, because the Velero backup that captured `flux-system/sops-age` as a side effect is gone; escrowing it somewhere deliberate is the single highest-value manual step in this document.
+Two of those rows are worth acting on rather than reading. Copying a recent etcd snapshot off control-plane-1 by hand is the only thing standing between a control-plane-1 disk failure and a rebuild from an empty cluster. And the cluster age key now exists only on the operator workstation and inside the cluster, because the Velero backup that captured `flux-system/sops-age` as a side effect is gone; escrowing it somewhere deliberate is the single highest-value manual step in this document.
 
 ## Recovery seeds
 
@@ -33,14 +33,14 @@ These cannot live in the repository and must be kept somewhere that survives the
 | --- | --- | --- |
 | Cluster age private key | The private half of the SOPS recipient, held in the cluster as the `sops-age` secret in `flux-system`. | It decrypts every committed secret. Only the public recipient is in `.sops.yaml`. |
 | Host SSH private keys | `/etc/ssh/ssh_host_ed25519_key` on each node. | agenix encrypts host secrets to these. A fresh node generates new keys and cannot decrypt until they are restored or the secrets are re-keyed. |
-| K3s server token | 141 bytes, delivered by agenix to `/run/agenix/k3s-token` on cp-1, from `secrets/k3s-token.age`. | K3s derives the cluster CA material and, because `--secrets-encryption` is enabled, the AES keys in `encryption-config.json` from this token, and stores them inside etcd. An etcd snapshot restored under a different token produces a cluster whose Secrets cannot be decrypted, and it fails silently at restore time rather than erroring. |
+| K3s server token | 141 bytes, delivered by agenix to `/run/agenix/k3s-token` on control-plane-1, from `secrets/k3s-token.age`. | K3s derives the cluster CA material and, because `--secrets-encryption` is enabled, the AES keys in `encryption-config.json` from this token, and stores them inside etcd. An etcd snapshot restored under a different token produces a cluster whose Secrets cannot be decrypted, and it fails silently at restore time rather than erroring. |
 | The repository | This repository, or a fork. | Flux syncs from it and the rebuild reads it. |
 | The secrets repository | The private `bedrock-secrets` repository. | Holds every cluster Secret as SOPS ciphertext ([ADR 0060](adr/0060-private-secrets-repo-per-cluster-keys.md)). Encrypted, but the cluster cannot be reconstituted without it. |
 | Operator identity | The admin SSH key, a recipient on every agenix secret. | Needed to re-key host secrets when host keys are lost. |
 
 There is no backup-data seed. Nothing outside the cluster holds cluster data, which is the whole of [ADR 0081](adr/0081-retire-the-hetzner-account.md).
 
-An etcd snapshot copied off cp-1 by hand is the closest thing to one, and it is worth treating as a seed while it exists. It carries the cluster CA material and every Secret, so it belongs wherever the age key belongs rather than on a convenient share.
+An etcd snapshot copied off control-plane-1 by hand is the closest thing to one, and it is worth treating as a seed while it exists. It carries the cluster CA material and every Secret, so it belongs wherever the age key belongs rather than on a convenient share.
 
 External account tokens for Cloudflare and Tailscale are stored as SOPS secrets, so they return once the age key is present, but the accounts and their issuers live outside the repository.
 
@@ -69,11 +69,11 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key. E
 3. Hosts. Get a minimal NixOS with SSH onto each node, then push its configuration:
 
    ```
-   nixos-rebuild switch --flake .#cp-1 --target-host root@<ip> --build-host root@<ip>
+   nixos-rebuild switch --flake .#control-plane-1 --target-host root@<ip> --build-host root@<ip>
    ```
 
-   `disko` wipes and formats the disk. Two recovery details: cp-1's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
-4. K3s. cp-1 starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` address baked into `modules/k3s/agent.nix` and the shared token, so the join depends on no name resolution at all. This yields an empty three-node cluster.
+   `disko` wipes and formats the disk. Two recovery details: control-plane-1's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
+4. K3s. control-plane-1 starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` address baked into `modules/k3s/agent.nix` and the shared token, so the join depends on no name resolution at all. This yields an empty three-node cluster.
 5. Flux. Seed it once against the repository:
 
    ```
@@ -94,15 +94,15 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key. E
    - Postgres has no backup at all. If its volumes are gone, the databases behind Authentik, Paperless, Miniflux and Open WebUI come up empty and recreate their schemas on first boot, exactly as they did at the CloudNativePG cutover ([ADR 0046](adr/0046-cloudnative-pg-declarative-postgres.md)). Application state held in them is lost.
    - kiwix is the one workload that recovers cleanly from nothing. Its ZIM files are re-downloaded by an idempotent init container, so its recovery is a download rather than a restore.
 
-   If an etcd snapshot was copied off cp-1 beforehand, restoring it is a separate decision rather than a step here. See the next section.
+   If an etcd snapshot was copied off control-plane-1 beforehand, restoring it is a separate decision rather than a step here. See the next section.
 9. Admission. Reapply the `rancher-webhook` replica count and anti-affinity, which the Rancher-owned chart exposes no value for. The command and reasoning are in the [admission break-glass runbook](admission-break-glass.md). Until applied, a single-replica webhook fails Secret writes cluster-wide when its node is lost.
 10. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
 
 ## Restoring etcd from a snapshot
 
-K3s snapshots etcd twelve-hourly to `/var/lib/rancher/k3s/server/db/snapshots` on cp-1, keeping five. A snapshot restores the whole Kubernetes API state, including objects Flux would otherwise rebuild. It is the right tool when the API server holds state that cannot be reconciled back, and the wrong tool when the manifests alone would recover the cluster.
+K3s snapshots etcd twelve-hourly to `/var/lib/rancher/k3s/server/db/snapshots` on control-plane-1, keeping five. A snapshot restores the whole Kubernetes API state, including objects Flux would otherwise rebuild. It is the right tool when the API server holds state that cannot be reconciled back, and the wrong tool when the manifests alone would recover the cluster.
 
-The snapshots share a disk with the datastore they protect, which is the coupling [ADR 0064](adr/0064-off-node-etcd-s3-snapshots.md) was written to remove and which returned when the upload was withdrawn. A snapshot only helps with a corrupted or mis-edited cluster, not with a failed disk, unless a copy was taken off cp-1 first:
+The snapshots share a disk with the datastore they protect, which is the coupling [ADR 0064](adr/0064-off-node-etcd-s3-snapshots.md) was written to remove and which returned when the upload was withdrawn. A snapshot only helps with a corrupted or mis-edited cluster, not with a failed disk, unless a copy was taken off control-plane-1 first:
 
 ```
 scp root@10.20.0.10:/var/lib/rancher/k3s/server/db/snapshots/<snapshot> .
@@ -114,7 +114,7 @@ The server token governs the restore. Restoring a snapshot under a different tok
 k3s etcd-snapshot ls
 ```
 
-Restore on cp-1, which becomes the sole etcd member:
+Restore on control-plane-1, which becomes the sole etcd member:
 
 ```
 systemctl stop k3s
@@ -159,7 +159,7 @@ kubectl -n postgres delete backups.postgresql.cnpg.io --all
 
 Longhorn's per-disk `storageReserved` has no declarative path once a disk exists. The Helm chart's `storageReservedPercentageForDefaultDisk` (`kubernetes/infrastructure/controllers/onprem/longhorn/helmrelease.yaml`) is applied only when Longhorn first creates a disk record, so changing it does nothing to a disk already registered, and the `nodes.longhorn.io` objects that carry the live value are owned and continuously rewritten by the Longhorn controller, leaving no manifest that could hold the field without fighting the controller for it. The only way to set it on an existing disk is a direct patch, and that patch has to be reapplied by hand whenever the disk record is recreated, such as after a full rebuild.
 
-cp-1 already reserves 20 percent of its disk, 50075021312 of 250375106560 bytes, and the origin of that value is not recorded. Twenty percent is adopted for the workers to match cp-1's existing proportion, not because the proportion itself is derived from anything. worker-1 and worker-2 both currently reserve nothing, so Longhorn schedules replica data over the whole of each disk, leaving no space set aside for the operating system or for containerd's image store to grow into. Matching cp-1's proportion on both closes that gap:
+control-plane-1 already reserves 20 percent of its disk, 50075021312 of 250375106560 bytes, and the origin of that value is not recorded. Twenty percent is adopted for the workers to match control-plane-1's existing proportion, not because the proportion itself is derived from anything. worker-1 and worker-2 both currently reserve nothing, so Longhorn schedules replica data over the whole of each disk, leaving no space set aside for the operating system or for containerd's image store to grow into. Matching control-plane-1's proportion on both closes that gap:
 
 worker-1: 20 percent of 250375106560 bytes is 50075021312.
 worker-2's disk is roughly double the others, at 502392610816 bytes; 20 percent of it is 100478522163.2, which rounds down to 100478522163.
@@ -177,10 +177,10 @@ Neither command has been run yet. Reapply both after any event that recreates ei
 
 `cluster-metrics-server` in `kubernetes/clusters/home/config/base.yaml` carries `suspend: true`. The chart it installs renders `ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and `APIService/v1beta1.metrics.k8s.io` under the same names the k3s addon already owns through wrangler's `objectset.rio.cattle.io` annotations, and Helm 3 refuses to adopt objects it does not already own. Reconciling this Kustomization while the addon is still running exhausts its three install retries, leaves the Kustomization stuck at `Ready=False`, and pages the critical `HelmReleaseStalled` alert. The Kustomization ships suspended so a fresh reconcile is safe by default rather than depending on this runbook step being remembered ahead of time.
 
-The addon only goes away once cp-1 is rebuilt with `--disable=metrics-server`, already declared in `modules/k3s/server.nix`:
+The addon only goes away once control-plane-1 is rebuilt with `--disable=metrics-server`, already declared in `modules/k3s/server.nix`:
 
 ```
-nixos-rebuild switch --flake .#cp-1 --target-host root@<ip> --build-host root@<ip>
+nixos-rebuild switch --flake .#control-plane-1 --target-host root@<ip> --build-host root@<ip>
 ```
 
 That is a node rebuild, and Flux has no mechanism to wait on it. After the rebuild, confirm the addon's objects are actually gone before resuming:
@@ -204,13 +204,13 @@ Derived from the mechanisms as configured. They describe what the estate current
 | --- | --- | --- | --- |
 | Postgres databases | Three-way volume replication and a quorum commit ([ADR 0068](adr/0068-cnpg-quorum-synchronous-replication.md)), plus a nightly `snapshot` job retaining 7 ([ADR 0057](adr/0057-cnpg-barman-dr-and-velero-scope.md)) | Zero for a lost disk or node; up to 24 hours for a logical fault caught the same day, none beyond a week, and crash-consistent rather than database-consistent | Automatic replica rebuild for a disk or a node; a manual revert to the snapshot and CloudNativePG's own WAL replay on restart, for a fault |
 | Longhorn volumes | Three-way replication on the retain class, plus a nightly `snapshot` job retaining 7 for 12 of the cluster's 19 volumes, each declared through a direct label: the four paperless-ngx volumes, paperless-ai, open-webui, home-assistant-config, grafana and the three postgres volumes, plus `data-zot-0` through the implicit `default` group its chart has no way to label directly | Zero for a lost disk or node on any volume; for a deletion or a corruption, up to 24 hours and none beyond a week on a covered volume, no recovery point at all on the other 7 | Automatic replica rebuild for a disk or a node; a manual revert to the snapshot for a deletion or a corruption, where a snapshot exists |
-| Cluster API state | etcd snapshots every twelve hours, retain 5, on cp-1's local disk | Up to 12 hours, and none at all if cp-1's disk is what was lost | Under an hour on surviving hardware |
+| Cluster API state | etcd snapshots every twelve hours, retain 5, on control-plane-1's local disk | Up to 12 hours, and none at all if control-plane-1's disk is what was lost | Under an hour on surviving hardware |
 | Everything declared in Git | Flux reconciliation | Zero, the repository is the source of truth | Bounded by reconciliation, not by restore |
 | Cluster Secrets | The private `bedrock-secrets` repository plus the age key | Zero | Minutes |
 | Total cluster loss with the disks intact | The above, plus hardware | Up to 12 hours for API state, zero for volumes | Eight to twenty hours with spare hardware on hand, indefinite without it |
 | Loss of the building | None | Not recoverable | Not applicable |
 
-Losing **cp-1** is worse than the table implies: a full outage of both data and external access, lasting until cp-1 returns. CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API before starting Postgres, so with the single API server gone every database instance refuses to start regardless of which node holds the primary. MetalLB's speaker needs the API to see Services, so it stops announcing the load balancer address. Recovery once cp-1 boots is about five minutes. Losing either worker is a degradation: the primary fails over in around 30 seconds and ingress continues.
+Losing **control-plane-1** is worse than the table implies: a full outage of both data and external access, lasting until control-plane-1 returns. CloudNativePG's instance manager reads the Cluster resource from the Kubernetes API before starting Postgres, so with the single API server gone every database instance refuses to start regardless of which node holds the primary. MetalLB's speaker needs the API to see Services, so it stops announcing the load balancer address. Recovery once control-plane-1 boots is about five minutes. Losing either worker is a degradation: the primary fails over in around 30 seconds and ingress continues.
 
 The recovery points assume the mechanisms work, and no restore has been proven, so the recovery times are estimates rather than measurements. In-cluster alerting also cannot detect total cluster loss: every alerting component runs on the same three nodes behind the same ingress.
 
@@ -233,7 +233,7 @@ One secret sits outside both repositories by design: the Rancher `cattle-system/
 
 ## Tailscale overlay recovery
 
-cp-1, worker-1, and worker-2 join the tailnet as `tag:cluster` devices, and flannel binds to `tailscale0` on all four cluster nodes ([ADR 0074](adr/0074-home-nodes-on-the-tailnet.md)). Three maintenance steps follow from that.
+control-plane-1, worker-1, and worker-2 join the tailnet as `tag:cluster` devices, and flannel binds to `tailscale0` on all four cluster nodes ([ADR 0074](adr/0074-home-nodes-on-the-tailnet.md)). Three maintenance steps follow from that.
 
 A rebuilt host can carry a stale `/var/lib/tailscale/tailscaled.state` from an earlier installation that pointed at a different control server. `tailscaled` loads those preferences, sits in `NoState` reaching for a server that no longer exists, and `tailscaled-autoconnect` fails on its 90 second timeout. Move the state file aside before the rebuild to clear it. Any node rebuilt from an installation that ever pointed at a different control server needs the same step.
 
@@ -251,7 +251,7 @@ These checks validate the chain on a schedule, without destructively touching th
 | --- | --- | --- |
 | Age key decrypts a committed secret | 2026-07-25 | Passed |
 | Host configurations build | 2026-07-25 | Passed in CI |
-| A scheduled etcd snapshot lands on cp-1's disk | never | Untested. The 2026-07-25 check proved a manual snapshot reaching object storage, a path that no longer exists |
+| A scheduled etcd snapshot lands on control-plane-1's disk | never | Untested. The 2026-07-25 check proved a manual snapshot reaching object storage, a path that no longer exists |
 | etcd snapshot restores | never | Untested |
 | Longhorn replica rebuild after a node loss | never | Untested as a drill. Node-loss behaviour was measured on 2026-07-26 |
 | Re-key to new host keys | never | Untested |
@@ -262,7 +262,7 @@ There is no backup-restore row, because there is no backup to restore.
 - Age key decrypts. `sops -d` of a committed secret succeeds with the operator key.
 - Host configurations build. `nix eval .#nixosConfigurations.<host>.config.system.build.toplevel.drvPath` for each host, or `nixos-rebuild build`.
 - Re-key works. Decrypt a host secret with the operator identity, re-encrypt it to a freshly generated key, and decrypt with the new key.
-- A scheduled snapshot lands. `k3s etcd-snapshot ls` on cp-1 lists a file newer than twelve hours. This is the cheapest check in the table and the only one covering the estate's sole remaining point-in-time mechanism.
+- A scheduled snapshot lands. `k3s etcd-snapshot ls` on control-plane-1 lists a file newer than twelve hours. This is the cheapest check in the table and the only one covering the estate's sole remaining point-in-time mechanism.
 - Fresh-cluster GitOps bootstrap. On a throwaway cluster such as `kind`, install Flux, create the `sops-age` secret from the operator key, point a GitRepository at this repository, and reconcile a SOPS-decrypting Kustomization. The secrets materializing as live Secrets proves the bootstrap and decryption path end to end. The full app set does not reconcile on unlike hardware, because the manifests assume the home storage, load balancer, addressing and overlay.
 
 ## Known gaps
@@ -270,17 +270,17 @@ There is no backup-restore row, because there is no backup to restore.
 - Nothing is held off-site. This is the largest gap and it is deliberate, recorded in [ADR 0081](adr/0081-retire-the-hetzner-account.md). It closes when the NAS is bought and exposes S3-compatible storage, and not before.
 - Postgres has no point-in-time recovery and no database-consistent backup. A bad migration, a dropped table or a corrupted index reaches all three replicas at once, and the only way back is a crash-consistent revert to the last nightly snapshot, which loses every write since and is not possible at all once the fault is older than the retained week.
 - Longhorn snapshots go back one week at most. The `snapshot` job creates one nightly and `snapshot-prune` keeps the last 7; a deletion or a corruption noticed later than that has nothing to revert to. This is a local point-in-time position, not a backup: it lives on the same three replicas as the data it protects, so it is worth nothing against the loss of a disk beyond what replication already covers, and nothing at all against the loss of the cluster or the building.
-- Etcd snapshots share a disk with the datastore they protect. Copying one off cp-1 by hand is the only mitigation in place, and nothing performs or checks that copy.
-- `/var/lib/rancher/k3s/server/db/snapshots` on cp-1 should be treated as a credential store rather than as backup data. Each snapshot carries the cluster CA material and every Secret, and its confidentiality rests on the server token rather than on the file's location.
+- Etcd snapshots share a disk with the datastore they protect. Copying one off control-plane-1 by hand is the only mitigation in place, and nothing performs or checks that copy.
+- `/var/lib/rancher/k3s/server/db/snapshots` on control-plane-1 should be treated as a credential store rather than as backup data. Each snapshot carries the cluster CA material and every Secret, and its confidentiality rests on the server token rather than on the file's location.
 - No restore has ever been performed, for any mechanism. The node-loss figures were measured on 2026-07-26; everything else is an estimate.
 - The `snapshot` recurring job covers 12 of the 19 Longhorn volumes, and every volume now states its membership through a direct label declared in git instead of an inherited default: the four paperless-ngx volumes, paperless-ai, open-webui, home-assistant-config, grafana and the three postgres volumes. `data-zot-0` still falls through to the implicit `default` group, because the zot chart has no field to set a label on the volume it creates. MinIO, pgAdmin, Ollama, kiwix-library, Loki, Tempo and Prometheus carry an explicit exclusion label and have no snapshot at all, a deliberate choice for re-derivable data rather than an oversight.
 - Alertmanager cannot recover from a node loss on its own. It has no PersistentVolumeClaim, so Longhorn's `nodeDownPodDeletionPolicy` does not cover it, and nothing force-deletes the pod stranded on an unreachable node. Alert evaluation returns after about 16 minutes when Prometheus is force-deleted and rescheduled; alert delivery stays down until the node returns or the pod is deleted by hand.
 - worker-2 cannot be drained while it holds the only replica of a volume. Longhorn's `block-if-contains-last-replica` policy correctly refuses, so the node is not patchable without moving `data-zot-0` and `kiwix-library` to a replicated class or forcing the drain.
-- A mass reschedule can outlast the event that caused it. Draining cp-1 took 38 seconds and the estate took 45 minutes to settle, because every rescheduled pod pulled images through the registry cache at once and containerd does not fall back to the upstream registry when the mirror is merely slow.
+- A mass reschedule can outlast the event that caused it. Draining control-plane-1 took 38 seconds and the estate took 45 minutes to settle, because every rescheduled pod pulled images through the registry cache at once and containerd does not fall back to the upstream registry when the mirror is merely slow.
 - The `rancher-webhook` replica count and anti-affinity are imperative and are not reconciled, so a rebuild returns to a single replica until step 9 is reapplied.
 - worker-1 and worker-2 hold no Longhorn storage reserve declaratively. The patch that sets it, in Longhorn per-node storage reserve above, is imperative and does not survive the disk record being recreated, so it must be reapplied by hand each time that happens.
 - The age key is held only on the operator's workstation, by choice. It is simultaneously the SOPS recovery identity and the SSH credential for all four hosts, so losing that machine loses access and decryption in the same event. The Velero backup that used to capture `flux-system/sops-age` as a side effect is gone, so there is no accidental second copy any more.
 - kiwix is deliberately not backed up, and now it is in the same position as everything else. Its 32 GB of ZIM files are re-downloaded from `download.kiwix.org` by an idempotent init container, which makes it the one workload whose recovery story is unaffected by the loss of the backup stack.
-- cp-1's pinned filesystem UUIDs must be regenerated after a disk wipe.
-- Until [ADR 0074](adr/0074-home-nodes-on-the-tailnet.md), the operator had no remote management path that survived the Pi. Every route to VLAN 20 ran through it, and the SSH jump host named in `./CLAUDE.md` was not an alternative, because port 22 was opened on `vlan20` only and `end0` is not a trusted interface, so that jump host was reachable solely over the tunnel it would be replacing. From the home LAN the router forwards nothing into VLAN 20 except the service VIP on 80 and 443. This was hit on 2026-07-26: tailscaled on the Pi kept its coordination-server session while passing no WireGuard traffic, so the Tailscale app still showed the router online while the estate was unreachable, and recovery needed a physical power cycle. The cluster itself was unaffected throughout. That gap is closed now: cp-1 joins the tailnet directly as its own `tag:cluster` device with a per-host auth key, and `hosts/common/networking.nix` opens port 22 on every interface rather than on `vlan20` alone, so an operator reaches cp-1 over its own WireGuard session without transiting the Pi's subnet router or depending on the Pi's `tailscaled` state at all. A repeat of the 2026-07-26 failure, the Pi's `tailscaled` wedged while still claiming to be online, no longer strands the estate. The one thing still Pi-mediated is cp-1's own outbound DNS resolution, since its client keeps `--accept-dns=false` and the Pi as resolver; that affects traffic cp-1 initiates, not an operator reaching cp-1.
+- control-plane-1's pinned filesystem UUIDs must be regenerated after a disk wipe.
+- Until [ADR 0074](adr/0074-home-nodes-on-the-tailnet.md), the operator had no remote management path that survived the Pi. Every route to VLAN 20 ran through it, and the SSH jump host named in `./CLAUDE.md` was not an alternative, because port 22 was opened on `vlan20` only and `end0` is not a trusted interface, so that jump host was reachable solely over the tunnel it would be replacing. From the home LAN the router forwards nothing into VLAN 20 except the service VIP on 80 and 443. This was hit on 2026-07-26: tailscaled on the Pi kept its coordination-server session while passing no WireGuard traffic, so the Tailscale app still showed the router online while the estate was unreachable, and recovery needed a physical power cycle. The cluster itself was unaffected throughout. That gap is closed now: control-plane-1 joins the tailnet directly as its own `tag:cluster` device with a per-host auth key, and `hosts/common/networking.nix` opens port 22 on every interface rather than on `vlan20` alone, so an operator reaches control-plane-1 over its own WireGuard session without transiting the Pi's subnet router or depending on the Pi's `tailscaled` state at all. A repeat of the 2026-07-26 failure, the Pi's `tailscaled` wedged while still claiming to be online, no longer strands the estate. The one thing still Pi-mediated is control-plane-1's own outbound DNS resolution, since its client keeps `--accept-dns=false` and the Pi as resolver; that affects traffic control-plane-1 initiates, not an operator reaching control-plane-1.
 - A full bare-metal rehearsal, re-imaging spare hardware end to end, and a full reconcile on unlike hardware both depend on a cluster-appropriate overlay that does not exist yet.

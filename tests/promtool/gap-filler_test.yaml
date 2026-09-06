@@ -33,7 +33,7 @@ tests:
   - interval: 1m
     name: a stopped snapshot schedule raises the etcd snapshot age alert
     input_series:
-      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-cp-1-1", node="cp-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-cp-1-1", ready="true"}'
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-control-plane-1-1", node="control-plane-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-control-plane-1-1", ready="true"}'
         values: '0x1900'
     alert_rule_test:
       - eval_time: 1680m
@@ -48,7 +48,7 @@ tests:
   - interval: 1m
     name: a current local etcd snapshot raises nothing
     input_series:
-      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-cp-1-1", node="cp-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-cp-1-1", ready="true"}'
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-control-plane-1-1", node="control-plane-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-control-plane-1-1", ready="true"}'
         values: '100000x1900'
     alert_rule_test:
       - eval_time: 1680m
@@ -86,14 +86,14 @@ tests:
               severity: warning
             exp_annotations:
               summary: "etcd WAL fsync p99 is above 100ms"
-              description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on cp-1, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
+              description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on control-plane-1, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
 
   - interval: 1m
     name: on-demand snapshots do not mask a stopped schedule
     input_series:
-      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-cp-1-1", node="cp-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-cp-1-1", ready="true"}'
+      - series: 'kube_etcdsnapshotfile_created{name="local-etcd-snapshot-control-plane-1-1", node="control-plane-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/etcd-snapshot-control-plane-1-1", ready="true"}'
         values: '0x1900'
-      - series: 'kube_etcdsnapshotfile_created{name="local-on-demand-cp-1-2", node="cp-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/on-demand-cp-1-2", ready="true"}'
+      - series: 'kube_etcdsnapshotfile_created{name="local-on-demand-control-plane-1-2", node="control-plane-1", location="file:///var/lib/rancher/k3s/server/db/snapshots/on-demand-control-plane-1-2", ready="true"}'
         values: '100000x1900'
     alert_rule_test:
       - eval_time: 1680m
@@ -200,7 +200,7 @@ tests:
   - interval: 1m
     name: node temperature past the warning threshold fires warning only
     input_series:
-      - series: 'node_hwmon_temp_celsius{instance="cp-1",chip="platform_coretemp_0",sensor="temp1"}'
+      - series: 'node_hwmon_temp_celsius{instance="control-plane-1",chip="platform_coretemp_0",sensor="temp1"}'
         values: '78x200'
     alert_rule_test:
       - eval_time: 30m
@@ -208,10 +208,10 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
-              instance: cp-1
+              instance: control-plane-1
             exp_annotations:
-              summary: "Node cp-1 is running hot"
-              description: "The hottest sensor on cp-1 has read 78 degrees Celsius for over 15 minutes, well above the 45 to 60 degree band these nodes sit in at rest. The usual causes are a blocked intake, a failing fan or a sustained workload."
+              summary: "Node control-plane-1 is running hot"
+              description: "The hottest sensor on control-plane-1 has read 78 degrees Celsius for over 15 minutes, well above the 45 to 60 degree band these nodes sit in at rest. The usual causes are a blocked intake, a failing fan or a sustained workload."
       - eval_time: 30m
         alertname: NodeCpuTemperatureCritical
         exp_alerts: []

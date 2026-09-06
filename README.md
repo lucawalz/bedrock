@@ -38,7 +38,7 @@ Three Lenovo ThinkCentre m920q nodes on VLAN 20, with a Raspberry Pi as the rout
 
 | Node | Role | Address |
 |------|------|---------|
-| cp-1 | K3s server and control plane | 10.20.0.10 |
+| control-plane-1 | K3s server and control plane | 10.20.0.10 |
 | worker-1 | K3s agent | 10.20.0.11 |
 | worker-2 | K3s agent | 10.20.0.12 |
 | router | Pi gateway, firewall, DNS, Tailscale subnet router | 10.20.0.1 |
@@ -68,7 +68,7 @@ A fresh cluster is brought up in two stages: the hosts, then Flux.
 1. Install NixOS on each machine and apply its configuration. For an existing host, build the configuration and push it over SSH:
 
    ```
-   nixos-rebuild switch --flake .#cp-1 --target-host root@<cp-1-ip> --build-host root@<cp-1-ip>
+   nixos-rebuild switch --flake .#control-plane-1 --target-host root@<control-plane-1-ip> --build-host root@<control-plane-1-ip>
    ```
 
    `--build-host` is not optional here. See [Rebuilding a host](#rebuilding-a-host).
@@ -93,10 +93,10 @@ Confirm the nodes are up:
 
 ```
 $ kubectl get nodes
-NAME       STATUS   ROLES                  AGE    VERSION
-cp-1       Ready    control-plane,etcd     219d   v1.35.2+k3s1
-worker-1   Ready    <none>                 219d   v1.35.2+k3s1
-worker-2   Ready    <none>                 219d   v1.35.2+k3s1
+NAME              STATUS   ROLES                  AGE    VERSION
+control-plane-1   Ready    control-plane,etcd     219d   v1.35.2+k3s1
+worker-1          Ready    <none>                 219d   v1.35.2+k3s1
+worker-2          Ready    <none>                 219d   v1.35.2+k3s1
 ```
 
 Change anything under `kubernetes/` by committing to `main`. Flux applies it within a minute, with no manual `kubectl apply`. Check what reconciled:
@@ -120,7 +120,7 @@ nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip> --build
 
 `--target-host` on its own builds the closure on the machine the command runs from. From an arm64 macOS workstation that fails for every host in this repository, because it can produce neither the x86_64-linux closure the cluster nodes need nor the aarch64-linux one the router needs. `--build-host` moves the build to a machine that can.
 
-cp-1 is the build host for day-to-day work, and `boot.binfmt.emulatedSystems` on cp-1 covers the router's aarch64 closure as well as the nodes' own. During a cold rebuild, when cp-1 does not exist yet, point `--build-host` at the target itself.
+control-plane-1 is the build host for day-to-day work, and `boot.binfmt.emulatedSystems` on control-plane-1 covers the router's aarch64 closure as well as the nodes' own. During a cold rebuild, when control-plane-1 does not exist yet, point `--build-host` at the target itself.
 
 Do not prefix the command with `sudo`. With both hosts set, nothing is built or activated locally, so local root is never needed, and sudo relocates `$HOME` to `/var/root`, which holds no SSH key for the cluster. The same cause makes a `builders` line in a user-level `nix.conf` inert.
 
@@ -135,7 +135,7 @@ flake.nix              entry point; defines every host and the dev shells
 lib/                   mkHost and mkWorker builders that keep host definitions small
 hosts/
   common/              shared base: boot, locale, networking, users, packages, nix
-  cp-1/                control-plane node, with its disk layout and hardware scan
+  control-plane-1/     control-plane node, with its disk layout and hardware scan
   router/              the Pi, composed from the router modules
   router-installer.nix the installer image that writes the Pi's first system
 modules/

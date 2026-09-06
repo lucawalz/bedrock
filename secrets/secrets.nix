@@ -3,7 +3,7 @@
 let
   # Host SSH public keys (ed25519)
   # These are the SSH host keys from /etc/ssh/ssh_host_ed25519_key.pub on each machine
-  cp-1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAU9eaUVbsNWFhRKfzokIBEWY7mfAmb+ISf3kjVKHErx root@cp-1";
+  control-plane-1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAU9eaUVbsNWFhRKfzokIBEWY7mfAmb+ISf3kjVKHErx root@control-plane-1";
   worker-1 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBsCOF/GD5lCxesfVwG6DHGRQQCdAX5F4vld9yyk+3jR root@worker-1";
   worker-2 = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGCdX2yJ94TwBRr/lRbFax4xguXQGcHM2AhaFnV3UVCw root@worker-2";
   router = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMzOdJNsyGrrg4D2G4TQ9OpE3NB12ITZzdoWnG3gwUvK root@router";
@@ -12,7 +12,7 @@ let
 in
 {
   "k3s-token.age".publicKeys = [
-    cp-1
+    control-plane-1
     worker-1
     worker-2
     luca
@@ -21,8 +21,8 @@ in
     router
     luca
   ];
-  "tailscale-authkey-cp-1.age".publicKeys = [
-    cp-1
+  "tailscale-authkey-control-plane-1.age".publicKeys = [
+    control-plane-1
     luca
   ];
   "tailscale-authkey-worker-1.age".publicKeys = [
