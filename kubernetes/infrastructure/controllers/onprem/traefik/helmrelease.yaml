@@ -54,6 +54,13 @@ spec:
       - --entryPoints.websecure.http.middlewares=traefik-security-headers@kubernetescrd
     readinessProbe:
       failureThreshold: 3
+    tracing:
+      otlp:
+        enabled: true
+        grpc:
+          enabled: true
+          endpoint: alloy.monitoring.svc.cluster.local:4317
+          insecure: true
     resources:
       requests:
         cpu: "100m"
