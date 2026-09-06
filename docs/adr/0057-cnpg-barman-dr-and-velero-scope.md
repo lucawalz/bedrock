@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, backup mechanisms superseded by 0081
 date: 2026-07-04
 ---
 
@@ -47,3 +47,9 @@ Both are corrected by labelling the Postgres PVCs out of the `default` group thr
 The second is still live. `longhorn-snapshot-vsc` reports empty `parameters`, so every non-Postgres volume Velero snapshots reaches `basalt-backups` twice nightly, at 03:30 from the RecurringJob and at 02:00 through the CSI path. Setting `type` in `kubernetes/infrastructure/controllers/storage/velero/volumesnapshotclass.yaml` closes it but removes an off-cluster copy, so it is a trade-off to be decided. `kiwix-library` sits outside the group by the same labelling, so `LonghornVolumeNeverBackedUp` fires permanently for it and the Postgres volumes by design.
 
 The separate credential described above is also not what this record claims. The `cnpg-backup-s3` key is a different key pair from the one Velero, Longhorn and k3s share, but Hetzner key pairs are project-wide by default and no bucket policy exists on either bucket. Both keys carry `FULL_CONTROL` over both buckets, which was confirmed by using the CNPG key to list `basalt-backups` and read its ACL. The separation is therefore organisational, not enforced, and the claimed blast-radius reduction does not hold. Scoping it needs a bucket policy naming the access key, which is a console action recorded as an open gap in the recovery runbook. Because Velero runs with the node agent disabled, its volume durability for what remains rides Longhorn's BackupTarget writing to the shared bucket. The CSI snapshot path and the Longhorn backup are therefore the real durability mechanism for non-Postgres volumes, and the Velero exclusions change what is offered to that path, not a separate copy. The Ollama vision volume move is a one-time model re-pull on the disposable class, accepted because the weights are re-derivable by design.
+
+**Correction, 2026-09-06.** The 2026-07-29 correction above is closed, and both mechanisms this record decided are gone.
+
+The double-write it left open was fixed rather than left as a standing trade-off. `longhorn-snapshot-vsc` was set to `parameters: {type: snap}`, so Velero's CSI path produced in-cluster snapshots only and no non-Postgres volume reached `basalt-backups` twice. That was confirmed live before the class was deleted. The correction should be read as settled, not as describing current behaviour.
+
+The rest is superseded by [0081](0081-retire-the-hetzner-account.md), which closes the Hetzner account. Barman, its ObjectStore and ScheduledBackup, the outbound 443 rule, and Velero in full are all removed, so Postgres has no point-in-time recovery and the estate has no off-site copy of anything. Two things this record established do survive and are still live: the Postgres volumes remain labelled out of Longhorn's `default` group through `inheritedMetadata`, and re-derivable model weights still sit on the `longhorn-disposable` storage class. The reasoning about crash consistency against a running engine also survives, and it is the reason [0081](0081-retire-the-hetzner-account.md) records the loss of point-in-time recovery as the largest single capability lost.

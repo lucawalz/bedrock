@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, Hetzner backup premise superseded by 0081
 date: 2026-06-21
 ---
 
@@ -28,3 +28,5 @@ Backups stay on Hetzner object storage as decided in ADR 0009; nothing about Vel
 The repository describes what actually runs: home K3s, Hetzner burst scaling, and Hetzner-backed backups, with no AWS account dependency and nothing billing. The proven multi-cloud capability is preserved as history in these records, so it can be rebuilt rather than left running. Reintroducing a cloud peer later means restoring the provider, credentials, and gitops-peer rather than un-suspending dormant manifests, which is the correct cost for standing infrastructure.
 
 **Update (2026-07-06):** two sentences above no longer hold. The Context's "Hetzner scaling joins nodes to the existing cluster through CAPH rather than running a separate GitOps peer" and the Decision's "Long-term cloud scaling stays on Hetzner through the native CAPH autoscaler (ADRs 0024, 0025, 0041)" both name infrastructure that is gone. ADRs 0024, 0025, and 0041 are themselves superseded; the autoscaler they describe was retired by [0062](0062-retire-elastic-cluster-autoscaler.md), and the remaining Cluster-API-for-Hetzner stack, including CAPH, was removed by [0063](0063-return-to-single-region.md). Long-term Hetzner scaling now runs through horizon's on-demand hcloud provisioning alone, with no autoscaler and no CAPH. The gitops-peer conclusion the Context sentence supports, that the ClusterResourceSet has no remaining consumer, still holds.
+
+**Update (2026-09-06):** the backup half of this record is gone with the Hetzner account. "Backups stay on Hetzner object storage as decided in ADR 0009; nothing about Velero changes" no longer holds, and neither does the Consequence's "home K3s, Hetzner burst scaling, and Hetzner-backed backups". [0081](0081-retire-the-hetzner-account.md) removes Velero, the Longhorn backup target, the etcd snapshot upload and the CloudNativePG archiver, and adds no substitute, so the estate now holds no off-site copy at all. The AWS teardown this record decided is unaffected and still stands, including the option it rejected: an off-site AWS bucket remains a decision to make on its own merits rather than one this record left open.

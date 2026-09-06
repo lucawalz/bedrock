@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, burst capacity superseded by 0081
 date: 2026-08-03
 ---
 
@@ -47,3 +47,5 @@ Until the chart carries `spec.hetzner.firewalls`, only the in-guest layer is rea
 Adding the field early now fails in continuous integration rather than in the cluster. `scripts/gen-crd-schemas.sh` derives kubeconform schemas from the custom resource definitions this repository installs, including the ones in the pinned horizon chart, so a `ProviderConfig` field the chart does not define is rejected in a pull request. That closes the gap that made this a hazard: horizon's custom resources were previously skipped entirely by manifest validation, and a wrong field reached admission before anything noticed.
 
 Moving to a dedicated project later stays cheap and stays a rebuild. Nothing here depends on the snapshot keeping its identity, only on the hash that names it being derivable from the repository.
+
+**Correction, 2026-09-06.** There are no burst nodes and no Hetzner credential, so nothing in this record is in force. [0081](0081-retire-the-hetzner-account.md) removes the `hetzner` ProviderConfig, the `cluster-horizon-provider` Kustomization and the hcloud API egress rule with the account itself. The exposure this record bounds is therefore closed by the absence of the thing exposed rather than by any of the layers described here, and the `horizon-burst` Cloud Firewall goes with the account. The reasoning is kept in force for a future provider: a delete-capable credential on a disposable public machine is bounded by an operator's ownership guard and by the contents of the project, not by a permission the cloud enforces, and that holds whichever cloud it is. The node image, `modules/k3s/hetzner-scaffolding.nix` and the Packer definition stay in the repository dormant, so re-enabling burst capacity would reopen exactly the trade-offs recorded here.
