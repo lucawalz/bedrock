@@ -6,4 +6,3 @@ resources:
   - metallb
   - longhorn
   - cloudflare-tunnel
-  - zot

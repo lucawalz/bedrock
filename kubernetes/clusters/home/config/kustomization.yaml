@@ -12,3 +12,4 @@ resources:
   - policies.yaml
   - apps.yaml
   - cluster-settings.yaml
+  - zot.yaml
