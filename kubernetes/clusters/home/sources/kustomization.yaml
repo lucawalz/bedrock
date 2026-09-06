@@ -23,5 +23,6 @@ resources:
   - helm/policy-reporter.yaml
   - helm/flagger.yaml
   - helm/minio.yaml
+  - helm/metrics-server.yaml
   - helm/zot.yaml
   - helm/lucawalz.yaml
