@@ -140,10 +140,11 @@ Withdrawing the backup stack is not entirely expressible in Git. Three cleanups 
 kubectl patch providerconfig hetzner --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
 ```
 
-**Delete the Longhorn BackupTarget.** It carries `kustomize.toolkit.fluxcd.io/prune: disabled` and the finalizer `longhorn.io`, so removing its manifest leaves the live object in place, polling dead object storage every five minutes. It is the same finalizer shape as the ProviderConfig above, and it is not known whether `longhorn-manager` needs to reach the S3 endpoint to clear it. Run this deletion inside the same window as the push, while Hetzner still answers, not afterwards:
+**Blank the Longhorn BackupTarget.** It carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing its manifest leaves the live object in place, polling dead object storage every five minutes. Longhorn refuses to delete the target named `default`, answering `deleting default backup target is not allowed`, because it always keeps one. Clearing its URL and credential is the equivalent, and it also drops the BackupVolume records that indexed the remote bucket:
 
 ```
-kubectl -n longhorn-system delete backuptarget default
+kubectl -n longhorn-system patch backuptarget default --type=merge \
+  -p '{"spec":{"backupTargetURL":"","credentialSecret":"","pollInterval":"0s"}}'
 ```
 
 Longhorn's backup records are hierarchical, so a cleanup that goes further deletes the parent `BackupVolume` rather than individual `Backup` resources. The parent re-syncs its children from the object store, and deleting children alone never converges.
