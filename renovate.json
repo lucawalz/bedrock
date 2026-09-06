@@ -114,7 +114,6 @@
         "/^longhorn$/",
         "/^cloudnative-pg$/",
         "/^kube-prometheus-stack$/",
-        "/^velero$/",
         "/^cert-manager$/",
         "/^traefik$/",
         "/^authentik$/",
@@ -144,7 +143,6 @@
         "/^longhorn$/",
         "/^cloudnative-pg$/",
         "/^kube-prometheus-stack$/",
-        "/^velero$/",
         "/^cert-manager$/"
       ],
       "separateMultipleMinor": true

@@ -183,11 +183,6 @@ in
             answer = inventory.serviceVip;
             enabled = true;
           }
-          {
-            domain = "velero.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
         ];
       };
       filters = [

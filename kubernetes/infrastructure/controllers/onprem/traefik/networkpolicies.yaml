@@ -93,9 +93,6 @@ spec:
               kubernetes.io/metadata.name: authentik
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: velero
-        - namespaceSelector:
-            matchLabels:
               kubernetes.io/metadata.name: flux-system
         - namespaceSelector:
             matchLabels:

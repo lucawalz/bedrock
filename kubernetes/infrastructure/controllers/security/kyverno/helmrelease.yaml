@@ -38,7 +38,6 @@ spec:
                 - cert-manager
                 - metallb-system
                 - monitoring
-                - velero
                 - cnpg-system
       resourceFiltersIncludeNamespaces:
         - kube-system
@@ -51,7 +50,6 @@ spec:
         - longhorn-system
         - metallb-system
         - monitoring
-        - velero
         - cattle-capi-system
         - cattle-fleet-clusters-system
         - cattle-fleet-local-system
