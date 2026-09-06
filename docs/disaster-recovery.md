@@ -132,7 +132,7 @@ Rehearsing this is hazardous. A restored snapshot contains the live estate's Met
 
 ## Live objects the backup removal leaves behind
 
-Withdrawing the backup stack is not entirely expressible in Git. Three cleanups need a command, and one of them has an ordering constraint that cannot be recovered from cheaply if it is missed.
+Withdrawing the backup stack is not entirely expressible in Git. Three cleanups need a command, and two of them have an ordering constraint that cannot be recovered from cheaply if it is missed.
 
 **Sequence the push ahead of the account closure.** The `hetzner` ProviderConfig carries the finalizer `horizon.dev/provider-config`, set by the running horizon operator rather than by any manifest. Flux prunes the object when the removal lands, but Kubernetes holds it in `Terminating` until the operator clears that finalizer, and the operator's teardown releases leases against the hcloud API before giving up ownership ([ADR 0071](adr/0071-deploy-horizon-operator-from-published-chart.md)). If the credential is already dead at that moment, the finalizer never clears and the object hangs indefinitely. Push and let the cluster reconcile before revoking account access. If it is ever found stuck, clear the finalizer by hand:
 
@@ -140,7 +140,7 @@ Withdrawing the backup stack is not entirely expressible in Git. Three cleanups 
 kubectl patch providerconfig hetzner --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
 ```
 
-**Delete the Longhorn BackupTarget.** It carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing its manifest leaves the live object in place, polling dead object storage every five minutes:
+**Delete the Longhorn BackupTarget.** It carries `kustomize.toolkit.fluxcd.io/prune: disabled` and the finalizer `longhorn.io`, so removing its manifest leaves the live object in place, polling dead object storage every five minutes. It is the same finalizer shape as the ProviderConfig above, and it is not known whether `longhorn-manager` needs to reach the S3 endpoint to clear it. Run this deletion inside the same window as the push, while Hetzner still answers, not afterwards:
 
 ```
 kubectl -n longhorn-system delete backuptarget default
