@@ -5,6 +5,7 @@ metadata:
   namespace: authentik
 spec:
   interval: 30m
+  timeout: 15m
   chart:
     spec:
       chart: authentik
@@ -19,6 +20,9 @@ spec:
   upgrade:
     remediation:
       retries: 3
+      remediateLastFailure: false
+  driftDetection:
+    mode: warn
   values:
     authentik:
       secret_key: ""

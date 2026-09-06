@@ -89,3 +89,5 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: true
+  driftDetection:
+    mode: warn

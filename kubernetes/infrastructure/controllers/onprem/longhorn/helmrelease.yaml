@@ -25,6 +25,8 @@ spec:
     remediation:
       retries: 3
       remediateLastFailure: false
+  driftDetection:
+    mode: warn
   interval: 30m0s
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
