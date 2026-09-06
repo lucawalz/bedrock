@@ -5,12 +5,3 @@ resources:
   - helmrelease.yaml
   - pdb.yaml
 
-configMapGenerator:
-  - name: cert-manager-values
-    namespace: cert-manager
-    files:
-      - values.yaml=configmap-values.yaml
-
-configurations:
-  - kustomizeconfig.yaml
-
