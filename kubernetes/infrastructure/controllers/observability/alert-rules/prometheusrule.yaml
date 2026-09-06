@@ -257,29 +257,3 @@ spec:
           annotations:
             summary: "kube-state-metrics has stopped reporting"
             description: "Prometheus has held no kube_pod_info series for more than 15 minutes, so every workload, node and capacity alert derived from kube-state-metrics is unable to fire."
-    - name: velero.rules
-      rules:
-        - alert: VeleroBackupTooOld
-          expr: time() - max by (schedule) (velero_backup_last_successful_timestamp{schedule!=""}) > 30 * 3600
-          for: 1h
-          labels:
-            severity: warning
-          annotations:
-            summary: "Velero schedule {{ $labels.schedule }} has no recent successful backup"
-            description: "The newest successful Velero backup for schedule {{ $labels.schedule }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the daily backup schedule."
-        - alert: VeleroBackupTooOldCritical
-          expr: time() - max by (schedule) (velero_backup_last_successful_timestamp{schedule!=""}) > 50 * 3600
-          for: 1h
-          labels:
-            severity: critical
-          annotations:
-            summary: "Velero schedule {{ $labels.schedule }} has a dangerously stale backup"
-            description: "The newest successful Velero backup for schedule {{ $labels.schedule }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed daily backups."
-        - alert: VeleroBackupFailing
-          expr: increase(velero_backup_failure_total{schedule!=""}[2h]) + increase(velero_backup_validation_failure_total{schedule!=""}[2h]) > 0
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: "Velero schedule {{ $labels.schedule }} is failing"
-            description: "Velero schedule {{ $labels.schedule }} recorded backup or validation failures in the last two hours, so the offsite copy is not being written."
