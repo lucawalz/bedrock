@@ -212,13 +212,13 @@ spec:
     - name: network.rules
       rules:
         - alert: FlannelInterfaceOrphaned
-          expr: changes(node_network_iface_id{device="tailscale0", job="node-exporter"}[15m]) > 0
+          expr: changes(node_network_iface_id{device="tailscale0", job="node-exporter"}[15m]) > 0 and on (instance) changes(node_boot_time_seconds{job="node-exporter"}[15m]) == 0
           for: 5m
           labels:
             severity: critical
           annotations:
-            summary: "Node {{ $labels.instance }} tailscale0 interface was recreated"
-            description: "The tailscale0 interface index on {{ $labels.instance }} changed in the last 15 minutes, which happens when tailscaled restarts and rebuilds the tunnel. flannel.1 stays bound to the old interface and nothing recreates it automatically, so the node stays Ready while its pods can reach nothing over the overlay. Check the node's flannel.alpha.coreos.com/public-ip annotation and delete flannel.1 to force a rebind, per the disaster-recovery runbook."
+            summary: "Node {{ $labels.instance }} tailscale0 interface was recreated without a reboot"
+            description: "The tailscale0 interface index on {{ $labels.instance }} changed in the last 15 minutes while the node's boot time did not, which happens when tailscaled restarts and rebuilds the tunnel but k3s does not restart alongside it. flannel.1 stays bound to the old interface and nothing recreates it automatically, so the node stays Ready while its pods can reach nothing over the overlay. A full reboot also changes this interface's index, but it changes the node's boot time too and k3s restarts in step with tailscaled, so that case is excluded. Check the node's flannel.alpha.coreos.com/public-ip annotation and delete flannel.1 to force a rebind, per the disaster-recovery runbook."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent
