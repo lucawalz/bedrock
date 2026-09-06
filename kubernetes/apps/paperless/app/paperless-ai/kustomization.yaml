@@ -4,3 +4,4 @@ components:
   - ../../../../components/topology-spread
 resources:
   - helmrelease.yaml
+  - pvc.yaml

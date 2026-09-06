@@ -18,6 +18,7 @@ spec:
     remediation:
       retries: 3
   upgrade:
+    force: true
     remediation:
       retries: 3
       remediateLastFailure: true
@@ -74,9 +75,6 @@ spec:
             port: 3000
     persistence:
       data:
-        enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        size: 2Gi
+        existingClaim: paperless-ai
         globalMounts:
           - path: /app/data
