@@ -17,6 +17,8 @@ spec:
   routes:
     - match: Host(`minio.syslabs.dev`)
       kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
       services:
         - name: minio-minio-console
           port: 9001

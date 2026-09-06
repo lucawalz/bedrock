@@ -18,6 +18,8 @@ spec:
   routes:
     - match: Host(`pgadmin.syslabs.dev`)
       kind: Rule
+      middlewares:
+        - name: authentik-forward-auth
       services:
         - name: pgadmin-pgadmin4
           port: 80
