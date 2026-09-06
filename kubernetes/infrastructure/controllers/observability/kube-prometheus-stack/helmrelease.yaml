@@ -16,7 +16,7 @@ spec:
   valuesFrom:
     - kind: ConfigMap
       name: prometheus-values
-      optional: true
+      optional: false
   install:
     timeout: 20m
     remediation:
