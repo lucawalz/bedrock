@@ -32,6 +32,11 @@ while IFS= read -r file; do
     ".. | select(tag == \"!!map\") | select(has(\"volumeClaimTemplate\")) | (.volumeClaimTemplate.metadata.labels[\"$gate_label\"] // \"missing\")"
 done < <(grep -rl "volumeClaimTemplate:" --include="*.yaml" "$k8s_dir")
 
+while IFS= read -r file; do
+  check_values "volumeClaimTemplates entry" "$file" \
+    ".. | select(tag == \"!!map\") | select(has(\"volumeClaimTemplates\")) | .volumeClaimTemplates[] | (.metadata.labels[\"$gate_label\"] // \"missing\")"
+done < <(grep -rl "volumeClaimTemplates:" --include="*.yaml" "$k8s_dir")
+
 if [ -n "$undeclared" ]; then
   echo "Declared volumes that do not state a recurring-job snapshot group (inclusion or exclusion):"
   printf '%s' "$undeclared" | sed 's/^/  - /'
