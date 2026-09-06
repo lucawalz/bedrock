@@ -18,6 +18,8 @@
       "--disable=coredns"
       "--disable=metrics-server"
       "--tls-san=${inventory.nodes.master}"
+      "--tls-san=${inventory.nodes.master.tailscale.address}"
+      "--tls-san=${inventory.nodes.master.tailscale.magicDnsName}"
       "--node-ip=${inventory.nodes.master}"
       "--secrets-encryption"
       "--node-label=bedrock.io/storage=true"
