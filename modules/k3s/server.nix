@@ -2,7 +2,6 @@
 {
   config,
   inventory,
-  secretsDir ? ../../secrets,
   ...
 }:
 {
@@ -24,24 +23,11 @@
       "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it
       "--kubelet-arg=kube-reserved=cpu=800m,memory=4Gi"
       "--kubelet-arg=system-reserved=cpu=200m,memory=512Mi"
-      "--etcd-s3"
-      "--etcd-s3-bucket=basalt-backups"
-      "--etcd-s3-region=eu-central-1"
-      "--etcd-s3-endpoint=hel1.your-objectstorage.com"
-      "--etcd-s3-folder=etcd-snapshots"
       "--etcd-snapshot-schedule-cron=\"0 */12 * * *\""
       "--etcd-snapshot-retention=5"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
-    environmentFile = config.age.secrets.etcd-s3-credentials.path;
     clusterInit = true;
-  };
-
-  age.secrets.etcd-s3-credentials = {
-    file = "${secretsDir}/etcd-s3-credentials.age";
-    mode = "0400";
-    owner = "root";
-    group = "root";
   };
 
   networking.firewall.allowedTCPPorts = [
