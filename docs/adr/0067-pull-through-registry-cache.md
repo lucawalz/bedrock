@@ -59,3 +59,13 @@ Roll out in this order, after the manifests are pushed and Flux has reconciled t
 4. Master is last because rebuilding it restarts the API server for roughly thirty seconds, and doing that while a worker is mid-drain leaves the drain in an unknown state.
 
 Reachability is not proof that the cache is serving. On worker-1, pull a tag no node holds, for example `ssh root@10.20.0.11 k3s crictl pull docker.io/library/alpine:3.21`. Then confirm it landed in the cache with `curl -s https://registry.syslabs.dev/v2/_catalog`, which must now list `docker.io/library/alpine`. Then pull the same tag on worker-2 and check the zot logs with `kubectl -n zot logs statefulset/zot`, which must show the manifest served without a new upstream sync for that repository.
+
+## Update 2026-09-06
+
+The unbounded growth accepted above stopped being theoretical. On 2026-08-30 a burst of Renovate merges filled `data-zot-0`, and a sync of `docker.io/library/redis:8.10.1` failed with `no space left on device`. Zot then retried against Docker Hub until it hit the anonymous rate limit, so the upstream fallback was poisoned as well. The paperless redis Deployment uses the chart's default `Recreate` strategy, so its old pod was already gone; the new one never started, Helm timed out four times, and the HelmRelease latched `Stalled` with `RetriesExceeded`. That state is terminal, so nothing retried it and the release sat wedged for six days while the volume stayed full.
+
+The remedy this record described was manual, and a manual remedy only works if somebody knows to apply it. Nothing was watching. The Longhorn alerts count space promised to replicas rather than bytes written, so a volume filling to 98 percent left them silent.
+
+Three changes follow. Zot now sets `gc` with a retention policy that keeps a tag pulled or pushed within the last 720 hours, plus the five most recently pulled, and deletes everything else along with untagged manifests, which bounds the cache to its working set instead of to the volume size. A pair of `PersistentVolumeFillingUp` and `PersistentVolumeAlmostFull` alerts now read `kubelet_volume_stats`, so any claim that fills is visible before it breaks something. And paperless redis sets `RollingUpdate` explicitly, so a pull that cannot be satisfied leaves the running pod in place rather than taking the service down while it fails.
+
+The decision to run a pull-through cache is unchanged. What changes is that its capacity is now managed by the cache itself rather than by remembering to intervene.
