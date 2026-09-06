@@ -103,6 +103,15 @@ Rancher mirror the k3s addon pulls to `registry.k8s.io`, which is already an exp
 mirror and an on-demand sync target for the pull-through cache described in
 [0067](0067-pull-through-registry-cache.md), so the move adds no new external dependency.
 
+The `cluster-metrics-server` Kustomization ships with `suspend: true`. The k3s addon still owns
+`ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and
+`APIService/v1beta1.metrics.k8s.io` through wrangler's `objectset.rio.cattle.io` annotations until
+master is rebuilt with the disable flag above, and Helm 3 refuses to adopt objects it does not
+already own. A reconcile against a cluster still running the addon exhausts the chart's install
+retries and leaves the Kustomization stalled. Since disabling the addon is a node rebuild that Flux
+cannot depend on or wait for, the Kustomization stays suspended until an operator rebuilds master and
+resumes it by hand, recorded in the disaster-recovery runbook.
+
 **Longhorn `storageReserved` stays imperative.** The chart's
 `storageReservedPercentageForDefaultDisk` value only takes effect when Longhorn first creates a
 disk record; changing it does nothing to a disk that already exists, and the `nodes.longhorn.io`
@@ -179,19 +188,31 @@ changed. This predates this pass and is not introduced by it. It is recorded her
 investigation into an unexpected closure change checks this cause before assuming a real
 configuration drift.
 
-**A deploy-order hazard between Kyverno's exception pin and the exceptions it targets.** The
-Kyverno HelmRelease pins `policyExceptions.namespace: kyverno`, so it looks only in that namespace
-for exceptions once this reconciles. That HelmRelease lives under the `cluster-security`
-Kustomization. The nine PolicyExceptions it needs to find were moved into the `kyverno` namespace as
-part of the same body of work, but they live under `cluster-policies`, which depends on
-`cluster-security` and therefore reconciles after it. Between the two, Kyverno is briefly
+**A deploy-order hazard between Kyverno's exception pin and the exceptions it targets, wider than a
+single restarting pod.** The Kyverno HelmRelease pins `policyExceptions.namespace: kyverno`, so it
+looks only in that namespace for exceptions once this reconciles. That HelmRelease lives under the
+`cluster-security` Kustomization. The nine PolicyExceptions it needs to find were moved into the
+`kyverno` namespace as part of the same body of work, but they live under `cluster-policies`, which
+depends on `cluster-security` and therefore reconciles after it. Between the two, Kyverno is briefly
 configured to look for exceptions in a namespace that does not yet hold them, and any pod that
-restarts and re-enters admission in that window is evaluated with no exceptions at all. The window
-is short, on the order of seconds to a minute, and it only bites a pod that happens to restart
-inside it, but the workloads the exceptions protect include `authentik-server` and `paperless-ngx`.
-The mitigation is procedural rather than structural: after pushing, reconcile `cluster-policies`
-before or together with `cluster-security`, and confirm `kubectl get policyexceptions -n kyverno`
-returns nine before restarting anything that depends on an exception.
+restarts and re-enters admission in that window is evaluated with no exceptions at all.
+
+That window is not confined to a pod that happens to restart inside it. `cluster-apps` depends only
+on `cluster-namespaces`, and `cluster-authentik` depends on `cluster-cert-manager`,
+`cluster-edge-onprem` and `cluster-cnpg-db`; neither waits on `cluster-security` or
+`cluster-policies`, so the whole application tier reconciles in parallel with the window rather than
+after it closes. This body of work also guarantees restarts inside that window rather than leaving
+them to chance: `authentik-worker` restarts for its new liveness probe, `open-webui` restarts for its
+new `copyAppData.resources` block, `ntfy` restarts for its replica count and probe change, and
+`paperless-ai` restarts for its new `existingClaim` together with `force: true`, and all four sit
+inside one of the nine PolicyExceptions this pin depends on. The workloads the exceptions protect
+also include `authentik-server` and `paperless-ngx`, which do not restart on this push but reconcile
+in the same unordered window.
+
+The mitigation is procedural rather than structural: either suspend `cluster-apps` and
+`cluster-authentik` until `kubectl get policyexceptions -n kyverno` returns nine, or split
+`policyExceptions.namespace: kyverno` into a second push made only after the exception move has
+already landed.
 
 ## Options considered
 
