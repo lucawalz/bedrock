@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cloudnative-pg
+  namespace: cnpg-system
+spec:
+  maxUnavailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cloudnative-pg
+      app.kubernetes.io/name: cloudnative-pg

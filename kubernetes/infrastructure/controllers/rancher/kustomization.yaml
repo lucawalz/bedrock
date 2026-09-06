@@ -12,3 +12,4 @@ resources:
   - middleware.yaml
   - networkpolicies.yaml
   - pdb.yaml
+  - rancher-webhook-pdb.yaml
