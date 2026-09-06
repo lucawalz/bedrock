@@ -30,16 +30,16 @@
           ];
           reservations = [
             {
-              hw-address = "98:fa:9b:a0:67:b7";
-              ip-address = inventory.nodes.master;
+              hw-address = inventory.nodes.master.mac;
+              ip-address = inventory.nodes.master.address;
             }
             {
-              hw-address = "98:fa:9b:a0:63:24";
-              ip-address = inventory.nodes.worker-1;
+              hw-address = inventory.nodes.worker-1.mac;
+              ip-address = inventory.nodes.worker-1.address;
             }
             {
-              hw-address = "98:fa:9b:34:bc:10";
-              ip-address = inventory.nodes.worker-2;
+              hw-address = inventory.nodes.worker-2.mac;
+              ip-address = inventory.nodes.worker-2.address;
             }
           ];
           option-data = [
