@@ -24,7 +24,9 @@ data:
         reload
         loadbalance
         import /etc/coredns/custom/*.override
-        forward . /etc/resolv.conf
+        forward . 10.20.0.1 1.1.1.1 9.9.9.9 {
+          policy sequential
+        }
     }
     import /etc/coredns/custom/*.server
   NodeHosts: |
