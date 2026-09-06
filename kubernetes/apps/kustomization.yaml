@@ -12,3 +12,4 @@ resources:
   - miniflux/ks.yaml
   - kiwix/ks.yaml
   - home-assistant/ks.yaml
+  - media-encode/ks.yaml

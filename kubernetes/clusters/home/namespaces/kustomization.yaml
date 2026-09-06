@@ -31,4 +31,5 @@ resources:
   - horizon-system.yaml
   - home-assistant.yaml
   - default.yaml
+  - media-encode.yaml
   - default-serviceaccounts.yaml
