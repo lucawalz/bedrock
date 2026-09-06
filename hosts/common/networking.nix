@@ -7,6 +7,7 @@
 let
   self = inventory.nodes.${meta.hostname};
   prefixLength = lib.last (lib.splitString "/" inventory.subnet);
+  controlPlane = inventory.nodes.${inventory.controlPlane};
 in
 {
   networking = {
@@ -29,7 +30,7 @@ in
         };
       };
     };
-    hosts.${inventory.nodes.master.address} = [ "master" ];
+    hosts.${controlPlane.address} = [ inventory.controlPlane ];
     firewall = {
       enable = true;
       allowedTCPPorts = [ 22 ];

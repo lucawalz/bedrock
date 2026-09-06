@@ -1,9 +1,13 @@
 # K3s control plane (server) module
 {
   config,
+  meta,
   inventory,
   ...
 }:
+let
+  self = inventory.nodes.${meta.hostname};
+in
 {
   imports = [ ./common.nix ];
 
@@ -17,10 +21,10 @@
       "--disable=local-storage" # Using Longhorn instead
       "--disable=coredns"
       "--disable=metrics-server"
-      "--tls-san=${inventory.nodes.master}"
-      "--tls-san=${inventory.nodes.master.tailscale.address}"
-      "--tls-san=${inventory.nodes.master.tailscale.magicDnsName}"
-      "--node-ip=${inventory.nodes.master}"
+      "--tls-san=${self.address}"
+      "--tls-san=${self.tailscale.address}"
+      "--tls-san=${self.tailscale.magicDnsName}"
+      "--node-ip=${self.address}"
       "--secrets-encryption"
       "--node-label=bedrock.io/storage=true"
       "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it

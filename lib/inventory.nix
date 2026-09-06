@@ -12,17 +12,14 @@
         address = "100.105.211.67";
         magicDnsName = "master.tail26ab10.ts.net";
       };
-      __toString = self: self.address;
     };
     worker-1 = {
       address = "10.20.0.11";
       mac = "98:fa:9b:a0:63:24";
-      __toString = self: self.address;
     };
     worker-2 = {
       address = "10.20.0.12";
       mac = "98:fa:9b:34:bc:10";
-      __toString = self: self.address;
     };
   };
 }

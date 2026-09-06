@@ -170,7 +170,7 @@ in
           networking.hostName = hostname;
           system.stateVersion = "25.05";
 
-          services.k3s.extraFlags = [ "--node-ip=${inventory.nodes.${hostname}}" ];
+          services.k3s.extraFlags = [ "--node-ip=${inventory.nodes.${hostname}.address}" ];
 
           age.secrets.tailscale-authkey = {
             file = "${secretsDir}/tailscale-authkey-${hostname}.age";
