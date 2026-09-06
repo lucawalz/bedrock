@@ -159,6 +159,24 @@ spec:
           annotations:
             summary: "Longhorn node {{ $labels.node }} is almost out of replica scheduling headroom"
             description: "Longhorn has promised {{ $value | printf \"%.0f\" }} percent of the replica capacity on node {{ $labels.node }}. New three-replica volume creation is about to fail cluster-wide. Free space by deleting unused volumes or their orphaned replicas, or expand the disk."
+    - name: volume.rules
+      rules:
+        - alert: PersistentVolumeFillingUp
+          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100) > 85
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }} percent full"
+            description: "The volume claimed by {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been over 85 percent full for an hour. This measures bytes actually written inside the filesystem, which no other rule here covers: the Longhorn scheduling headroom alerts count space promised to replicas rather than space consumed, so a volume can fill completely while they stay quiet."
+        - alert: PersistentVolumeAlmostFull
+          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100) > 95
+          for: 15m
+          labels:
+            severity: critical
+          annotations:
+            summary: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is almost out of space"
+            description: "The volume claimed by {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }} percent full. Writes are about to fail with ENOSPC, and a workload that cannot write often degrades something further downstream rather than failing visibly itself."
     - name: node.rules
       rules:
         - alert: NodeCpuTemperatureHigh
