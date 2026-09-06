@@ -45,46 +45,6 @@ spec:
             description: "Prometheus has held no flux_resource_info series for more than 15 minutes, so FluxReconciliationFailure cannot fire and a stalled delivery pipeline would stay invisible."
     - name: cnpg.rules
       rules:
-        - alert: CNPGBackupTooOld
-          expr: time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="postgres"}) > 30 * 3600
-          for: 1h
-          labels:
-            severity: warning
-          annotations:
-            summary: "CloudNativePG in {{ $labels.namespace }} has no recent backup"
-            description: "The newest available CloudNativePG backup in namespace {{ $labels.namespace }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the daily backup schedule."
-        - alert: CNPGBackupTooOldCritical
-          expr: time() - max by (namespace) (barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="postgres"}) > 50 * 3600
-          for: 1h
-          labels:
-            severity: critical
-          annotations:
-            summary: "CloudNativePG in {{ $labels.namespace }} has a dangerously stale backup"
-            description: "The newest available CloudNativePG backup in namespace {{ $labels.namespace }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed daily backups."
-        - alert: CNPGBackupStuck
-          expr: kube_cnpg_backup_phase_info{phase!~"completed|failed"} == 1
-          for: 6h
-          labels:
-            severity: critical
-          annotations:
-            summary: "CloudNativePG backup {{ $labels.namespace }}/{{ $labels.name }} is stuck in phase {{ $labels.phase }}"
-            description: "The CloudNativePG backup {{ $labels.namespace }}/{{ $labels.name }} has been in the non-terminal phase {{ $labels.phase }} for more than 6 hours. CloudNativePG never times such a backup out and a ScheduledBackup refuses to create a new one while a non-terminal backup exists, so every later run is suppressed until this object reaches a terminal phase or is deleted."
-        - alert: CNPGWALArchiveFailing
-          expr: sum by (namespace) (increase(cnpg_pg_stat_archiver_failed_count{namespace="postgres"}[15m])) > 3
-          for: 15m
-          labels:
-            severity: critical
-          annotations:
-            summary: "CloudNativePG WAL archiving is failing in {{ $labels.namespace }}"
-            description: "CloudNativePG in namespace {{ $labels.namespace }} recorded {{ $value | printf \"%.0f\" }} failed WAL archive attempts in the last 15 minutes. The archiver retries one stuck segment on a fixed loop, so a sustained rate means continuous archiving has stopped and point-in-time recovery is frozen at the last archived segment. The counters live only on whichever instance is primary and reset when the role moves, so this sums across the namespace rather than tracking a pod."
-        - alert: CNPGWALArchiveBacklog
-          expr: max by (namespace) (cnpg_collector_pg_wal_archive_status{namespace="postgres", value="ready"}) > 0
-          for: 30m
-          labels:
-            severity: critical
-          annotations:
-            summary: "CloudNativePG has unarchived WAL segments in {{ $labels.namespace }}"
-            description: "CloudNativePG in namespace {{ $labels.namespace }} has {{ $value | printf \"%.0f\" }} WAL segments waiting to be archived and has not cleared them for 30 minutes. WAL shares the data volume, so a backlog that keeps growing eventually fills it and stops the primary. This measures the backlog directly and carries no counter-reset semantics, so it stays valid across a switchover."
         - alert: CNPGStandbyNotStreaming
           expr: cnpg_pg_replication_is_wal_receiver_up{namespace="postgres"} == 0 and on (namespace, pod) cnpg_pg_replication_in_recovery{namespace="postgres"} == 1
           for: 15m
@@ -103,38 +63,6 @@ spec:
             description: "The primary {{ $labels.namespace }}/{{ $labels.pod }} has been streaming to fewer than the two standbys a three instance cluster expects for an hour, so the cluster is running on reduced redundancy. This is measured from the primary deliberately, because CNPGStandbyNotStreaming needs the broken standby to keep exporting metrics and cannot fire when its exporter is gone entirely."
     - name: longhorn.rules
       rules:
-        - alert: LonghornBackupTooOld
-          expr: time() - max by (volume) (longhorn_volume_last_backup_at > 0) > 30 * 3600
-          for: 1h
-          labels:
-            severity: warning
-          annotations:
-            summary: "Longhorn volume {{ $labels.volume }} has no recent backup"
-            description: "The newest Longhorn backup for volume {{ $labels.volume }} is {{ $value | humanizeDuration }} old, exceeding the 30 hour warning threshold for the nightly recurring job."
-        - alert: LonghornBackupTooOldCritical
-          expr: time() - max by (volume) (longhorn_volume_last_backup_at > 0) > 50 * 3600
-          for: 1h
-          labels:
-            severity: critical
-          annotations:
-            summary: "Longhorn volume {{ $labels.volume }} has a dangerously stale backup"
-            description: "The newest Longhorn backup for volume {{ $labels.volume }} is {{ $value | humanizeDuration }} old, exceeding the 50 hour critical threshold and indicating several missed nightly runs."
-        - alert: LonghornVolumeNeverBackedUp
-          expr: max by (volume, pvc, pvc_namespace) (longhorn_volume_last_backup_at) == 0
-          for: 26h
-          labels:
-            severity: warning
-          annotations:
-            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} has never been backed up"
-            description: "Longhorn has recorded no backup at all for volume {{ $labels.volume }}, claimed by {{ $labels.pvc_namespace }}/{{ $labels.pvc }}, for over 26 hours. The stale-backup alerts cannot see this case because they compare against the newest backup timestamp, which does not exist here. A volume in this state has no restore point whatsoever."
-        - alert: LonghornBackupFailed
-          expr: max by (backup, volume) (longhorn_backup_state) == 4
-          for: 15m
-          labels:
-            severity: warning
-          annotations:
-            summary: "Longhorn backup {{ $labels.backup }} is in Error state"
-            description: "Longhorn reports backup {{ $labels.backup }} of volume {{ $labels.volume }} in Error state. A failed backup leaves the volume on its previous restore point, or on none at all if this was its first, and the recurring job does not retry until the next scheduled run."
         - alert: LonghornVolumeDegraded
           expr: longhorn_volume_robustness == 2
           for: 30m
@@ -205,14 +133,6 @@ spec:
           annotations:
             summary: "k3s has recorded no recent scheduled etcd snapshot"
             description: "No usable k3s etcd snapshot from the schedule has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot taken by hand would otherwise hide a schedule that has stopped running."
-        - alert: EtcdSnapshotNotUploaded
-          expr: time() - (max(kube_etcdsnapshotfile_created{ready="true", location=~"s3://.*/etcd-snapshot-.*"}) or vector(0)) > 26 * 3600
-          for: 1h
-          labels:
-            severity: critical
-          annotations:
-            summary: "No scheduled k3s etcd snapshot has reached object storage"
-            description: "No usable k3s etcd snapshot from the schedule with an s3:// location has been recorded in the last 26 hours. Snapshots written only to the server node disappear with that node, so the cluster has no offsite restore point even when local snapshots are still being taken. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot uploaded by hand would otherwise hide a schedule that has stopped running."
         - alert: EtcdWalFsyncSlow
           expr: histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))) > 0.1
           for: 15m
