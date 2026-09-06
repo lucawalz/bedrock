@@ -59,6 +59,9 @@ jobs:
       - name: Check every app directory is deployed
         run: bash scripts/check-apps-index.sh
 
+      - name: Check every namespace has a default ServiceAccount entry
+        run: bash scripts/check-default-serviceaccounts.sh
+
       - name: Check every declared volume states its snapshot group
         run: bash scripts/check-snapshot-coverage.sh
 
