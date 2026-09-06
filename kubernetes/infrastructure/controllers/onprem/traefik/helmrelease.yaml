@@ -18,6 +18,14 @@ spec:
     priorityClassName: system-cluster-critical
     deployment:
       replicas: 2
+      terminationGracePeriodSeconds: 60
+      lifecycle:
+        preStop:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - sleep 15
     affinity:
       podAntiAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -44,6 +52,8 @@ spec:
         nodePort: 30443
     additionalArguments:
       - --entryPoints.websecure.http.middlewares=traefik-security-headers@kubernetescrd
+    readinessProbe:
+      failureThreshold: 3
     resources:
       requests:
         cpu: "100m"
