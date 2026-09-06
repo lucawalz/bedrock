@@ -59,6 +59,9 @@ jobs:
       - name: Check every app directory is deployed
         run: bash scripts/check-apps-index.sh
 
+      - name: Check every declared volume states its snapshot group
+        run: bash scripts/check-snapshot-coverage.sh
+
   helm-render:
     runs-on: ubuntu-latest
     steps:
