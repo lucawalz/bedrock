@@ -177,6 +177,7 @@ spec:
   path: ./kubernetes/infrastructure/controllers/metrics-server
   prune: true
   wait: true
+  suspend: true
   sourceRef:
     kind: GitRepository
     name: flux-system

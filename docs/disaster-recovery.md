@@ -173,6 +173,29 @@ kubectl -n longhorn-system patch nodes.longhorn.io worker-2 --type=merge \
 
 Neither command has been run yet. Reapply both after any event that recreates either node's disk record.
 
+## metrics-server ships suspended
+
+`cluster-metrics-server` in `kubernetes/clusters/home/config/base.yaml` carries `suspend: true`. The chart it installs renders `ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and `APIService/v1beta1.metrics.k8s.io` under the same names the k3s addon already owns through wrangler's `objectset.rio.cattle.io` annotations, and Helm 3 refuses to adopt objects it does not already own. Reconciling this Kustomization while the addon is still running exhausts its three install retries, leaves the Kustomization stuck at `Ready=False`, and pages the critical `HelmReleaseStalled` alert. The Kustomization ships suspended so a fresh reconcile is safe by default rather than depending on this runbook step being remembered ahead of time.
+
+The addon only goes away once master is rebuilt with `--disable=metrics-server`, already declared in `modules/k3s/server.nix`:
+
+```
+nixos-rebuild switch --flake .#master --target-host root@<ip> --build-host root@<ip>
+```
+
+That is a node rebuild, and Flux has no mechanism to wait on it. After the rebuild, confirm the addon's objects are actually gone before resuming:
+
+```
+kubectl -n kube-system get deployment,serviceaccount,service metrics-server
+kubectl get apiservice v1beta1.metrics.k8s.io
+```
+
+Every one of those lookups should return `NotFound`. Once they do, resume the Kustomization:
+
+```
+flux -n flux-system resume kustomization cluster-metrics-server
+```
+
 ## Recovery objectives
 
 Derived from the mechanisms as configured. They describe what the estate currently achieves, which is considerably less than it achieved before [ADR 0081](adr/0081-retire-the-hetzner-account.md).
