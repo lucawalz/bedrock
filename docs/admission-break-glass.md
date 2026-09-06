@@ -186,7 +186,7 @@ kubectl -n cattle-system get pods -l app=rancher-webhook -o wide
 ## Known gaps
 
 - The rancher-webhook replica count and anti-affinity are imperative, for the reason above. Nothing detects their absence, so a rebuild silently returns to one replica until the command is reapplied.
-- rancher-webhook also runs BestEffort, with no resource requests or limits and no readiness probe, so it is the first pod evicted under node pressure while still serving admission traffic. The patch above restores requests and limits, but the chart's template owns the `resources` field, so a Rancher upgrade reverts it and the patch needs reapplying, unlike the replica count and affinity above.
+- rancher-webhook also runs BestEffort, with no resource requests or limits and no readiness probe, so it is the first pod evicted under node pressure while still serving admission traffic. The patch above restores requests and limits, but the chart's template owns the `resources` field as an empty object under the `helm` field manager, so Helm's three-way merge restores it to empty on every reconcile, not only on an upgrade, and the patch needs reapplying each time, unlike the replica count and affinity above.
 - The Rancher webhook rules and failure policies are written by the binary at runtime and are not tunable through chart values, so enforcement scope cannot be narrowed declaratively.
 - Whether the rancher-webhook binary recreates a deleted webhook configuration is unverified. Until it is, take a copy before deleting.
 - The `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks are served by the cleanup controller, whose binary has no timeout flag. They stay at a 10 second timeout while the rest of Kyverno runs at 5.
