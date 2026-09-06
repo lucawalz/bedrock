@@ -155,6 +155,24 @@ Longhorn's backup records are hierarchical, so a cleanup that goes further delet
 kubectl -n postgres delete backups.postgresql.cnpg.io --all
 ```
 
+## Longhorn per-node storage reserve
+
+Longhorn's per-disk `storageReserved` has no declarative path once a disk exists. The Helm chart's `storageReservedPercentageForDefaultDisk` (`kubernetes/infrastructure/controllers/onprem/longhorn/helmrelease.yaml`) is applied only when Longhorn first creates a disk record, so changing it does nothing to a disk already registered, and the `nodes.longhorn.io` objects that carry the live value are owned and continuously rewritten by the Longhorn controller, leaving no manifest that could hold the field without fighting the controller for it. The only way to set it on an existing disk is a direct patch, and that patch has to be reapplied by hand whenever the disk record is recreated, such as after a full rebuild.
+
+master already reserves 20 percent of its disk, 50075021312 of 250375106560 bytes, because its disk was created while an earlier chart default was in effect. worker-1 and worker-2 both currently reserve nothing, so Longhorn schedules replica data over the whole of each disk, leaving no space set aside for the operating system or for containerd's image store to grow into. Matching master's proportion on both closes that gap:
+
+worker-1: 20 percent of 250375106560 bytes is 50075021312.
+worker-2's disk is roughly double the others, at 502392610816 bytes; 20 percent of it is 100478522163.2, which rounds down to 100478522163.
+
+```
+kubectl -n longhorn-system patch nodes.longhorn.io worker-1 --type=merge \
+  -p '{"spec":{"disks":{"default-disk":{"storageReserved":50075021312}}}}'
+kubectl -n longhorn-system patch nodes.longhorn.io worker-2 --type=merge \
+  -p '{"spec":{"disks":{"default-disk":{"storageReserved":100478522163}}}}'
+```
+
+Neither command has been run yet. Reapply both after any event that recreates either node's disk record.
+
 ## Recovery objectives
 
 Derived from the mechanisms as configured. They describe what the estate currently achieves, which is considerably less than it achieved before [ADR 0081](adr/0081-retire-the-hetzner-account.md).
@@ -237,6 +255,7 @@ There is no backup-restore row, because there is no backup to restore.
 - worker-2 cannot be drained while it holds the only replica of a volume. Longhorn's `block-if-contains-last-replica` policy correctly refuses, so the node is not patchable without moving `data-zot-0` and `kiwix-library` to a replicated class or forcing the drain.
 - A mass reschedule can outlast the event that caused it. Draining master took 38 seconds and the estate took 45 minutes to settle, because every rescheduled pod pulled images through the registry cache at once and containerd does not fall back to the upstream registry when the mirror is merely slow.
 - The `rancher-webhook` replica count and anti-affinity are imperative and are not reconciled, so a rebuild returns to a single replica until step 9 is reapplied.
+- worker-1 and worker-2 hold no Longhorn storage reserve declaratively. The patch that sets it, in Longhorn per-node storage reserve above, is imperative and does not survive the disk record being recreated, so it must be reapplied by hand each time that happens.
 - The age key is held only on the operator's workstation, by choice. It is simultaneously the SOPS recovery identity and the SSH credential for all four hosts, so losing that machine loses access and decryption in the same event. The Velero backup that used to capture `flux-system/sops-age` as a side effect is gone, so there is no accidental second copy any more.
 - kiwix is deliberately not backed up, and now it is in the same position as everything else. Its 32 GB of ZIM files are re-downloaded from `download.kiwix.org` by an idempotent init container, which makes it the one workload whose recovery story is unaffected by the loss of the backup stack.
 - master's pinned filesystem UUIDs must be regenerated after a disk wipe.
