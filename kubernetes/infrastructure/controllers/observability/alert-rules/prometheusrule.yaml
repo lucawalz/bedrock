@@ -43,6 +43,14 @@ spec:
           annotations:
             summary: "Flux resource metrics have disappeared"
             description: "Prometheus has held no flux_resource_info series for more than 15 minutes, so FluxReconciliationFailure cannot fire and a stalled delivery pipeline would stay invisible."
+        - alert: HelmReleaseStalled
+          expr: max(flux_resource_info{kind="HelmRelease", ready="False", suspended="False"}) by (name, exported_namespace, reason) == 1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "HelmRelease {{ $labels.exported_namespace }}/{{ $labels.name }} is stalled"
+            description: "The HelmRelease {{ $labels.exported_namespace }}/{{ $labels.name }} has reported Ready=False for over 5 minutes, most recently with reason {{ $labels.reason }}. Some HelmReleases in this cluster set remediateLastFailure to false so a failed upgrade stays deployed instead of rolling back, and once retries are exhausted the release stops changing on its own. FluxReconciliationFailure already reports the same condition for every Flux kind at warning severity behind a twelve hour digest; this alert covers HelmRelease specifically at critical severity so a stalled release reaches a human promptly instead of waiting in that digest."
     - name: cnpg.rules
       rules:
         - alert: CNPGStandbyNotStreaming
@@ -61,6 +69,22 @@ spec:
           annotations:
             summary: "CloudNativePG primary {{ $labels.namespace }}/{{ $labels.pod }} sees only {{ $value }} streaming standbys"
             description: "The primary {{ $labels.namespace }}/{{ $labels.pod }} has been streaming to fewer than the two standbys a three instance cluster expects for an hour, so the cluster is running on reduced redundancy. This is measured from the primary deliberately, because CNPGStandbyNotStreaming needs the broken standby to keep exporting metrics and cannot fire when its exporter is gone entirely."
+        - alert: CNPGReplicationLagHigh
+          expr: cnpg_pg_stat_replication_replay_lag_seconds{namespace="postgres"} > 30
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "CloudNativePG standby {{ $labels.application_name }} is lagging behind {{ $labels.namespace }}/{{ $labels.pod }}"
+            description: "The primary {{ $labels.namespace }}/{{ $labels.pod }} has reported standby {{ $labels.application_name }} more than 30 seconds behind on WAL replay for 15 minutes. A lagging standby is still streaming and does not trip CNPGStandbyNotStreaming, but it holds stale data and would lose recent transactions if promoted while behind."
+        - alert: CNPGFailoverDetected
+          expr: resets(cnpg_pg_replication_in_recovery{namespace="postgres"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG instance {{ $labels.namespace }}/{{ $labels.pod }} was promoted"
+            description: "Instance {{ $labels.namespace }}/{{ $labels.pod }} left recovery mode in the last 15 minutes, meaning it was promoted from standby to primary. This fires for both an automatic failover and a manual switchover, because the replication state it is built on cannot tell the two apart; either way the cluster's primary changed and is worth a look."
     - name: longhorn.rules
       rules:
         - alert: LonghornVolumeDegraded
@@ -167,6 +191,26 @@ spec:
           annotations:
             summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} was OOMKilled"
             description: "Container {{ $labels.container }} restarted in the last hour and its previous instance was terminated for exceeding its memory limit. The limit is wrong or the workload is leaking; the container will keep being killed until one of the two is corrected."
+    - name: image.rules
+      rules:
+        - alert: ContainerImagePullBackOff
+          expr: max by (namespace, pod, container, reason) (kube_pod_container_status_waiting_reason{reason=~"ErrImagePull|ImagePullBackOff"}) == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} cannot pull its image"
+            description: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} has been stuck in {{ $labels.reason }} for over 10 minutes, which covers both a wrong image reference and a registry rejecting pulls under rate limiting. The upstream KubeContainerWaiting alert treats every waiting reason alike and only fires after an hour, which missed the incident this alert is built to catch."
+    - name: network.rules
+      rules:
+        - alert: FlannelInterfaceOrphaned
+          expr: changes(node_network_iface_id{device="tailscale0", job="node-exporter"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.instance }} tailscale0 interface was recreated"
+            description: "The tailscale0 interface index on {{ $labels.instance }} changed in the last 15 minutes, which happens when tailscaled restarts and rebuilds the tunnel. flannel.1 stays bound to the old interface and nothing recreates it automatically, so the node stays Ready while its pods can reach nothing over the overlay. Check the node's flannel.alpha.coreos.com/public-ip annotation and delete flannel.1 to force a rebind, per the disaster-recovery runbook."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent
