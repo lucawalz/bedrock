@@ -1,4 +1,4 @@
-{ inventory, ... }:
+{ inventory, lib, ... }:
 {
   services.kea.dhcp4 = {
     enable = true;
@@ -28,20 +28,10 @@
           pools = [
             { pool = inventory.dhcpPool; }
           ];
-          reservations = [
-            {
-              hw-address = inventory.nodes.master.mac;
-              ip-address = inventory.nodes.master.address;
-            }
-            {
-              hw-address = inventory.nodes.worker-1.mac;
-              ip-address = inventory.nodes.worker-1.address;
-            }
-            {
-              hw-address = inventory.nodes.worker-2.mac;
-              ip-address = inventory.nodes.worker-2.address;
-            }
-          ];
+          reservations = lib.mapAttrsToList (_: node: {
+            hw-address = node.mac;
+            ip-address = node.address;
+          }) inventory.nodes;
           option-data = [
             {
               name = "routers";

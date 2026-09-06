@@ -47,6 +47,7 @@ in
         "--hostname=${cfg.hostname}"
       ]
       ++ lib.optional cfg.acceptRoutes "--accept-routes";
+      extraSetFlags = [ "--hostname=${cfg.hostname}" ];
     };
   };
 }
