@@ -3,7 +3,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: authentik-restricted
-  namespace: authentik
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -30,7 +30,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: minio-restricted
-  namespace: minio
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -55,7 +55,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: minio-post-job
-  namespace: minio
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -83,7 +83,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: pgadmin-restricted
-  namespace: postgres
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -108,7 +108,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: paperless-ngx-drop-capabilities
-  namespace: paperless
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -130,7 +130,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: paperless-run-as-non-root
-  namespace: paperless
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-run-as-non-root
@@ -154,7 +154,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: reloader-drop-capabilities
-  namespace: reloader
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
@@ -176,7 +176,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: llm-run-as-non-root
-  namespace: llm
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-run-as-non-root
@@ -201,7 +201,7 @@ apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
   name: ntfy-run-as-non-root
-  namespace: ntfy
+  namespace: kyverno
 spec:
   exceptions:
     - policyName: require-run-as-non-root

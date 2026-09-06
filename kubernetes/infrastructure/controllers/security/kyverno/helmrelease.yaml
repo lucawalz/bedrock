@@ -117,7 +117,7 @@ spec:
     features:
       policyExceptions:
         enabled: true
-        namespace: "*"
+        namespace: kyverno
       policyReports:
         enabled: true
       admissionReports:
