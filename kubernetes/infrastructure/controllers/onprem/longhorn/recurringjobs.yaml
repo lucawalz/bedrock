@@ -1,6 +1,19 @@
 apiVersion: longhorn.io/v1beta2
 kind: RecurringJob
 metadata:
+  name: snapshot
+  namespace: longhorn-system
+spec:
+  cron: "30 3 * * *"
+  task: snapshot
+  groups:
+    - default
+  retain: 7
+  concurrency: 2
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
   name: snapshot-prune
   namespace: longhorn-system
 spec:
@@ -8,7 +21,7 @@ spec:
   task: snapshot-delete
   groups:
     - default
-  retain: 1
+  retain: 7
   concurrency: 2
 ---
 apiVersion: longhorn.io/v1beta2
