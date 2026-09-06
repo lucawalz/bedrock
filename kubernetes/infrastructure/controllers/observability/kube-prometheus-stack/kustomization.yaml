@@ -6,11 +6,18 @@ components:
   - ../../../../components/authentik-middleware
 
 resources:
-  - configmap.yaml
   - helmrelease.yaml
   - grafana-ingress.yaml
   - prometheus-ingress.yaml
   - alertmanager-ingress.yaml
   - slo-dashboard.yaml
   - wallbar-dashboard.yaml
+
+configMapGenerator:
+  - name: prometheus-values
+    files:
+      - values.yaml=configmap-values.yaml
+
+configurations:
+  - kustomizeconfig.yaml
 
