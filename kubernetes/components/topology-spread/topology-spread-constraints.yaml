@@ -11,7 +11,7 @@ spec:
           whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchExpressions:
-              - key: app.kubernetes.io/instance
+              - key: app.kubernetes.io/name
                 operator: Exists
           matchLabelKeys:
             - app.kubernetes.io/instance
