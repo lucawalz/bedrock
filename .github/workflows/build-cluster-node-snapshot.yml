@@ -17,8 +17,6 @@ on:
       - infra/packer/**
       - scripts/nixos-image-hash.sh
       - .github/workflows/build-cluster-node-snapshot.yml
-  schedule:
-    - cron: "0 4 * * 1"
   workflow_dispatch:
 
 concurrency:
