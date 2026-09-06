@@ -84,3 +84,4 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0079. Expose Grocy publicly with a path-scoped forward-auth bypass](0079-public-grocy-with-scoped-api-bypass.md) (superseded by 0080)
 - [0080. Retire Grocy and withdraw its public exposure](0080-retire-grocy.md) (accepted)
 - [0081. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md) (accepted)
+- [0082. Establish the GitOps guardrail boundary and its accepted trade-offs](0082-gitops-guardrail-boundary.md) (accepted)
