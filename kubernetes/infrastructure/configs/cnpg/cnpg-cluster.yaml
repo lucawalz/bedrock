@@ -54,8 +54,3 @@ spec:
         login: true
         passwordSecret:
           name: pg-open-webui
-  plugins:
-    - name: barman-cloud.cloudnative-pg.io
-      isWALArchiver: true
-      parameters:
-        barmanObjectName: postgres-backup
