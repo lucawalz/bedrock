@@ -16,6 +16,7 @@ spec:
       labels:
         app.kubernetes.io/name: authentik-redis
     spec:
+      priorityClassName: system-cluster-critical
       securityContext:
         runAsNonRoot: true
         runAsUser: 999
@@ -34,6 +35,16 @@ spec:
           ports:
             - name: redis
               containerPort: 6379
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

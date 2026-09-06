@@ -39,6 +39,23 @@ spec:
               - ""
               - --appendonly
               - "no"
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - redis-cli
+                      - ping
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  exec:
+                    command:
+                      - redis-cli
+                      - ping
             resources:
               requests:
                 cpu: 25m
