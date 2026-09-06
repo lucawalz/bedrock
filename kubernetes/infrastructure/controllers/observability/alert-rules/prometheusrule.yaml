@@ -51,6 +51,14 @@ spec:
           annotations:
             summary: "HelmRelease {{ $labels.exported_namespace }}/{{ $labels.name }} is stalled"
             description: "The HelmRelease {{ $labels.exported_namespace }}/{{ $labels.name }} has reported Ready=False for over 5 minutes, most recently with reason {{ $labels.reason }}. Some HelmReleases in this cluster set remediateLastFailure to false so a failed upgrade stays deployed instead of rolling back, and once retries are exhausted the release stops changing on its own. FluxReconciliationFailure already reports the same condition for every Flux kind at warning severity behind a twelve hour digest; this alert covers HelmRelease specifically at critical severity so a stalled release reaches a human promptly instead of waiting in that digest."
+        - alert: HelmReleaseDriftDetected
+          expr: kube_helmrelease_status_condition{type="Drifted"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HelmRelease {{ $labels.namespace }}/{{ $labels.name }} has drifted from its declared state"
+            description: "The HelmRelease {{ $labels.namespace }}/{{ $labels.name }} has reported its Drifted condition True for over 15 minutes, meaning the live cluster state no longer matches what Helm rendered. driftDetection is set to mode warn on every HelmRelease in this cluster, which records the drift and emits a Kubernetes event but corrects nothing, so this alert is the only thing that turns that event into a notification."
     - name: cnpg.rules
       rules:
         - alert: CNPGStandbyNotStreaming
