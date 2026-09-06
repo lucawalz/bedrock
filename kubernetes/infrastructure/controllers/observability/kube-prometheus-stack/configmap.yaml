@@ -79,9 +79,9 @@ data:
       resources:
         requests:
           cpu: 25m
-          memory: 64Mi
+          memory: 128Mi
         limits:
-          memory: 192Mi
+          memory: 384Mi
       rbac:
         extraRules:
           - apiGroups: ["postgresql.cnpg.io"]
