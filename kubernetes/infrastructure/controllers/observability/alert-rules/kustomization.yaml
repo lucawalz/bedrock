@@ -7,7 +7,6 @@ resources:
   - flux-servicemonitor.yaml
   - kyverno-servicemonitor.yaml
   - minio-servicemonitor.yaml
-  - velero-servicemonitor.yaml
   - longhorn-servicemonitor.yaml
   - horizon-servicemonitor.yaml
   - prometheusrule.yaml
