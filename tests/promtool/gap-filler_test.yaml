@@ -414,3 +414,175 @@ tests:
             exp_annotations:
               summary: "CloudNativePG primary postgres/postgres-1 sees only 1 streaming standbys"
               description: "The primary postgres/postgres-1 has been streaming to fewer than the two standbys a three instance cluster expects for an hour, so the cluster is running on reduced redundancy. This is measured from the primary deliberately, because CNPGStandbyNotStreaming needs the broken standby to keep exporting metrics and cannot fire when its exporter is gone entirely."
+
+  - interval: 1m
+    name: a stalled HelmRelease fires critical after five minutes
+    input_series:
+      - series: 'flux_resource_info{kind="HelmRelease",name="cloudnative-pg",exported_namespace="cnpg-system",ready="False",reason="UpgradeFailed",suspended="False"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HelmReleaseStalled
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              name: cloudnative-pg
+              exported_namespace: cnpg-system
+              reason: UpgradeFailed
+            exp_annotations:
+              summary: "HelmRelease cnpg-system/cloudnative-pg is stalled"
+              description: "The HelmRelease cnpg-system/cloudnative-pg has reported Ready=False for over 5 minutes, most recently with reason UpgradeFailed. Some HelmReleases in this cluster set remediateLastFailure to false so a failed upgrade stays deployed instead of rolling back, and once retries are exhausted the release stops changing on its own. FluxReconciliationFailure already reports the same condition for every Flux kind at warning severity behind a twelve hour digest; this alert covers HelmRelease specifically at critical severity so a stalled release reaches a human promptly instead of waiting in that digest."
+
+  - interval: 1m
+    name: a ready HelmRelease raises nothing
+    input_series:
+      - series: 'flux_resource_info{kind="HelmRelease",name="cloudnative-pg",exported_namespace="cnpg-system",ready="True",reason="UpgradeSucceeded",suspended="False"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HelmReleaseStalled
+        exp_alerts: []
+
+  - interval: 1m
+    name: a suspended HelmRelease does not stall alert
+    input_series:
+      - series: 'flux_resource_info{kind="HelmRelease",name="cloudnative-pg",exported_namespace="cnpg-system",ready="False",reason="UpgradeFailed",suspended="True"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: HelmReleaseStalled
+        exp_alerts: []
+
+  - interval: 1m
+    name: a container stuck pulling its image fires critical after ten minutes
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="litellm",pod="litellm-0",container="app",reason="ImagePullBackOff"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ContainerImagePullBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: litellm
+              pod: litellm-0
+              container: app
+              reason: ImagePullBackOff
+            exp_annotations:
+              summary: "Container app in litellm/litellm-0 cannot pull its image"
+              description: "Container app in litellm/litellm-0 has been stuck in ImagePullBackOff for over 10 minutes, which covers both a wrong image reference and a registry rejecting pulls under rate limiting. The upstream KubeContainerWaiting alert treats every waiting reason alike and only fires after an hour, which missed the incident this alert is built to catch."
+
+  - interval: 1m
+    name: a running container raises no image pull alert
+    input_series:
+      - series: 'kube_pod_container_status_running{namespace="litellm",pod="litellm-0",container="app"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ContainerImagePullBackOff
+        exp_alerts: []
+
+  - interval: 1m
+    name: a container waiting for a reason other than image pull raises nothing
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="litellm",pod="litellm-0",container="app",reason="CrashLoopBackOff"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ContainerImagePullBackOff
+        exp_alerts: []
+
+  - interval: 1m
+    name: the tailscale0 interface being recreated flags flannel as orphaned
+    input_series:
+      - series: 'node_network_iface_id{job="node-exporter",instance="worker-1",device="tailscale0"}'
+        values: '5x14 6x60'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: FlannelInterfaceOrphaned
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: worker-1
+              device: tailscale0
+              job: node-exporter
+            exp_annotations:
+              summary: "Node worker-1 tailscale0 interface was recreated"
+              description: "The tailscale0 interface index on worker-1 changed in the last 15 minutes, which happens when tailscaled restarts and rebuilds the tunnel. flannel.1 stays bound to the old interface and nothing recreates it automatically, so the node stays Ready while its pods can reach nothing over the overlay. Check the node's flannel.alpha.coreos.com/public-ip annotation and delete flannel.1 to force a rebind, per the disaster-recovery runbook."
+
+  - interval: 1m
+    name: a stable tailscale0 interface raises nothing
+    input_series:
+      - series: 'node_network_iface_id{job="node-exporter",instance="worker-1",device="tailscale0"}'
+        values: '5x200'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: FlannelInterfaceOrphaned
+        exp_alerts: []
+
+  - interval: 1m
+    name: the pi router is excluded from the flannel orphan check
+    input_series:
+      - series: 'node_network_iface_id{job="pi-router",instance="pi-router",device="tailscale0"}'
+        values: '5x14 6x60'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: FlannelInterfaceOrphaned
+        exp_alerts: []
+
+  - interval: 1m
+    name: a standby lagging behind the primary fires warning after fifteen minutes
+    input_series:
+      - series: 'cnpg_pg_stat_replication_replay_lag_seconds{namespace="postgres",pod="postgres-1",application_name="postgres-2"}'
+        values: '45x200'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: CNPGReplicationLagHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: postgres
+              pod: postgres-1
+              application_name: postgres-2
+            exp_annotations:
+              summary: "CloudNativePG standby postgres-2 is lagging behind postgres/postgres-1"
+              description: "The primary postgres/postgres-1 has reported standby postgres-2 more than 30 seconds behind on WAL replay for 15 minutes. A lagging standby is still streaming and does not trip CNPGStandbyNotStreaming, but it holds stale data and would lose recent transactions if promoted while behind."
+
+  - interval: 1m
+    name: a standby within the lag threshold raises nothing
+    input_series:
+      - series: 'cnpg_pg_stat_replication_replay_lag_seconds{namespace="postgres",pod="postgres-1",application_name="postgres-2"}'
+        values: '2x200'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: CNPGReplicationLagHigh
+        exp_alerts: []
+
+  - interval: 1m
+    name: a standby promoted to primary fires the failover alert
+    input_series:
+      - series: 'cnpg_pg_replication_in_recovery{namespace="postgres",pod="postgres-2"}'
+        values: '1x14 0x60'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: CNPGFailoverDetected
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: postgres
+              pod: postgres-2
+            exp_annotations:
+              summary: "CloudNativePG instance postgres/postgres-2 was promoted"
+              description: "Instance postgres/postgres-2 left recovery mode in the last 15 minutes, meaning it was promoted from standby to primary. This fires for both an automatic failover and a manual switchover, because the replication state it is built on cannot tell the two apart; either way the cluster's primary changed and is worth a look."
+
+  - interval: 1m
+    name: a stable cluster with no promotions raises nothing
+    input_series:
+      - series: 'cnpg_pg_replication_in_recovery{namespace="postgres",pod="postgres-2"}'
+        values: '1x200'
+      - series: 'cnpg_pg_replication_in_recovery{namespace="postgres",pod="postgres-1"}'
+        values: '0x200'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: CNPGFailoverDetected
+        exp_alerts: []
