@@ -108,12 +108,18 @@ protects the bytes on disk, but a replicated write is still a write: a logical f
 or a deletion reaches all three replicas at once and is no longer recoverable at all. No recovery
 point for Postgres is stated anywhere any more, because there is none to state.
 
-No recurring job creates Longhorn snapshots any longer. The `backup` job was the only one that did,
-since Longhorn's backup task snapshots a volume before uploading it; `snapshot-prune` deletes
-snapshots and `filesystem-trim` reclaims space. Volume durability is now three-way replication alone,
-which survives a disk failure or a node failure and nothing else. Restoring a scheduled snapshot job
-is a small change that costs local capacity rather than an account, and it should be weighed on its
-own merits rather than inherited from this record.
+A `snapshot` recurring job now creates a Longhorn snapshot nightly, at the cron slot the removed
+`backup` job used, and `snapshot-prune` runs after it with its own retain raised to match, from 1 to
+7. Both had to move together: Longhorn's `snapshot-delete` task enforces its own retain count across
+a volume's plain snapshots regardless of what a `snapshot` task's retain says, so leaving the two
+jobs at different counts would mean the lower one always wins and the `snapshot` job's retain would
+be fiction. `filesystem-trim` reclaims space and is unaffected. Volume durability is now three-way
+replication plus a rolling week of nightly snapshots, which is a real gain over replication alone: a
+snapshot recovers an accidental deletion or a bad write reaching all three replicas, which pure
+replication cannot. It is still not a backup. A snapshot rides the same volume and the same three
+replicas as the data it protects, so it survives exactly what replication survives, a disk or a node,
+and nothing more; it does nothing for the loss of the cluster or the storage layer, which remains the
+gap the rest of this record accepts.
 
 Etcd snapshots survive but only on master's disk, which reinstates exactly the coupling
 [0064](0064-off-node-etcd-s3-snapshots.md) was written to remove: the datastore and every snapshot

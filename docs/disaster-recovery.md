@@ -19,7 +19,7 @@ A fire, a theft or a flood therefore takes the cluster and every copy of its dat
 | Anything declared in this repository | Yes | Flux reconciles it back. This is most of the estate |
 | Any cluster Secret | Yes | Held as SOPS ciphertext in the private `bedrock-secrets` repository, given the age key |
 | master's disk lost, taking etcd | Only from a snapshot copied off master beforehand | K3s writes its snapshots to the same disk as the datastore, so the failure that loses one loses the other |
-| A volume deleted or corrupted in place | No | Replication copies the write to all three replicas, and no recurring job creates Longhorn snapshots any more |
+| A volume deleted or corrupted in place | Only back to the last nightly snapshot | A `snapshot` recurring job takes a snapshot at 03:30 and `snapshot-prune` retains the last 7; replication alone copies the write to all three replicas and cannot undo it |
 | A Postgres logical fault, a bad migration, a dropped table | No | Point-in-time recovery went with Barman. Nothing replays the write-ahead log |
 | Loss of the building | No | Nothing is off-site |
 
@@ -161,7 +161,7 @@ Derived from the mechanisms as configured. They describe what the estate current
 | Data class | Mechanism | Recovery point | Recovery time |
 | --- | --- | --- | --- |
 | Postgres databases | None. Three-way volume replication and a quorum commit ([ADR 0068](adr/0068-cnpg-quorum-synchronous-replication.md)), neither of which is a backup | No recovery point. A logical fault is not recoverable at any distance | Not applicable |
-| Longhorn volumes | Three-way replication on the retain class. No scheduled snapshot exists | Zero for a lost disk or node, none for a deletion or a corruption | Automatic, a replica rebuild |
+| Longhorn volumes | Three-way replication on the retain class, plus a nightly `snapshot` job retaining 7 | Zero for a lost disk or node; up to 24 hours for a deletion or a corruption, none beyond a week | Automatic replica rebuild for a disk or a node; a manual revert to the snapshot for a deletion or a corruption |
 | Cluster API state | etcd snapshots every twelve hours, retain 5, on master's local disk | Up to 12 hours, and none at all if master's disk is what was lost | Under an hour on surviving hardware |
 | Everything declared in Git | Flux reconciliation | Zero, the repository is the source of truth | Bounded by reconciliation, not by restore |
 | Cluster Secrets | The private `bedrock-secrets` repository plus the age key | Zero | Minutes |
@@ -227,7 +227,7 @@ There is no backup-restore row, because there is no backup to restore.
 
 - Nothing is held off-site. This is the largest gap and it is deliberate, recorded in [ADR 0081](adr/0081-retire-the-hetzner-account.md). It closes when the NAS is bought and exposes S3-compatible storage, and not before.
 - Postgres has no backup and no point-in-time recovery. A bad migration, a dropped table or a corrupted index is unrecoverable, and the three replicas make it unrecoverable three times over.
-- No recurring job creates Longhorn snapshots. The `backup` job was the only one that did, since Longhorn snapshots a volume before uploading it; `snapshot-prune` only deletes and `filesystem-trim` only reclaims. Adding a snapshot-only recurring job costs local capacity rather than an account and would restore a point-in-time position for volumes, but it has not been done.
+- Longhorn snapshots go back one week at most. The `snapshot` job creates one nightly and `snapshot-prune` keeps the last 7; a deletion or a corruption noticed later than that has nothing to revert to. This is a local point-in-time position, not a backup: it lives on the same three replicas as the data it protects, so it is worth nothing against the loss of a disk beyond what replication already covers, and nothing at all against the loss of the cluster or the building.
 - Etcd snapshots share a disk with the datastore they protect. Copying one off master by hand is the only mitigation in place, and nothing performs or checks that copy.
 - `/var/lib/rancher/k3s/server/db/snapshots` on master should be treated as a credential store rather than as backup data. Each snapshot carries the cluster CA material and every Secret, and its confidentiality rests on the server token rather than on the file's location.
 - No restore has ever been performed, for any mechanism. The node-loss figures were measured on 2026-07-26; everything else is an estimate.
