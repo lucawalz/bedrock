@@ -65,6 +65,81 @@ in
       ++ nixpkgs.lib.optional baseline ../hosts/common;
     };
 
+  mkServer =
+    {
+      serverId,
+      diskDevice ? "/dev/nvme0n1",
+      system ? "x86_64-linux",
+    }:
+    assert serverId == 1;
+    let
+      hostname = inventory.controlPlane;
+    in
+    nixpkgs.lib.nixosSystem {
+      inherit system;
+      specialArgs = {
+        meta = { inherit hostname; };
+        secretsDir = "${self}/secrets";
+        inherit inventory;
+      };
+      modules = [
+        disko.nixosModules.disko
+        agenix.nixosModules.default
+        ../hosts/common
+        ../hosts/${hostname}
+        (
+          {
+            config,
+            secretsDir,
+            pkgs,
+            ...
+          }:
+          {
+            imports = [
+              ../modules/k3s/server.nix
+              ../modules/services/storage.nix
+              ../modules/tailscale/client.nix
+            ];
+
+            networking.hostName = hostname;
+            system.stateVersion = "25.05";
+
+            age.secrets.tailscale-authkey = {
+              file = "${secretsDir}/tailscale-authkey-${hostname}.age";
+              mode = "0400";
+              owner = "root";
+              group = "root";
+            };
+
+            bedrock.tailscaleClient = {
+              enable = true;
+              inherit hostname;
+              authKeyFile = config.age.secrets.tailscale-authkey.path;
+              tag = "tag:cluster";
+            };
+
+            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
+            environment.systemPackages = [
+              (pkgs.wrapHelm pkgs.kubernetes-helm {
+                plugins = with pkgs.kubernetes-helmPlugins; [
+                  helm-secrets
+                  helm-diff
+                  helm-s3
+                  helm-git
+                ];
+              })
+              pkgs.fluxcd
+              pkgs.sops
+            ];
+            environment.variables.KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+
+            disko.devices = mkDiskoLayout diskDevice;
+          }
+        )
+      ];
+    };
+
   mkWorker =
     {
       workerId,

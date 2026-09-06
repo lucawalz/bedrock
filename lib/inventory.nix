@@ -3,6 +3,7 @@
   gateway = "10.20.0.1";
   serviceVip = "10.20.0.50";
   dhcpPool = "10.20.0.100 - 10.20.0.200";
+  controlPlane = "master";
   nodes = {
     master = {
       address = "10.20.0.10";
