@@ -37,10 +37,6 @@ in
     router
     luca
   ];
-  "etcd-s3-credentials.age".publicKeys = [
-    master
-    luca
-  ];
   "wifi-passphrase.age".publicKeys = [
     router
     luca
