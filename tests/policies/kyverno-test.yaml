@@ -17,6 +17,8 @@ resources:
   - resources/unset-escalation.yaml
   - resources/escalating.yaml
   - resources/exempt.yaml
+  - resources/init-violating.yaml
+  - resources/ephemeral-violating.yaml
 results:
   - policy: require-resources
     rule: require-requests-limits
@@ -110,3 +112,63 @@ results:
     resources:
       - paperless-ngx-7d9f8c6b4-x2k9p
     result: skip
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - init-violating
+    result: fail
+  - policy: require-resources
+    rule: require-requests-limits
+    kind: Pod
+    resources:
+      - init-violating
+    result: fail
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - init-violating
+    result: pass
+  - policy: disallow-privilege-escalation
+    rule: privilege-escalation
+    kind: Pod
+    resources:
+      - init-violating
+    result: pass
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - init-violating
+    result: pass
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: fail
+  - policy: disallow-privilege-escalation
+    rule: privilege-escalation
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: fail
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: fail
+  - policy: disallow-latest-tag
+    rule: validate-image-tag
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: fail
+  - policy: require-resources
+    rule: require-requests-limits
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: pass
