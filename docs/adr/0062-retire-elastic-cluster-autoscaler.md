@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, on-demand capacity premise superseded by 0081
 date: 2026-07-06
 ---
 
@@ -22,3 +22,7 @@ The home cluster no longer auto-scales on pending-pod pressure; capacity beyond 
 The reaper this record kept was not in the state this record describes. It was retained as narrowed to the Longhorn-finalize pass, but the Node-deletion pass had never actually been removed and was still deleting nodes labelled `horizon.dev/pool=reserved` every ten minutes. [0071](0071-deploy-horizon-operator-from-published-chart.md) removes it and renames the CronJob to `longhorn-node-finalizer`. The reason for keeping the job is unchanged and is the reason given here: horizon-driven teardown of a reserved node still strands a `nodes.longhorn.io` record that needs finalizing.
 
 Horizon is no longer only a workstation tool. Its operator runs in the cluster under [0071](0071-deploy-horizon-operator-from-published-chart.md) and owns orphan Node collection, which is what makes the reaper's first pass redundant rather than merely unused.
+
+## Update 2026-09-06
+
+The premise that made retiring the autoscaler safe is gone. This record removed elastic capacity on the grounds that "on-demand capacity provisioned by the horizon tool covers the remaining requirement", and that path closed with the Hetzner account. [0081](0081-retire-the-hetzner-account.md) removes the `hetzner` ProviderConfig, the `cluster-horizon-provider` Kustomization and the hcloud API egress rule, so there is no scaling path of any kind and capacity is the three bare-metal nodes. The decision to remove the autoscaler still stands on its own terms, since a controller reacting to load would have nothing to provision either. The Longhorn-finalize job this record kept also stands, and is unaffected.

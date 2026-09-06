@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: superseded by 0081
 date: 2026-04-26
 ---
 
 # 0009. Back up the cluster with Velero to Hetzner object storage
+
+> Superseded by [0081](0081-retire-the-hetzner-account.md).
 
 ## Context
 
@@ -24,3 +26,5 @@ The bucket itself is created once, out-of-band, in the same spirit as the cluste
 ## Consequences
 
 The cluster can be rebuilt from off-site copies, and namespace backups give horizon a clean way to move a workload to the cloud. The cost is another dependency on a SOPS-encrypted credential, the S3 access keys, and the usual backup discipline: a backup that is never restore-tested is a guess, so restores have to be exercised, not assumed.
+
+**Correction, 2026-09-06.** The Hetzner account this record depends on is closed and Velero is removed in full by [0081](0081-retire-the-hetzner-account.md). Two claims should not be carried forward. The Decision's "Velero captures both resource manifests and CSI volume snapshots, so a restore brings back the workloads and their data, not just the YAML" was never true of this estate as configured: `snapshotMoveData` was off and no `DataUpload` object was ever recorded, so no volume bytes left the cluster through Velero. Its off-site contribution was the estate's Secrets and its claim-to-volume bindings. And the namespace-scoped backups the Context justifies as horizon's migration primitive were never used that way; horizon migrates through provisioning rather than through restore. What does survive is the provider-neutral shape of the configuration, which is why [0081](0081-retire-the-hetzner-account.md) treats the S3 coordinates as the single swap point when off-site backups return.

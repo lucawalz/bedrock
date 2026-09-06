@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, off-node upload superseded by 0081
 date: 2026-07-09
 ---
 
@@ -24,3 +24,5 @@ The bucket already exists and is created out-of-band, in the same spirit as the 
 ## Consequences
 
 The accepted single-control-plane single point of failure becomes recoverable: a rebuilt master can restore etcd from the most recent off-node snapshot. This is disaster recovery, not high availability, and it does not change the control-plane topology. Etcd snapshots now share the same S3 provider as the Longhorn volume backups from [0005](0005-longhorn-storage.md) and the Velero cluster backups from [0009](0009-velero-backups.md), which concentrates recovery on one provider account and adds one more agenix-managed host credential to keep current.
+
+**Correction, 2026-09-06.** The off-node half of this record is withdrawn. [0081](0081-retire-the-hetzner-account.md) removes the `--etcd-s3*` flags and the `etcd-s3-credentials` agenix secret with the Hetzner account, so nothing uploads. The scheduled snapshots this record enabled are kept: k3s still snapshots twelve-hourly and retains five, to `/var/lib/rancher/k3s/server/db/snapshots` on master. That leaves the estate back at the state the Context describes as unacceptable, where the datastore and every snapshot that could rebuild it share one disk and one failure takes both. The rejected option, local-disk snapshots only, is what now runs, and it is accepted as a consequence of the account closure rather than on its own merits.
