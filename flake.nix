@@ -40,7 +40,7 @@
       formatter = nixpkgs.lib.genAttrs formatterSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 
       nixosConfigurations = {
-        master = lib.mkServer { serverId = 1; };
+        cp-1 = lib.mkServer { serverId = 1; };
         router = lib.mkHost {
           hostname = "router";
           system = "aarch64-linux";
