@@ -164,6 +164,19 @@ kubectl -n cattle-system patch deploy/rancher-webhook --type=merge -p '{
 
 The change survives Rancher upgrades, because both fields are absent from the rendered manifest and Helm's three-way merge emits no patch for them. It does not survive a rebuild into an empty cluster.
 
+The Deployment also runs BestEffort, with no resource requests or limits, while still serving admission traffic for every write in the cluster. Unlike the replica count and affinity, a resources patch here does not survive an upgrade: `kubectl get deploy/rancher-webhook -o yaml --show-managed-fields` lists `resources` under manager `helm`, so the chart's template renders the field, as an empty object, instead of omitting it. Helm's three-way merge restores it to empty on the next reconcile or upgrade, so the patch has to be reapplied each time, not only after a full rebuild:
+
+```
+kubectl -n cattle-system patch deploy/rancher-webhook --type=merge -p '{
+  "spec": {"template": {"spec": {"containers": [{"name": "rancher-webhook",
+    "resources": {"requests": {"cpu": "20m", "memory": "256Mi"},
+      "limits": {"cpu": "200m", "memory": "512Mi"}}}]}}}}'
+```
+
+Observed usage on both replicas is under 10m CPU and around 200Mi memory (`kubectl -n cattle-system top pods -l app=rancher-webhook`). The request keeps the pod off BestEffort without reserving much, and the limit leaves headroom for a garbage-collection spike.
+
+This is recorded here rather than declared in a manifest because there is no Flux-owned place to put it: the Deployment belongs to Rancher's systemcharts controller, and a resources block added outside Helm would sit next to the chart's own empty one and be overwritten by the same three-way merge as the imperative patch above.
+
 Confirm two ready pods on two different nodes:
 
 ```
@@ -173,6 +186,7 @@ kubectl -n cattle-system get pods -l app=rancher-webhook -o wide
 ## Known gaps
 
 - The rancher-webhook replica count and anti-affinity are imperative, for the reason above. Nothing detects their absence, so a rebuild silently returns to one replica until the command is reapplied.
+- rancher-webhook also runs BestEffort, with no resource requests or limits and no readiness probe, so it is the first pod evicted under node pressure while still serving admission traffic. The patch above restores requests and limits, but the chart's template owns the `resources` field, so a Rancher upgrade reverts it and the patch needs reapplying, unlike the replica count and affinity above.
 - The Rancher webhook rules and failure policies are written by the binary at runtime and are not tunable through chart values, so enforcement scope cannot be narrowed declaratively.
 - Whether the rancher-webhook binary recreates a deleted webhook configuration is unverified. Until it is, take a copy before deleting.
 - The `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks are served by the cleanup controller, whose binary has no timeout flag. They stay at a 10 second timeout while the rest of Kyverno runs at 5.
