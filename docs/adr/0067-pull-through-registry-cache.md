@@ -69,3 +69,13 @@ The remedy this record described was manual, and a manual remedy only works if s
 Three changes follow. Zot now sets `gc` with a retention policy that keeps a tag pulled or pushed within the last 720 hours, plus the five most recently pulled, and deletes everything else along with untagged manifests, which bounds the cache to its working set instead of to the volume size. A pair of `PersistentVolumeFillingUp` and `PersistentVolumeAlmostFull` alerts now read `kubelet_volume_stats`, so any claim that fills is visible before it breaks something. And paperless redis sets `RollingUpdate` explicitly, so a pull that cannot be satisfied leaves the running pod in place rather than taking the service down while it fails.
 
 The decision to run a pull-through cache is unchanged. What changes is that its capacity is now managed by the cache itself rather than by remembering to intervene.
+
+## Update 2026-09-06, second
+
+The retention policy added above did not bound anything. It ran, and it kept everything. Zot logs every decision, and every one read `retained by pushedWithin` or `retained by mostRecentlyPulledCount`, with `lastPullTimestamp` at the Unix epoch on every manifest. Pull timestamps require zot's metadata database, which this deployment does not enable, so the two pull-based criteria could never match. Retention criteria are combined with OR, so the surviving `pushedWithin` of 720 hours retained every blob synced in the previous thirty days, which in a cache that fills in six weeks is all of it. Garbage collection confirmed the shape of the problem by reporting zero unreferenced blobs on every repository: nothing was orphaned, because nothing had been evicted.
+
+The volume reached 99 percent, worse than the 98 percent that prompted the first fix, and the `PersistentVolumeAlmostFull` alert added in the same change fired correctly.
+
+The policy is now a single criterion, `mostRecentlyPushedCount` of 3, which bounds the cache by structure rather than by age and does not depend on the metadata database. The volume is also raised from 50Gi to 80Gi so the policy has room to work rather than operating against a full disk, and the cache is recreated once to discard the accumulated set, which is the remedy this record originally described and which remains correct for a volume that is disposable by design.
+
+The lesson worth keeping is narrower than the fix. A retention rule that cannot be evaluated is not a conservative default, it is an absent one, and OR semantics turn a single unsatisfiable criterion into a policy that retains everything. A dry run, or reading the decision log once after the first pass, would have shown it immediately.
