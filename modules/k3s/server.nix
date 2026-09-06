@@ -16,6 +16,7 @@
       "--disable=traefik" # Using Flux-managed Traefik instead
       "--disable=local-storage" # Using Longhorn instead
       "--disable=coredns"
+      "--disable=metrics-server"
       "--tls-san=${inventory.nodes.master}"
       "--node-ip=${inventory.nodes.master}"
       "--secrets-encryption"
