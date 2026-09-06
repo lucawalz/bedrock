@@ -28,6 +28,7 @@ in
       "--node-ip=${self.address}"
       "--secrets-encryption"
       "--node-label=bedrock.io/storage=true"
+      "--node-label=node.longhorn.io/create-default-disk=true"
       "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it
       "--kubelet-arg=kube-reserved=cpu=800m,memory=4Gi"
       "--kubelet-arg=system-reserved=cpu=200m,memory=512Mi"
