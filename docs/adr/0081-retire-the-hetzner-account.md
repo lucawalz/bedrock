@@ -51,8 +51,9 @@ groups that watched all of it, since an alert on a component that no longer exis
 matching credentials are deleted from the private `bedrock-secrets` repository in the same pass
 ([0060](0060-private-secrets-repo-per-cluster-keys.md)).
 
-What stays: everything that does not need object storage. Longhorn keeps three-way replication and
-its `snapshot-prune` and `filesystem-trim` recurring jobs. K3s keeps
+What stays: everything that does not need object storage. Longhorn keeps three-way replication, a
+nightly `snapshot` recurring job retaining 7, and its `snapshot-prune` and `filesystem-trim` recurring
+jobs, with `snapshot-prune`'s own retain raised from 1 to 7 to match. K3s keeps
 `--etcd-snapshot-schedule-cron` and `--etcd-snapshot-retention`, so etcd still snapshots twelve-hourly
 and retains five, to master's local disk. The horizon operator, the horizon interface,
 `modules/k3s/cluster-node.nix`, `modules/k3s/hetzner-scaffolding.nix`, `infra/packer/` and the burst
