@@ -65,6 +65,9 @@
   "rebaseWhen": "conflicted",
   "platformAutomerge": true,
   "timezone": "Europe/Berlin",
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "description": "Flux image automation owns the blog image tag",
@@ -90,14 +93,6 @@
       ]
     },
     {
-      "description": "App charts updated individually for easier review",
-      "matchManagers": ["flux"],
-      "groupName": "app charts",
-      "matchPackageNames": [
-        "/n8n/"
-      ]
-    },
-    {
       "description": "Auto-merge minor, patch, and digest updates",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "automerge": true
@@ -109,7 +104,7 @@
     },
     {
       "description": "Hold critical infrastructure minors and patches for manual review",
-      "matchManagers": ["flux"],
+      "matchManagers": ["flux", "kubernetes"],
       "matchPackageNames": [
         "/^longhorn$/",
         "/^cloudnative-pg$/",
