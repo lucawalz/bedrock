@@ -45,3 +45,21 @@ spec:
               - (name): "?*"
                 securityContext:
                   +(allowPrivilegeEscalation): false
+    - name: ephemeral-containers-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.ephemeralContainers[] || `[]` | length(@) }}"
+            operator: GreaterThan
+            value: 0
+      mutate:
+        patchStrategicMerge:
+          spec:
+            ephemeralContainers:
+              - (name): "?*"
+                securityContext:
+                  +(allowPrivilegeEscalation): false

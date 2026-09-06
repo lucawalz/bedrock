@@ -34,3 +34,10 @@ spec:
                   - key: ALL
                     operator: AnyNotIn
                     value: "{{ element.securityContext.capabilities.drop || `[]` }}"
+          - list: request.object.spec.ephemeralContainers || `[]`
+            deny:
+              conditions:
+                all:
+                  - key: ALL
+                    operator: AnyNotIn
+                    value: "{{ element.securityContext.capabilities.drop || `[]` }}"

@@ -18,6 +18,14 @@ spec:
         capabilities:
           drop:
             - ALL
+  ephemeralContainers:
+    - image: busybox:1.36
+      name: debug
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
   initContainers:
     - image: ghcr.io/example/init:1.0.0
       name: init

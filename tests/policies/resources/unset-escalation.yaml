@@ -32,3 +32,10 @@ spec:
         capabilities:
           drop:
             - ALL
+  ephemeralContainers:
+    - name: debug
+      image: busybox:1.36
+      securityContext:
+        capabilities:
+          drop:
+            - ALL

@@ -26,11 +26,17 @@ spec:
               =(initContainers):
                 - =(securityContext):
                     =(runAsNonRoot): true
+              =(ephemeralContainers):
+                - =(securityContext):
+                    =(runAsNonRoot): true
               containers:
                 - =(securityContext):
                     =(runAsNonRoot): true
           - spec:
               =(initContainers):
+                - securityContext:
+                    runAsNonRoot: true
+              =(ephemeralContainers):
                 - securityContext:
                     runAsNonRoot: true
               containers:

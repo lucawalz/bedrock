@@ -37,6 +37,12 @@ spec:
               - sh
               - -c
               - cp /config-seed/config.yaml /app/config/config.yaml
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true

@@ -21,6 +21,13 @@ spec:
         message: "CPU and memory requests and a memory limit are required for every container."
         pattern:
           spec:
+            =(initContainers):
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    memory: "?*"
             containers:
               - resources:
                   requests:

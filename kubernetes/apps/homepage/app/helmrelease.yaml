@@ -40,6 +40,12 @@ spec:
               repository: ghcr.io/gethomepage/homepage
               tag: v2.2.0
             command: ["sh", "-c", "cp -L /config-src/* /app/config/"]
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 64Mi
             securityContext:
               allowPrivilegeEscalation: false
               readOnlyRootFilesystem: true

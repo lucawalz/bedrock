@@ -21,6 +21,10 @@ spec:
         message: "An explicit image tag is required."
         pattern:
           spec:
+            =(initContainers):
+              - image: "*:*"
+            =(ephemeralContainers):
+              - image: "*:*"
             containers:
               - image: "*:*"
     - name: validate-image-tag
@@ -33,5 +37,9 @@ spec:
         message: "Using the :latest tag is not allowed; pin a fixed image tag."
         pattern:
           spec:
+            =(initContainers):
+              - image: "!*:latest"
+            =(ephemeralContainers):
+              - image: "!*:latest"
             containers:
               - image: "!*:latest"
