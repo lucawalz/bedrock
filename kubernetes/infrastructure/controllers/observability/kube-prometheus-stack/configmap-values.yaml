@@ -313,19 +313,35 @@ alertmanager:
       resolve_timeout: 5m
     route:
       receiver: 'ntfy'
-      group_by: ['alertname', 'severity']
+      group_by: ['alertname', 'namespace']
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
       routes:
+        - receiver: 'ntfy-critical'
+          matchers:
+            - severity = critical
+          repeat_interval: 1h
+        - receiver: 'deadman'
+          matchers:
+            - alertname = "Watchdog"
+          repeat_interval: 5m
         - receiver: 'null'
           matchers:
-            - alertname =~ "InfoInhibitor|Watchdog"
+            - alertname = "InfoInhibitor"
     receivers:
       - name: 'null'
       - name: 'ntfy'
         webhook_configs:
           - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7Bwith%20.commonAnnotations.summary%7D%7D%7B%7B.%7D%7D%7B%7Bend%7D%7D'
+            send_resolved: true
+      - name: 'ntfy-critical'
+        webhook_configs:
+          - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7Bwith%20.commonAnnotations.summary%7D%7D%7B%7B.%7D%7D%7B%7Bend%7D%7D&priority=urgent'
+            send_resolved: true
+      - name: 'deadman'
+        webhook_configs:
+          - url: 'http://10.20.0.1:9095/'
             send_resolved: true
     inhibit_rules:
       - source_matchers:
@@ -334,4 +350,3 @@ alertmanager:
           - severity =~ warning|info
         equal:
           - namespace
-          - alertname
