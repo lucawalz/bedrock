@@ -49,6 +49,7 @@ let
   wlrRandr = "${pkgs.wlr-randr}/bin/wlr-randr";
 
   dashboardUrlFile = config.age.secrets.grafana-kiosk-url.path;
+  deadmanStatusFile = config.services.deadman.statusFile;
 
   panelWidth = 1280;
   panelHeight = 400;
@@ -67,6 +68,8 @@ let
 
   renderPage = pkgs.writeShellScript "kiosk-render-page" ''
     umask 077
+    deadman="$(cat ${deadmanStatusFile} 2>/dev/null || echo unknown)"
+    if [ "$deadman" = ok ]; then deadmanColor=#8fd19e; else deadmanColor=#e2a0a0; fi
     if [ "$1" = reachable ]; then
       {
         printf '<!doctype html><meta charset="utf-8"><style>'
@@ -75,6 +78,8 @@ let
         printf 'iframe{position:absolute;top:-%dpx;left:0;width:%dpx;height:%dpx;border:0}' \
           ${toString grafanaHeaderHeight} ${toString panelWidth} ${toString frameHeight}
         printf '</style><iframe src="%s"></iframe>' "$(cat ${dashboardUrlFile})"
+        printf '<div style="position:absolute;bottom:2px;right:6px;font:10px monospace;color:%s">deadman %s</div>' \
+          "$deadmanColor" "$deadman"
       } > ${pageFile}
     else
       last="$(cat ${lastContactFile} 2>/dev/null || echo 'not since boot')"
@@ -93,6 +98,8 @@ let
         printf '<p>The dashboard has not answered for %d consecutive probes.</p>'  \
           ${toString failuresBeforeAlarm}
         printf '<p>Last contact: %s</p></div>' "$last"
+        printf '<div style="position:absolute;bottom:2px;right:6px;font:10px monospace;color:%s">deadman %s</div>' \
+          "$deadmanColor" "$deadman"
       } > ${pageFile}
     fi
   '';

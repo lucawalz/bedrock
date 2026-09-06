@@ -1,4 +1,9 @@
-{ lib, inventory, ... }:
+{
+  lib,
+  config,
+  inventory,
+  ...
+}:
 let
   homeSubnet = "192.168.2.0/24";
   inherit (inventory) nodes serviceVip;
@@ -32,6 +37,7 @@ in
           22
           53
           3000
+          config.services.deadman.port
         ];
 
         vlan30 = {

@@ -12,6 +12,7 @@
     ../../modules/router/wireless.nix
     ../../modules/router/tailscale.nix
     ../../modules/router/monitoring.nix
+    ../../modules/router/deadman.nix
     ../../modules/router/display.nix
     ../../modules/router/desktop.nix
   ];
