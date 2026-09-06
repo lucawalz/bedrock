@@ -45,9 +45,9 @@ All of these are `failurePolicy: Fail`. The first two rows reach across resource
 
 The subsystem webhooks are circular: a Longhorn outage blocks the Longhorn writes needed to repair it, and the same holds for CNPG and MetalLB. The procedure below applies unchanged with the configuration name substituted.
 
-The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring`, `velero` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
+The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
 
-The Rancher configuration has no such exclusion. Its `rancher.cattle.io.secrets` mutating webhook claims Secret CREATE, UPDATE and DELETE in every namespace, so while rancher-webhook is down no Secret can be written anywhere. That blocks cert-manager renewal, Flux SOPS decryption, CNPG and any Velero restore.
+The Rancher configuration has no such exclusion. Its `rancher.cattle.io.secrets` mutating webhook claims Secret CREATE, UPDATE and DELETE in every namespace, so while rancher-webhook is down no Secret can be written anywhere. That blocks cert-manager renewal, Flux SOPS decryption and CNPG.
 
 ## Disabling enforcement
 
