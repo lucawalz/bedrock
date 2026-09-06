@@ -4,6 +4,7 @@ namespace: litellm
 components:
   - ../../../components/network-policies/base
   - ../../../components/authentik-middleware
+  - ../../../components/topology-spread
 resources:
   - helmrelease.yaml
   - configmap.yaml

@@ -1,0 +1,18 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: app-template
+spec:
+  values:
+    defaultPodOptions:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: Exists
+          matchLabelKeys:
+            - app.kubernetes.io/instance
+            - pod-template-hash

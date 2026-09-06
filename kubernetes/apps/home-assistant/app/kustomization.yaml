@@ -6,6 +6,7 @@ components:
   - ../../../components/network-policies/traefik-ingress
   - ../../../components/network-policies/internet-egress
   - ../../../components/authentik-middleware
+  - ../../../components/topology-spread
 resources:
   - helmrelease.yaml
   - configmap.yaml

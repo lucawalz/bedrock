@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: cloudflare-tunnel
 components:
   - ../../../../components/network-policies/internet-egress
+  - ../../../../components/topology-spread
 resources:
   - config.yaml
   - helmrelease.yaml

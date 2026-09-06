@@ -4,6 +4,7 @@ namespace: miniflux
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/internet-egress
+  - ../../../components/topology-spread
 resources:
   - helmrelease.yaml
   - ingress.yaml
