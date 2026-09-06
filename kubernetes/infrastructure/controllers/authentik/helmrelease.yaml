@@ -89,6 +89,9 @@ spec:
           memory: 1Gi
     worker:
       replicas: 1
+      livenessProbe:
+        periodSeconds: 10
+        failureThreshold: 6
       resources:
         requests:
           cpu: 100m
