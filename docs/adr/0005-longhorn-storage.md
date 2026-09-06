@@ -23,3 +23,5 @@ Storage is Longhorn, installed through Flux from a Helm chart with a default rep
 ## Consequences
 
 Volumes survive a node failure and can be snapshotted and restored. The cost is replication overhead: three copies of every volume use disk and network, and Longhorn needs some tuning to behave well on small hardware. Longhorn is the source layer that the off-site backups in [0009](0009-velero-backups.md) protect.
+
+**Update (2026-09-06):** the Decision's "provides the snapshots that Velero backs up off-site" and this section's "Longhorn is the source layer that the off-site backups in [0009](0009-velero-backups.md) protect" no longer describe the estate. [0081](0081-retire-the-hetzner-account.md) removes Velero and the Longhorn BackupTarget with the Hetzner account, so nothing carries a Longhorn snapshot off-cluster any more. A `snapshot` recurring job still takes one nightly on the volumes it covers, but it rides the same volume and the same three replicas as the data it protects, which is not a backup. The decision to use Longhorn for replicated block storage is unaffected.
