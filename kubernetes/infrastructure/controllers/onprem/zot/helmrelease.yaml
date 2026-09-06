@@ -36,7 +36,7 @@ spec:
       name: data
       accessModes:
         - ReadWriteOnce
-      storage: 50Gi
+      storage: 80Gi
       storageClassName: longhorn-disposable
     startupProbe:
       initialDelaySeconds: 5
@@ -61,9 +61,7 @@ spec:
                   "deleteUntagged": true,
                   "keepTags": [
                     {
-                      "mostRecentlyPulledCount": 5,
-                      "pulledWithin": "720h",
-                      "pushedWithin": "720h"
+                      "mostRecentlyPushedCount": 3
                     }
                   ]
                 }
