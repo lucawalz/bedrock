@@ -26,12 +26,12 @@ data:
         model: TP-Link TL-SG108PE
         managed: true
         poe: true
-        notes: "8-port PoE+ smart switch at 192.168.2.212. Port 1 Speedport uplink untagged VLAN1; port 2 Pi trunk PoE untagged VLAN1 tagged VLAN20/30; ports 3-5 spare VLAN1; ports 6/7/8 master/worker-1/worker-2 untagged VLAN20 PVID20. 64W PoE budget shared across ports 1-4."
+        notes: "8-port PoE+ smart switch at 192.168.2.212. Port 1 Speedport uplink untagged VLAN1; port 2 Pi trunk PoE untagged VLAN1 tagged VLAN20/30; ports 3-5 spare VLAN1; ports 6/7/8 cp-1/worker-1/worker-2 untagged VLAN20 PVID20. 64W PoE budget shared across ports 1-4."
         labels:
           ip: 192.168.2.212
           port1: Speedport uplink, untagged VLAN1
           port2: Pi trunk, PoE source, untagged VLAN1, tagged VLAN20+30
-          port6: master, untagged VLAN20, PVID20
+          port6: cp-1, untagged VLAN20, PVID20
           port7: worker-1, untagged VLAN20, PVID20
           port8: worker-2, untagged VLAN20, PVID20
         ports:
@@ -39,7 +39,7 @@ data:
             speed: 1000
             count: 8
       - kind: Server
-        name: master
+        name: cp-1
         notes: "Lenovo ThinkCentre m920q, K3s control-plane node at 10.20.0.10 on VLAN20, switch port 6."
         labels:
           ip: 10.20.0.10
