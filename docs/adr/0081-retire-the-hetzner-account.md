@@ -45,7 +45,8 @@ application and the namespace. The Longhorn BackupTarget and its `backup` Recurr
 CloudNativePG barman-cloud plugin with its ObjectStore and ScheduledBackup, and the outbound 443 rule
 that existed so the archiver could reach object storage. The k3s `--etcd-s3*` flags and the
 `etcd-s3-credentials` agenix secret. Horizon's Hetzner ProviderConfig, the `cluster-horizon-provider`
-Flux Kustomization and the hcloud API egress policy. The weekly Packer snapshot build. The alert
+Flux Kustomization and the hcloud API egress policy. The weekly schedule on the Packer snapshot build,
+which leaves that workflow triggered only by a change to its own inputs or by hand. The alert
 groups that watched all of it, since an alert on a component that no longer exists is noise. The
 matching credentials are deleted from the private `bedrock-secrets` repository in the same pass
 ([0060](0060-private-secrets-repo-per-cluster-keys.md)).
@@ -119,9 +120,11 @@ Etcd snapshots survive but only on master's disk, which reinstates exactly the c
 that could rebuild it sit on one disk, and one failure takes both.
 
 Capacity is the three home nodes. Nothing bursts, and nothing can burst until a `ProviderConfig` and a
-credential for some provider exist again. The alerting, the taints and the reaper that surround burst
-nodes are all still declared, so they will resume behaving as recorded whenever that happens rather
-than needing to be rediscovered.
+credential for some provider exist again. Nothing in `kubernetes/` refers to a burst node any more.
+The `longhorn-node-finalizer` CronJob kept by [0062](0062-retire-elastic-cluster-autoscaler.md) stays,
+because it finalizes a stranded `nodes.longhorn.io` record whatever stranded it, and the node image
+stays alongside it, so re-enabling capacity later is a provider and a credential rather than a
+rebuild.
 
 The removal has to reach the cluster and reconcile before the Hetzner account access is revoked, and
 the order is not a preference. The `hetzner` ProviderConfig carries the finalizer
