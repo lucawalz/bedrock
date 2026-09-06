@@ -28,7 +28,7 @@ spec:
     controllers:
       ntfy:
         strategy: RollingUpdate
-        replicas: 2
+        replicas: 1
         containers:
           app:
             image:
@@ -41,6 +41,21 @@ spec:
               NTFY_BEHIND_PROXY: "true"
               NTFY_AUTH_DEFAULT_ACCESS: read-write
               NTFY_CACHE_FILE: ""
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /v1/health
+                    port: 80
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /v1/health
+                    port: 80
             resources:
               requests:
                 cpu: 50m
@@ -55,16 +70,6 @@ spec:
                   - ALL
                 add:
                   - NET_BIND_SERVICE
-    defaultPodOptions:
-      priorityClassName: system-cluster-critical
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchLabels:
-                  app.kubernetes.io/name: ntfy
-                  app.kubernetes.io/instance: ntfy
-              topologyKey: kubernetes.io/hostname
     service:
       app:
         controller: ntfy
