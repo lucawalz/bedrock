@@ -32,7 +32,7 @@ let
         agenix.nixosModules.default
         ../hosts/common
       ]
-      ++ nixpkgs.lib.optional (builtins.pathExists hostDir) hostDir
+      ++ nixpkgs.lib.optional (isServer || builtins.pathExists hostDir) hostDir
       ++ [
         (
           {
@@ -123,7 +123,6 @@ let
     };
   };
 in
-assert builtins.elem inventory.bootstrapControlPlane inventory.controlPlanes;
 {
   inherit inventory;
 

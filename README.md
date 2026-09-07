@@ -132,7 +132,7 @@ To add a service: create its namespace under `namespaces/` and list it in that f
 
 ```
 flake.nix              entry point; defines every host and the dev shells
-lib/                   the inventory and the mkHost/mkNode builders that keep host definitions small
+lib/                   the inventory and the mkHost/clusterNodes builders that keep host definitions small
 hosts/
   common/              shared base: boot, locale, networking, users, packages, nix
   control-plane-1/     control-plane node, with its disk layout and hardware scan

@@ -73,7 +73,7 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key. E
    ```
 
    `disko` wipes and formats the disk. Two recovery details: control-plane-1's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
-4. K3s. control-plane-1 starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` address baked into `modules/k3s/agent.nix` and the shared token, so the join depends on no name resolution at all. This yields an empty three-node cluster.
+4. K3s. control-plane-1 starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` address recorded as `nodes.control-plane-1.address` in `lib/inventory.nix`, which `modules/k3s/agent.nix` resolves via `inventory.bootstrapControlPlane`, and the shared token, so the join depends on no name resolution at all. This yields an empty three-node cluster.
 5. Flux. Seed it once against the repository:
 
    ```
@@ -159,19 +159,21 @@ kubectl -n postgres delete backups.postgresql.cnpg.io --all
 
 Longhorn's per-disk `storageReserved` has no declarative path once a disk exists. The Helm chart's `storageReservedPercentageForDefaultDisk` (`kubernetes/infrastructure/controllers/onprem/longhorn/helmrelease.yaml`) is applied only when Longhorn first creates a disk record, so changing it does nothing to a disk already registered, and the `nodes.longhorn.io` objects that carry the live value are owned and continuously rewritten by the Longhorn controller, leaving no manifest that could hold the field without fighting the controller for it. The only way to set it on an existing disk is a direct patch, and that patch has to be reapplied by hand whenever the disk record is recreated, such as after a full rebuild.
 
-control-plane-1 already reserves 20 percent of its disk, 50075021312 of 250375106560 bytes, and the origin of that value is not recorded. Twenty percent is adopted for the workers to match control-plane-1's existing proportion, not because the proportion itself is derived from anything. worker-1 and worker-2 both currently reserve nothing, so Longhorn schedules replica data over the whole of each disk, leaving no space set aside for the operating system or for containerd's image store to grow into. Matching control-plane-1's proportion on both closes that gap:
+control-plane-1, worker-1 and worker-2 each now reserve 20 percent of their disk: control-plane-1 and worker-1 both reserve 50075021312 of 250375106560 bytes, and worker-2 reserves 100478522163 of its roughly double-sized 502392610816-byte disk. Twenty percent started as control-plane-1's own proportion, for a value whose origin is not recorded, and has since been applied to all three nodes so that Longhorn leaves the same share of every disk for the operating system and containerd's image store rather than scheduling replica data over the whole of it.
 
 worker-1: 20 percent of 250375106560 bytes is 50075021312.
 worker-2's disk is roughly double the others, at 502392610816 bytes; 20 percent of it is 100478522163.2, which rounds down to 100478522163.
 
 ```
+kubectl -n longhorn-system patch nodes.longhorn.io control-plane-1 --type=merge \
+  -p '{"spec":{"disks":{"default-disk":{"storageReserved":50075021312}}}}'
 kubectl -n longhorn-system patch nodes.longhorn.io worker-1 --type=merge \
   -p '{"spec":{"disks":{"default-disk":{"storageReserved":50075021312}}}}'
 kubectl -n longhorn-system patch nodes.longhorn.io worker-2 --type=merge \
   -p '{"spec":{"disks":{"default-disk":{"storageReserved":100478522163}}}}'
 ```
 
-Neither command has been run yet. Reapply both after any event that recreates either node's disk record.
+All three commands have been run against the live cluster. Both k3s roles now set `--node-label=node.longhorn.io/create-default-disk=true`, so a disk record recreated after this point comes up at the chart's own 30 percent rather than at zero; reapply the matching command above after any event that recreates a node's disk record, control-plane-1 included.
 
 ## metrics-server ships suspended
 
@@ -278,7 +280,7 @@ There is no backup-restore row, because there is no backup to restore.
 - worker-2 cannot be drained while it holds the only replica of a volume. Longhorn's `block-if-contains-last-replica` policy correctly refuses, so the node is not patchable without moving `data-zot-0` and `kiwix-library` to a replicated class or forcing the drain.
 - A mass reschedule can outlast the event that caused it. Draining control-plane-1 took 38 seconds and the estate took 45 minutes to settle, because every rescheduled pod pulled images through the registry cache at once and containerd does not fall back to the upstream registry when the mirror is merely slow.
 - The `rancher-webhook` replica count and anti-affinity are imperative and are not reconciled, so a rebuild returns to a single replica until step 9 is reapplied.
-- worker-1 and worker-2 hold no Longhorn storage reserve declaratively. The patch that sets it, in Longhorn per-node storage reserve above, is imperative and does not survive the disk record being recreated, so it must be reapplied by hand each time that happens.
+- control-plane-1, worker-1 and worker-2 hold no Longhorn storage reserve declaratively. The patch that sets it, in Longhorn per-node storage reserve above, is imperative and does not survive the disk record being recreated, so it must be reapplied by hand each time that happens.
 - The age key is held only on the operator's workstation, by choice. It is simultaneously the SOPS recovery identity and the SSH credential for all four hosts, so losing that machine loses access and decryption in the same event. The Velero backup that used to capture `flux-system/sops-age` as a side effect is gone, so there is no accidental second copy any more.
 - kiwix is deliberately not backed up, and now it is in the same position as everything else. Its 32 GB of ZIM files are re-downloaded from `download.kiwix.org` by an idempotent init container, which makes it the one workload whose recovery story is unaffected by the loss of the backup stack.
 - control-plane-1's pinned filesystem UUIDs must be regenerated after a disk wipe.

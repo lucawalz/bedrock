@@ -28,18 +28,25 @@ let
   badRole = builtins.filter (name: !builtins.elem nodes.${name}.role knownRoles) (
     builtins.attrNames nodes
   );
+  bootstrapControlPlane = "control-plane-1";
+  controlPlanes = namesWithRole "server";
 in
 assert
   badRole == [ ]
   || throw "inventory: node '${builtins.head badRole}' has an unknown role '${
     nodes.${builtins.head badRole}.role
   }'";
+assert
+  builtins.elem bootstrapControlPlane controlPlanes
+  || throw "inventory: bootstrapControlPlane '${bootstrapControlPlane}' is not a member of controlPlanes";
 {
   subnet = "10.20.0.0/24";
   gateway = "10.20.0.1";
   serviceVip = "10.20.0.50";
   dhcpPool = "10.20.0.100 - 10.20.0.200";
-  bootstrapControlPlane = "control-plane-1";
-  controlPlanes = namesWithRole "server";
-  inherit nodes;
+  inherit
+    bootstrapControlPlane
+    controlPlanes
+    nodes
+    ;
 }

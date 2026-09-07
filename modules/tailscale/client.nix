@@ -47,6 +47,7 @@ in
         "--hostname=${cfg.hostname}"
       ]
       ++ lib.optional cfg.acceptRoutes "--accept-routes";
+      # up flags apply only at first enrolment, so a rename needs the same flag on set
       extraSetFlags = [ "--hostname=${cfg.hostname}" ];
     };
   };

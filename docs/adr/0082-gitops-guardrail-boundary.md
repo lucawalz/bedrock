@@ -255,3 +255,11 @@ depends on to keep its accepted trade-offs from becoming silent failures. If eit
 the trade-off it compensates for, respectively the five stateful releases that no longer roll back
 automatically and the drift detection that no longer corrects automatically, reverts to exactly the
 uncovered failure mode this pass set out to close.
+
+## Update 2026-09-07
+
+The precondition this record set for `cluster-metrics-server`, an operator rebuilding master with
+the disable flag, was satisfied when the control-plane node was rebuilt and renamed to
+`control-plane-1` under [0083](0083-rename-control-plane-node-to-control-plane-1.md). The k3s addon
+no longer owns the objects the chart needs to adopt, the Kustomization has been resumed, and it
+reports Ready.

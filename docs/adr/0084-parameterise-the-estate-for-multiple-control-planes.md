@@ -28,7 +28,9 @@ own independent single-member cluster instead of joining the first.
 `lib/inventory.nix` becomes the only place a node is declared. Each node carries a `role` of
 `server` or `agent`; the file derives `controlPlanes`, the list of node names with role `server`,
 from those roles, and names one `bootstrapControlPlane` explicitly rather than deriving it. An
-assertion rejects any role outside `server` and `agent` and names the offending node.
+assertion rejects any role outside `server` and `agent` and names the offending node, and a second
+assertion in the same file rejects a `bootstrapControlPlane` that is not itself a member of
+`controlPlanes`.
 
 `lib/default.nix` replaces `mkServer` and `mkWorker` with a single `mkNode { hostname, ... }` that
 looks up the node in the inventory, dispatches on its role to import `modules/k3s/server.nix` or
@@ -93,8 +95,7 @@ unaltered by it.
 derived control-plane list, losing its `/etc/hosts` entry and its firewall rule along with it. An
 assertion in `lib/inventory.nix` rejects any role outside the two known values and names the
 offending node, which turns that typo into a hard evaluation failure instead of a silent
-misconfiguration; the assertion was added in a fix round after the initial commit, once this exact
-failure mode was raised.
+misconfiguration.
 
 The CI build matrix now assumes every inventory node is `x86_64-linux`. That holds today because
 `mkNode` defaults to it and nothing in the inventory overrides it, but the inventory itself no

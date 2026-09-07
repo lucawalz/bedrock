@@ -122,6 +122,14 @@ exactly three `nodes.longhorn.io` objects. Every Kustomization is Ready and no p
 Running or Completed. The CoreDNS `NodeHosts` entry reads `10.20.0.10 control-plane-1`, and both
 workers join by address.
 
+**Other records were left as written, by policy.** This record's Consequences said every other
+document naming the control-plane node continues to be correct about the estate as deployed until
+the rename lands and each is updated in the same session. The rename has landed, and the policy
+actually adopted is narrower: those other records stay exactly as written, because each describes
+the estate at the time of the decision it records, not the estate as it stands today. Only the
+documents that describe the estate as it currently operates, the disaster-recovery runbook and the
+README, were updated to the new node name.
+
 **The etcd risk was overstated, and the sharp step was elsewhere.** This record states that k3s
 derives its etcd member name from the hostname at startup, so a renamed node meets a datastore
 whose sole member no longer matches. That is not what k3s does. `setName` writes
