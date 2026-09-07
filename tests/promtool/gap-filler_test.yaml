@@ -153,6 +153,8 @@ tests:
         values: '95x200'
       - series: 'longhorn_node_storage_capacity_bytes{node="worker-1"}'
         values: '100x200'
+      - series: 'longhorn_node_storage_reservation_bytes{node="worker-1"}'
+        values: '0x200'
     alert_rule_test:
       - eval_time: 90m
         alertname: LonghornSchedulingHeadroomLow
@@ -162,7 +164,7 @@ tests:
               node: worker-1
             exp_annotations:
               summary: "Longhorn node worker-1 has little replica scheduling headroom left"
-              description: "Longhorn has already promised 95 percent of the replica capacity on node worker-1. This counts space committed to volumes rather than bytes written, so the disk is not filling up. What it bounds is provisioning: with hard replica anti-affinity and allowVolumeCreationWithDegradedAvailability disabled, once any node reaches 100 percent no new three-replica volume can be created anywhere in the cluster."
+              description: "Longhorn has already promised 95 percent of the schedulable budget on node worker-1, where the budget is disk capacity minus the per-disk reservation Longhorn withholds from scheduling, not raw disk capacity. This counts space committed to volumes rather than bytes written, so the disk is not filling up. What it bounds is provisioning: with hard replica anti-affinity and allowVolumeCreationWithDegradedAvailability disabled, Longhorn refuses to schedule any new replica on this node once this reaches 100 percent, though existing volumes keep working undisturbed; once every node reaches 100 percent no new three-replica volume can be created anywhere in the cluster."
       - eval_time: 90m
         alertname: LonghornSchedulingHeadroomCritical
         exp_alerts: []
@@ -174,6 +176,8 @@ tests:
         values: '98x200'
       - series: 'longhorn_node_storage_capacity_bytes{node="worker-1"}'
         values: '100x200'
+      - series: 'longhorn_node_storage_reservation_bytes{node="worker-1"}'
+        values: '0x200'
     alert_rule_test:
       - eval_time: 90m
         alertname: LonghornSchedulingHeadroomCritical
@@ -183,7 +187,7 @@ tests:
               node: worker-1
             exp_annotations:
               summary: "Longhorn node worker-1 is almost out of replica scheduling headroom"
-              description: "Longhorn has promised 98 percent of the replica capacity on node worker-1. New three-replica volume creation is about to fail cluster-wide. Free space by deleting unused volumes or their orphaned replicas, or expand the disk."
+              description: "Longhorn has promised 98 percent of the schedulable budget on node worker-1, where the budget is disk capacity minus the per-disk reservation Longhorn withholds from scheduling, not raw disk capacity. New three-replica volume creation is about to fail cluster-wide. Free space by deleting unused volumes or their orphaned replicas, or expand the disk."
 
   - interval: 1m
     name: healthy longhorn headroom fires nothing
@@ -192,10 +196,32 @@ tests:
         values: '51x200'
       - series: 'longhorn_node_storage_capacity_bytes{node="worker-2"}'
         values: '100x200'
+      - series: 'longhorn_node_storage_reservation_bytes{node="worker-2"}'
+        values: '0x200'
     alert_rule_test:
       - eval_time: 90m
         alertname: LonghornSchedulingHeadroomLow
         exp_alerts: []
+
+  - interval: 1m
+    name: longhorn headroom past 90 percent of the reserved budget fires despite sitting under 90 percent of raw capacity
+    input_series:
+      - series: 'longhorn_node_storage_scheduled_bytes{node="worker-1"}'
+        values: '76x200'
+      - series: 'longhorn_node_storage_capacity_bytes{node="worker-1"}'
+        values: '100x200'
+      - series: 'longhorn_node_storage_reservation_bytes{node="worker-1"}'
+        values: '20x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornSchedulingHeadroomLow
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              node: worker-1
+            exp_annotations:
+              summary: "Longhorn node worker-1 has little replica scheduling headroom left"
+              description: "Longhorn has already promised 95 percent of the schedulable budget on node worker-1, where the budget is disk capacity minus the per-disk reservation Longhorn withholds from scheduling, not raw disk capacity. This counts space committed to volumes rather than bytes written, so the disk is not filling up. What it bounds is provisioning: with hard replica anti-affinity and allowVolumeCreationWithDegradedAvailability disabled, Longhorn refuses to schedule any new replica on this node once this reaches 100 percent, though existing volumes keep working undisturbed; once every node reaches 100 percent no new three-replica volume can be created anywhere in the cluster."
 
   - interval: 1m
     name: node temperature past the warning threshold fires warning only
