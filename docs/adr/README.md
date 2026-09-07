@@ -85,5 +85,5 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0080. Retire Grocy and withdraw its public exposure](0080-retire-grocy.md) (accepted)
 - [0081. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md) (accepted)
 - [0082. Establish the GitOps guardrail boundary and its accepted trade-offs](0082-gitops-guardrail-boundary.md) (accepted)
-- [0083. Rename the control-plane node from master to control-plane-1](0083-rename-control-plane-node-to-control-plane-1.md) (proposed)
+- [0083. Rename the control-plane node from master to control-plane-1](0083-rename-control-plane-node-to-control-plane-1.md) (accepted)
 - [0084. Parameterise the estate for multiple control planes](0084-parameterise-the-estate-for-multiple-control-planes.md) (accepted)
