@@ -7,6 +7,8 @@
 }:
 let
   self = inventory.nodes.${meta.hostname};
+  isBootstrap = meta.hostname == inventory.bootstrapControlPlane;
+  bootstrap = inventory.nodes.${inventory.bootstrapControlPlane};
 in
 {
   imports = [ ./common.nix ];
@@ -36,7 +38,8 @@ in
       "--etcd-snapshot-retention=5"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
-    clusterInit = true;
+    clusterInit = isBootstrap;
+    serverAddr = if isBootstrap then "" else "https://${bootstrap.address}:6443";
   };
 
   networking.firewall.allowedTCPPorts = [

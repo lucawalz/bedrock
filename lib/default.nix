@@ -41,7 +41,8 @@ let
     };
   };
 in
-{
+assert builtins.elem inventory.bootstrapControlPlane inventory.controlPlanes;
+rec {
   inherit inventory;
 
   mkHost =
@@ -65,15 +66,20 @@ in
       ++ nixpkgs.lib.optional baseline ../hosts/common;
     };
 
-  mkServer =
+  mkNode =
     {
-      serverId,
+      hostname,
       diskDevice ? "/dev/nvme0n1",
       system ? "x86_64-linux",
     }:
-    assert serverId == 1;
     let
-      hostname = inventory.controlPlane;
+      node =
+        if builtins.hasAttr hostname inventory.nodes then
+          inventory.nodes.${hostname}
+        else
+          throw "mkNode: hostname '${hostname}' is not present in the inventory";
+      isServer = node.role == "server";
+      hostDir = ../hosts/${hostname};
     in
     nixpkgs.lib.nixosSystem {
       inherit system;
@@ -86,7 +92,9 @@ in
         disko.nixosModules.disko
         agenix.nixosModules.default
         ../hosts/common
-        ../hosts/${hostname}
+      ]
+      ++ nixpkgs.lib.optional (builtins.pathExists hostDir) hostDir
+      ++ [
         (
           {
             config,
@@ -96,13 +104,17 @@ in
           }:
           {
             imports = [
-              ../modules/k3s/server.nix
+              (if isServer then ../modules/k3s/server.nix else ../modules/k3s/agent.nix)
               ../modules/services/storage.nix
               ../modules/tailscale/client.nix
             ];
 
             networking.hostName = hostname;
             system.stateVersion = "25.05";
+
+            services.k3s.extraFlags = nixpkgs.lib.mkIf (!isServer) [
+              "--node-ip=${node.address}"
+            ];
 
             age.secrets.tailscale-authkey = {
               file = "${secretsDir}/tailscale-authkey-${hostname}.age";
@@ -118,9 +130,9 @@ in
               tag = "tag:cluster";
             };
 
-            boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+            boot.binfmt.emulatedSystems = nixpkgs.lib.mkIf isServer [ "aarch64-linux" ];
 
-            environment.systemPackages = [
+            environment.systemPackages = nixpkgs.lib.mkIf isServer [
               (pkgs.wrapHelm pkgs.kubernetes-helm {
                 plugins = with pkgs.kubernetes-helmPlugins; [
                   helm-secrets
@@ -132,7 +144,7 @@ in
               pkgs.fluxcd
               pkgs.sops
             ];
-            environment.variables.KUBECONFIG = "/etc/rancher/k3s/k3s.yaml";
+            environment.variables.KUBECONFIG = nixpkgs.lib.mkIf isServer "/etc/rancher/k3s/k3s.yaml";
 
             disko.devices = mkDiskoLayout diskDevice;
           }
@@ -140,54 +152,7 @@ in
       ];
     };
 
-  mkWorker =
-    {
-      workerId,
-      diskDevice ? "/dev/nvme0n1",
-      system ? "x86_64-linux",
-    }:
-    let
-      hostname = "worker-${toString workerId}";
-    in
-    nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = {
-        meta = { inherit hostname; };
-        secretsDir = "${self}/secrets";
-        inherit inventory;
-      };
-      modules = [
-        disko.nixosModules.disko
-        agenix.nixosModules.default
-        ../hosts/common
-        ({ config, secretsDir, ... }: {
-          imports = [
-            ../modules/k3s/agent.nix
-            ../modules/services/storage.nix
-            ../modules/tailscale/client.nix
-          ];
-
-          networking.hostName = hostname;
-          system.stateVersion = "25.05";
-
-          services.k3s.extraFlags = [ "--node-ip=${inventory.nodes.${hostname}.address}" ];
-
-          age.secrets.tailscale-authkey = {
-            file = "${secretsDir}/tailscale-authkey-${hostname}.age";
-            mode = "0400";
-            owner = "root";
-            group = "root";
-          };
-
-          bedrock.tailscaleClient = {
-            enable = true;
-            inherit hostname;
-            authKeyFile = config.age.secrets.tailscale-authkey.path;
-            tag = "tag:cluster";
-          };
-
-          disko.devices = mkDiskoLayout diskDevice;
-        })
-      ];
-    };
+  clusterNodes = nixpkgs.lib.genAttrs (builtins.attrNames inventory.nodes) (
+    hostname: mkNode { inherit hostname; }
+  );
 }

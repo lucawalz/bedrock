@@ -39,15 +39,12 @@
     {
       formatter = nixpkgs.lib.genAttrs formatterSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 
-      nixosConfigurations = {
-        control-plane-1 = lib.mkServer { serverId = 1; };
+      nixosConfigurations = lib.clusterNodes // {
         router = lib.mkHost {
           hostname = "router";
           system = "aarch64-linux";
           baseline = false;
         };
-        worker-1 = lib.mkWorker { workerId = 1; };
-        worker-2 = lib.mkWorker { workerId = 2; };
         cluster-node = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           modules = [

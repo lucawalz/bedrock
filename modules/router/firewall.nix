@@ -8,7 +8,7 @@ let
   homeSubnet = "192.168.2.0/24";
   inherit (inventory) nodes serviceVip;
   nodeAddresses = lib.concatStringsSep ", " (map (node: node.address) (lib.attrValues nodes));
-  controlPlaneAddress = nodes.${inventory.controlPlane}.address;
+  controlPlaneAddresses = lib.concatStringsSep ", " (map (name: nodes.${name}.address) inventory.controlPlanes);
 in
 {
   networking = {
@@ -64,7 +64,7 @@ in
         (lib.mkBefore ''iifname "wlan0" ip daddr ${homeSubnet} drop'')
         ''iifname "end0" ip saddr ${homeSubnet} oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
         ''iifname "tailscale0" oifname "vlan20" ip daddr { ${nodeAddresses} } tcp dport 22 accept''
-        ''iifname "tailscale0" oifname "vlan20" ip daddr ${controlPlaneAddress} tcp dport 6443 accept''
+        ''iifname "tailscale0" oifname "vlan20" ip daddr { ${controlPlaneAddresses} } tcp dport 6443 accept''
         ''iifname "tailscale0" oifname "vlan20" ip daddr ${serviceVip} tcp dport { 80, 443 } accept''
         ''iifname "tailscale0" oifname "vlan20" icmp type echo-request accept''
         ''iifname "tailscale0" oifname "vlan20" drop''

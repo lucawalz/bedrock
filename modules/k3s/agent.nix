@@ -2,7 +2,7 @@
 { config, inventory, ... }:
 
 let
-  controlPlane = inventory.nodes.${inventory.controlPlane};
+  controlPlane = inventory.nodes.${inventory.bootstrapControlPlane};
 in
 {
   imports = [ ./common.nix ];
