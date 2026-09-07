@@ -8,7 +8,9 @@ let
   homeSubnet = "192.168.2.0/24";
   inherit (inventory) nodes serviceVip;
   nodeAddresses = lib.concatStringsSep ", " (map (node: node.address) (lib.attrValues nodes));
-  controlPlaneAddresses = lib.concatStringsSep ", " (map (name: nodes.${name}.address) inventory.controlPlanes);
+  controlPlaneAddresses = lib.concatStringsSep ", " (
+    map (name: nodes.${name}.address) inventory.controlPlanes
+  );
 in
 {
   networking = {

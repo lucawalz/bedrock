@@ -21,7 +21,19 @@ let
     };
   };
   namesWithRole = role: builtins.filter (name: nodes.${name}.role == role) (builtins.attrNames nodes);
+  knownRoles = [
+    "server"
+    "agent"
+  ];
+  badRole = builtins.filter (name: !builtins.elem nodes.${name}.role knownRoles) (
+    builtins.attrNames nodes
+  );
 in
+assert
+  badRole == [ ]
+  || throw "inventory: node '${builtins.head badRole}' has an unknown role '${
+    nodes.${builtins.head badRole}.role
+  }'";
 {
   subnet = "10.20.0.0/24";
   gateway = "10.20.0.1";
@@ -29,6 +41,5 @@ in
   dhcpPool = "10.20.0.100 - 10.20.0.200";
   bootstrapControlPlane = "control-plane-1";
   controlPlanes = namesWithRole "server";
-  agents = namesWithRole "agent";
   inherit nodes;
 }

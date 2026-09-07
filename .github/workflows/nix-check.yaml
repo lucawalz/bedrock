@@ -54,7 +54,8 @@ jobs:
       - name: List cluster nodes from the inventory
         id: nodes
         run: |
-          echo "hosts=$(nix eval --json --file lib/inventory.nix --apply 'inv: builtins.attrNames inv.nodes')" >> "$GITHUB_OUTPUT"
+          hosts=$(nix eval --json --file lib/inventory.nix --apply 'inv: builtins.attrNames inv.nodes')
+          echo "hosts=$hosts" >> "$GITHUB_OUTPUT"
 
   build-x86:
     needs: inventory

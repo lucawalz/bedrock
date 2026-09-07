@@ -9,63 +9,6 @@
 let
   inventory = import ./inventory.nix;
 
-  mkDiskoLayout = diskDevice: {
-    disk.main = {
-      type = "disk";
-      device = diskDevice;
-      content = {
-        type = "gpt";
-        partitions = {
-          ESP = {
-            priority = 1;
-            name = "ESP";
-            start = "1M";
-            end = "512M";
-            type = "EF00";
-            content = {
-              type = "filesystem";
-              format = "vfat";
-              mountpoint = "/boot";
-            };
-          };
-          root = {
-            size = "100%";
-            content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/";
-            };
-          };
-        };
-      };
-    };
-  };
-in
-assert builtins.elem inventory.bootstrapControlPlane inventory.controlPlanes;
-rec {
-  inherit inventory;
-
-  mkHost =
-    {
-      hostname,
-      system ? "x86_64-linux",
-      baseline ? true,
-    }:
-    nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = {
-        meta = { inherit hostname; };
-        secretsDir = "${self}/secrets";
-        inherit inventory;
-      };
-      modules = [
-        disko.nixosModules.disko
-        agenix.nixosModules.default
-        ../hosts/${hostname}
-      ]
-      ++ nixpkgs.lib.optional baseline ../hosts/common;
-    };
-
   mkNode =
     {
       hostname,
@@ -150,6 +93,63 @@ rec {
           }
         )
       ];
+    };
+
+  mkDiskoLayout = diskDevice: {
+    disk.main = {
+      type = "disk";
+      device = diskDevice;
+      content = {
+        type = "gpt";
+        partitions = {
+          ESP = {
+            priority = 1;
+            name = "ESP";
+            start = "1M";
+            end = "512M";
+            type = "EF00";
+            content = {
+              type = "filesystem";
+              format = "vfat";
+              mountpoint = "/boot";
+            };
+          };
+          root = {
+            size = "100%";
+            content = {
+              type = "filesystem";
+              format = "ext4";
+              mountpoint = "/";
+            };
+          };
+        };
+      };
+    };
+  };
+in
+assert builtins.elem inventory.bootstrapControlPlane inventory.controlPlanes;
+{
+  inherit inventory mkNode;
+
+  mkHost =
+    {
+      hostname,
+      system ? "x86_64-linux",
+      baseline ? true,
+    }:
+    nixpkgs.lib.nixosSystem {
+      inherit system;
+      specialArgs = {
+        meta = { inherit hostname; };
+        secretsDir = "${self}/secrets";
+        inherit inventory;
+      };
+      modules = [
+        disko.nixosModules.disko
+        agenix.nixosModules.default
+        ../hosts/${hostname}
+      ]
+      ++ nixpkgs.lib.optional baseline ../hosts/common;
     };
 
   clusterNodes = nixpkgs.lib.genAttrs (builtins.attrNames inventory.nodes) (

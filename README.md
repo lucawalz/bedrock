@@ -132,7 +132,7 @@ To add a service: create its namespace under `namespaces/` and list it in that f
 
 ```
 flake.nix              entry point; defines every host and the dev shells
-lib/                   mkHost and mkWorker builders that keep host definitions small
+lib/                   the inventory and the mkHost/mkNode builders that keep host definitions small
 hosts/
   common/              shared base: boot, locale, networking, users, packages, nix
   control-plane-1/     control-plane node, with its disk layout and hardware scan
@@ -155,7 +155,7 @@ kubernetes/
   clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and the bootstrap secret that reaches the private secrets repository
 ```
 
-Workers have no directory of their own. `flake.nix` builds them from `lib.mkWorker`, so adding worker-3 takes one line in the flake and one public key in `secrets/secrets.nix`.
+`flake.nix` generates every cluster node from `lib.mkNode`, dispatching on the `role` each node carries in the inventory; `mkHost` is only used for the router now. Workers have no directory of their own, and adding one is an inventory entry rather than a flake edit, but that entry is not the whole cost: it still needs an agenix entry in `secrets/secrets.nix`, its own `tailscale-authkey-<name>.age`, and its host key added to `k3s-token.age`.
 
 There is no capacity beyond the three local nodes. The Cluster API substrate a multi-region fleet once used was removed with the return to a single cluster ([ADR 0063](docs/adr/0063-return-to-single-region.md)), and the on-demand path that replaced it closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
 
