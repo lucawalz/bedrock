@@ -16,11 +16,7 @@ let
       system ? "x86_64-linux",
     }:
     let
-      node =
-        if builtins.hasAttr hostname inventory.nodes then
-          inventory.nodes.${hostname}
-        else
-          throw "mkNode: hostname '${hostname}' is not present in the inventory";
+      node = inventory.nodes.${hostname};
       isServer = node.role == "server";
       hostDir = ../hosts/${hostname};
     in
@@ -129,7 +125,7 @@ let
 in
 assert builtins.elem inventory.bootstrapControlPlane inventory.controlPlanes;
 {
-  inherit inventory mkNode;
+  inherit inventory;
 
   mkHost =
     {
