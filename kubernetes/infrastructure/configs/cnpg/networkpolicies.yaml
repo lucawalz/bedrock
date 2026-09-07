@@ -84,13 +84,41 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+    # host-originated traffic reaches a pod from cni0 (10.42.N.1) or flannel.1 (10.42.N.0), never the node LAN address
+    # N spans 0-7: covers today's three nodes, the ADR-0082 three-plus-three control-plane goal, and a re-registration landing on a freed slot rather than a low one
     - from:
         - ipBlock:
             cidr: 10.42.0.0/32
         - ipBlock:
+            cidr: 10.42.0.1/32
+        - ipBlock:
             cidr: 10.42.1.0/32
         - ipBlock:
+            cidr: 10.42.1.1/32
+        - ipBlock:
             cidr: 10.42.2.0/32
+        - ipBlock:
+            cidr: 10.42.2.1/32
+        - ipBlock:
+            cidr: 10.42.3.0/32
+        - ipBlock:
+            cidr: 10.42.3.1/32
+        - ipBlock:
+            cidr: 10.42.4.0/32
+        - ipBlock:
+            cidr: 10.42.4.1/32
+        - ipBlock:
+            cidr: 10.42.5.0/32
+        - ipBlock:
+            cidr: 10.42.5.1/32
+        - ipBlock:
+            cidr: 10.42.6.0/32
+        - ipBlock:
+            cidr: 10.42.6.1/32
+        - ipBlock:
+            cidr: 10.42.7.0/32
+        - ipBlock:
+            cidr: 10.42.7.1/32
       ports:
         - protocol: TCP
           port: 8000
