@@ -103,6 +103,22 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} is degraded"
             description: "Longhorn reports volume {{ $labels.volume }} as degraded for over 30 minutes, so it is running with fewer healthy replicas than configured."
+        - alert: LonghornVolumeFaulted
+          expr: longhorn_volume_robustness == 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Longhorn volume {{ $labels.volume }} is faulted"
+            description: "Longhorn reports volume {{ $labels.volume }} as faulted, meaning no replica is usable and the volume can serve neither reads nor writes. LonghornVolumeDegraded cannot stand in for this on a single-replica volume, which has no degraded state to pass through and moves straight from healthy to faulted."
+        - alert: LonghornVolumeUnschedulable
+          expr: kube_longhornvolume_status_condition{type="Scheduled"} == 0
+          for: 30m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn cannot place every replica of {{ $labels.pvc_namespace }}/{{ $labels.pvc }}"
+            description: "Longhorn has reported the Scheduled condition false on the volume backing {{ $labels.pvc_namespace }}/{{ $labels.pvc }} for over 30 minutes, meaning no disk has enough scheduling budget for at least one replica the volume wants. The volume keeps serving from the replicas it already has, so nothing fails visibly; what it loses is the redundancy or the data locality it was configured for. Longhorn exports no metric for this condition, so this reads it from the volume's own status through kube-state-metrics."
         - record: longhorn:node_replica_scheduling:budget_used_percent
           expr: max by (node) (longhorn_node_storage_scheduled_bytes / clamp_min((longhorn_node_storage_capacity_bytes - longhorn_node_storage_reservation_bytes) * 200 / 100, 1) * 100)
         - alert: LonghornSchedulingHeadroomLow

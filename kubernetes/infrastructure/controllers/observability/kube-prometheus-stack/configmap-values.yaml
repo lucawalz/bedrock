@@ -88,6 +88,9 @@ kube-state-metrics:
       - apiGroups: ["helm.toolkit.fluxcd.io"]
         resources: ["helmreleases"]
         verbs: ["list", "watch"]
+      - apiGroups: ["longhorn.io"]
+        resources: ["volumes"]
+        verbs: ["list", "watch"]
   customResourceState:
     enabled: true
     config:
@@ -138,6 +141,25 @@ kube-state-metrics:
             metrics:
               - name: status_condition
                 help: "Status condition reported by a Flux HelmRelease"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, conditions]
+                    labelsFromPath:
+                      type: ["type"]
+                    valueFrom: ["status"]
+          - groupVersionKind:
+              group: longhorn.io
+              version: v1beta2
+              kind: Volume
+            metricNamePrefix: kube_longhornvolume
+            labelsFromPath:
+              name: [metadata, name]
+              pvc: [status, kubernetesStatus, pvcName]
+              pvc_namespace: [status, kubernetesStatus, namespace]
+            metrics:
+              - name: status_condition
+                help: "Status condition reported by a Longhorn volume"
                 each:
                   type: Gauge
                   gauge:

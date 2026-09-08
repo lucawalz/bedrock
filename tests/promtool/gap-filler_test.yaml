@@ -691,3 +691,55 @@ tests:
       - eval_time: 60m
         alertname: CNPGFailoverDetected
         exp_alerts: []
+
+  - interval: 1m
+    name: a faulted longhorn volume alerts where the degraded rule cannot
+    input_series:
+      - series: 'longhorn_volume_robustness{volume="pvc-abc"}'
+        values: '3x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: LonghornVolumeFaulted
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              volume: pvc-abc
+            exp_annotations:
+              summary: "Longhorn volume pvc-abc is faulted"
+              description: "Longhorn reports volume pvc-abc as faulted, meaning no replica is usable and the volume can serve neither reads nor writes. LonghornVolumeDegraded cannot stand in for this on a single-replica volume, which has no degraded state to pass through and moves straight from healthy to faulted."
+      - eval_time: 60m
+        alertname: LonghornVolumeDegraded
+        exp_alerts: []
+
+  - interval: 1m
+    name: an unschedulable longhorn volume alerts while its other false conditions stay quiet
+    input_series:
+      - series: 'kube_longhornvolume_status_condition{name="pvc-abc",pvc="data-zot-0",pvc_namespace="zot",type="Scheduled"}'
+        values: '0x120'
+      - series: 'kube_longhornvolume_status_condition{name="pvc-abc",pvc="data-zot-0",pvc_namespace="zot",type="Restore"}'
+        values: '0x120'
+      - series: 'kube_longhornvolume_status_condition{name="pvc-abc",pvc="data-zot-0",pvc_namespace="zot",type="TooManySnapshots"}'
+        values: '0x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: LonghornVolumeUnschedulable
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: pvc-abc
+              pvc: data-zot-0
+              pvc_namespace: zot
+              type: Scheduled
+            exp_annotations:
+              summary: "Longhorn cannot place every replica of zot/data-zot-0"
+              description: "Longhorn has reported the Scheduled condition false on the volume backing zot/data-zot-0 for over 30 minutes, meaning no disk has enough scheduling budget for at least one replica the volume wants. The volume keeps serving from the replicas it already has, so nothing fails visibly; what it loses is the redundancy or the data locality it was configured for. Longhorn exports no metric for this condition, so this reads it from the volume's own status through kube-state-metrics."
+
+  - interval: 1m
+    name: a schedulable longhorn volume raises nothing
+    input_series:
+      - series: 'kube_longhornvolume_status_condition{name="pvc-abc",pvc="data-zot-0",pvc_namespace="zot",type="Scheduled"}'
+        values: '1x120'
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: LonghornVolumeUnschedulable
+        exp_alerts: []
