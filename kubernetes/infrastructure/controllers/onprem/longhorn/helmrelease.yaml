@@ -55,7 +55,7 @@ spec:
       freezeFilesystemForSnapshot: true
       replicaSoftAntiAffinity: false
       storageMinimalAvailablePercentage: 25
-      storageOverProvisioningPercentage: 100
+      storageOverProvisioningPercentage: 200
       storageReservedPercentageForDefaultDisk: 30
       nodeDownPodDeletionPolicy: delete-both-statefulset-and-deployment-pod
       nodeDrainPolicy: block-for-eviction-if-contains-last-replica
