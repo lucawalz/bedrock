@@ -159,21 +159,26 @@ kubectl -n postgres delete backups.postgresql.cnpg.io --all
 
 Longhorn's per-disk `storageReserved` has no declarative path once a disk exists. The Helm chart's `storageReservedPercentageForDefaultDisk` (`kubernetes/infrastructure/controllers/onprem/longhorn/helmrelease.yaml`) is applied only when Longhorn first creates a disk record, so changing it does nothing to a disk already registered, and the `nodes.longhorn.io` objects that carry the live value are owned and continuously rewritten by the Longhorn controller, leaving no manifest that could hold the field without fighting the controller for it. The only way to set it on an existing disk is a direct patch, and that patch has to be reapplied by hand whenever the disk record is recreated, such as after a full rebuild.
 
-control-plane-1, worker-1 and worker-2 each now reserve 20 percent of their disk: control-plane-1 and worker-1 both reserve 50075021312 of 250375106560 bytes, and worker-2 reserves 100478522163 of its roughly double-sized 502392610816-byte disk. Twenty percent started as control-plane-1's own proportion, for a value whose origin is not recorded, and has since been applied to all three nodes so that Longhorn leaves the same share of every disk for the operating system and containerd's image store rather than scheduling replica data over the whole of it.
+All three nodes reserve 30 percent of their disk, the same figure the chart declares, so a recreated disk record comes up at the value already in use and no patch is owed afterwards. Longhorn derives the reserve as `size * percentage / 100` with integer division. control-plane-1 and worker-1 hold 250375106560-byte disks and reserve 75112531968 each; worker-2's disk is roughly double at 502392610816 bytes and reserves 150717783244, since 30 percent of it is 150717783244.8 and the remainder is discarded. The reserve is what Longhorn leaves to the operating system and containerd's image store rather than scheduling replica data over, and 30 percent is close to what the operating system already occupies on control-plane-1.
 
-worker-1: 20 percent of 250375106560 bytes is 50075021312.
-worker-2's disk is roughly double the others, at 502392610816 bytes; 20 percent of it is 100478522163.2, which rounds down to 100478522163.
+The disk key is not the same on every node. Longhorn names the record when it creates it, and control-plane-1's was recreated during the rename in [ADR 0083](adr/0083-rename-control-plane-node-to-control-plane-1.md), so it carries a suffix the workers do not have. Read the key from the live object before patching rather than assuming `default-disk`: a merge patch naming a key that does not exist does not fail, it adds a second disk entry with no `path` that Longhorn then tries to register.
+
+```
+kubectl -n longhorn-system get nodes.longhorn.io control-plane-1 -o jsonpath='{.spec.disks}'
+```
+
+With the keys as they stand today:
 
 ```
 kubectl -n longhorn-system patch nodes.longhorn.io control-plane-1 --type=merge \
-  -p '{"spec":{"disks":{"default-disk":{"storageReserved":50075021312}}}}'
+  -p '{"spec":{"disks":{"default-disk-8684c0f54faa244b":{"storageReserved":75112531968}}}}'
 kubectl -n longhorn-system patch nodes.longhorn.io worker-1 --type=merge \
-  -p '{"spec":{"disks":{"default-disk":{"storageReserved":50075021312}}}}'
+  -p '{"spec":{"disks":{"default-disk":{"storageReserved":75112531968}}}}'
 kubectl -n longhorn-system patch nodes.longhorn.io worker-2 --type=merge \
-  -p '{"spec":{"disks":{"default-disk":{"storageReserved":100478522163}}}}'
+  -p '{"spec":{"disks":{"default-disk":{"storageReserved":150717783244}}}}'
 ```
 
-All three commands have been run against the live cluster. Both k3s roles now set `--node-label=node.longhorn.io/create-default-disk=true`, so a disk record recreated after this point comes up at the chart's own 30 percent rather than at zero; reapply the matching command above after any event that recreates a node's disk record, control-plane-1 included.
+All three commands have been run against the live cluster. Both k3s roles set `--node-label=node.longhorn.io/create-default-disk=true`, so a disk record recreated after this point comes up at the chart's 30 percent rather than at zero, which is now the same value these commands set. Raising the reserve shrinks the scheduling budget, so never apply these before confirming `storage-over-provisioning-percentage` reads 200 on the live Setting: at 100 percent a 30 percent reserve puts control-plane-1 and worker-1 over their budgets and blocks replica scheduling on both.
 
 ## metrics-server ships suspended
 

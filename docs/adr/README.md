@@ -88,3 +88,4 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0083. Rename the control-plane node from master to control-plane-1](0083-rename-control-plane-node-to-control-plane-1.md) (accepted)
 - [0084. Parameterise the estate for multiple control planes](0084-parameterise-the-estate-for-multiple-control-planes.md) (accepted)
 - [0085. Guardrails silently failed when the value they were derived from moved](0085-guardrails-silently-failed-when-derived-basis-moved.md) (accepted)
+- [0086. Thin provision Longhorn, and detect what no derived expression can](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md) (accepted)

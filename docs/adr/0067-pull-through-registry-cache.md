@@ -79,3 +79,22 @@ The volume reached 99 percent, worse than the 98 percent that prompted the first
 The policy is now a single criterion, `mostRecentlyPushedCount` of 3, which bounds the cache by structure rather than by age and does not depend on the metadata database. The volume is also raised from 50Gi to 80Gi so the policy has room to work rather than operating against a full disk, and the cache is recreated once to discard the accumulated set, which is the remedy this record originally described and which remains correct for a volume that is disposable by design.
 
 The lesson worth keeping is narrower than the fix. A retention rule that cannot be evaluated is not a conservative default, it is an absent one, and OR semantics turn a single unsatisfiable criterion into a policy that retains everything. A dry run, or reading the decision log once after the first pass, would have shown it immediately.
+
+## Update 2026-09-08
+
+The volume is 20Gi, down from the 80Gi the previous update set. The retention change in that update
+worked: with `mostRecentlyPushedCount` of 3 as the only criterion, the recreated cache settled at
+2.5 GB and stayed there. Eighty gibibytes was sized against the unbounded cache that preceded it and
+was never revisited once the bound took effect.
+
+The cost of leaving it was not disk. Longhorn schedules against a volume's declared size, not its
+contents, so 80Gi was a permanent 85.9 GB claim on some node's scheduling budget in exchange for
+2.5 GB of data that costs nothing to refetch. It was the single largest declaration in the estate and
+it was the one furthest from what it holds. [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md)
+records the scheduling ceiling this contributed to and why declared size, not written bytes, is what
+Longhorn charges for.
+
+Twenty gibibytes is eight times the settled working set, which leaves the retention policy the room
+the previous update wanted without pricing the volume as though the bound did not exist. Shrinking is
+a recreate, since Longhorn expands but does not shrink, and that is the same operation this record
+has already called correct for a volume that is disposable by design.

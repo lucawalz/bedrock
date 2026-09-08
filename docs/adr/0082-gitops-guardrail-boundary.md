@@ -56,6 +56,12 @@ exist when a volume only has one. The `LonghornVolumeDegraded` alert, which fire
 their one replica takes them straight from healthy to faulted, and the first signal anyone gets is
 the faulted alert, not an earlier warning.
 
+The faulted alert this paragraph relies on did not exist when this was written. `longhorn.rules`
+carried nothing on `longhorn_volume_robustness == 3`, so the three volumes named here raised nothing
+at all on total loss, rather than raising a late signal instead of an early one.
+`LonghornVolumeFaulted` was added in [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md)
+and the paragraph now holds as written.
+
 **Floating chart versions.** Twenty HelmReleases carried a floating version range, such as `"5.x"`,
 instead of the exact version already deployed. A floating range resolves inside the cluster at
 reconcile time against whatever the chart repository currently serves, so nothing outside the
@@ -124,6 +130,16 @@ runs at a 70 percent high threshold and a 55 percent low threshold, set in `modu
 so the disk was already bounded before this pass and the imperative reserve is a genuine
 allocation between Longhorn and the rest of the disk rather than a second mechanism papering over
 an unbounded one.
+
+The patch stays imperative, but it is no longer owed after every disk recreation. The live reserve
+was 20 percent while the chart declared 30, so a recreated record came up at a different budget than
+the one in use. [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md) raised the
+live value to the chart's 30 percent, which makes recreation idempotent: the reserve a new disk
+record is born with is now the reserve that was already in force. The runbook commands also named
+`default-disk` on all three nodes, which is wrong for control-plane-1 since the rename in
+[0083](0083-rename-control-plane-node-to-control-plane-1.md) gave its recreated record a suffixed
+name, and a merge patch naming a key that does not exist adds a second disk entry rather than
+failing.
 
 **The Pi's role, stated precisely.** Three changes were made in the name of independence from the
 Pi, and none of them buys independence from the Pi itself: the Pi is VLAN 20's only gateway and the
