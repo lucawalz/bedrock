@@ -23,21 +23,7 @@ jobs:
           bash scripts/gen-crd-schemas.sh "$RUNNER_TEMP/crd-schemas" kubernetes "$RUNNER_TEMP/rendered"
 
       - name: Validate Kubernetes manifests
-        run: |
-          find kubernetes/ -name "*.yaml" \
-            ! -path "*/flux-system/gotk-components.yaml" \
-            ! -name "*.sops.yaml" \
-            ! -name "values.yaml" \
-            -print0 \
-            | xargs -0 kubeconform \
-              -strict \
-              -ignore-missing-schemas \
-              -schema-location default \
-              -schema-location "$RUNNER_TEMP/crd-schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
-              -schema-location "$KUBECONFORM_SCHEMA_LOCATION" \
-              -kubernetes-version 1.35.0 \
-              -summary
-        # Skips: gotk-components (generated, large), sops secrets (encrypted, not valid YAML values)
+        run: bash scripts/check-manifests.sh "$RUNNER_TEMP/crd-schemas"
 
   kustomize-build:
     runs-on: ubuntu-latest

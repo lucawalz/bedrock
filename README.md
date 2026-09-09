@@ -231,7 +231,7 @@ This is a personal setup that changes as needs change, so the roadmap is a direc
 
 This is a personal homelab, not a product, but issues and forks are welcome. Anyone reusing the layout is encouraged to adapt it to their own hardware and domain.
 
-To work on it locally, clone the repository and enter the dev shell with `nix develop`, then run `nix flake check` before opening a pull request. The same Kubernetes validation that runs in CI can be reproduced with `kustomize build` and `kubeconform` against the manifests under `kubernetes/`.
+To work on it locally, clone the repository and enter the dev shell with `nix develop`, then run `nix flake check` before opening a pull request. The Kubernetes manifest validation that runs in CI is `scripts/check-manifests.sh`, which runs the same way locally, alongside the other `scripts/check-*.sh` gates.
 
 ## Support
 
