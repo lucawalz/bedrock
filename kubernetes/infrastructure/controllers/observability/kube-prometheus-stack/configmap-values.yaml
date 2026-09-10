@@ -167,6 +167,24 @@ kube-state-metrics:
                     labelsFromPath:
                       type: ["type"]
                     valueFrom: ["status"]
+              - name: declared_bytes
+                help: "Size a Longhorn volume declares, which is what its replicas cost to schedule"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [spec, size]
+              - name: actual_bytes
+                help: "Size a Longhorn volume actually occupies"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [status, actualSize]
+              - name: replicas
+                help: "Replica count a Longhorn volume is configured for"
+                each:
+                  type: Gauge
+                  gauge:
+                    path: [spec, numberOfReplicas]
 
 defaultRules:
   rules:

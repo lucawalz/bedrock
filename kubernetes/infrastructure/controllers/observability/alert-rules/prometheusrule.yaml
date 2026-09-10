@@ -119,6 +119,16 @@ spec:
           annotations:
             summary: "Longhorn cannot place every replica of {{ $labels.pvc_namespace }}/{{ $labels.pvc }}"
             description: "Longhorn has reported the Scheduled condition false on the volume backing {{ $labels.pvc_namespace }}/{{ $labels.pvc }} for over 30 minutes, meaning no disk has enough scheduling budget for at least one replica the volume wants. The volume keeps serving from the replicas it already has, so nothing fails visibly; what it loses is the redundancy or the data locality it was configured for. Longhorn exports no metric for this condition, so this reads it from the volume's own status through kube-state-metrics."
+        - alert: LonghornVolumeOverDeclared
+          expr: |
+            (kube_longhornvolume_declared_bytes - kube_longhornvolume_actual_bytes) * on (name) group_left kube_longhornvolume_replicas > 20e9
+              and kube_longhornvolume_declared_bytes / clamp_min(kube_longhornvolume_actual_bytes, 1) > 10
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} declares far more than it stores"
+            description: "The volume backing {{ $labels.pvc_namespace }}/{{ $labels.pvc }} declares more than ten times what it holds, and the gap costs over 20 GB of scheduling budget once multiplied by its replica count. Longhorn charges a replica its declared size the moment it is placed, whatever the volume contains, so an over-declaration is spent budget rather than spare room. Longhorn expands but never shrinks, so correcting one means recreating the claim, which is worth doing only for a volume whose declaration is wrong rather than merely generous."
         - record: longhorn:node_replica_scheduling:budget_used_percent
           expr: max by (node) (longhorn_node_storage_scheduled_bytes / clamp_min((longhorn_node_storage_capacity_bytes - longhorn_node_storage_reservation_bytes) * 200 / 100, 1) * 100)
         - alert: LonghornSchedulingHeadroomLow

@@ -743,3 +743,53 @@ tests:
       - eval_time: 60m
         alertname: LonghornVolumeUnschedulable
         exp_alerts: []
+
+  - interval: 1m
+    name: a volume declaring far more than it stores alerts once the wasted budget is material
+    input_series:
+      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="paperless-ngx-media",pvc_namespace="paperless"}'
+        values: '21474836480x200'
+      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="paperless-ngx-media",pvc_namespace="paperless"}'
+        values: '480000000x200'
+      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="paperless-ngx-media",pvc_namespace="paperless"}'
+        values: '3x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornVolumeOverDeclared
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              name: pvc-abc
+              pvc: paperless-ngx-media
+              pvc_namespace: paperless
+            exp_annotations:
+              summary: "Longhorn volume paperless/paperless-ngx-media declares far more than it stores"
+              description: "The volume backing paperless/paperless-ngx-media declares more than ten times what it holds, and the gap costs over 20 GB of scheduling budget once multiplied by its replica count. Longhorn charges a replica its declared size the moment it is placed, whatever the volume contains, so an over-declaration is spent budget rather than spare room. Longhorn expands but never shrinks, so correcting one means recreating the claim, which is worth doing only for a volume whose declaration is wrong rather than merely generous."
+
+  - interval: 1m
+    name: a small volume with a high ratio stays quiet because the wasted budget is trivial
+    input_series:
+      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+        values: '2147483648x200'
+      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+        values: '100000000x200'
+      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+        values: '3x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornVolumeOverDeclared
+        exp_alerts: []
+
+  - interval: 1m
+    name: a large volume in genuine use stays quiet even though its unused gap exceeds the budget floor
+    input_series:
+      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+        values: '107374182400x200'
+      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+        values: '64000000000x200'
+      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+        values: '1x200'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: LonghornVolumeOverDeclared
+        exp_alerts: []
