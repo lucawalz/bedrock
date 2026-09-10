@@ -216,7 +216,7 @@ Four workflows run on every pull request, covering four areas:
 - The Nix side: formatting with `nixfmt`, linting with `statix` and `deadnix`, and `nix flake check` to evaluate every host configuration.
 - The Kubernetes manifests: `kubeconform` against the upstream and CRD schemas, `kustomize build` over every kustomization, and a render of the per-app Kustomizations with their Flux post-build substitutions applied so an unresolved variable fails a pull request rather than a reconcile.
 - Policy and alerting: the Kyverno policies run against their unit tests and against a first-party manifest, and the Prometheus alert rules are checked and unit-tested with `promtool`.
-- Repository hygiene: a check that no SOPS file was committed unencrypted, a check that the ADR index matches the ADRs on disk, and a regeneration of `docs/inventory.md` that fails on drift. The Renovate configuration is validated on the same trigger.
+- Repository hygiene: a check that no SOPS file was committed unencrypted, a check that the ADR index matches the ADRs on disk, a check that every Helm source is both listed for deployment and referenced by a release, and a regeneration of `docs/inventory.md` that fails on drift. The Renovate configuration is validated on the same trigger.
 
 [Renovate](https://docs.renovatebot.com/) keeps `flake.lock`, Helm chart versions, and GitHub Actions current through automated pull requests.
 

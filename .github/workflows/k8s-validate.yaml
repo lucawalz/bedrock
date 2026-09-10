@@ -45,6 +45,9 @@ jobs:
       - name: Check every app directory is deployed
         run: bash scripts/check-apps-index.sh
 
+      - name: Check every Helm source is deployed and used
+        run: bash scripts/check-sources-index.sh
+
       - name: Check every namespace has a default ServiceAccount entry
         run: bash scripts/check-default-serviceaccounts.sh
 
