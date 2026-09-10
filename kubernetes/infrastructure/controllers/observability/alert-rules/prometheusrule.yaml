@@ -255,6 +255,14 @@ spec:
           annotations:
             summary: "Node {{ $labels.instance }} tailscale0 interface was recreated without a reboot"
             description: "The tailscale0 interface index on {{ $labels.instance }} changed in the last 15 minutes while the node's boot time did not, which happens when tailscaled restarts and rebuilds the tunnel but k3s does not restart alongside it. flannel.1 stays bound to the old interface and nothing recreates it automatically, so the node stays Ready while its pods can reach nothing over the overlay. A full reboot also changes this interface's index, but it changes the node's boot time too and k3s restarts in step with tailscaled, so that case is excluded. Check the node's flannel.alpha.coreos.com/public-ip annotation and delete flannel.1 to force a rebind, per the disaster-recovery runbook."
+        - alert: NodePodCidrOutsideAllowlist
+          expr: kube_node_info{pod_cidr!~"10\\.42\\.[0-7]\\.0/24"} == 1
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.node }} holds podCIDR {{ $labels.pod_cidr }}, which no NetworkPolicy allows"
+            description: "The NetworkPolicies that admit host-originated traffic into longhorn-system, cattle-system and postgres enumerate each node's flannel gateway pair as 10.42.N.0/32 and 10.42.N.1/32 for N from 0 to 7, because host traffic reaches a pod from cni0 or flannel.1 and never from the node's LAN address. Node {{ $labels.node }} now holds a podCIDR outside that range, so its kubelet and, on a control plane, its API server cannot reach pods in those namespaces. That presents as admission webhooks failing closed rather than as a network error. Widen the allowlists in the three networkpolicies files before the next reconcile depends on this node."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent

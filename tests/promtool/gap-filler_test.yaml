@@ -793,3 +793,23 @@ tests:
       - eval_time: 90m
         alertname: LonghornVolumeOverDeclared
         exp_alerts: []
+
+  - interval: 1m
+    name: a node whose podCIDR no networkpolicy allows fires critical
+    input_series:
+      - series: 'kube_node_info{node="control-plane-2",pod_cidr="10.42.8.0/24",internal_ip="10.20.0.13"}'
+        values: '1x60'
+      - series: 'kube_node_info{node="worker-1",pod_cidr="10.42.1.0/24",internal_ip="10.20.0.11"}'
+        values: '1x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: NodePodCidrOutsideAllowlist
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              node: control-plane-2
+              pod_cidr: 10.42.8.0/24
+              internal_ip: 10.20.0.13
+            exp_annotations:
+              summary: "Node control-plane-2 holds podCIDR 10.42.8.0/24, which no NetworkPolicy allows"
+              description: "The NetworkPolicies that admit host-originated traffic into longhorn-system, cattle-system and postgres enumerate each node's flannel gateway pair as 10.42.N.0/32 and 10.42.N.1/32 for N from 0 to 7, because host traffic reaches a pod from cni0 or flannel.1 and never from the node's LAN address. Node control-plane-2 now holds a podCIDR outside that range, so its kubelet and, on a control plane, its API server cannot reach pods in those namespaces. That presents as admission webhooks failing closed rather than as a network error. Widen the allowlists in the three networkpolicies files before the next reconcile depends on this node."
