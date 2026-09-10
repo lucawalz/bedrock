@@ -137,3 +137,22 @@ The stale apiserver certificate SANs remain unpruned, for the reasons recorded i
 [0083](0083-rename-control-plane-node-to-control-plane-1.md)'s outstanding item. The one relevant
 new fact: k3s's `--tls-san-security` flag defaults to `true`, so the SAN set cannot grow further,
 which is why leaving the existing surplus names was judged acceptable rather than merely deferred.
+
+## Update 2026-09-10
+
+The consequence recorded above, that eight gateway slots bound the incident rather than the class and
+that nothing in this repository detects a ninth Node allocation in advance, is no longer true.
+`NodePodCidrOutsideAllowlist` fires when any Node holds a podCIDR outside `10.42.0.0/24` through
+`10.42.7.0/24`, the range the three NetworkPolicies enumerate.
+
+It became possible because `kube_node_info` already carries a `pod_cidr` label, which was not checked
+when this record was written. The detection was assumed to need something the estate did not export,
+and it did not. The alert states the failure mode in its own description, that the symptom presents
+as admission webhooks failing closed rather than as a network error, because that misdirection is
+what cost the most time during the incident this record describes.
+
+The allowlist bound itself has not moved, and the range in the alert duplicates the range in the
+three NetworkPolicies, so this is the same shape of duplicated literal as the over-provisioning
+factor in [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md). The difference
+that makes it acceptable is direction: if the two drift apart, the alert fires on a node that is
+still working rather than staying silent on one that is not.

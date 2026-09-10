@@ -141,3 +141,26 @@ mechanism is not, and it will return for any large enough disposable volume.
 Longhorn's CSI driver, so it is not in this change. Separately, nothing detects a volume whose
 declaration drifts far from its contents; zot was found because it failed, not because anything
 measured the gap, and three volumes still declare 21.5 GB to hold under a gigabyte each.
+
+## Update 2026-09-10
+
+The second open item above is closed. `LonghornVolumeOverDeclared` now measures the gap this record
+said nothing measured, reading declared and actual size from the Longhorn Volume through the same
+kube-state-metrics config the `Scheduled` condition already uses.
+
+Two guards rather than one, because either alone is wrong. A ratio on its own fires on every freshly
+created volume, where actual size is near zero and the ratio is therefore enormous while nothing is
+wasted. An absolute gap on its own fires on a large volume in genuine use, where tens of gigabytes
+are unwritten but the declaration is honest. The alert needs a declaration more than ten times the
+contents **and** a gap costing over 20 GB of scheduling budget once multiplied by the replica count,
+which is what a declaration actually costs. Both thresholds carry a promtool case that fails if that
+guard is dropped, and each case was confirmed to go red when its own guard was removed rather than
+being assumed to.
+
+What the alert deliberately does not do is demand action. Longhorn expands but never shrinks, so
+every correction is a claim recreated with its data migrated, which is worth doing for a declaration
+that is wrong and not for one that is merely generous. The alert names the volumes worth that
+trouble; it does not assert that all of them are.
+
+The first open item stands unchanged: `longhorn-disposable` remains `volumeBindingMode: Immediate`,
+and `WaitForFirstConsumer` remains unverified against Longhorn's CSI driver.
