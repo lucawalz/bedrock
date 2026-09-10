@@ -112,7 +112,8 @@ spec:
           cpu: 50m
           memory: 128Mi
         limits:
-          cpu: 200m
+          # Report reconciliation is bursty: median 3m, but the p99 minute sits at the limit and is clipped.
+          cpu: 1000m
           memory: 256Mi
     features:
       policyExceptions:
