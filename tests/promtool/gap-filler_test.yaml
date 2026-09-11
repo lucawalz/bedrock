@@ -813,3 +813,47 @@ tests:
             exp_annotations:
               summary: "Node control-plane-2 holds podCIDR 10.42.8.0/24, which no NetworkPolicy allows"
               description: "The NetworkPolicies that admit host-originated traffic into longhorn-system, cattle-system and postgres enumerate each node's flannel gateway pair as 10.42.N.0/32 and 10.42.N.1/32 for N from 0 to 7, because host traffic reaches a pod from cni0 or flannel.1 and never from the node's LAN address. Node control-plane-2 now holds a podCIDR outside that range, so its kubelet and, on a control plane, its API server cannot reach pods in those namespaces. That presents as admission webhooks failing closed rather than as a network error. Widen the allowlists in the three networkpolicies files before the next reconcile depends on this node."
+
+  - interval: 1m
+    name: an instance manager set that never drained after an upgrade alerts
+    input_series:
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-1",instance_manager="instance-manager-old"}'
+        values: '672x2000'
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-1",instance_manager="instance-manager-new"}'
+        values: '672x2000'
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="control-plane-1",instance_manager="instance-manager-only"}'
+        values: '600x2000'
+    alert_rule_test:
+      - eval_time: 1500m
+        alertname: LonghornInstanceManagerNotDrained
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              node: worker-1
+            exp_annotations:
+              summary: "Node worker-1 still runs 2 Longhorn instance managers a day after an upgrade"
+              description: "A Longhorn upgrade deploys a second set of instance managers and releases the old set only once every volume still holding an engine there is detached. After a day the old set is pinned, not draining, and it keeps reserving guaranteedInstanceManagerCPU percent of the node's allocatable CPU while doing no work. Detach and reattach the volumes whose engines still run on the older instance manager. One per node is correct while the v2 data engine stays disabled."
+
+  - interval: 1m
+    name: a second instance manager set inside the upgrade window stays quiet
+    input_series:
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-1",instance_manager="instance-manager-old"}'
+        values: '672x2000'
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-1",instance_manager="instance-manager-new"}'
+        values: '672x2000'
+    alert_rule_test:
+      - eval_time: 600m
+        alertname: LonghornInstanceManagerNotDrained
+        exp_alerts: []
+
+  - interval: 1m
+    name: one instance manager per node raises nothing
+    input_series:
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-1",instance_manager="instance-manager-a"}'
+        values: '672x2000'
+      - series: 'longhorn_instance_manager_cpu_requests_millicpu{node="worker-2",instance_manager="instance-manager-b"}'
+        values: '1392x2000'
+    alert_rule_test:
+      - eval_time: 1500m
+        alertname: LonghornInstanceManagerNotDrained
+        exp_alerts: []

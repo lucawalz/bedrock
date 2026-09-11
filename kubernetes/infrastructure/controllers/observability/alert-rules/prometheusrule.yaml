@@ -129,6 +129,14 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.pvc_namespace }}/{{ $labels.pvc }} declares far more than it stores"
             description: "The volume backing {{ $labels.pvc_namespace }}/{{ $labels.pvc }} declares more than ten times what it holds, and the gap costs over 20 GB of scheduling budget once multiplied by its replica count. Longhorn charges a replica its declared size the moment it is placed, whatever the volume contains, so an over-declaration is spent budget rather than spare room. Longhorn expands but never shrinks, so correcting one means recreating the claim, which is worth doing only for a volume whose declaration is wrong rather than merely generous."
+        - alert: LonghornInstanceManagerNotDrained
+          expr: count by (node) (longhorn_instance_manager_cpu_requests_millicpu) > 1
+          for: 24h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Node {{ $labels.node }} still runs {{ $value }} Longhorn instance managers a day after an upgrade"
+            description: "A Longhorn upgrade deploys a second set of instance managers and releases the old set only once every volume still holding an engine there is detached. After a day the old set is pinned, not draining, and it keeps reserving guaranteedInstanceManagerCPU percent of the node's allocatable CPU while doing no work. Detach and reattach the volumes whose engines still run on the older instance manager. One per node is correct while the v2 data engine stays disabled."
         - record: longhorn:node_replica_scheduling:budget_used_percent
           expr: max by (node) (longhorn_node_storage_scheduled_bytes / clamp_min((longhorn_node_storage_capacity_bytes - longhorn_node_storage_reservation_bytes) * 200 / 100, 1) * 100)
         - alert: LonghornSchedulingHeadroomLow
