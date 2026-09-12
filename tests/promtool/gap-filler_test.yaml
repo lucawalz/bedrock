@@ -505,44 +505,6 @@ tests:
         exp_alerts: []
 
   - interval: 1m
-    name: a HelmRelease that has drifted from git fires warning after fifteen minutes
-    input_series:
-      - series: 'kube_helmrelease_status_condition{namespace="cnpg-system",name="cloudnative-pg",type="Drifted"}'
-        values: '1x200'
-    alert_rule_test:
-      - eval_time: 20m
-        alertname: HelmReleaseDriftDetected
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              namespace: cnpg-system
-              name: cloudnative-pg
-              type: Drifted
-            exp_annotations:
-              summary: "HelmRelease cnpg-system/cloudnative-pg has drifted from its declared state"
-              description: "The HelmRelease cnpg-system/cloudnative-pg has reported its Drifted condition True for over 15 minutes, meaning the live cluster state no longer matches what Helm rendered. driftDetection is set to mode warn on every HelmRelease in this cluster, which records the drift and emits a Kubernetes event but corrects nothing, so this alert is the only thing that turns that event into a notification."
-
-  - interval: 1m
-    name: a HelmRelease with no drift raises nothing
-    input_series:
-      - series: 'kube_helmrelease_status_condition{namespace="cnpg-system",name="cloudnative-pg",type="Drifted"}'
-        values: '0x200'
-    alert_rule_test:
-      - eval_time: 20m
-        alertname: HelmReleaseDriftDetected
-        exp_alerts: []
-
-  - interval: 1m
-    name: a HelmRelease's other status conditions do not trigger the drift alert
-    input_series:
-      - series: 'kube_helmrelease_status_condition{namespace="cnpg-system",name="cloudnative-pg",type="Ready"}'
-        values: '1x200'
-    alert_rule_test:
-      - eval_time: 20m
-        alertname: HelmReleaseDriftDetected
-        exp_alerts: []
-
-  - interval: 1m
     name: a container stuck pulling its image fires critical after ten minutes
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="litellm",pod="litellm-0",container="app",reason="ImagePullBackOff"}'

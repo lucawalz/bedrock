@@ -85,9 +85,6 @@ kube-state-metrics:
       - apiGroups: ["k3s.cattle.io"]
         resources: ["etcdsnapshotfiles"]
         verbs: ["list", "watch"]
-      - apiGroups: ["helm.toolkit.fluxcd.io"]
-        resources: ["helmreleases"]
-        verbs: ["list", "watch"]
       - apiGroups: ["longhorn.io"]
         resources: ["volumes"]
         verbs: ["list", "watch"]
@@ -130,24 +127,6 @@ kube-state-metrics:
                   type: Gauge
                   gauge:
                     path: [status, creationTime]
-          - groupVersionKind:
-              group: helm.toolkit.fluxcd.io
-              version: v2
-              kind: HelmRelease
-            metricNamePrefix: kube_helmrelease
-            labelsFromPath:
-              namespace: [metadata, namespace]
-              name: [metadata, name]
-            metrics:
-              - name: status_condition
-                help: "Status condition reported by a Flux HelmRelease"
-                each:
-                  type: Gauge
-                  gauge:
-                    path: [status, conditions]
-                    labelsFromPath:
-                      type: ["type"]
-                    valueFrom: ["status"]
           - groupVersionKind:
               group: longhorn.io
               version: v1beta2

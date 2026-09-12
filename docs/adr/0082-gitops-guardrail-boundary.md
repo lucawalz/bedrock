@@ -279,3 +279,23 @@ the disable flag, was satisfied when the control-plane node was rebuilt and rena
 `control-plane-1` under [0083](0083-rename-control-plane-node-to-control-plane-1.md). The k3s addon
 no longer owns the objects the chart needs to adopt, the Kustomization has been resumed, and it
 reports Ready.
+
+## Update 2026-09-12
+
+`HelmReleaseDriftDetected` never worked and has been removed. The premise above, that
+`driftDetection.mode: warn` surfaces a `Drifted` status condition for kube-state-metrics to export,
+is wrong. Flux's helm-controller reports drift as a Kubernetes event and writes nothing to
+`status.conditions`; verified live, every HelmRelease in the estate carries exactly two condition
+types, `Ready` and `Released`, and `kube_helmrelease_status_condition{type="Drifted"}` held no
+series at any point. The alert's promtool cases passed because they supplied the `Drifted` series
+themselves.
+
+The `CustomResourceStateMetrics` block that exposed `kube_helmrelease_status_condition`, and the
+`helm.toolkit.fluxcd.io` entry in the kube-state-metrics RBAC rules that fed it, are removed with
+it; the alert was their only consumer. `driftDetection.mode: warn` stays, because the event it
+writes is still the record that a release drifted, but this record should be read as leaving that
+trade-off uncovered by an alert rather than covered by one. Turning the event into a notification
+needs an event exporter, which the estate does not run.
+
+The other control this record leans on, `HelmReleaseStalled`, reads `flux_resource_info` and is
+unaffected.
