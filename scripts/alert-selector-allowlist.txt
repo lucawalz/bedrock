@@ -1,33 +1,35 @@
 # Selectors that resolve to no series and are meant to.
-# One entry per line: a bare metric name, or "metric label=value".
-# Anything absent that is not listed here is a rule that cannot fire as written.
-# The reasoning behind each entry belongs beside it: see docs/alert-selector-audit.md.
+# One entry per line: the selector exactly as the audit prints it, with its exact-match
+# labels conjoined and sorted. Anything absent that is not listed here is a rule that
+# cannot fire as written. The reasoning belongs beside each entry.
+# See docs/alert-selector-audit.md.
 
-# Failure conditions nothing in the estate has hit inside the retention window.
-kubelet_evictions
-kube_pod_owner owner_kind=Node
+# Kernel and hardware features these three nodes do not have, so node-exporter and
+# cadvisor emit nothing for them rather than emitting a healthy value.
+container_memory_swap{job="kubelet",metrics_path="/metrics/cadvisor"}
+node_bonding_active{job="node-exporter"}
+node_bonding_slaves{job="node-exporter"}
+node_md_disks_required{job="node-exporter"}
+node_md_disks{job="node-exporter",state="active"}
+node_md_disks{job="node-exporter",state="failed"}
 
-# Hardware and kernel features these three nodes do not have, so node-exporter
-# emits nothing for them rather than emitting a healthy value.
-container_memory_swap
-node_bonding_active
-node_bonding_slaves
-node_md_disks
-node_md_disks_required
+# A failure condition nothing in the estate has hit inside the retention window.
+kubelet_evictions{job="kubelet",metrics_path="/metrics"}
+kube_pod_owner{job="kube-state-metrics",owner_kind="Node"}
 
 # Remote write is not configured, so the whole remote storage subsystem is unexported.
-prometheus_remote_storage_failed_samples_total
-prometheus_remote_storage_queue_highest_sent_timestamp_seconds
-prometheus_remote_storage_queue_highest_timestamp_seconds
-prometheus_remote_storage_samples_failed_total
-prometheus_remote_storage_samples_total
-prometheus_remote_storage_shards_desired
-prometheus_remote_storage_shards_max
-prometheus_remote_storage_succeeded_samples_total
+prometheus_remote_storage_failed_samples_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_queue_highest_timestamp_seconds{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_samples_failed_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_samples_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_shards_desired{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_shards_max{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
+prometheus_remote_storage_succeeded_samples_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
 
-# Every service discovery is static or Kubernetes, neither of which refreshes over
-# a network, so no refresh has ever failed.
-prometheus_sd_refresh_failures_total
+# Every service discovery is static or Kubernetes, neither of which refreshes over a
+# network, so no refresh has ever failed.
+prometheus_sd_refresh_failures_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
 
 # A single etcd member has no peers to fail sending to. etcdMembersDown still fires
 # from the up series in the other half of its expression.
@@ -35,10 +37,6 @@ etcd_network_peer_sent_failures_total
 
 # Exclusion clauses on the right of an unless, with nothing to exclude. An absent
 # right-hand side excludes nothing, so the alerts these belong to still fire.
-kube_persistentvolumeclaim_access_mode access_mode=ReadOnlyMany
-kube_persistentvolumeclaim_labels
-kube_pod_status_reason
-
-# The alerting expression selects ALERTS, which exists only while something fires.
-ALERTS alertstate=firing
-ALERTS severity=info
+kube_persistentvolumeclaim_access_mode{access_mode="ReadOnlyMany"}
+kube_persistentvolumeclaim_labels{label_excluded_from_alerts="true"}
+kube_pod_status_reason{job="kube-state-metrics",reason="SchedulingGated"}

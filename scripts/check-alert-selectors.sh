@@ -4,10 +4,6 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-# Resolves every metric selector in every loaded rule against the series Prometheus
-# actually holds. This needs cluster access, so it is an operator gate rather than a
-# CI one: see docs/alert-selector-audit.md.
-
 for tool in curl jq yq; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "$tool is not on PATH; enter the dev shell or install it" >&2
@@ -76,18 +72,14 @@ report() {
   printf '%s\n' "$1"
 }
 
-# A rule that never reached Prometheus cannot be audited, so a file that has not
-# reconciled is a failure rather than a silent pass.
 jq -r '.data.groups[].rules[].name' "$work/rules.json" | sort -u >"$work/loaded-names"
 yq -N '.spec.groups[].rules[] | select(has("alert")) | .alert' "$rules_dir"/*.yaml </dev/null \
   | awk 'NF' | sort -u >"$work/declared-names"
 while IFS= read -r name; do
   [ -n "$name" ] || continue
-  report "$name: declared in $rules_dir but not loaded by Prometheus"
+  report "$name: declared in $rules_dir but not loaded by Prometheus. An alert committed but not yet pushed or reconciled reports here; recording rules are not compared at all."
 done < <(comm -23 "$work/declared-names" "$work/loaded-names")
 
-# One parse per distinct expression, then one check per distinct selector, so a
-# selector repeated across eight burn-rate windows is reported once.
 jq -r '.data.groups[] | .name as $g | .rules[] | "\($g)/\(.name)\t\(.query)"' \
   "$work/rules.json" >"$work/loaded"
 
@@ -98,12 +90,19 @@ while IFS=$'\t' read -r rule query; do
     report "$rule: Prometheus could not parse the rule expression"
     continue
   fi
+  # Regex, negative and empty-string matchers are dropped rather than checked: all
+  # three are written to match nothing while the estate is healthy.
   jq -r --arg rule "$rule" '
     [.. | objects | select(.type == "vectorSelector" or .type == "matrixSelector")]
     | .[]
     | (.matchers | map(select(.name == "__name__" and .type == "=")) | .[0].value // "") as $m
     | select($m != "")
-    | ($m), (.matchers[] | select(.name != "__name__" and .type == "=" and .value != "") | "\($m) \(.name)=\(.value)")
+    | (.matchers
+       | map(select(.name != "__name__" and .type == "=" and .value != ""))
+       | sort_by(.name)
+       | map("\(.name)=\(.value | tojson)")
+       | join(",")) as $l
+    | (if $l == "" then $m else "\($m){\($l)}" end)
     | "\(.)\t\($rule)"
   ' "$work/ast.json" >>"$work/selectors"
 done <"$work/loaded"
@@ -114,31 +113,11 @@ sort -u "$work/selectors" | awk -F'\t' '
   END { if (prev != "") print prev "\t" rules }
 ' >"$work/unique"
 
-has_series() {
-  [ "$(api series --data-urlencode "match[]=$1" | jq '.data | length')" -gt 0 ]
-}
-
-label_has_value() {
-  api "label/$2/values" -G --data-urlencode "match[]=$1" \
-    | jq -e --arg v "$3" '.data | index($v) != null' >/dev/null
-}
-
 while IFS=$'\t' read -r selector rules; do
   [ -n "$selector" ] || continue
   grep -qxF "$selector" "$work/allow" && continue
-  metric="${selector%% *}"
-  if [ "$selector" = "$metric" ]; then
-    has_series "$metric" \
-      || report "$metric has no series at all, selected by: $rules"
-  else
-    matcher="${selector#* }"
-    label="${matcher%%=*}"
-    value="${matcher#*=}"
-    # A label value cannot be checked against a metric that is itself absent.
-    has_series "$metric" || continue
-    label_has_value "$metric" "$label" "$value" \
-      || report "$metric has no series with $label=\"$value\", selected by: $rules"
-  fi
+  [ "$(api series -G --data-urlencode "match[]=$selector" | jq '.data | length')" -gt 0 ] \
+    || report "$selector matches no series, selected by: $rules"
 done <"$work/unique"
 
 if [ "$failures" -gt 0 ]; then
