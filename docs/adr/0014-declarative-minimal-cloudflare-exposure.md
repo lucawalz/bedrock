@@ -43,3 +43,18 @@ The decision itself is unchanged. The ingress surface is still declared in the r
 **Update 2026-08-31:** the tunnel carries four hosts. `grocy.syslabs.dev` joined under [0079](0079-public-grocy-with-scoped-api-bypass.md), so that a phone can reach the grocery inventory from a shop. Its browser interface is behind Cloudflare Access; a second, narrow Access application bypasses only the `/api/` prefix, which the native client needs and which Grocy protects with an application-issued API key. That is the same shape as the rancher exposure and the same compensating control.
 
 **Update 2026-09-05:** the tunnel carries three hosts again. `grocy.syslabs.dev` was pruned with the application, which was not used, under [0080](0080-retire-grocy.md). Its DNS record and both Cloudflare Access applications, the host-wide one and the narrow `/api/` bypass, are removed in the dashboard rather than by this commit, since this record keeps that surface deliberately manual.
+
+**Update 2026-09-12:** `rancher.syslabs.dev` keeps its tunnel route but loses its bypass. The
+IngressRoute carried a second rule matching `/ping`, `/healthz`, `/v3/connect` and `/v3/import`
+without the `authentik-forward-auth` middleware, so that a peer cluster's `cattle-cluster-agent`
+could register outward under [0059](0059-outbound-only-peers-via-public-rancher.md). That record was
+superseded by [0063](0063-return-to-single-region.md) and the last peer infrastructure went with the
+Hetzner account under [0081](0081-retire-the-hetzner-account.md). Rancher now manages one cluster,
+`local`, whose agents are in-cluster and never traverse Traefik, and Rancher's own liveness and
+readiness probes hit `/healthz` on the pod's own port rather than through the ingress, so nothing
+was still using the bypass. Probed before removal, `/ping` and `/healthz` answered 200
+unauthenticated while `/v3/connect` and `/v3/import` answered 401 from Rancher's own token check,
+which left two unauthenticated paths in front of a ServiceAccount bound to `cluster-admin` for no
+remaining consumer. The whole host is now behind forward auth. The matching narrow Cloudflare Access
+application must be removed in the dashboard rather than by this commit, since this record keeps
+that surface deliberately manual.
