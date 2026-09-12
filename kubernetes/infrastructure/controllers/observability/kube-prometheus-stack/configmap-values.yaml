@@ -169,8 +169,16 @@ defaultRules:
   rules:
     kubeApiserverBurnrate: false
     kubeApiserverSlos: false
+  # Each rule below selects a metric k3s never exports, so it can neither fire nor resolve.
   disabled:
     KubeJobFailed: true
+    KubeletClientCertificateExpiration: true
+    KubeletServerCertificateExpiration: true
+    KubeletClientCertificateRenewalErrors: true
+    KubeletServerCertificateRenewalErrors: true
+    etcdGRPCRequestsSlow: true
+    etcdHighNumberOfFailedGRPCRequests: true
+    etcdMemberCommunicationSlow: true
 
 grafana:
   enabled: true
