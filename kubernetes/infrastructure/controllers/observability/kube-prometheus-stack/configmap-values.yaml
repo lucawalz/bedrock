@@ -172,18 +172,20 @@ defaultRules:
   rules:
     kubeApiserverBurnrate: false
     kubeApiserverSlos: false
-  # Each rule below selects a metric nothing in this estate exports, so it can neither fire nor resolve.
   disabled:
-    KubeJobFailed: true
+    # Selectors nothing in this estate exports, so the rule can neither fire nor resolve.
     KubeletClientCertificateExpiration: true
     KubeletServerCertificateExpiration: true
     KubeletClientCertificateRenewalErrors: true
     KubeletServerCertificateRenewalErrors: true
-    etcdGRPCRequestsSlow: true
     etcdHighNumberOfFailedGRPCRequests: true
     etcdMemberCommunicationSlow: true
-    NodeSystemdServiceFailed: true
     NodeSystemdServiceCrashlooping: true
+    # Selectors the estate does export, under a different metric name or job label.
+    # Each is replaced by a repo-owned rule in alert-rules/prometheusrule.yaml.
+    KubeJobFailed: true
+    etcdGRPCRequestsSlow: true
+    NodeSystemdServiceFailed: true
 
 grafana:
   enabled: true

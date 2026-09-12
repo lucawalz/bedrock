@@ -954,3 +954,24 @@ tests:
       - eval_time: 30m
         alertname: EtcdRequestsSlow
         exp_alerts: []
+
+  - interval: 1m
+    name: a failed systemd unit on the router alerts while healthy units stay quiet
+    input_series:
+      - series: 'node_systemd_unit_state{job="pi-router",instance="pi-router",name="tailscaled.service",state="failed"}'
+        values: '1x30'
+      - series: 'node_systemd_unit_state{job="pi-router",instance="pi-router",name="tailscaled.service",state="active"}'
+        values: '0x30'
+      - series: 'node_systemd_unit_state{job="pi-router",instance="pi-router",name="kea-dhcp4-server.service",state="failed"}'
+        values: '0x30'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: NodeSystemdServiceFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: pi-router
+              name: tailscaled.service
+            exp_annotations:
+              summary: "Systemd unit tailscaled.service has failed on pi-router"
+              description: "The systemd unit tailscaled.service on pi-router has been in the failed state for over 5 minutes. This replaces the upstream NodeSystemdServiceFailed, which pins job to node-exporter: the three cluster nodes run node-exporter with the systemd collector off and export nothing for it, while the router scrapes its own exporter under the pi-router job and does export it. Pinning to neither job means whichever hosts gain the collector are covered without another edit. The router is the cluster's gateway, DNS resolver and tailnet subnet router, so a failed unit there takes out reachability rather than a workload, and nothing else in the estate watches its units."

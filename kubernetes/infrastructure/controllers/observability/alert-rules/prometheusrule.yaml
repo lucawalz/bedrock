@@ -207,6 +207,14 @@ spec:
           annotations:
             summary: "Node {{ $labels.instance }} is close to thermal throttling"
             description: "The hottest sensor on {{ $labels.instance }} has read {{ $value | printf \"%.0f\" }} degrees Celsius for over 5 minutes. Sustained temperatures at this level throttle the CPU and shorten hardware life."
+        - alert: NodeSystemdServiceFailed
+          expr: max by (instance, name) (node_systemd_unit_state{state="failed"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Systemd unit {{ $labels.name }} has failed on {{ $labels.instance }}"
+            description: "The systemd unit {{ $labels.name }} on {{ $labels.instance }} has been in the failed state for over 5 minutes. This replaces the upstream NodeSystemdServiceFailed, which pins job to node-exporter: the three cluster nodes run node-exporter with the systemd collector off and export nothing for it, while the router scrapes its own exporter under the pi-router job and does export it. Pinning to neither job means whichever hosts gain the collector are covered without another edit. The router is the cluster's gateway, DNS resolver and tailnet subnet router, so a failed unit there takes out reachability rather than a workload, and nothing else in the estate watches its units."
     - name: etcd.rules
       rules:
         - alert: EtcdSnapshotTooOld
