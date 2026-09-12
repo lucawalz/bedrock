@@ -297,3 +297,11 @@ spec:
           annotations:
             summary: "kube-state-metrics has stopped reporting"
             description: "Prometheus has held no kube_pod_info series for more than 15 minutes, so every workload, node and capacity alert derived from kube-state-metrics is unable to fire."
+        - alert: KubeJobFailed
+          expr: max by (namespace, job_name) (kube_job_status_failed) > 0
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
+            description: "The Job {{ $labels.namespace }}/{{ $labels.job_name }} has recorded {{ $value | printf \"%.0f\" }} failed pods for over 15 minutes. This replaces the mixin alert of the same name, which queried kube_job_failed, a metric kube-state-metrics does not export; the exported series is kube_job_status_failed and carries a failure count rather than a boolean. Deleting the Job after investigation clears this."

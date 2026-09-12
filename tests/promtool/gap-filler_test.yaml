@@ -894,3 +894,22 @@ tests:
       - eval_time: 90m
         alertname: CNPGBackupStale
         exp_alerts: []
+
+  - interval: 1m
+    name: a job with failed pods alerts while a job with none stays quiet
+    input_series:
+      - series: 'kube_job_status_failed{namespace="longhorn-system",job_name="snapshot-29819610"}'
+        values: '2x60'
+      - series: 'kube_job_status_failed{namespace="kyverno",job_name="kyverno-migrate-resources"}'
+        values: '0x60'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KubeJobFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: longhorn-system
+              job_name: snapshot-29819610
+            exp_annotations:
+              summary: "Job longhorn-system/snapshot-29819610 failed to complete"
+              description: "The Job longhorn-system/snapshot-29819610 has recorded 2 failed pods for over 15 minutes. This replaces the mixin alert of the same name, which queried kube_job_failed, a metric kube-state-metrics does not export; the exported series is kube_job_status_failed and carries a failure count rather than a boolean. Deleting the Job after investigation clears this."

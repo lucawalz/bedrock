@@ -190,6 +190,8 @@ defaultRules:
   rules:
     kubeApiserverBurnrate: false
     kubeApiserverSlos: false
+  disabled:
+    KubeJobFailed: true
 
 grafana:
   enabled: true
