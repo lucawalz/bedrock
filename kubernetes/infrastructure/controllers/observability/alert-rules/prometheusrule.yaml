@@ -94,7 +94,7 @@ spec:
             summary: "CloudNativePG instance {{ $labels.namespace }}/{{ $labels.pod }} was promoted"
             description: "Instance {{ $labels.namespace }}/{{ $labels.pod }} left recovery mode in the last 15 minutes, meaning it was promoted from standby to primary. This fires for both an automatic failover and a manual switchover, because the replication state it is built on cannot tell the two apart; either way the cluster's primary changed and is worth a look."
         - alert: CNPGBackupStale
-          expr: (time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp)) / 86400 > 2
+          expr: (time() - max by (namespace, job) (cnpg_collector_last_available_backup_timestamp)) / 86400 > 2
           for: 1h
           labels:
             severity: critical
@@ -108,7 +108,7 @@ spec:
             severity: critical
           annotations:
             summary: "CloudNativePG is exporting no backup recovery point at all"
-            description: "The metric carrying the newest recoverable backup has disappeared, which happens when the cluster has no backup configuration rather than when a backup fails. CNPGBackupStale cannot fire on an absent series, so this covers the case where the backup destination is removed entirely and the staleness alert goes quiet instead of loud."
+            description: "The metric carrying the newest recoverable backup has disappeared entirely, which happens when CloudNativePG itself stops exporting it, not when its backup configuration is removed: verified live, a cluster with spec.backup unset keeps exporting the last timestamp the collector ever saw, so removing the configuration alone never triggers this. This covers the exporter or the cluster going away outright. CNPGBackupStale cannot fire on an absent series, so this is what notices when the signal itself, not just a fresh point on it, is gone."
     - name: longhorn.rules
       rules:
         - alert: LonghornVolumeDegraded

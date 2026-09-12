@@ -156,3 +156,34 @@ decision survives.
 Reversing this record means creating two buckets on whatever storage exists then, restoring the S3
 coordinate groups and their credentials, and deciding afresh whether Velero is worth reinstating given
 that it moved no volume bytes. The Postgres half is the part worth restoring first.
+
+## Update 2026-09-12
+
+Postgres's half of this record was reversed sooner than expected, and an audit along the way found
+that the removal itself had left a defect. `spec.backup` was gone, as decided above, but the CNPG
+cluster's `LastBackupSucceeded` and `ContinuousArchiving` conditions kept reading `True` for 43 days
+against a destination that had already been closed, and 12,779 WAL segments were counted as archived
+into a bucket that no longer existed. Nothing in the estate noticed, because the alert groups that
+watched Barman were removed along with Barman itself and no replacement checked the recovery point
+directly.
+
+Base backups and the continuous WAL stream now go to a `postgres` bucket on the in-cluster MinIO
+instance, which already runs for the blog's object storage, rather than to Hetzner. The `postgres`
+cluster carries a `backup.barmanObjectStore` stanza again, on the same shape this record removed:
+gzip-compressed data and WAL, a 30 day retention policy, and a `ScheduledBackup` taking a base backup
+nightly at 02:30. Point-in-time recovery inside that window is restored.
+
+This does not reopen the decision above. There is still no off-site copy of anything. MinIO is
+in-cluster storage on the same three nodes as everything it would need to protect against, so a fire,
+a theft or a flood still takes the cluster and every copy of its data in one event, exactly as this
+record accepted. The NAS this record deferred on remains unbought. What is restored is narrower:
+recovery from a logical fault, a bad migration or an accidental deletion inside the retention window,
+which the nightly Longhorn snapshot [0057](0057-cnpg-barman-dr-and-velero-scope.md) fell back to
+cannot do, since a snapshot replays nothing and rolls all three replicas back together to the same
+point.
+
+Two guardrails come with the repoint, because the defect above was a status field nobody was
+alerting on. `CNPGBackupStale` reads the newest base backup CloudNativePG can actually recover from
+and fires once it is more than two days old, regardless of what the cluster's own success conditions
+report. `CNPGBackupNotConfigured` fires if the metric carrying that recovery point disappears
+entirely, which covers CloudNativePG itself going away rather than a destination going stale.
