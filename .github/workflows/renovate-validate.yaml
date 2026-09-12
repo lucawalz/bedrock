@@ -23,3 +23,6 @@ jobs:
           # renovate: datasource=npm depName=renovate
           RENOVATE_VERSION: 44.68.3
         run: npx --yes --package "renovate@${RENOVATE_VERSION}" -- renovate-config-validator
+
+      - name: Check custom managers still match something
+        run: ./scripts/check-renovate-managers.sh

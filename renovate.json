@@ -30,7 +30,7 @@
     {
       "customType": "regex",
       "description": "Update the Grafana image pinned in a Helm values ConfigMap, which the flux manager cannot see",
-      "managerFilePatterns": ["/^kubernetes/infrastructure/controllers/.+/configmap\\.ya?ml$/"],
+      "managerFilePatterns": ["/^kubernetes/infrastructure/controllers/.+/configmap-values\\.ya?ml$/"],
       "matchStrings": ["grafana:[\\s\\S]*?\\n\\s+image:\\s*\\n\\s+tag:\\s*\"(?<currentValue>[^\"]+)\""],
       "depNameTemplate": "grafana/grafana",
       "datasourceTemplate": "docker"
