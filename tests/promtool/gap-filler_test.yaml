@@ -875,3 +875,42 @@ tests:
             exp_annotations:
               summary: "Job longhorn-system/snapshot-29819610 failed to complete"
               description: "The Job longhorn-system/snapshot-29819610 has recorded 2 failed pods for over 15 minutes. This replaces the mixin alert of the same name, which queried kube_job_failed, a metric kube-state-metrics does not export; the exported series is kube_job_status_failed and carries a failure count rather than a boolean. Deleting the Job after investigation clears this."
+
+  - interval: 1m
+    name: cert-manager alerts name the certificate's namespace not the exporter's
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="cert-manager",exported_namespace="traefik",name="wildcard-syslabs-dev"}'
+        values: '610200x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: CertManagerCertExpiringSoon
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: cert-manager
+              exported_namespace: traefik
+              name: wildcard-syslabs-dev
+            exp_annotations:
+              summary: "Certificate traefik/wildcard-syslabs-dev expires in less than 14 days"
+              description: "The cert-manager certificate traefik/wildcard-syslabs-dev expires in 7d 0h 0m 0s."
+      - eval_time: 90m
+        alertname: CertManagerCertExpired
+        exp_alerts: []
+
+  - interval: 1m
+    name: an expired certificate alerts critical against the certificate's namespace
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="cert-manager",exported_namespace="traefik",name="wildcard-syslabs-dev"}'
+        values: '0x120'
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: CertManagerCertExpired
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: cert-manager
+              exported_namespace: traefik
+              name: wildcard-syslabs-dev
+            exp_annotations:
+              summary: "Certificate traefik/wildcard-syslabs-dev has expired"
+              description: "The cert-manager certificate traefik/wildcard-syslabs-dev expired 1h 30m 0s ago."

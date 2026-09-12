@@ -15,16 +15,16 @@ spec:
           labels:
             severity: warning
           annotations:
-            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} expires in less than 14 days"
-            description: "The cert-manager certificate {{ $labels.namespace }}/{{ $labels.name }} expires in {{ $value | humanizeDuration }}."
+            summary: "Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires in less than 14 days"
+            description: "The cert-manager certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires in {{ $value | humanizeDuration }}."
         - alert: CertManagerCertExpired
-          expr: certmanager_certificate_expiration_timestamp_seconds - time() <= 0
+          expr: time() - certmanager_certificate_expiration_timestamp_seconds >= 0
           for: 1h
           labels:
             severity: critical
           annotations:
-            summary: "Certificate {{ $labels.namespace }}/{{ $labels.name }} has expired"
-            description: "The cert-manager certificate {{ $labels.namespace }}/{{ $labels.name }} expired {{ $value | humanizeDuration }} ago."
+            summary: "Certificate {{ $labels.exported_namespace }}/{{ $labels.name }} has expired"
+            description: "The cert-manager certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expired {{ $value | humanizeDuration }} ago."
     - name: flux.rules
       rules:
         - alert: FluxReconciliationFailure
