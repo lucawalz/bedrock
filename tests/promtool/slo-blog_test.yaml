@@ -57,8 +57,14 @@ tests:
   - interval: 1m
     name: latency fast burn fires when slow fraction exceeds threshold
     input_series:
-      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.5"}'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.1"}'
+        values: '0+70x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.3"}'
         values: '0+80x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="1.2"}'
+        values: '0+95x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="5.0"}'
+        values: '0+100x90'
       - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="+Inf"}'
         values: '0+100x90'
       - series: 'traefik_router_request_duration_seconds_count{router="websecure-blog-blog-abc123@kubernetescrd"}'
@@ -78,4 +84,38 @@ tests:
               slo: blog-latency
             exp_annotations:
               summary: "Blog latency error budget burning fast (14.4x)"
-              description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+              description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+
+  - interval: 1m
+    name: the latency recording rule yields a series against the buckets traefik emits
+    input_series:
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.1"}'
+        values: '0+100x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="0.3"}'
+        values: '0+100x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="1.2"}'
+        values: '0+100x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="5.0"}'
+        values: '0+100x90'
+      - series: 'traefik_router_request_duration_seconds_bucket{router="websecure-blog-blog-abc123@kubernetescrd", le="+Inf"}'
+        values: '0+100x90'
+      - series: 'traefik_router_request_duration_seconds_count{router="websecure-blog-blog-abc123@kubernetescrd"}'
+        values: '0+100x90'
+    promql_expr_test:
+      - expr: count(slo:blog_latency:error_ratio)
+        eval_time: 70m
+        exp_samples:
+          - labels: '{}'
+            value: 8
+      - expr: slo:blog_latency:error_budget_remaining_ratio
+        eval_time: 70m
+        exp_samples:
+          - labels: 'slo:blog_latency:error_budget_remaining_ratio'
+            value: 1
+    alert_rule_test:
+      - alertname: BlogLatencyErrorBudgetBurnFast
+        eval_time: 70m
+        exp_alerts: []
+      - alertname: BlogLatencyErrorBudgetBurnSlow
+        eval_time: 70m
+        exp_alerts: []

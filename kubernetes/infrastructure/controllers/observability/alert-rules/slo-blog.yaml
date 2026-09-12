@@ -78,7 +78,7 @@ spec:
             window: 5m
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[5m]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[5m]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[5m]))
             )
@@ -87,7 +87,7 @@ spec:
             window: 30m
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[30m]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[30m]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[30m]))
             )
@@ -96,7 +96,7 @@ spec:
             window: 1h
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[1h]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[1h]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[1h]))
             )
@@ -105,7 +105,7 @@ spec:
             window: 2h
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[2h]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[2h]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[2h]))
             )
@@ -114,7 +114,7 @@ spec:
             window: 6h
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[6h]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[6h]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[6h]))
             )
@@ -123,7 +123,7 @@ spec:
             window: 1d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[1d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[1d]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[1d]))
             )
@@ -132,7 +132,7 @@ spec:
             window: 3d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[3d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[3d]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[3d]))
             )
@@ -141,7 +141,7 @@ spec:
             window: 30d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.5"}[30d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[30d]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[30d]))
             )
@@ -202,7 +202,7 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning fast (14.4x)"
-            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
         - alert: BlogLatencyErrorBudgetBurnMedium
           expr: |
             sum without(window) (slo:blog_latency:error_ratio{window="6h"}) > (6 * (1 - 0.99))
@@ -214,7 +214,7 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning medium (6x)"
-            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 6x over 6h and 30m windows."
+            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 6x over 6h and 30m windows."
         - alert: BlogLatencyErrorBudgetBurnSlow
           expr: |
             sum without(window) (slo:blog_latency:error_ratio{window="3d"}) > (1 * (1 - 0.99))
@@ -226,4 +226,4 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning slow (1x)"
-            description: "Requests to the blog slower than 500ms are burning the 30d latency error budget at 1x over 3d and 6h windows."
+            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 1x over 3d and 6h windows."
