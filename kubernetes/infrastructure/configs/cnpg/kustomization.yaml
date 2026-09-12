@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: postgres
 resources:
   - cnpg-cluster.yaml
+  - scheduledbackup.yaml
   - databases.yaml
   - networkpolicies.yaml
   - podmonitor.yaml

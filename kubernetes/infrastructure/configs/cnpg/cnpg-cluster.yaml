@@ -28,6 +28,22 @@ spec:
   storage:
     size: 8Gi
     storageClass: longhorn
+  backup:
+    retentionPolicy: 30d
+    barmanObjectStore:
+      destinationPath: s3://postgres/
+      endpointURL: http://minio-minio.minio.svc.cluster.local:9000
+      s3Credentials:
+        accessKeyId:
+          name: postgres-backup-s3
+          key: ACCESS_KEY_ID
+        secretAccessKey:
+          name: postgres-backup-s3
+          key: ACCESS_SECRET_KEY
+      data:
+        compression: gzip
+      wal:
+        compression: gzip
   resources:
     requests:
       cpu: 100m
