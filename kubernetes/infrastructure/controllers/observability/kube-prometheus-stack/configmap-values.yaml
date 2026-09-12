@@ -386,9 +386,12 @@ alertmanager:
           - url: 'http://10.20.0.1:9095/'
             send_resolved: true
     inhibit_rules:
+      # equal counts a label absent on both sides as equal, so a namespace-less critical would otherwise inhibit every namespace-less warning.
       - source_matchers:
           - severity = critical
+          - namespace =~ ".+"
         target_matchers:
           - severity =~ warning|info
+          - namespace =~ ".+"
         equal:
           - namespace
