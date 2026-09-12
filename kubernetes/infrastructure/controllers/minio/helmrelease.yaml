@@ -29,6 +29,9 @@ spec:
   values:
     mode: standalone
     replicas: 1
+    image:
+      repository: quay.io/minio/minio
+      tag: RELEASE.2024-12-18T13-15-44Z
     deploymentUpdate:
       type: Recreate
     existingSecret: minio

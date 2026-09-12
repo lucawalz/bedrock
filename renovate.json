@@ -80,6 +80,12 @@
       "groupName": "nixpkgs"
     },
     {
+      "description": "Read MinIO's dated RELEASE tags, which no built-in versioning parses",
+      "matchPackageNames": ["quay.io/minio/minio"],
+      "versioning": "regex:^RELEASE\\.(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})T(?<build>.+)$",
+      "automerge": false
+    },
+    {
       "description": "Group infrastructure Helm charts together",
       "matchManagers": ["flux"],
       "groupName": "infrastructure charts",
