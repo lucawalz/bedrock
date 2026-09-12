@@ -147,7 +147,7 @@ secrets/               agenix-encrypted host secrets: the K3s join token, the ro
 infra/packer/          the dormant Packer template that bakes a cloud node snapshot
 scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering) plus the horizon burst-node measurement harness, the fixed synthetic quantum, and the requirements-based sizing campaign driver that prices it
 tests/                 Kyverno policy tests and promtool alert-rule tests
-docs/                  the ADR log, the cluster inventory, and the disaster recovery and admission break-glass runbooks
+docs/                  the ADR log, the cluster inventory, and the disaster recovery, admission break-glass and alert selector audit runbooks
 kubernetes/
   apps/                workloads Flux reconciles, one directory per app
   components/          shared kustomize components (network policies, forward-auth)
@@ -217,6 +217,8 @@ Four workflows run on every pull request, covering four areas:
 - The Kubernetes manifests: `kubeconform` against the upstream and CRD schemas, `kustomize build` over every kustomization, and a render of the per-app Kustomizations with their Flux post-build substitutions applied so an unresolved variable fails a pull request rather than a reconcile.
 - Policy and alerting: the Kyverno policies run against their unit tests and against a first-party manifest, and the Prometheus alert rules are checked and unit-tested with `promtool`.
 - Repository hygiene: a check that no SOPS file was committed unencrypted, a check that the ADR index matches the ADRs on disk, a check that every Helm source is both listed for deployment and referenced by a release, and a regeneration of `docs/inventory.md` that fails on drift. The Renovate configuration is validated on the same trigger.
+
+One gate deliberately does not run in CI. `promtool` proves a rule parses and behaves as its fixture says, but the fixture supplies the series, so a rule selecting a metric name, a label value, or a bucket boundary that nothing in the estate emits passes exactly as a working rule does and then stays silent forever. Catching that needs the live series database, so `scripts/check-alert-selectors.sh` is run by an operator against the cluster rather than by a pull request runner that cannot reach it. The [alert selector audit](docs/alert-selector-audit.md) covers when to run it and what to do with each finding.
 
 [Renovate](https://docs.renovatebot.com/) keeps `flake.lock`, Helm chart versions, and GitHub Actions current through automated pull requests.
 
