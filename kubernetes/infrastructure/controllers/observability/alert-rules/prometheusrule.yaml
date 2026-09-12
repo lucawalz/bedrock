@@ -93,6 +93,22 @@ spec:
           annotations:
             summary: "CloudNativePG instance {{ $labels.namespace }}/{{ $labels.pod }} was promoted"
             description: "Instance {{ $labels.namespace }}/{{ $labels.pod }} left recovery mode in the last 15 minutes, meaning it was promoted from standby to primary. This fires for both an automatic failover and a manual switchover, because the replication state it is built on cannot tell the two apart; either way the cluster's primary changed and is worth a look."
+        - alert: CNPGBackupStale
+          expr: (time() - max by (namespace) (cnpg_collector_last_available_backup_timestamp)) / 86400 > 2
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG has taken no base backup in {{ $labels.namespace }} for {{ $value | printf \"%.0f\" }} days"
+            description: "The newest base backup CloudNativePG can recover from is more than two days old, against a nightly schedule. This reads the recovery point rather than the outcome of the last run, because the cluster reported LastBackupSucceeded true for 43 days while its destination no longer existed and every WAL archive was counted as a success into nothing. Recovery without a usable base backup falls back to a crash-consistent Longhorn snapshot, which rolls all three instances back together and cannot recover from a logical fault."
+        - alert: CNPGBackupNotConfigured
+          expr: absent(cnpg_collector_last_available_backup_timestamp)
+          for: 1h
+          labels:
+            severity: critical
+          annotations:
+            summary: "CloudNativePG is exporting no backup recovery point at all"
+            description: "The metric carrying the newest recoverable backup has disappeared, which happens when the cluster has no backup configuration rather than when a backup fails. CNPGBackupStale cannot fire on an absent series, so this covers the case where the backup destination is removed entirely and the staleness alert goes quiet instead of loud."
     - name: longhorn.rules
       rules:
         - alert: LonghornVolumeDegraded
