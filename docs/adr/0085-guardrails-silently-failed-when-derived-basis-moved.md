@@ -156,3 +156,78 @@ three NetworkPolicies, so this is the same shape of duplicated literal as the ov
 factor in [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md). The difference
 that makes it acceptable is direction: if the two drift apart, the alert fires on a node that is
 still working rather than staying silent on one that is not.
+
+## Update 2026-09-12
+
+The closing sweep this record describes, under "Search for the same defect elsewhere, before closing
+this record", searched for one shape of the defect and then declared the class closed. It checked
+every expression that divides one metric by another for a raw total standing in for an allocatable
+one, found none, and concluded that no other alert shared the defect's shape. That conclusion was
+correct about denominators and wrong about the class.
+
+A guardrail derived from a value that moved does not only fail as a wrong denominator. An audit of
+every rule against the live series database, rather than against the rules as written, found the
+same failure in three further shapes, each verified live:
+
+**A wrong label value.** `slo:blog_latency:error_ratio` selected
+`traefik_router_request_duration_seconds_bucket{le="0.5"}`. Traefik's configured buckets are 0.1,
+0.3, 1.2 and 5.0, so that selector matched nothing, the recording rule produced no series at all,
+and `BlogLatencyErrorBudgetBurnFast`, `Medium` and `Slow` had never been able to fire. The same
+sweep that examined this file's denominators read past this, because the arithmetic was correct and
+only the label value was not. The bucket is now 0.3, which is the nearest boundary Traefik actually
+emits and, at a measured p99 of 99 milliseconds, a tighter and more meaningful objective than the
+500 milliseconds it replaces; 1.2 seconds would have been twelve times the observed p99 and dead in
+practice rather than dead in principle. The companion availability rule failed the same way for a
+different reason: its numerator selected `code=~"5.."`, which matches nothing while the blog is
+healthy, so the ratio recorded nothing and the 30 day budget series never existed. It now records
+zero through `or vector(0)`.
+
+**A wrong metric name.** `KubeJobFailed`, from the kube-prometheus-stack mixin, queried
+`kube_job_failed`. kube-state-metrics exports `kube_job_status_failed`, a count rather than a
+boolean, and held nine series while `kube_job_failed` held none. The mixin rule is now disabled
+through `defaultRules.disabled` and replaced by a repo-owned rule on the exported metric. Ten
+further mixin rule instances selected metrics k3s never exports at all: the four kubelet certificate
+rules, which need a certificate manager k3s does not run, and the etcd gRPC and peer rules, which
+need `grpc_server_*` and `etcd_network_peer_*` series that etcd's basic metrics level omits.
+`etcdGRPCRequestsSlow` is replaced rather than merely removed, because
+`etcd_request_duration_seconds_bucket` is populated and carries the same latency signal from the API
+server's side of the same path.
+
+**A condition type nothing emits.** `HelmReleaseDriftDetected` waited on
+`kube_helmrelease_status_condition{type="Drifted"}`. Flux reports drift as a Kubernetes event and
+writes no such condition; every HelmRelease in the estate carries only `Ready` and `Released`. The
+alert, the kube-state-metrics block built to feed it, and its RBAC rule are removed, and
+[0082](0082-gitops-guardrail-boundary.md) now records that the trade-off it was compensating for is
+uncovered. Its promtool cases passed throughout by supplying the `Drifted` series themselves.
+
+What the three have in common with the two defects already recorded here is not the arithmetic, it
+is the direction of the check. Every gate this repository ran tested the guardrail against a fixture
+the guardrail's own author wrote. `promtool` proves a rule parses and behaves as its unit test says,
+and the unit test supplies the series, so a rule selecting a metric, a label value, or a condition
+type that nothing in the estate emits passes exactly as a working rule does. None of these rules was
+untested. Each was tested against a world in which its premise held.
+
+An Alertmanager inhibition of the same shape was corrected alongside them. The inhibit rule matched
+`severity = critical` to `severity =~ warning|info` with `equal: [namespace]`, and Alertmanager
+counts a label absent on both sides as equal, so any one firing namespace-less critical suppressed
+every namespace-less warning in the estate. Both sides now also require `namespace =~ ".+"`.
+
+**The gate that closes the class.** `scripts/check-alert-selectors.sh` resolves every metric selector
+in every rule Prometheus has loaded, this repository's and the mixin's alike, against the live series
+database: the metric name must exist and every exact-match label value must exist on it. Regular
+expressions and empty-string matchers are exempt, because both are meant to match nothing. A
+selector that is legitimately empty is recorded in `scripts/alert-selector-allowlist.txt` with its
+reason, so an expected absence is a written statement rather than a silence.
+
+It needs cluster access, so it cannot run on a pull request the way `promtool` does. It is therefore
+an operator gate, documented in [the alert selector audit](../alert-selector-audit.md) and
+deliberately absent from the GitHub Actions workflow: a job that cannot reach Prometheus would either
+fail on every pull request or be made to pass by skipping the work, and a gate that has been made to
+pass is what this record is about. Run against the estate before these changes landed it reported
+every defect above without being told to look for any of them, alongside twenty-three absences that
+are correct and are now written down.
+
+This is a narrower claim than the one this record made when it closed. The gate observes the
+relationship between a rule and the series it depends on, which is what was missing. It does not
+observe the relationship between a threshold and what the threshold is meant to mean, so a rule
+selecting a metric that exists and comparing it against a number that is wrong still passes.
