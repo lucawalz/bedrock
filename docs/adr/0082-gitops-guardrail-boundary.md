@@ -285,10 +285,12 @@ reports Ready.
 `HelmReleaseDriftDetected` never worked and has been removed. The premise above, that
 `driftDetection.mode: warn` surfaces a `Drifted` status condition for kube-state-metrics to export,
 is wrong. Flux's helm-controller reports drift as a Kubernetes event and writes nothing to
-`status.conditions`; verified live, every HelmRelease in the estate carries exactly two condition
-types, `Ready` and `Released`, and `kube_helmrelease_status_condition{type="Drifted"}` held no
-series at any point. The alert's promtool cases passed because they supplied the `Drifted` series
-themselves.
+`status.conditions`. Sampled live, every HelmRelease in the estate carried only `Ready` and
+`Released`; helm-controller also writes `Reconciling`, `Remediated` and `Stalled` at other points in
+a release's life, so that pair is what a settled estate shows rather than the complete set. `Drifted`
+is in neither list: `kube_helmrelease_status_condition{type="Drifted"}` held no series at any point,
+and the conclusion does not depend on which of the transient conditions happened to be present. The
+alert's promtool cases passed because they supplied the `Drifted` series themselves.
 
 The `CustomResourceStateMetrics` block that exposed `kube_helmrelease_status_condition`, and the
 `helm.toolkit.fluxcd.io` entry in the kube-state-metrics RBAC rules that fed it, are removed with

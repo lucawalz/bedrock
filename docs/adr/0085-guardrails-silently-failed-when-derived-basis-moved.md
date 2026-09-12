@@ -190,8 +190,20 @@ further mixin rule instances selected metrics k3s never exports at all: the four
 rules, which need a certificate manager k3s does not run, and the etcd gRPC and peer rules, which
 need `grpc_server_*` and `etcd_network_peer_*` series that etcd's basic metrics level omits.
 `etcdGRPCRequestsSlow` is replaced rather than merely removed, because
-`etcd_request_duration_seconds_bucket` is populated and carries the same latency signal from the API
-server's side of the same path.
+`etcd_request_duration_seconds_bucket` is populated and carries the same latency signal from the
+client side of the same path.
+
+A wrong metric name has a near neighbour worth separating from it, because disabling the rule is the
+wrong answer for one and the right answer for the other: a correct metric name pinned to a job label
+that does not carry it. `NodeSystemdServiceFailed` reads
+`node_systemd_unit_state{job="node-exporter", state="failed"}`. The three cluster nodes run
+node-exporter with the systemd collector off and export nothing for it, but the router scrapes its
+own exporter under the `pi-router` job and holds 790 `node_systemd_unit_state` series, 158 of them
+with `state="failed"`. The metric exists, the estate emits it, and only the job pin made the rule
+dead. Disabling it alongside the genuinely unexportable ones would have removed real coverage of the
+host that is the cluster's gateway, DNS resolver and tailnet subnet router, and nothing else watches
+its units. The mixin rule is disabled and replaced by a repo-owned rule with no job pin, so any host
+that gains the collector is covered without another edit.
 
 **A condition type nothing emits.** `HelmReleaseDriftDetected` waited on
 `kube_helmrelease_status_condition{type="Drifted"}`. Flux reports drift as a Kubernetes event and
@@ -200,7 +212,18 @@ alert, the kube-state-metrics block built to feed it, and its RBAC rule are remo
 [0082](0082-gitops-guardrail-boundary.md) now records that the trade-off it was compensating for is
 uncovered. Its promtool cases passed throughout by supplying the `Drifted` series themselves.
 
-What the three have in common with the two defects already recorded here is not the arithmetic, it
+**A metrics endpoint that exists but is not scraped.** `KubeStateMetricsListErrors`,
+`KubeStateMetricsWatchErrors`, `KubeStateMetricsShardsMissing` and `KubeStateMetricsShardingMismatch`
+read `kube_state_metrics_list_total`, `_watch_total`, `_shard_ordinal` and `_total_shards`. The
+exporter emits all four, on its own telemetry port 8081 rather than on the port 8080 that serves the
+cluster metrics, and the chart leaves that second port off the Service and the ServiceMonitor unless
+`selfMonitor` is set. Nothing was misnamed and nothing was misconfigured in the rules: the series
+simply had no path into Prometheus, so four rules watching kube-state-metrics for its own failures
+could not fire. `kube-state-metrics.selfMonitor.enabled` is now true. This shape is distinct from the
+other four because the defect is in the scrape configuration rather than anywhere in the rule, which
+is precisely why reading the rules can never find it and reading the series database can.
+
+What the four have in common with the two defects already recorded here is not the arithmetic, it
 is the direction of the check. Every gate this repository ran tested the guardrail against a fixture
 the guardrail's own author wrote. `promtool` proves a rule parses and behaves as its unit test says,
 and the unit test supplies the series, so a rule selecting a metric, a label value, or a condition
@@ -214,20 +237,44 @@ every namespace-less warning in the estate. Both sides now also require `namespa
 
 **The gate that closes the class.** `scripts/check-alert-selectors.sh` resolves every metric selector
 in every rule Prometheus has loaded, this repository's and the mixin's alike, against the live series
-database: the metric name must exist and every exact-match label value must exist on it. Regular
-expressions and empty-string matchers are exempt, because both are meant to match nothing. A
-selector that is legitimately empty is recorded in `scripts/alert-selector-allowlist.txt` with its
-reason, so an expected absence is a written statement rather than a silence.
+database. It parses each expression through Prometheus's own parser, rebuilds each selector from its
+exact-match label matchers, and asks `/api/v1/series` whether that whole selector matches anything.
+Rebuilding the whole selector rather than checking each label separately is load-bearing: live,
+`kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}` holds eight series and
+`{namespace="kube-system"}` holds one, while the conjunction of the two holds none, so a per-label
+check passes a selector that can never match. The first draft of this gate checked per label and had
+exactly the defect it exists to find. Regular-expression, negative and empty-string matchers are
+dropped from the rebuilt selector, because all three are written to match nothing while the estate is
+healthy. A selector that is legitimately empty is recorded in
+`scripts/alert-selector-allowlist.txt` with its reason, so an expected absence is a written statement
+rather than a silence.
 
 It needs cluster access, so it cannot run on a pull request the way `promtool` does. It is therefore
 an operator gate, documented in [the alert selector audit](../alert-selector-audit.md) and
 deliberately absent from the GitHub Actions workflow: a job that cannot reach Prometheus would either
 fail on every pull request or be made to pass by skipping the work, and a gate that has been made to
-pass is what this record is about. Run against the estate before these changes landed it reported
-every defect above without being told to look for any of them, alongside twenty-three absences that
-are correct and are now written down.
+pass is what this record is about. Run against the estate before these changes landed, and told to
+look for nothing in particular, it reported every defect above bar one directly, plus twenty-one
+absences that are correct and are now written down. The exception is the availability SLO's
+`code=~"5.."` numerator, which the gate reaches indirectly: regular-expression matchers are exempt by
+design, so what it reported was the derived `slo:blog_availability:error_ratio` recording no series
+at all, and the empty numerator was found by tracing that back.
+
+Two limits are worth stating where an operator reading a failure will meet them. The gate's second
+check, that every alert declared under the alert-rules directory is present in the loaded rule set,
+reports on any alert that is committed but not yet pushed or reconciled, which is a state of the
+working tree rather than a defect; and it compares alert names only, so a recording rule that never
+reached Prometheus is not noticed. Both are stated in the failure message itself.
 
 This is a narrower claim than the one this record made when it closed. The gate observes the
 relationship between a rule and the series it depends on, which is what was missing. It does not
 observe the relationship between a threshold and what the threshold is meant to mean, so a rule
-selecting a metric that exists and comparing it against a number that is wrong still passes.
+selecting a metric that exists and comparing it against a number that is wrong still passes. It also
+observes nothing on its own schedule: it runs when an operator runs it, and a gate nobody runs is a
+gate that is not there. Putting it on a schedule needs a container image carrying the script and its
+tools, RBAC to read the Prometheus API, and somewhere for a failure to land. That last piece is the
+reason it is deferred rather than built now: the natural destination is an alert, and an alert about
+whether the alerts can fire has the same liveness problem one layer up, which this estate solves for
+Prometheus itself with an external deadman on the router rather than with another alert. Scheduling
+this is a decision about where that result lands, not a packaging exercise, and it is left open
+deliberately rather than by omission.

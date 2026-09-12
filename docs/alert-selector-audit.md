@@ -28,21 +28,20 @@ Run it after any chart upgrade that ships new mixin rules, and after any exporte
 
 ## What it checks
 
-For every alerting and recording rule Prometheus has loaded, from this repository and from the kube-prometheus-stack mixin alike, it parses the expression through Prometheus's own parser and pulls out every vector and matrix selector. For each one:
+For every alerting and recording rule Prometheus has loaded, from this repository and from the kube-prometheus-stack mixin alike, it parses the expression through Prometheus's own parser and pulls out every vector and matrix selector. Each selector is rebuilt from its exact-match label matchers and asked of `/api/v1/series` as a whole, and must match at least one series.
 
-- the metric name must have at least one series in the retention window
-- every exact-match label matcher on that metric must have at least one series carrying that value
+Asking about the whole selector rather than each label in turn is the point. Live, `kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}` holds eight series and `{namespace="kube-system"}` holds one, while the two together hold none. A per-label check sees both values present and passes a selector that can never match, which is the exact defect this gate exists to find.
 
-Regular-expression and negative matchers are not checked, because an expression such as `code=~"5.."` is meant to match nothing while the estate is healthy. Matchers against the empty string are not checked either, because they assert a label is absent and Prometheus never lists an empty value.
+Regular-expression and negative matchers are dropped from the rebuilt selector rather than checked, because an expression such as `code=~"5.."` is meant to match nothing while the estate is healthy. Matchers against the empty string are dropped too, because they assert a label is absent.
 
-It also checks that every alert declared under `kubernetes/infrastructure/controllers/observability/alert-rules/` is present in the loaded rule set, so a file that failed to reconcile is a failure rather than an audit of stale content.
+It also checks that every alert declared under `kubernetes/infrastructure/controllers/observability/alert-rules/` is present in the loaded rule set, so a file that failed to reconcile is a failure rather than an audit of stale content. Two limits apply to that second check and are repeated in its failure message: it reports on any alert that is committed but not yet pushed or reconciled, which is a state of the working tree rather than a defect, and it compares alert names only, so a recording rule that never reached Prometheus goes unnoticed.
 
 ## What to do with a finding
 
 A finding is one of three things, and the difference matters:
 
 1. **The rule is wrong.** The metric was renamed, the label value was guessed, the bucket boundary does not exist, or the condition type is never emitted. Correct the rule.
-2. **The rule is dead here.** The signal genuinely does not exist on this estate, usually because a mixin assumes a component k3s does not run. Disable it through `defaultRules.disabled` in `kubernetes/infrastructure/controllers/observability/kube-prometheus-stack/configmap-values.yaml` rather than leaving a guardrail that cannot fire, and replace it if a different metric carries the same signal.
-3. **The selector is meant to be empty.** A failure condition nothing has hit, hardware the estate does not have, an exclusion clause with nothing to exclude. Record it in `scripts/alert-selector-allowlist.txt` with the reason, one entry per line as a bare metric name or `metric label=value`.
+2. **The rule is dead here.** The signal genuinely does not exist on this estate, usually because a mixin assumes a component k3s does not run. Disable it through `defaultRules.disabled` in `kubernetes/infrastructure/controllers/observability/kube-prometheus-stack/configmap-values.yaml` rather than leaving a guardrail that cannot fire, and replace it if a different metric carries the same signal. Check before disabling that the metric is absent everywhere rather than absent under the job the rule pins: `NodeSystemdServiceFailed` looked dead and was only pinned to the wrong job, and the router exports the series it wanted.
+3. **The selector is meant to be empty.** A failure condition nothing has hit, hardware the estate does not have, an exclusion clause with nothing to exclude. Record it in `scripts/alert-selector-allowlist.txt`, copying the selector exactly as the audit printed it, with the reason beside it.
 
 The allowlist is the point of the third case. An empty selector that is expected should be a written, reviewed statement rather than an absence nobody noticed.
