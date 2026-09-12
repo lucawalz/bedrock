@@ -29,10 +29,18 @@ def to_python_regex(pattern):
     return re.compile(pattern.replace("(?<", "(?P<").replace("(?P<=", "(?<="))
 
 
+PYTHON_FLAGS = {"i": "i", "m": "m", "s": "s"}
+
+
 def strip_delimiters(pattern):
-    if pattern.startswith("/") and pattern.endswith("/") and len(pattern) > 1:
-        return pattern[1:-1]
-    return pattern
+    delimited = re.fullmatch(r"/(.*)/([a-z]*)", pattern, re.DOTALL)
+    if not delimited:
+        return pattern
+    body, flags = delimited.groups()
+    unknown = [f for f in flags if f not in PYTHON_FLAGS]
+    if unknown:
+        raise SystemExit(f"Unsupported regex flag {''.join(unknown)!r} in pattern: {pattern}")
+    return f"(?{''.join(PYTHON_FLAGS[f] for f in flags)}){body}" if flags else body
 
 
 for index, manager in enumerate(config.get("customManagers", [])):

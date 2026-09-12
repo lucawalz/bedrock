@@ -52,7 +52,12 @@ superseded by [0063](0063-return-to-single-region.md) and the last peer infrastr
 Hetzner account under [0081](0081-retire-the-hetzner-account.md). Rancher now manages one cluster,
 `local`, whose agents are in-cluster and never traverse Traefik, and Rancher's own liveness and
 readiness probes hit `/healthz` on the pod's own port rather than through the ingress, so nothing
-was still using the bypass. Probed before removal, `/ping` and `/healthz` answered 200
+was still using the bypass. A future import is the case to watch: the `server-url` Setting and
+`cattle-fleet-system/fleet-controller`'s `apiServerURL` both still read `https://rancher.syslabs.dev`,
+so a downstream cluster registered later would dial `/v3/connect` straight into forward auth and
+fail without an obvious cause. Importing another cluster therefore means restoring a scoped bypass,
+or pointing those two values at an internal address, as a deliberate step rather than a surprise.
+Probed before removal, `/ping` and `/healthz` answered 200
 unauthenticated while `/v3/connect` and `/v3/import` answered 401 from Rancher's own token check,
 which left two unauthenticated paths in front of a ServiceAccount bound to `cluster-admin` for no
 remaining consumer. The whole host is now behind forward auth. The matching narrow Cloudflare Access

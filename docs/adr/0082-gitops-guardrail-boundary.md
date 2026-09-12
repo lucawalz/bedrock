@@ -284,8 +284,10 @@ reports Ready.
 Resuming by hand left the estate inconsistent, because `suspend: true` stayed in
 `kubernetes/clusters/home/config/base.yaml` and the parent reconcile put the Kustomization back to
 suspended. The field has now been removed from the manifest, so the resumed state is the declared
-one. A `flux diff` taken before the removal reported nothing pending, which makes the change a
-no-op against the running chart.
+one. The change does two things at once: it leaves the running chart untouched, since a `flux diff`
+taken before the removal reported nothing pending, and it puts a Kustomization that had been
+suspended since 2026-09-06 back under continuous reconciliation, so drift in the metrics-server
+objects is corrected from now on rather than accumulating unwatched.
 
 ## Update 2026-09-12
 
