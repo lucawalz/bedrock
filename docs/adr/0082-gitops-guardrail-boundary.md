@@ -109,14 +109,15 @@ Rancher mirror the k3s addon pulls to `registry.k8s.io`, which is already an exp
 mirror and an on-demand sync target for the pull-through cache described in
 [0067](0067-pull-through-registry-cache.md), so the move adds no new external dependency.
 
-The `cluster-metrics-server` Kustomization ships with `suspend: true`. The k3s addon still owns
-`ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and
-`APIService/v1beta1.metrics.k8s.io` through wrangler's `objectset.rio.cattle.io` annotations until
-master is rebuilt with the disable flag above, and Helm 3 refuses to adopt objects it does not
-already own. A reconcile against a cluster still running the addon exhausts the chart's install
-retries and leaves the Kustomization stalled. Since disabling the addon is a node rebuild that Flux
-cannot depend on or wait for, the Kustomization stays suspended until an operator rebuilds master and
-resumes it by hand, recorded in the disaster-recovery runbook.
+The `cluster-metrics-server` Kustomization shipped with `suspend: true` while the k3s addon still
+owned `ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and
+`APIService/v1beta1.metrics.k8s.io` through wrangler's `objectset.rio.cattle.io` annotations. Helm 3
+refuses to adopt objects it does not already own, so a reconcile against a cluster still running the
+addon would have exhausted the chart's install retries and left the Kustomization stalled, and
+disabling the addon is a node rebuild that Flux can neither depend on nor wait for. That rebuild has
+since happened, the four objects now carry only the chart's `meta.helm.sh` annotations, and the
+suspend has been removed, so the Kustomization reconciles like every other one. See the update
+below.
 
 **Longhorn `storageReserved` stays imperative.** The chart's
 `storageReservedPercentageForDefaultDisk` value only takes effect when Longhorn first creates a
@@ -277,8 +278,14 @@ uncovered failure mode this pass set out to close.
 The precondition this record set for `cluster-metrics-server`, an operator rebuilding master with
 the disable flag, was satisfied when the control-plane node was rebuilt and renamed to
 `control-plane-1` under [0083](0083-rename-control-plane-node-to-control-plane-1.md). The k3s addon
-no longer owns the objects the chart needs to adopt, the Kustomization has been resumed, and it
+no longer owns the objects the chart needs to adopt, the Kustomization was resumed by hand, and it
 reports Ready.
+
+Resuming by hand left the estate inconsistent, because `suspend: true` stayed in
+`kubernetes/clusters/home/config/base.yaml` and the parent reconcile put the Kustomization back to
+suspended. The field has now been removed from the manifest, so the resumed state is the declared
+one. A `flux diff` taken before the removal reported nothing pending, which makes the change a
+no-op against the running chart.
 
 ## Update 2026-09-12
 

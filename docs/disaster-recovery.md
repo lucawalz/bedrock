@@ -180,29 +180,6 @@ kubectl -n longhorn-system patch nodes.longhorn.io worker-2 --type=merge \
 
 All three commands have been run against the live cluster. Both k3s roles set `--node-label=node.longhorn.io/create-default-disk=true`, so a disk record recreated after this point comes up at the chart's 30 percent rather than at zero, which is now the same value these commands set. Raising the reserve shrinks the scheduling budget, so never apply these before confirming `storage-over-provisioning-percentage` reads 200 on the live Setting: at 100 percent a 30 percent reserve puts control-plane-1 and worker-1 over their budgets and blocks replica scheduling on both.
 
-## metrics-server ships suspended
-
-`cluster-metrics-server` in `kubernetes/clusters/home/config/base.yaml` carries `suspend: true`. The chart it installs renders `ServiceAccount/metrics-server`, `Deployment/metrics-server`, `Service/metrics-server` and `APIService/v1beta1.metrics.k8s.io` under the same names the k3s addon already owns through wrangler's `objectset.rio.cattle.io` annotations, and Helm 3 refuses to adopt objects it does not already own. Reconciling this Kustomization while the addon is still running exhausts its three install retries, leaves the Kustomization stuck at `Ready=False`, and pages the critical `HelmReleaseStalled` alert. The Kustomization ships suspended so a fresh reconcile is safe by default rather than depending on this runbook step being remembered ahead of time.
-
-The addon only goes away once control-plane-1 is rebuilt with `--disable=metrics-server`, already declared in `modules/k3s/server.nix`:
-
-```
-nixos-rebuild switch --flake .#control-plane-1 --target-host root@<ip> --build-host root@<ip>
-```
-
-That is a node rebuild, and Flux has no mechanism to wait on it. After the rebuild, confirm the addon's objects are actually gone before resuming:
-
-```
-kubectl -n kube-system get deployment,serviceaccount,service metrics-server
-kubectl get apiservice v1beta1.metrics.k8s.io
-```
-
-Every one of those lookups should return `NotFound`. Once they do, resume the Kustomization:
-
-```
-flux -n flux-system resume kustomization cluster-metrics-server
-```
-
 ## Recovery objectives
 
 Derived from the mechanisms as configured. They describe what the estate currently achieves, which is considerably less than it achieved before [ADR 0081](adr/0081-retire-the-hetzner-account.md).
