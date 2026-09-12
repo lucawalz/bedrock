@@ -916,7 +916,7 @@ tests:
               description: "The cert-manager certificate traefik/wildcard-syslabs-dev expired 1h 30m 0s ago."
 
   - interval: 1m
-    name: slow etcd requests alert once despite the kubelet scraping the same k3s series
+    name: slow etcd requests raise one alert despite two scrapes of the same k3s histogram
     input_series:
       - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="0.1"}'
         values: '0+0x60'
@@ -938,8 +938,8 @@ tests:
               severity: warning
               operation: update
             exp_annotations:
-              summary: "etcd update requests from the API server are slow"
-              description: "The p99 latency of etcd update requests issued by the API server has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. Measured from the API server rather than from etcd, this covers the same path end to end and includes any delay between the two. The kubelet scrape reports the same series from the same k3s process, so the job is pinned to keep one request from being counted twice in the histogram."
+              summary: "etcd update requests are slow"
+              description: "The p99 latency of etcd update requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. The apiserver and kubelet scrapes both report this histogram from the same k3s process; summing by le and operation folds the two copies into one, which leaves the quantile unchanged and raises one alert rather than two."
 
   - interval: 1m
     name: etcd requests inside the latency budget raise nothing

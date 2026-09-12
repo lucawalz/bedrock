@@ -234,13 +234,13 @@ spec:
             summary: "etcd WAL fsync p99 is above 100ms"
             description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on control-plane-1, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
         - alert: EtcdRequestsSlow
-          expr: histogram_quantile(0.99, sum by (le, operation) (rate(etcd_request_duration_seconds_bucket{job="apiserver"}[5m]))) > 0.15
+          expr: histogram_quantile(0.99, sum by (le, operation) (rate(etcd_request_duration_seconds_bucket[5m]))) > 0.15
           for: 15m
           labels:
             severity: warning
           annotations:
-            summary: "etcd {{ $labels.operation }} requests from the API server are slow"
-            description: "The p99 latency of etcd {{ $labels.operation }} requests issued by the API server has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. Measured from the API server rather than from etcd, this covers the same path end to end and includes any delay between the two. The kubelet scrape reports the same series from the same k3s process, so the job is pinned to keep one request from being counted twice in the histogram."
+            summary: "etcd {{ $labels.operation }} requests are slow"
+            description: "The p99 latency of etcd {{ $labels.operation }} requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. The apiserver and kubelet scrapes both report this histogram from the same k3s process; summing by le and operation folds the two copies into one, which leaves the quantile unchanged and raises one alert rather than two."
     - name: container.rules
       rules:
         - alert: ContainerMemoryNearLimit
