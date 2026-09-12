@@ -71,6 +71,9 @@ prometheus-node-exporter:
       memory: 64Mi
 
 kube-state-metrics:
+  # Its own telemetry lives on a second port that goes unscraped by default, leaving the four KubeStateMetrics alerts with no series.
+  selfMonitor:
+    enabled: true
   resources:
     requests:
       cpu: 25m
@@ -169,7 +172,7 @@ defaultRules:
   rules:
     kubeApiserverBurnrate: false
     kubeApiserverSlos: false
-  # Each rule below selects a metric k3s never exports, so it can neither fire nor resolve.
+  # Each rule below selects a metric nothing in this estate exports, so it can neither fire nor resolve.
   disabled:
     KubeJobFailed: true
     KubeletClientCertificateExpiration: true
@@ -179,6 +182,8 @@ defaultRules:
     etcdGRPCRequestsSlow: true
     etcdHighNumberOfFailedGRPCRequests: true
     etcdMemberCommunicationSlow: true
+    NodeSystemdServiceFailed: true
+    NodeSystemdServiceCrashlooping: true
 
 grafana:
   enabled: true

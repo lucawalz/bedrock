@@ -119,3 +119,24 @@ tests:
       - alertname: BlogLatencyErrorBudgetBurnSlow
         eval_time: 70m
         exp_alerts: []
+
+  - interval: 1m
+    name: the availability recording rule yields zero rather than nothing with no server errors
+    input_series:
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="200"}'
+        values: '0+100x90'
+    promql_expr_test:
+      - expr: count(slo:blog_availability:error_ratio)
+        eval_time: 70m
+        exp_samples:
+          - labels: '{}'
+            value: 8
+      - expr: slo:blog_availability:error_budget_remaining_ratio
+        eval_time: 70m
+        exp_samples:
+          - labels: 'slo:blog_availability:error_budget_remaining_ratio'
+            value: 1
+    alert_rule_test:
+      - alertname: BlogAvailabilityErrorBudgetBurnFast
+        eval_time: 70m
+        exp_alerts: []

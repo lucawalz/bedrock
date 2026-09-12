@@ -13,56 +13,56 @@ spec:
           labels:
             window: 5m
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[5m]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[5m])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[5m]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 30m
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[30m]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[30m])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[30m]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 1h
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[1h]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[1h])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[1h]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 2h
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[2h]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[2h])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[2h]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 6h
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[6h]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[6h])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[6h]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 1d
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[1d]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[1d])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[1d]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 3d
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[3d]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[3d])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[3d]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 30d
           expr: |
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[30d]))
+            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[30d])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[30d]))
         - record: slo:blog_availability:error_budget_remaining_ratio
