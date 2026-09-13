@@ -11,17 +11,3 @@ spec:
       app.kubernetes.io/name: authentik
       app.kubernetes.io/instance: authentik
       app.kubernetes.io/component: server
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: authentik-worker
-  namespace: authentik
-spec:
-  maxUnavailable: 1
-  unhealthyPodEvictionPolicy: AlwaysAllow
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: authentik
-      app.kubernetes.io/instance: authentik
-      app.kubernetes.io/component: worker
