@@ -9,7 +9,7 @@ spec:
   retryInterval: 1m
   path: ./kubernetes/clusters/home/sources
   prune: true
-  wait: true
+  wait: false
   sourceRef:
     kind: GitRepository
     name: flux-system
