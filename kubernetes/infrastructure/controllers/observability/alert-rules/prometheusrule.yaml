@@ -251,14 +251,6 @@ spec:
           annotations:
             summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is close to its memory limit"
             description: "Container {{ $labels.container }} has held above 85 percent of its memory limit for 30 minutes, currently {{ $value | humanizePercentage }}. Exceeding the limit is an immediate OOMKill rather than a gradual slowdown, so this is the only warning available before the container is terminated. Either the limit was set below what the workload needs or the workload is leaking."
-        - alert: ContainerMemoryAtLimit
-          expr: max by (namespace, pod, container) (container_memory_working_set_bytes{container!=""}) / on (namespace, pod, container) max by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"}) > 0.95
-          for: 10m
-          labels:
-            severity: critical
-          annotations:
-            summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is about to be OOMKilled"
-            description: "Container {{ $labels.container }} has held above 95 percent of its memory limit for 10 minutes, currently {{ $value | humanizePercentage }}. Raise the limit or restart the workload before the kernel does it."
         - alert: ContainerOOMKilled
           expr: increase(kube_pod_container_status_restarts_total[1h]) > 0 and on (namespace, pod, container) kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
           for: 5m
