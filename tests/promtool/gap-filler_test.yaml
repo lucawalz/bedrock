@@ -872,12 +872,12 @@ tests:
         exp_alerts: []
 
   - interval: 1m
-    name: an expired certificate alerts critical against the certificate's namespace
+    name: an expired certificate alerts critical without waiting an hour
     input_series:
       - series: 'certmanager_certificate_expiration_timestamp_seconds{namespace="cert-manager",exported_namespace="traefik",name="wildcard-syslabs-dev"}'
         values: '0x120'
     alert_rule_test:
-      - eval_time: 90m
+      - eval_time: 5m
         alertname: CertManagerCertExpired
         exp_alerts:
           - exp_labels:
@@ -887,7 +887,7 @@ tests:
               name: wildcard-syslabs-dev
             exp_annotations:
               summary: "Certificate traefik/wildcard-syslabs-dev has expired"
-              description: "The cert-manager certificate traefik/wildcard-syslabs-dev expired 1h 30m 0s ago."
+              description: "The cert-manager certificate traefik/wildcard-syslabs-dev expired 5m 0s ago."
 
   - interval: 1m
     name: slow etcd requests raise one alert despite two scrapes of the same k3s histogram

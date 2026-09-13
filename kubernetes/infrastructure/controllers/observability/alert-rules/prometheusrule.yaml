@@ -19,7 +19,6 @@ spec:
             description: "The cert-manager certificate {{ $labels.exported_namespace }}/{{ $labels.name }} expires in {{ $value | humanizeDuration }}."
         - alert: CertManagerCertExpired
           expr: time() - certmanager_certificate_expiration_timestamp_seconds >= 0
-          for: 1h
           labels:
             severity: critical
           annotations:
