@@ -97,7 +97,19 @@ mechanism papering over an unbounded one. The patch is no longer owed after ever
 either, because [0086](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md) raised the
 live reserve to the percentage the chart declares.
 
-Seven further findings are recorded rather than closed, because each is a fact about the estate that
+**Literal VLAN 20 addresses stay duplicated.** Dozens of them sit in `kubernetes/` with nothing
+analogous to `lib/inventory.nix` behind them, and the inventory models VLAN 20 alone. This is closed
+as accepted duplication rather than carried as an open finding, on three grounds. The three node
+addresses are reserved by MAC in kea from that same inventory and have not moved since
+[0016](0016-concrete-zoned-ip-scheme.md) set the scheme, so the copies have nothing to drift away
+from. Flux renders an undefined `postBuild` substitution variable as an empty string rather than
+refusing to build, so a template that lost its variable would emit a policy or ConfigMap carrying an
+empty address, which is a worse resting state than a literal that is merely repeated. And the one
+address set in the same files that can move on its own, the per-node flannel gateway pairs, is
+already watched by `NodePodCidrOutsideAllowlist` from
+[0085](0085-guardrails-silently-failed-when-derived-basis-moved.md).
+
+Six further findings are recorded rather than closed, because each is a fact about the estate that
 no configuration in this repository can change:
 
 - The Pi is VLAN 20's only gateway and the only Layer 3 path from the operator's LAN, so static node
@@ -113,8 +125,6 @@ no configuration in this repository can change:
 - `secretsDir = "${self}/secrets"` ties every host's closure hash to the content-addressed path of the
   whole flake source, so an unexplained closure change should be checked against this before it is
   read as configuration drift.
-- Dozens of literal VLAN 20 addresses sit in `kubernetes/` with nothing analogous to
-  `lib/inventory.nix` behind them, and the inventory models VLAN 20 alone.
 - Kyverno's `policyExceptions.namespace` pin reconciles under `cluster-security` while the exceptions
   live under `cluster-policies`, and `cluster-apps` waits on neither, so a rebuild reopens a window in
   which restarting pods are admitted with no exceptions. The mitigation is procedural: suspend the
