@@ -77,9 +77,10 @@ requirement. One inventory entry is also not the whole cost of a new node: it ne
 by it. The CI matrix likewise now assumes every inventory node is `x86_64-linux`, which holds because
 `mkNode` defaults to it, so a future `aarch64-linux` node would need the matrix changed as well.
 
-Derivation paths cannot prove a refactor behaviour-preserving here, because the
-`secretsDir = "${self}/secrets"` coupling [0082](0082-gitops-guardrail-boundary.md) records moves
-every host's `drvPath` whenever any tracked file changes, the router included. The gate that replaced
-it evaluates the option leaves that are semantically meaningful for the change, including the
-rendered k3s `ExecStart` rather than only the flag list feeding it, once before and once after for
-every host, and diffs the two captures textually.
+Derivation paths could not prove a refactor behaviour-preserving when this was written, because the
+`secretsDir = "${self}/secrets"` coupling [0082](0082-gitops-guardrail-boundary.md) records moved
+every host's `drvPath` whenever any tracked file changed, the router included. That coupling has
+since been closed, so a `drvPath` comparison is usable again for a change that leaves `secrets/`
+alone. The gate that replaced it evaluates the option leaves that are semantically meaningful for
+the change, including the rendered k3s `ExecStart` rather than only the flag list feeding it, once
+before and once after for every host, and diffs the two captures textually.

@@ -1,12 +1,16 @@
 {
   nixpkgs,
-  self,
   disko,
   agenix,
   ...
 }:
 let
   inventory = import ./inventory.nix;
+
+  secretsDir = builtins.path {
+    path = ../secrets;
+    name = "secrets";
+  };
 
   mkNode =
     hostname:
@@ -19,8 +23,7 @@ let
       system = "x86_64-linux";
       specialArgs = {
         meta = { inherit hostname; };
-        secretsDir = "${self}/secrets";
-        inherit inventory;
+        inherit inventory secretsDir;
       };
       modules = [
         disko.nixosModules.disko
@@ -112,7 +115,7 @@ let
   };
 in
 {
-  inherit inventory;
+  inherit inventory secretsDir;
 
   clusterNodes = nixpkgs.lib.genAttrs (builtins.attrNames inventory.nodes) mkNode;
 }

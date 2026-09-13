@@ -15,7 +15,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       disko,
       agenix,
@@ -25,7 +24,6 @@
       lib = import ./lib {
         inherit
           nixpkgs
-          self
           disko
           agenix
           ;
@@ -73,8 +71,7 @@
           system = "aarch64-linux";
           specialArgs = {
             meta.hostname = "router";
-            secretsDir = "${self}/secrets";
-            inherit (lib) inventory;
+            inherit (lib) inventory secretsDir;
           };
           modules = [
             disko.nixosModules.disko

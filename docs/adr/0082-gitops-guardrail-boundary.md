@@ -109,8 +109,9 @@ address set in the same files that can move on its own, the per-node flannel gat
 already watched by `NodePodCidrOutsideAllowlist` from
 [0085](0085-guardrails-silently-failed-when-derived-basis-moved.md).
 
-Six further findings are recorded rather than closed, because each is a fact about the estate that
-no configuration in this repository can change:
+Six further findings are recorded here. Five are facts about the estate that no configuration in
+this repository can change; the `secretsDir` coupling has since been closed and is kept for the
+record:
 
 - The Pi is VLAN 20's only gateway and the only Layer 3 path from the operator's LAN, so static node
   addressing, a second `--tls-san` per node and a sequential CoreDNS forward list buy independence
@@ -122,9 +123,12 @@ no configuration in this repository can change:
 - `rancher-webhook`'s Deployment renders `resources` as an empty object owned by the `helm` field
   manager, so a patch setting requests and limits is reverted on every reconcile, which the admission
   break-glass runbook carries alongside the patch.
-- `secretsDir = "${self}/secrets"` ties every host's closure hash to the content-addressed path of the
-  whole flake source, so an unexplained closure change should be checked against this before it is
-  read as configuration drift.
+- `secretsDir = "${self}/secrets"` tied every host's closure hash to the content-addressed path of the
+  whole flake source, so a change to any tracked file moved every host's closure. Closed: `lib`
+  defines `secretsDir` as `builtins.path { path = ../secrets; name = "secrets"; }` and the router
+  takes that same value, so only a change under `secrets/` moves that path now. A relative path on
+  its own would not have helped, because a path written in a flake module still resolves inside the
+  flake source.
 - Kyverno's `policyExceptions.namespace` pin reconciles under `cluster-security` while the exceptions
   live under `cluster-policies`, and `cluster-apps` waits on neither, so a rebuild reopens a window in
   which restarting pods are admitted with no exceptions. The mitigation is procedural: suspend the
