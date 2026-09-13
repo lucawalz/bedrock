@@ -2,7 +2,7 @@
   pkgs,
   lib,
   config,
-  secretsDir ? ../../secrets,
+  secretsDir,
   ...
 }:
 let

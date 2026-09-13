@@ -1,6 +1,6 @@
 {
   config,
-  secretsDir ? ../../secrets,
+  secretsDir,
   ...
 }:
 {

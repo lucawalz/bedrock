@@ -3,7 +3,7 @@
   pkgs,
   lib,
   inventory,
-  secretsDir ? ../../secrets,
+  secretsDir,
   ...
 }:
 let

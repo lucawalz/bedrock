@@ -1,6 +1,6 @@
 {
   lib,
-  secretsDir ? ../../secrets,
+  secretsDir,
   ...
 }:
 let
