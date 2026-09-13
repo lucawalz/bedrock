@@ -75,6 +75,10 @@ spec:
       extraEnv:
         - name: GOMEMLIMIT
           value: "900MiB"
+    sidecar:
+      resources:
+        requests: { cpu: 10m, memory: 96Mi }
+        limits: { memory: 192Mi }
     minio: { enabled: false }
     gateway: { enabled: false }
     read: { replicas: 0 }
