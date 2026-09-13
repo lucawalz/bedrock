@@ -4,6 +4,7 @@ namespace: traefik
 
 components:
   - ../../../../components/authentik-middleware
+  - ../../../../components/network-policies/base
 
 resources:
   - helmrelease.yaml

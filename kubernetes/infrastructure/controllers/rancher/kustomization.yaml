@@ -4,6 +4,7 @@ namespace: cattle-system
 
 components:
   - ../../../components/authentik-middleware
+  - ../../../components/network-policies/base
   - ../../../components/network-policies/internet-egress
 
 resources:

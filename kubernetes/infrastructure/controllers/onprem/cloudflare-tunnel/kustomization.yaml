@@ -2,6 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: cloudflare-tunnel
 components:
+  - ../../../../components/network-policies/base
   - ../../../../components/network-policies/internet-egress
   - ../../../../components/topology-spread
 resources:
