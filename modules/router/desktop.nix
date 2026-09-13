@@ -40,7 +40,6 @@ let
 
   output = "HDMI-A-1";
   mode = "1280x400";
-  transform = "normal";
 
   browser = lib.getExe pkgs.chromium;
 
@@ -138,7 +137,7 @@ let
   '';
 
   panelOn = pkgs.writeShellScript "kiosk-panel-on" ''
-    ${wlrRandr} --output ${output} --on --mode ${mode} --transform ${transform}
+    ${wlrRandr} --output ${output} --on --mode ${mode}
   '';
 
   panelOff = pkgs.writeShellScript "kiosk-panel-off" ''
@@ -205,8 +204,6 @@ in
 
     programs.labwc.enable = true;
 
-    security.polkit.enable = true;
-
     users.users.${kioskUser} = {
       isNormalUser = true;
       home = "/home/${kioskUser}";
@@ -270,8 +267,6 @@ in
     };
 
     services = {
-      dbus.enable = true;
-
       greetd = {
         enable = true;
         settings = {

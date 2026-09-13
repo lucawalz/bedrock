@@ -32,9 +32,6 @@ in
     hosts = lib.listToAttrs (
       map (name: lib.nameValuePair inventory.nodes.${name}.address [ name ]) inventory.controlPlanes
     );
-    firewall = {
-      enable = true;
-      allowedTCPPorts = [ 22 ];
-    };
+    firewall.allowedTCPPorts = [ 22 ];
   };
 }

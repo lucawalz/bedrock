@@ -3,7 +3,6 @@
   services.k3s.package = pkgs.k3s_1_35;
 
   boot.kernel.sysctl = {
-    "vm.panic_on_oom" = 0;
     "vm.overcommit_memory" = 1;
     "kernel.panic" = 10;
     "kernel.panic_on_oops" = 1;
