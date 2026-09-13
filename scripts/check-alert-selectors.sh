@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-for tool in curl jq yq; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "$tool is not on PATH; enter the dev shell or install it" >&2
-    exit 1
-  fi
-done
+require_tools curl jq yq
 
 rules_dir=kubernetes/infrastructure/controllers/observability/alert-rules
 allowlist=scripts/alert-selector-allowlist.txt

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
 schema_dir="${1:?usage: gen-crd-schemas.sh SCHEMA_DIR MANIFEST_DIR...}"
 shift
 [ "$#" -gt 0 ] || { echo "usage: gen-crd-schemas.sh SCHEMA_DIR MANIFEST_DIR..." >&2; exit 1; }

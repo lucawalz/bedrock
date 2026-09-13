@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
+
+require_tools yq
 
 apps_dir=kubernetes/apps
 index="$apps_dir/kustomization.yaml"
@@ -15,21 +16,7 @@ yq -N '.resources[]' "$index" | sed 's|/ks\.yaml$||' | sort > "$work/listed"
 
 status=0
 
-missing="$(comm -23 "$work/present" "$work/listed")"
-if [ -n "$missing" ]; then
-  echo "App directories not listed in $index, so Flux never deploys them:"
-  printf '%s\n' "$missing" | sed 's/^/  - /'
-  status=1
-fi
-
-dangling="$(comm -13 "$work/present" "$work/listed")"
-if [ -n "$dangling" ]; then
-  echo "Entries in $index with no matching directory:"
-  printf '%s\n' "$dangling" | sed 's/^/  - /'
-  status=1
-fi
-
-if [ "$status" -eq 0 ]; then
-  echo "App index is in sync."
-fi
-exit "$status"
+compare_sets "$work/present" "$work/listed" \
+  "App directories not listed in $index, so Flux never deploys them:" \
+  "Entries in $index with no matching directory:" \
+  "App index is in sync."

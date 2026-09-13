@@ -1,13 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-if ! command -v python3 >/dev/null 2>&1; then
-  echo "python3 is not on PATH; enter the dev shell or install it" >&2
-  exit 1
-fi
+require_tools python3
 
 python3 <<'PY'
 import json

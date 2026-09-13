@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 namespaces_dir=kubernetes/clusters/home/namespaces
 index="$namespaces_dir/default-serviceaccounts.yaml"
@@ -21,21 +20,7 @@ yq -N 'select(.kind == "ServiceAccount" and .metadata.name == "default") | .meta
 
 status=0
 
-missing="$(comm -23 "$work/declared" "$work/covered")"
-if [ -n "$missing" ]; then
-  echo "Namespaces with no default ServiceAccount entry in $index:"
-  printf '%s\n' "$missing" | sed 's/^/  - /'
-  status=1
-fi
-
-stale="$(comm -13 "$work/declared" "$work/covered")"
-if [ -n "$stale" ]; then
-  echo "Entries in $index with no matching namespace manifest:"
-  printf '%s\n' "$stale" | sed 's/^/  - /'
-  status=1
-fi
-
-if [ "$status" -eq 0 ]; then
-  echo "Default ServiceAccount list is in sync."
-fi
-exit "$status"
+compare_sets "$work/declared" "$work/covered" \
+  "Namespaces with no default ServiceAccount entry in $index:" \
+  "Entries in $index with no matching namespace manifest:" \
+  "Default ServiceAccount list is in sync."

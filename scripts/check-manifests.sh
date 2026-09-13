@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-for tool in kubeconform yq; do
-  if ! command -v "$tool" >/dev/null 2>&1; then
-    echo "$tool is not on PATH; enter the dev shell or install it" >&2
-    exit 1
-  fi
-done
+require_tools kubeconform yq
 
 k8s_dir=kubernetes
 kubernetes_version="${KUBECONFORM_KUBERNETES_VERSION:-1.35.0}"

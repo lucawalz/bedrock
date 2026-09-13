@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$repo_root"
+. "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 policies=kubernetes/infrastructure/configs/policies
 kyverno_release=kubernetes/infrastructure/controllers/security/kyverno/helmrelease.yaml
