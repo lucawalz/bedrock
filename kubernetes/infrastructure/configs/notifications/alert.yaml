@@ -12,3 +12,76 @@ spec:
       name: '*'
     - kind: HelmRelease
       name: '*'
+      namespace: authentik
+    - kind: HelmRelease
+      name: '*'
+      namespace: cattle-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: cert-manager
+    - kind: HelmRelease
+      name: '*'
+      namespace: cloudflare-tunnel
+    - kind: HelmRelease
+      name: '*'
+      namespace: cnpg-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: flagger
+    - kind: HelmRelease
+      name: '*'
+      namespace: flux-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: home-assistant
+    - kind: HelmRelease
+      name: '*'
+      namespace: homepage
+    - kind: HelmRelease
+      name: '*'
+      namespace: horizon-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: kiwix
+    - kind: HelmRelease
+      name: '*'
+      namespace: kube-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: kyverno
+    - kind: HelmRelease
+      name: '*'
+      namespace: litellm
+    - kind: HelmRelease
+      name: '*'
+      namespace: llm
+    - kind: HelmRelease
+      name: '*'
+      namespace: metallb-system
+    - kind: HelmRelease
+      name: '*'
+      namespace: miniflux
+    - kind: HelmRelease
+      name: '*'
+      namespace: monitoring
+    - kind: HelmRelease
+      name: '*'
+      namespace: ntfy
+    - kind: HelmRelease
+      name: '*'
+      namespace: paperless
+    - kind: HelmRelease
+      name: '*'
+      namespace: postgres
+    - kind: HelmRelease
+      name: '*'
+      namespace: rackpeek
+    - kind: HelmRelease
+      name: '*'
+      namespace: reloader
+    - kind: HelmRelease
+      name: '*'
+      namespace: traefik
+    - kind: HelmRelease
+      name: '*'
+      namespace: zot
