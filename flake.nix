@@ -69,10 +69,18 @@
       formatter = nixpkgs.lib.genAttrs formatterSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
 
       nixosConfigurations = lib.clusterNodes // {
-        router = lib.mkHost {
-          hostname = "router";
+        router = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
-          baseline = false;
+          specialArgs = {
+            meta.hostname = "router";
+            secretsDir = "${self}/secrets";
+            inherit (lib) inventory;
+          };
+          modules = [
+            disko.nixosModules.disko
+            agenix.nixosModules.default
+            ./hosts/router
+          ];
         };
         cluster-node = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";

@@ -1,4 +1,3 @@
-# Utility functions to reduce duplication in flake.nix
 {
   nixpkgs,
   self,
@@ -10,18 +9,14 @@ let
   inventory = import ./inventory.nix;
 
   mkNode =
-    {
-      hostname,
-      diskDevice ? "/dev/nvme0n1",
-      system ? "x86_64-linux",
-    }:
+    hostname:
     let
       node = inventory.nodes.${hostname};
       isServer = node.role == "server";
       hostDir = ../hosts/${hostname};
     in
     nixpkgs.lib.nixosSystem {
-      inherit system;
+      system = "x86_64-linux";
       specialArgs = {
         meta = { inherit hostname; };
         secretsDir = "${self}/secrets";
@@ -78,16 +73,16 @@ let
             ];
             environment.variables.KUBECONFIG = nixpkgs.lib.mkIf isServer "/etc/rancher/k3s/k3s.yaml";
 
-            disko.devices = mkDiskoLayout diskDevice;
+            disko.devices = diskoLayout;
           }
         )
       ];
     };
 
-  mkDiskoLayout = diskDevice: {
+  diskoLayout = {
     disk.main = {
       type = "disk";
-      device = diskDevice;
+      device = "/dev/nvme0n1";
       content = {
         type = "gpt";
         partitions = {
@@ -119,28 +114,5 @@ in
 {
   inherit inventory;
 
-  mkHost =
-    {
-      hostname,
-      system ? "x86_64-linux",
-      baseline ? true,
-    }:
-    nixpkgs.lib.nixosSystem {
-      inherit system;
-      specialArgs = {
-        meta = { inherit hostname; };
-        secretsDir = "${self}/secrets";
-        inherit inventory;
-      };
-      modules = [
-        disko.nixosModules.disko
-        agenix.nixosModules.default
-        ../hosts/${hostname}
-      ]
-      ++ nixpkgs.lib.optional baseline ../hosts/common;
-    };
-
-  clusterNodes = nixpkgs.lib.genAttrs (builtins.attrNames inventory.nodes) (
-    hostname: mkNode { inherit hostname; }
-  );
+  clusterNodes = nixpkgs.lib.genAttrs (builtins.attrNames inventory.nodes) mkNode;
 }
