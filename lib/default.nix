@@ -72,14 +72,7 @@ let
             boot.binfmt.emulatedSystems = nixpkgs.lib.mkIf isServer [ "aarch64-linux" ];
 
             environment.systemPackages = nixpkgs.lib.mkIf isServer [
-              (pkgs.wrapHelm pkgs.kubernetes-helm {
-                plugins = with pkgs.kubernetes-helmPlugins; [
-                  helm-secrets
-                  helm-diff
-                  helm-s3
-                  helm-git
-                ];
-              })
+              pkgs.kubernetes-helm
               pkgs.fluxcd
               pkgs.sops
             ];

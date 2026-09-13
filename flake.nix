@@ -35,6 +35,35 @@
         "aarch64-linux"
         "aarch64-darwin"
       ];
+      devShellPackages =
+        pkgs: with pkgs; [
+          kubectl
+          kubernetes-helm
+          fluxcd
+          sops
+          age
+          nixos-rebuild
+          git
+          yq-go
+          prometheus.cli
+          jq
+          curl
+          coreutils
+          python3
+          bashInteractive
+        ];
+      devShellExtraPackages = {
+        x86_64-linux =
+          pkgs: with pkgs; [
+            nix-prefetch-git
+            gnumake
+          ];
+        aarch64-darwin =
+          pkgs: with pkgs; [
+            nixos-anywhere
+            zstd
+          ];
+      };
     in
     {
       formatter = nixpkgs.lib.genAttrs formatterSystems (system: nixpkgs.legacyPackages.${system}.nixfmt);
@@ -60,69 +89,17 @@
         };
       };
 
-      devShells.x86_64-linux.default =
+      devShells = nixpkgs.lib.mapAttrs (
+        system: extraPackages:
         let
-          pkgs = import nixpkgs {
-            system = "x86_64-linux";
-          };
-          kubeHelm = pkgs.wrapHelm pkgs.kubernetes-helm {
-            plugins = with pkgs.kubernetes-helmPlugins; [
-              helm-secrets
-              helm-diff
-              helm-s3
-              helm-git
-            ];
-          };
+          pkgs = import nixpkgs { inherit system; };
         in
-        pkgs.mkShell {
-          name = "bedrock";
-          packages = with pkgs; [
-            kubectl
-            kubeHelm
-            fluxcd
-            sops
-            age
-            nixos-rebuild
-            nix-prefetch-git
-            gnumake
-            git
-            yq-go
-            prometheus.cli
-            hcloud
-            jq
-            curl
-            coreutils
-            python3
-            bashInteractive
-          ];
-        };
-
-      devShells.aarch64-darwin.default =
-        let
-          pkgs = import nixpkgs {
-            system = "aarch64-darwin";
+        {
+          default = pkgs.mkShell {
+            name = "bedrock";
+            packages = devShellPackages pkgs ++ extraPackages pkgs;
           };
-        in
-        pkgs.mkShell {
-          name = "bedrock";
-          packages = with pkgs; [
-            kubectl
-            fluxcd
-            sops
-            age
-            nixos-anywhere
-            nixos-rebuild
-            zstd
-            git
-            yq-go
-            prometheus.cli
-            hcloud
-            jq
-            curl
-            coreutils
-            python3
-            bashInteractive
-          ];
-        };
+        }
+      ) devShellExtraPackages;
     };
 }
