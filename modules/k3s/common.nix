@@ -60,6 +60,8 @@
   services.k3s.extraFlags = [
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
     "--flannel-iface=tailscale0"
+    "--node-label=bedrock.io/storage=true"
+    "--node-label=node.longhorn.io/create-default-disk=true"
   ];
 
   systemd.services.k3s.after = [ "tailscaled-autoconnect.service" ];

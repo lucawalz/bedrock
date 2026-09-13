@@ -1,10 +1,11 @@
 {
   config,
+  inventory,
   secretsDir ? ../../secrets,
   ...
 }:
 {
-  imports = [ ../tailscale/subnet-router.nix ];
+  imports = [ ../tailscale/client.nix ];
 
   age.secrets.tailscale-authkey = {
     file = "${secretsDir}/tailscale-authkey.age";
@@ -13,10 +14,12 @@
     group = "root";
   };
 
-  bedrock.tailscaleSubnetRouter = {
+  bedrock.tailscaleClient = {
     enable = true;
     hostname = "router";
     authKeyFile = config.age.secrets.tailscale-authkey.path;
+    tag = "tag:cluster";
+    advertiseSubnet = inventory.subnet;
     acceptRoutes = true;
   };
 

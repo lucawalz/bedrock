@@ -141,7 +141,7 @@ hosts/
 modules/
   k3s/                 server and agent roles, plus the dormant burst-node role
   router/              firewall, NAT, DHCP, DNS, wireless, and the bar-display kiosk
-  tailscale/           the subnet router that advertises the LAN to the tailnet
+  tailscale/           the client that joins a host to the tailnet, optionally advertising the LAN
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets: the K3s join token, the router's Tailscale and AdGuard credentials, the wifi passphrase, and the kiosk dashboard URL
 infra/packer/          the dormant Packer template that bakes a cloud node snapshot
