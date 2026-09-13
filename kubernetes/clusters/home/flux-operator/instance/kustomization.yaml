@@ -4,6 +4,7 @@ namespace: flux-system
 components:
   - ../../../../components/authentik-middleware
   - ../../../../components/network-policies/base
+  - ../../../../components/network-policies/intra-namespace
   - ../../../../components/network-policies/internet-egress
 patches:
   - target:

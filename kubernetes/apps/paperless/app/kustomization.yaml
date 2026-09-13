@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: paperless
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/intra-namespace
 resources:
   - paperless-ngx
   - redis

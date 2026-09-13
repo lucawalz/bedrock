@@ -3,6 +3,7 @@ kind: Kustomization
 components:
 - ../../../components/authentik-middleware
 - ../../../components/network-policies/base
+- ../../../components/network-policies/intra-namespace
 resources:
   - helmrelease.yaml
   - ingressroute.yaml
