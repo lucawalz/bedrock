@@ -73,8 +73,11 @@ reconcile loop. The alert built to surface the warning has since been removed: i
 status condition, and helm-controller reports drift as an event and writes no such condition, so it
 could never fire and its kube-state-metrics block and RBAC entry went with it. The mode stays, and the
 trade-off is still covered by the notification path rather than by a metric: helm-controller emits
-`DriftDetected` as a `Warning` event, Flux maps `Warning` to `error` severity, and the existing `ntfy`
-Alert already forwards every HelmRelease event at that severity.
+`DriftDetected` as a `Warning` event, Flux maps `Warning` to `error` severity, and the `ntfy` Alert
+forwards every HelmRelease event at that severity now that it lists one entry per namespace holding a
+release. Until that change the Alert named no namespace on its HelmRelease entry, which
+notification-controller reads as the Alert's own namespace, so it could see only `flux-system` objects
+and every release elsewhere in the estate drifted unreported.
 
 **metrics-server adopted from the k3s addon.** `--disable=metrics-server` now sits beside
 `--disable=coredns` on the pattern CoreDNS established: a k3s addon is a bounded, unreconciled binary
