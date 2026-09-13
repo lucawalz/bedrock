@@ -21,4 +21,4 @@ Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm 
 
 ## Consequences
 
-Routing is declared as Kubernetes resources and lives in Git like everything else. Per-app basic-auth middleware was the first authentication layer in front of the internal dashboards and was retired by [0038](0038-authentik-sso-for-internal-dashboards.md) in favour of Authentik forward auth. The standing cost is the CRD lifecycle: the chart upgrades CRDs with `CreateReplace`, so a Traefik chart major bump can replace the IngressRoute CRDs and wipe existing IngressRoutes, which then have to be force-reconciled to recreate them.
+Routing is declared as Kubernetes resources and lives in Git like everything else. Per-app basic-auth middleware was the first authentication layer in front of the internal dashboards and was retired by [0038](0038-authentik-sso-for-internal-dashboards.md) in favor of Authentik forward auth. The standing cost is the CRD lifecycle: the chart upgrades CRDs with `CreateReplace`, so a Traefik chart major bump can replace the IngressRoute CRDs and wipe existing IngressRoutes, which then have to be force-reconciled to recreate them.

@@ -11,12 +11,12 @@ The homelab needed a real layer-3 router and firewall to put the cluster on its 
 
 ## Decision
 
-The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. That keeps it in the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes, and it runs on hardware already on hand. OPNsense was the main alternative and lost on architecture: it ships only for amd64 on a FreeBSD base, so choosing it would have meant buying x86 hardware for a job the Pi already does.
+The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. That keeps it in the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes, and it runs on hardware already on hand.
 
 ## Options considered
 
-- NixOS on the Raspberry Pi, chosen. It runs on aarch64, needs no new hardware, and the firewall, DHCP, and DNS are plain modules (nftables, kea, AdGuard) that are versioned and reviewed alongside everything else.
-- OPNsense. A mature firewall with a polished interface, but amd64-only and BSD-based, so it cannot run on the Pi and would split the estate across two configuration models and a second machine.
+- NixOS on the Raspberry Pi, chosen. It runs on aarch64, and the firewall, DHCP, and DNS are plain modules (nftables, kea, AdGuard) that are versioned and reviewed alongside everything else.
+- OPNsense. The main alternative, and a mature firewall with a polished interface, but it ships only for amd64 on a FreeBSD base, so it cannot run on the Pi. Choosing it meant buying x86 hardware for a job the Pi already does, and splitting the estate across two configuration models and a second machine.
 - A consumer router with custom firmware. Cheap and simple, but its configuration lives on the device rather than in Git, which breaks the reproducibility the rest of the project depends on.
 
 ## Consequences

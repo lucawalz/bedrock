@@ -15,10 +15,10 @@ Host secrets use agenix, encrypted to each node's SSH host key and declared in `
 
 ## Options considered
 
-- agenix plus SOPS, chosen. agenix decrypts to host paths during a NixOS build, which is exactly what a join token needs; SOPS integrates with Flux to decrypt manifests at reconcile time. Each layer uses the tool built for it.
+- agenix plus SOPS, chosen. agenix decrypts to host paths during a NixOS build, which is exactly what a join token needs; SOPS integrates with Flux to decrypt manifests at reconcile time.
 - sealed-secrets. Works for cluster secrets, but has no story for NixOS host secrets, so it would still need a second tool for the machine layer.
 - Vault. Powerful and centralized, but it is a service to run, secure, and keep available, which is operational weight a single-operator homelab does not need.
 
 ## Consequences
 
-Each layer uses the right tool, and nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both. Key custody is the thing that actually has to be protected: whoever holds an age private key can decrypt the matching secrets, and the arrangement for the cluster keys is recorded in [0060](0060-private-secrets-repo-per-cluster-keys.md).
+Nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both. Key custody is the thing that actually has to be protected: whoever holds an age private key can decrypt the matching secrets, and the arrangement for the cluster keys is recorded in [0060](0060-private-secrets-repo-per-cluster-keys.md).

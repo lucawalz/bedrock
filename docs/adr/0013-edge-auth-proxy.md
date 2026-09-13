@@ -15,8 +15,8 @@ Rejected. No in-cluster auth proxy is adopted at the edge. Under [0014](0014-dec
 
 ## Options considered
 
-- Pangolin. One cohesive tool with the best add-and-forget experience, but its headline feature is an outbound tunnel that hides the home address, which this design does not use. Self-hosted behind the port-forward it duplicated both the in-cluster Traefik and the WireGuard overlay, was the youngest of the three as a public gate, and had moved to an open-core license.
-- Traefik with Authentik. Adds a forward-auth layer to the Traefik already in use and brings a full identity provider and dashboard, at the cost of more weight, a database and a worker, and a forward-auth CVE history that needs a hardening checklist.
+- Pangolin. One cohesive tool with the best add-and-forget experience, but its headline feature was an outbound tunnel that hid the home address, which that design did not use. Self-hosted behind the port-forward it duplicated both the in-cluster Traefik and the WireGuard overlay, was the youngest of the three as a public gate, and had moved to an open-core license.
+- Traefik with Authentik. It would have added a forward-auth layer to the Traefik already in use and brought a full identity provider and dashboard, at the cost of more weight, a database and a worker, and a forward-auth CVE history that needed a hardening checklist.
 - Traefik with Authelia. The lightest forward-auth gate, almost entirely file-configured with the smallest surface, but a gate only and not an identity provider.
 
 ## Consequences

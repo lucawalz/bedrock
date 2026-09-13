@@ -15,7 +15,7 @@ cert-manager issues Let's Encrypt certificates through the Cloudflare DNS-01 sol
 
 ## Options considered
 
-- DNS-01 via Cloudflare, chosen. No inbound port required, supports wildcard certificates, and renewals are fully automatic through the Cloudflare API.
+- DNS-01 via Cloudflare, chosen. Renewals are fully automatic through the Cloudflare API, with no operator step at expiry.
 - HTTP-01. Simpler to reason about, but it needs Let's Encrypt to reach the cluster on port 80 and cannot issue wildcards, both of which conflict with the no-inbound-ports design.
 - Manual certificates. No dependency on any API token, but renewal becomes a recurring chore and a likely outage, which defeats the point.
 

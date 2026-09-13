@@ -15,8 +15,8 @@ The Cloudflare tunnel is dropped and the edge is owned outright. The router forw
 
 ## Options considered
 
-- Own the edge via port-forward, chosen. Full control, no third party in the request path, and it can carry every workload.
-- Keep the Cloudflare tunnel. It hides the home address, but it is a third party on every request and cannot carry the streaming workload.
+- Own the edge via port-forward, chosen. Full control, at no rental cost, on an address the home line already has.
+- Keep the Cloudflare tunnel. The status quo, whose only advantage over this decision is the hidden home address.
 - Rent a VPS as a public front. It would hide the address, but it reintroduces a rented box, and the goal was to be fully self-hosted.
 
 ## Consequences
