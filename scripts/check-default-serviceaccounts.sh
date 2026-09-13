@@ -22,5 +22,9 @@ status=0
 
 compare_sets "$work/declared" "$work/covered" \
   "Namespaces with no default ServiceAccount entry in $index:" \
-  "Entries in $index with no matching namespace manifest:" \
-  "Default ServiceAccount list is in sync."
+  "Entries in $index with no matching namespace manifest:"
+
+if [ "$status" -eq 0 ]; then
+  echo "Default ServiceAccount list is in sync."
+fi
+exit "$status"

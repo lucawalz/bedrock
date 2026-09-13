@@ -81,7 +81,7 @@ for l in $linked; do
     continue
   fi
   recorded="$(front_matter_status "$adr_dir/$l")"
-  IFS=$'\t' read -r index_link_text indexed < <(index_entry "$l")
+  IFS=$'\t' read -r indexed_title indexed < <(index_entry "$l") || true
   if [ -z "$(normalize_status "$recorded")" ]; then
     status_drift="$status_drift$l declares no status in its front matter"$'\n'
   elif [ "$(normalize_status "$recorded")" != "$(normalize_status "$indexed")" ]; then
@@ -91,8 +91,8 @@ for l in $linked; do
   file_heading="$(file_title "$adr_dir/$l")"
   if [ -z "$file_heading" ]; then
     title_drift="$title_drift$l has no \"# NNNN. Title\" heading to compare"$'\n'
-  elif [ "$file_heading" != "$index_link_text" ]; then
-    title_drift="$title_drift$l heading reads \"$file_heading\" but the index says \"$index_link_text\""$'\n'
+  elif [ "$file_heading" != "$indexed_title" ]; then
+    title_drift="$title_drift$l heading reads \"$file_heading\" but the index says \"$indexed_title\""$'\n'
   fi
 done
 

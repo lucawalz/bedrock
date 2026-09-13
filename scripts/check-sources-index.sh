@@ -13,6 +13,13 @@ trap 'rm -rf "$work"' EXIT
 
 status=0
 
+find "$sources_dir/helm" -name '*.yaml' -exec basename {} \; | sed 's|^|helm/|' | sort > "$work/present"
+yq -N '.resources[]' "$index" | grep '^helm/' | sort > "$work/listed"
+
+compare_sets "$work/present" "$work/listed" \
+  "Source files not listed in $index, so Flux never creates them:" \
+  "Entries in $index with no matching file:"
+
 # A repository nothing pulls from is dead weight that still gets fetched on every interval.
 find "$sources_dir/helm" -name '*.yaml' | sort > "$work/files"
 while IFS= read -r file; do
@@ -23,10 +30,7 @@ while IFS= read -r file; do
   fi
 done < "$work/files"
 
-find "$sources_dir/helm" -name '*.yaml' -exec basename {} \; | sed 's|^|helm/|' | sort > "$work/present"
-yq -N '.resources[]' "$index" | grep '^helm/' | sort > "$work/listed"
-
-compare_sets "$work/present" "$work/listed" \
-  "Source files not listed in $index, so Flux never creates them:" \
-  "Entries in $index with no matching file:" \
-  "Source index is in sync."
+if [ "$status" -eq 0 ]; then
+  echo "Source index is in sync."
+fi
+exit "$status"

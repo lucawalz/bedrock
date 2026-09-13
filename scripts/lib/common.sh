@@ -13,8 +13,9 @@ require_tools() {
   done
 }
 
+# shellcheck disable=SC2034
 compare_sets() {
-  local present="$1" listed="$2" missing_message="$3" dangling_message="$4" sync_message="$5"
+  local present="$1" listed="$2" missing_message="$3" dangling_message="$4"
   local missing dangling
 
   missing="$(comm -23 "$present" "$listed")"
@@ -30,9 +31,4 @@ compare_sets() {
     printf '%s\n' "$dangling" | sed 's/^/  - /'
     status=1
   fi
-
-  if [ "$status" -eq 0 ]; then
-    echo "$sync_message"
-  fi
-  exit "$status"
 }

@@ -18,5 +18,9 @@ status=0
 
 compare_sets "$work/present" "$work/listed" \
   "App directories not listed in $index, so Flux never deploys them:" \
-  "Entries in $index with no matching directory:" \
-  "App index is in sync."
+  "Entries in $index with no matching directory:"
+
+if [ "$status" -eq 0 ]; then
+  echo "App index is in sync."
+fi
+exit "$status"
