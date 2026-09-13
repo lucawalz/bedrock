@@ -5,18 +5,14 @@
     ":dependencyDashboard"
   ],
   "nix": {
+    "description": "the nix manager is in beta and ships disabled, so it stays opted in here",
     "enabled": true
   },
   "flux": {
-    "enabled": true,
     "managerFilePatterns": ["/kubernetes/.+\\.ya?ml$/"]
   },
   "kubernetes": {
-    "enabled": true,
     "managerFilePatterns": ["/kubernetes/.+\\.ya?ml$/"]
-  },
-  "github-actions": {
-    "enabled": true
   },
   "customManagers": [
     {
