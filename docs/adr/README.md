@@ -60,7 +60,7 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0054. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID](0054-bar-display-grafana-kiosk-and-corrected-edid.md) (accepted, anonymous access replaced by a public dashboard link)
 - [0055. Track the cluster inventory as a versionless topology map](0055-versionless-cluster-inventory.md) (accepted)
 - [0057. CloudNativePG native Barman DR and Velero scope](0057-cnpg-barman-dr-and-velero-scope.md) (accepted, backup mechanisms superseded by 0081)
-- [0058. Split cluster-infrastructure into focused Flux Kustomizations](0058-split-cluster-infrastructure-kustomizations.md) (accepted, Kustomization names superseded, successor unrecorded)
+- [0058. Split cluster-infrastructure into focused Flux Kustomizations](0058-split-cluster-infrastructure-kustomizations.md) (accepted, Kustomization names superseded by 0087)
 - [0059. Outbound-only peers via public Rancher](0059-outbound-only-peers-via-public-rancher.md) (superseded by 0063)
 - [0060. Private secrets repository with per-cluster keys](0060-private-secrets-repo-per-cluster-keys.md) (accepted)
 - [0061. Lay out the repository as a multi-region fleet](0061-multi-region-fleet-layout.md) (superseded by 0063)
@@ -89,3 +89,4 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0084. Parameterise the estate for multiple control planes](0084-parameterise-the-estate-for-multiple-control-planes.md) (accepted)
 - [0085. Guardrails silently failed when the value they were derived from moved](0085-guardrails-silently-failed-when-derived-basis-moved.md) (accepted)
 - [0086. Thin provision Longhorn, and detect what no derived expression can](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md) (accepted)
+- [0087. Record the Flux Kustomization layering that replaced the four-way split](0087-kustomization-layering-succeeding-0058.md) (accepted)

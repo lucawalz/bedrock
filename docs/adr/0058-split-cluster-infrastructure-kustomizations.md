@@ -1,5 +1,5 @@
 ---
-status: accepted, Kustomization names superseded, successor unrecorded
+status: accepted, Kustomization names superseded by 0087
 date: 2026-07-06
 ---
 
@@ -25,4 +25,4 @@ Carry out the split as a two-step migration so no running object is ever deleted
 
 A reconcile failure in one infrastructure concern is contained to that concern, which shrinks the blast radius of any single problem and makes a stall easier to locate, because the failing Kustomization names the area. The cost is more objects to reason about and `dependsOn` edges duplicated across definitions instead of declared once. That trades a little more surface for a lot less coupling, and the surface is uniform, since the definitions are identical but for their name and path.
 
-The four names this record chose no longer describe the cluster. They were dissolved the day after the split, when `kubernetes/clusters/home/config/` was re-sorted into base, profiles, fleet and home layers, and the concerns were redistributed across a larger set of Kustomizations, several of them per-application. The principle decided here was not reversed but taken further: each independent concern still owns its own Kustomization and its own readiness gate, and the adopt-then-reprune pattern remains the migration template. What is missing is a record of the layering that replaced these names, which no ADR currently covers.
+The four names this record chose no longer describe the cluster. They were dissolved the day after the split, when `kubernetes/clusters/home/config/` was re-sorted into layer files, and the concerns were redistributed across a larger set of Kustomizations, several of them per-application. The principle decided here was not reversed but taken further: each independent concern still owns its own Kustomization and its own readiness gate, and the adopt-then-reprune pattern remains the migration template. The layering that replaced these names is recorded in [0087](0087-kustomization-layering-succeeding-0058.md).
