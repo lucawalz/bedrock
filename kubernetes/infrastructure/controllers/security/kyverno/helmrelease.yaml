@@ -117,10 +117,6 @@ spec:
       policyExceptions:
         enabled: true
         namespace: kyverno
-      policyReports:
-        enabled: true
-      admissionReports:
-        enabled: true
       backgroundScan:
         backgroundScanInterval: 15m
         skipResourceFilters: false
