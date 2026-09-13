@@ -15,4 +15,3 @@ spec:
   endpoints:
     - port: manager
       interval: 60s
-      path: /metrics

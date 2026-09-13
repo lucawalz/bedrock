@@ -15,7 +15,5 @@ spec:
   endpoints:
     - port: http-metrics
       interval: 60s
-      path: /metrics
     - port: metrics
       interval: 60s
-      path: /metrics
