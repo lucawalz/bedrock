@@ -71,9 +71,10 @@ not just report drift, it corrects it by reapplying the release, which risks fig
 mutating admission controller or another controller owns and turns a reporting gap into a live
 reconcile loop. The alert built to surface the warning has since been removed: it read a `Drifted`
 status condition, and helm-controller reports drift as an event and writes no such condition, so it
-could never fire and its kube-state-metrics block and RBAC entry went with it. The mode stays, because
-the event is still the record that a release drifted, but this trade-off should be read as uncovered
-by an alert, and covering it needs an event exporter the estate does not run.
+could never fire and its kube-state-metrics block and RBAC entry went with it. The mode stays, and the
+trade-off is still covered by the notification path rather than by a metric: helm-controller emits
+`DriftDetected` as a `Warning` event, Flux maps `Warning` to `error` severity, and the existing `ntfy`
+Alert already forwards every HelmRelease event at that severity.
 
 **metrics-server adopted from the k3s addon.** `--disable=metrics-server` now sits beside
 `--disable=coredns` on the pattern CoreDNS established: a k3s addon is a bounded, unreconciled binary
@@ -163,4 +164,4 @@ with no claim label field still fall back to Longhorn's implicit default snapsho
 
 `HelmReleaseStalled` is the one control this record depends on that works, and if it stops firing the
 five stateful releases that no longer roll back automatically revert to the uncovered failure mode this
-pass set out to close. The drift half has no such control, for the reason recorded above.
+pass set out to close. The drift half is carried by the `ntfy` Alert, for the reason recorded above.
