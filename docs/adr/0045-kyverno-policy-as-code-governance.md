@@ -7,7 +7,7 @@ date: 2026-06-20
 
 ## Context
 
-The triage in [0043](0043-triage-production-readiness-findings.md) hardened the first-party workloads by hand and wrote down which trade-offs were deliberate. That posture lived only as prose and as the discipline of whoever last edited a manifest. The first-party manifests already followed a consistent shape: CPU and memory requests and limits on every container, non-root, `allowPrivilegeEscalation: false`, all capabilities dropped, and a fixed image tag. That shape was convention, not a contract. An off-cluster scanner sweep catches drift after the fact, cannot stop a non-compliant Pod from admitting, and surfaces no single view of a running cluster's compliance. The conventions needed to become machine-checked policy with one source of truth shared between the cluster and CI.
+The triage in [0043](0043-triage-production-readiness-findings.md) hardened the first-party workloads by hand and wrote down which trade-offs were deliberate. That posture lived only as prose and as the discipline of whoever last edited a manifest. The first-party manifests already followed a consistent shape covering resource bounds, privilege, capabilities, and image tags, but that shape was convention, not a contract, and nothing surfaced a single view of a running cluster's compliance. The conventions needed to become machine-checked policy with one source of truth shared between the cluster and CI.
 
 ## Decision
 
