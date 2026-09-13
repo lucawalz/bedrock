@@ -59,7 +59,6 @@ spec:
     crds: CreateReplace
     remediation:
       retries: 3
-      remediateLastFailure: true
   driftDetection:
     mode: warn
 
