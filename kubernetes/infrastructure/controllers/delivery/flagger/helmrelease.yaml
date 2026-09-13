@@ -15,7 +15,6 @@ spec:
         name: flagger
         namespace: flux-system
   install:
-    createNamespace: false
     crds: CreateReplace
     remediation:
       retries: 3

@@ -15,7 +15,6 @@ spec:
         name: metrics-server
         namespace: flux-system
   install:
-    createNamespace: false
     remediation:
       retries: 3
   upgrade:
