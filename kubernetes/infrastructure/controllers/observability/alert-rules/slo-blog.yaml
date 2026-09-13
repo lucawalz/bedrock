@@ -32,25 +32,11 @@ spec:
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[1h]))
         - record: slo:blog_availability:error_ratio
           labels:
-            window: 2h
-          expr: |
-            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[2h])) or vector(0))
-            /
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[2h]))
-        - record: slo:blog_availability:error_ratio
-          labels:
             window: 6h
           expr: |
             (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[6h])) or vector(0))
             /
             sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[6h]))
-        - record: slo:blog_availability:error_ratio
-          labels:
-            window: 1d
-          expr: |
-            (sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*", code=~"5.."}[1d])) or vector(0))
-            /
-            sum(rate(traefik_router_requests_total{router=~"websecure-blog-blog-.*"}[1d]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 3d
@@ -102,30 +88,12 @@ spec:
             )
         - record: slo:blog_latency:error_ratio
           labels:
-            window: 2h
-          expr: |
-            1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[2h]))
-              /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[2h]))
-            )
-        - record: slo:blog_latency:error_ratio
-          labels:
             window: 6h
           expr: |
             1 - (
               sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[6h]))
               /
               sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[6h]))
-            )
-        - record: slo:blog_latency:error_ratio
-          labels:
-            window: 1d
-          expr: |
-            1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"websecure-blog-blog-.*", le="0.3"}[1d]))
-              /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"websecure-blog-blog-.*"}[1d]))
             )
         - record: slo:blog_latency:error_ratio
           labels:

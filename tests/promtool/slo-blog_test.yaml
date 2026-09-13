@@ -106,7 +106,7 @@ tests:
         eval_time: 70m
         exp_samples:
           - labels: '{}'
-            value: 8
+            value: 6
       - expr: slo:blog_latency:error_budget_remaining_ratio
         eval_time: 70m
         exp_samples:
@@ -130,7 +130,7 @@ tests:
         eval_time: 70m
         exp_samples:
           - labels: '{}'
-            value: 8
+            value: 6
       - expr: slo:blog_availability:error_budget_remaining_ratio
         eval_time: 70m
         exp_samples:
