@@ -11,7 +11,7 @@ Traffic from the Cloudflare Tunnel has to land somewhere inside the cluster that
 
 ## Decision
 
-Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm release in `infrastructure/networking/traefik/` rather than the K3s-bundled copy, which is disabled. Traefik's IngressRoute CRDs and middleware cover the routing needs, and it works cleanly with the cert-manager issuer from [0006](0006-cert-manager-dns01.md). Keeping the tool K3s already standardizes on avoided introducing a second ingress for no real gain.
+Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm release in `kubernetes/infrastructure/controllers/onprem/traefik/` rather than the K3s-bundled copy, which is disabled. Traefik's IngressRoute CRDs and middleware cover the routing needs, and it works cleanly with the cert-manager issuer from [0006](0006-cert-manager-dns01.md). Keeping the tool K3s already standardizes on avoided introducing a second ingress for no real gain.
 
 ## Options considered
 
@@ -21,4 +21,4 @@ Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm 
 
 ## Consequences
 
-Routing is declared as Kubernetes resources and lives in Git like everything else. The cost is the CRD lifecycle: the chart upgrades CRDs with `CreateReplace`, and a Traefik chart major bump can replace the IngressRoute CRDs in a way that wipes existing IngressRoutes. Chart upgrades therefore need care, and after a major bump the affected resources may have to be force-reconciled to recreate them.
+Routing is declared as Kubernetes resources and lives in Git like everything else. Per-app basic-auth middleware was the first authentication layer in front of the internal dashboards and was retired by [0038](0038-authentik-sso-for-internal-dashboards.md) in favour of Authentik forward auth. The standing cost is the CRD lifecycle: the chart upgrades CRDs with `CreateReplace`, so a Traefik chart major bump can replace the IngressRoute CRDs and wipe existing IngressRoutes, which then have to be force-reconciled to recreate them.

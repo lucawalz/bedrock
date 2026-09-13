@@ -11,7 +11,7 @@ The homelab needed a real layer-3 router and firewall to put the cluster on its 
 
 ## Decision
 
-The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. OPNsense was the main alternative and was rejected: it ships only for amd64 on a FreeBSD base and does not run on the aarch64 Pi. Choosing it would have meant buying x86 hardware for a job the Pi already does. NixOS keeps the router under the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes.
+The router runs NixOS, defined as another host in this repository under `hosts/router/` and `modules/router/`. That keeps it in the same flake, the same secrets handling, and the same review-and-apply workflow as the cluster nodes, and it runs on hardware already on hand. OPNsense was the main alternative and lost on architecture: it ships only for amd64 on a FreeBSD base, so choosing it would have meant buying x86 hardware for a job the Pi already does.
 
 ## Options considered
 
@@ -21,4 +21,4 @@ The router runs NixOS, defined as another host in this repository under `hosts/r
 
 ## Consequences
 
-Router state is reproducible and reviewable: changing the firewall is an edit to the flake and an apply, not a click through a web interface. Logs ship to the same Grafana as the cluster, so the edge is observable without a separate console. The cost is that features OPNsense bundles behind a GUI, including the intrusion detection and the DHCP and DNS services, are assembled by hand from NixOS options, which is more work up front and demands more networking knowledge. Hardening the box for public exposure is tracked separately in [0012](0012-bulletproof-router-hardening.md).
+Router state is reproducible and reviewable: changing the firewall is an edit to the flake and an apply, not a click through a web interface. Logs ship to the same Grafana as the cluster, so the edge is observable without a separate console. The cost is that features OPNsense bundles behind a GUI, including intrusion detection and the DHCP and DNS services, are assembled by hand from NixOS options, which is more work up front and demands more networking knowledge. Hardening the box for public exposure is tracked separately in [0012](0012-bulletproof-router-hardening.md).

@@ -7,11 +7,11 @@ date: 2025-10-25
 
 ## Context
 
-The repository is public, so every secret in it has to be committed encrypted and decrypted only where it is used. But there are two distinct layers with different needs. NixOS hosts need a secret available at build or boot time, decrypted to a path on disk. The cluster needs secrets that Flux can decrypt in-cluster at reconcile time. One tool rarely serves both well.
+The repository is public, so every secret in it has to be committed encrypted and decrypted only where it is used. There are two distinct layers with different needs. NixOS hosts need a secret available at build or boot time, decrypted to a path on disk. The cluster needs secrets that Flux can decrypt in-cluster at reconcile time. One tool rarely serves both well.
 
 ## Decision
 
-Host secrets use agenix, encrypted to each node's SSH host key, declared in `secrets/secrets.nix`. These are the K3s join token, the Tailscale auth key, and the AdGuard admin credential. Cluster secrets use SOPS with age, configured in `.sops.yaml` and decrypted by Flux inside the cluster. Each tool is used where it fits: agenix for the machines, SOPS for the workloads.
+Host secrets use agenix, encrypted to each node's SSH host key and declared in `secrets/secrets.nix`. Cluster secrets use SOPS with age, configured in `.sops.yaml` and decrypted by Flux inside the cluster. Each tool is used where it fits: agenix for the machines, SOPS for the workloads.
 
 ## Options considered
 
@@ -21,4 +21,4 @@ Host secrets use agenix, encrypted to each node's SSH host key, declared in `sec
 
 ## Consequences
 
-Each layer uses the right tool, and nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both. Age key custody also matters: whoever holds the age private key can decrypt the cluster secrets, so that key is the thing that actually has to be protected.
+Each layer uses the right tool, and nothing sensitive sits in the repository in plaintext. The cost is two mechanisms rather than one, so contributors learn both. Key custody is the thing that actually has to be protected: whoever holds an age private key can decrypt the matching secrets, and the arrangement for the cluster keys is recorded in [0060](0060-private-secrets-repo-per-cluster-keys.md).

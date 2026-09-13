@@ -11,7 +11,7 @@ Services need real TLS certificates, renewed automatically, with nobody minding 
 
 ## Decision
 
-cert-manager is set up to issue Let's Encrypt certificates through the Cloudflare DNS-01 solver, configured as a ClusterIssuer in `infrastructure/networking/cert-manager/cluster-issuers/`. DNS-01 proves control by writing a TXT record through the Cloudflare API, so it needs no inbound connection and supports wildcards, which fits a cluster with no open ports.
+cert-manager issues Let's Encrypt certificates through the Cloudflare DNS-01 solver, configured as a ClusterIssuer in `kubernetes/infrastructure/configs/cert-manager-issuers/`. DNS-01 proves control by writing a TXT record through the Cloudflare API, so it needs no inbound connection and supports wildcards, which fits a cluster with no open ports.
 
 ## Options considered
 
@@ -21,4 +21,4 @@ cert-manager is set up to issue Let's Encrypt certificates through the Cloudflar
 
 ## Consequences
 
-cert-manager issues a single `*.syslabs.dev` wildcard through the DNS-01 solver, and Traefik serves it as its default certificate through a tlsStore. This is the live TLS path now: in-cluster requests over split-horizon DNS terminate against the wildcard, and the tunnel kept under [0014](0014-declarative-minimal-cloudflare-exposure.md) fronts only the three public hosts. The wildcard also keeps individual subdomain names out of Certificate Transparency logs. The standing cost is a dependency on a SOPS-encrypted Cloudflare API token scoped to DNS edits, which is part of the trust chain and has to be guarded and rotated like any other secret.
+A single certificate covering `syslabs.dev` and `*.syslabs.dev` is issued through the solver, and Traefik serves it as its default certificate through a tlsStore. In-cluster requests over split-horizon DNS terminate against that wildcard, and the tunnel kept under [0014](0014-declarative-minimal-cloudflare-exposure.md) fronts only the public hosts. The wildcard also keeps individual subdomain names out of Certificate Transparency logs. The standing cost is a dependency on a SOPS-encrypted Cloudflare API token scoped to DNS edits, which is part of the trust chain and has to be guarded and rotated like any other secret.

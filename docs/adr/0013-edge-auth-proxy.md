@@ -7,20 +7,18 @@ date: 2026-06-13
 
 ## Context
 
-With services exposed directly (see [0011](0011-self-hosted-edge.md)), each one should sit behind a single sign-on gate rather than its own login. That gate is the internet-facing auth boundary, so both its maturity and how its configuration is managed matter. The decision is open. Three candidates remain, and the choice turns on one unresolved question: whether the homelab needs a full identity provider, an OIDC provider that other apps authenticate against, or only a forward-auth gate in front of Traefik.
+With services exposed directly under [0011](0011-self-hosted-edge.md), each one would have sat behind a single sign-on gate rather than its own login. That gate would have been the internet-facing auth boundary, so both its maturity and how its configuration was managed mattered. Security was roughly even across the three candidates, so the real differentiators were operational weight, how much configuration lived in Git, and whether a full identity provider was wanted at all.
 
 ## Decision
 
-Rejected. No in-cluster auth proxy is adopted. Under [0014](0014-declarative-minimal-cloudflare-exposure.md) the tunnel stays in place and Cloudflare Access remains the single sign-on gate for the exposed hosts, so a separate edge proxy duplicates a boundary that already exists.
+Rejected. No in-cluster auth proxy is adopted at the edge. Under [0014](0014-declarative-minimal-cloudflare-exposure.md) the tunnel stays in place and Cloudflare Access remains the single sign-on gate for the exposed hosts, so a separate edge proxy duplicates a boundary that already exists.
 
 ## Options considered
 
-No decision has been made. Security is roughly even across the three, so the real differentiators are operational weight, how much configuration lives in Git, and whether a full identity provider is wanted.
-
-- Pangolin. One cohesive tool with the best add-and-forget experience, but its headline feature is an outbound tunnel that hides the home address, which this design does not use. Self-hosted behind the port-forward, it duplicates both the in-cluster Traefik and the WireGuard overlay, is the youngest of the three as a public gate, and has moved to an open-core license.
+- Pangolin. One cohesive tool with the best add-and-forget experience, but its headline feature is an outbound tunnel that hides the home address, which this design does not use. Self-hosted behind the port-forward it duplicated both the in-cluster Traefik and the WireGuard overlay, was the youngest of the three as a public gate, and had moved to an open-core license.
 - Traefik with Authentik. Adds a forward-auth layer to the Traefik already in use and brings a full identity provider and dashboard, at the cost of more weight, a database and a worker, and a forward-auth CVE history that needs a hardening checklist.
 - Traefik with Authelia. The lightest forward-auth gate, almost entirely file-configured with the smallest surface, but a gate only and not an identity provider.
 
 ## Consequences
 
-The decision is deferred until the identity-provider question is answered. Whichever is chosen is an additive layer on the existing Traefik from [0008](0008-traefik-ingress.md), except Pangolin, which would replace parts of the edge from [0011](0011-self-hosted-edge.md).
+Public hosts kept Cloudflare Access as their gate. The identity-provider question this record left open was answered separately for the internal dashboards by [0038](0038-authentik-sso-for-internal-dashboards.md), which chose Authentik with Traefik forward auth, so the second option here was adopted one layer in rather than at the edge.
