@@ -82,9 +82,6 @@ kube-state-metrics:
       memory: 384Mi
   rbac:
     extraRules:
-      - apiGroups: ["postgresql.cnpg.io"]
-        resources: ["backups"]
-        verbs: ["list", "watch"]
       - apiGroups: ["k3s.cattle.io"]
         resources: ["etcdsnapshotfiles"]
         verbs: ["list", "watch"]
@@ -97,22 +94,6 @@ kube-state-metrics:
       kind: CustomResourceStateMetrics
       spec:
         resources:
-          - groupVersionKind:
-              group: postgresql.cnpg.io
-              version: v1
-              kind: Backup
-            metricNamePrefix: kube_cnpg_backup
-            labelsFromPath:
-              namespace: [metadata, namespace]
-              name: [metadata, name]
-            metrics:
-              - name: phase_info
-                help: "Phase reported by a CloudNativePG backup"
-                each:
-                  type: Info
-                  info:
-                    labelsFromPath:
-                      phase: [status, phase]
           - groupVersionKind:
               group: k3s.cattle.io
               version: v1
