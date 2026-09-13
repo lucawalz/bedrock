@@ -10,95 +10,53 @@ date: 2026-06-23
 [0051](0051-headlamp-window-into-the-cluster.md) pointed the router's 1280x400 bar panel at
 `headlamp.syslabs.dev`, which sits behind Authentik forward-auth
 ([0038](0038-authentik-sso-for-internal-dashboards.md)). The panel is a wall display with no
-keyboard or mouse, so an unattended session has no way to clear the Authentik login and rests
-forever on the sign-in page.
-
-A second problem surfaced during hardware bring-up. The desktop session pillarboxed, leaving black
-bars down both sides, because the Wisecoco panel's factory EDID carries a malformed 1280x400
-preferred timing that the kernel drops. With no valid native mode advertised, the desktop fell back
-to a synthesized custom mode the panel could not lock. The boot console filled the panel only
-by selecting a standard mode that the panel's own scaler stretches to fit. Neither path gave a
-true 1:1 1280x400 picture.
+keyboard, so an unattended session has no way to clear the login and rests on the sign-in page.
+Bring-up added a second problem: the desktop session pillarboxed, and the boot console filled the
+panel only through the panel's own scaler, so neither path gave a true 1:1 picture.
 
 ## Decision
 
-Point the kiosk at an anonymous, read-only Grafana dashboard built for the 1280x400 bar. Grafana is
-internal only and is not published on the Cloudflare tunnel
-([0014](0014-declarative-minimal-cloudflare-exposure.md)), so enabling anonymous Viewer access
-exposes read-only dashboards on the LAN and the tailnet alone, with no login to clear. The bar
-dashboard shows live cluster status drawn from Prometheus, the same source the existing dashboards
-use ([0018](0018-internal-dashboard-and-router-metrics.md)).
+Point the kiosk at an anonymous, read-only Grafana dashboard built for the bar. Grafana is internal
+only and is not published on the Cloudflare tunnel
+([0014](0014-declarative-minimal-cloudflare-exposure.md)), so anonymous Viewer access exposes
+read-only dashboards on the LAN and the tailnet alone, with no login to clear.
 
-Remove Headlamp entirely. It existed only to drive this panel, so with the panel moved to Grafana it
-has no remaining purpose, and dropping it also retires its in-cluster ServiceAccount and its
-`cluster-admin` token. That removes one standing credential, and it removes the one with the widest
-reach from the host that is most network-exposed.
+Remove Headlamp entirely. It existed only to drive this panel, so it has no remaining purpose, and
+dropping it retires its in-cluster ServiceAccount and `cluster-admin` token, taking the credential
+with the widest reach off the host that is most network-exposed. The kiosk session from
+[0051](0051-headlamp-window-into-the-cluster.md) carries forward unchanged.
 
-Fix the panel mode by overriding the panel's EDID with a corrected one. The native timing is a
-41.5 MHz pixel clock at 1280x400, but the factory EDID encodes it with an odd horizontal total of
-1441. The vc4 HDMI pipeline rejects an odd horizontal total as an illegal timing and prunes the
-mode, so the kernel never advertises 1280x400 and the session falls back to a mode the panel's
-scaler stretches or pillarboxes. The corrected EDID carries the same 41.5 MHz clock with the
-blanking widened to an even horizontal total of 1442, which the kernel accepts and marks preferred.
-With that mode advertised the board locks the panel's real native timing and fills edge to edge with
-no bars and no stretch.
-
-The override is applied after boot rather than from the bootloader. A oneshot service writes the
-corrected EDID to the connector's `edid_override` and forces a re-detect before greetd starts, so
-labwc reads the corrected mode list when it opens the output. An earlier attempt to deliver the EDID
-from the initramfs through `boot.initrd.prepend` left the router in emergency mode and was abandoned.
-The panel's only consumer is the desktop session, which starts well after boot, so a post-boot
-override carries no risk to the gateway: a failure degrades the picture and never the boot.
-
-The kiosk session architecture from [0051](0051-headlamp-window-into-the-cluster.md) carries
-forward unchanged: greetd autologs the unprivileged `kiosk` user into labwc, which opens Chromium in
-app mode at the dashboard URL. Only the display target and the mode handling change.
+Fix the panel mode by overriding the panel's EDID. The native timing is a 41.5 MHz pixel clock at
+1280x400, but the factory EDID encodes an odd horizontal total of 1441, which the vc4 HDMI pipeline
+rejects as illegal and prunes, so the kernel never advertises the native mode. The corrected EDID
+keeps the clock and widens the blanking to an even total of 1442, which the kernel accepts and marks
+preferred. A oneshot service applies it before greetd starts rather than the initramfs, which was
+tried first and left the router in emergency mode; after boot a failure degrades the picture only.
 
 ## Options considered
 
-- Keep Headlamp but bypass Authentik for the router's source IP. Rejected: Traefik does not
-  reliably see the real client IP without `externalTrafficPolicy: Local`, and the result is either
-  an unauthenticated `cluster-admin` UI reachable from the gateway or a set of extra moving parts to
-  scope the exception narrowly. Neither earns its place against a read-only Grafana view.
-- A dedicated custom status page rendered for the bar. Rejected: it is more to build and maintain
-  than a Grafana dashboard, which is already backed by Prometheus and styled with the existing
-  panel library.
+- Keep Headlamp but bypass Authentik for the router's source IP. Rejected: Traefik does not reliably
+  see the real client IP without `externalTrafficPolicy: Local`, so the result is either an
+  unauthenticated `cluster-admin` UI on the gateway or extra parts to scope the exception narrowly.
+- A dedicated custom status page rendered for the bar. Rejected: more to build and maintain than a
+  Grafana dashboard already backed by Prometheus and the existing panel library.
 
 ## Consequences
 
-The panel shows live cluster status with no interactive login to clear, which is what an unattended
-wall display needs. The corrected timing was confirmed on the panel during bring-up: at 41.5 MHz
-with an even horizontal total the board renders a true 1:1 1280x400 picture with no bars. The
-override runs from a service ordered before greetd, so it is re-applied on every session start and
-holds without a bootloader or kernel change. The router still needs one reboot to activate the
-system generation that carries the service. Removing Headlamp leaves one fewer standing cluster
-credential, and the most network-exposed host no longer has a path to a `cluster-admin` token at
-all. This supersedes the display-target choice in
-[0051](0051-headlamp-window-into-the-cluster.md); the kiosk session it describes is retained.
+The panel shows live cluster status with no interactive login to clear, and the corrected timing was
+confirmed on the panel: at 41.5 MHz with an even horizontal total the board renders a true 1:1
+1280x400 picture with no bars, re-applied on every session start without a bootloader change.
+Removing Headlamp leaves the most network-exposed host with no path to a `cluster-admin` token.
+This supersedes the display target in [0051](0051-headlamp-window-into-the-cluster.md) alone; the
+kiosk session it describes is retained.
 
 ## Update 2026-07-25
 
-The EDID half of this record still describes what runs. The kiosk half does not.
-
-Anonymous Grafana access is gone. `auth.anonymous.enabled` is `false` in the kube-prometheus-stack
-values, so Grafana requires a login again and no longer serves read-only dashboards to everything that
-can reach it on the LAN or the tailnet. An earlier attempt to disable it on 2026-07-12 was reverted the
-same day. With anonymous access removed the panel landed on the Grafana sign-in page and
-reproduced the exact failure that moved it off Headlamp: an unattended display with no keyboard resting
-on a login form.
-
-The panel is now driven by a Grafana public dashboard instead. The bar dashboard is published as its
-own link, and that link is held in an agenix secret, `secrets/grafana-kiosk-url.age`, readable only by
-the `kiosk` user. A wrapper script reads the file at launch and hands its contents to Chromium, so the
-`kiosk-browser` service and the labwc menu entry both go through one place and the URL is no longer a
-literal in `modules/router/desktop.nix`. Rotating the link is an agenix re-key rather than an edit to
-the router's Nix configuration.
-
-The reasoning that chose an unauthenticated view for the panel still holds, because a wall display with
-no input device cannot complete an interactive login and something on the path has to be reachable
-without one. What changed is the scope of that exemption. Anonymous Viewer opened every dashboard to
-anyone who could reach Grafana. A public dashboard link opens exactly one dashboard, and the unguessable
-token in the link is the only credential, which is why the URL is treated as a secret rather than
-committed in the clear. That narrows the decision rather than reversing it, so this record is amended
-rather than superseded. The word `anonymous` in the title stays as the mechanism chosen on
-2026-06-23.
+The EDID half of this record still describes what runs; the kiosk half does not. Anonymous Grafana
+access is gone, `auth.anonymous.enabled` is `false`, and with it removed the panel reproduced the
+exact failure that moved it off Headlamp. The panel is now driven by a Grafana public dashboard
+whose link is held in an agenix secret readable only by the `kiosk` user, so rotating it is a re-key
+rather than a configuration edit. The reasoning holds, because a wall display with no input device
+cannot complete an interactive login, but the scope narrows: anonymous Viewer opened every
+dashboard, while a public link opens one and its unguessable token is the only credential, which is
+why the URL is treated as a secret rather than committed in the clear.
