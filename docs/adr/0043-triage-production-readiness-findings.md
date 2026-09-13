@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted in part, HA and default-deny trade-offs superseded by 0053 and 0066
 date: 2026-06-20
 ---
 

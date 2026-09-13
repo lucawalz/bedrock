@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, burst premise superseded by 0081
 date: 2026-08-06
 ---
 

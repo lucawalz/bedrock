@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, cluster-secret custody superseded by 0060
 date: 2025-10-25
 ---
 

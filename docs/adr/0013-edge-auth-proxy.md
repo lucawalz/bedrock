@@ -1,5 +1,5 @@
 ---
-status: rejected
+status: rejected, superseded in effect by 0038
 date: 2026-06-13
 ---
 

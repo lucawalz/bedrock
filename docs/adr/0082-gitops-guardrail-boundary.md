@@ -12,12 +12,13 @@ detection, snapshot coverage, node addressing, admission recovery, and the alert
 of it. Each of those areas raises the same question, whether a thing belongs in git or whether an
 imperative step is honest about what the estate needs, and answering it component by component would
 have produced inconsistent answers for one underlying shape of problem. The work adopted one rule up
-front instead: GitOps the guardrails always, the contents only when it helps. Namespaces, pod-security
-labels, NetworkPolicies, ServiceAccount patches and snapshot-group membership are always declared,
-and so is a disruption budget wherever a workload has more than one replica to protect, because they
-are the boundary that keeps a workload from doing harm regardless of what runs inside it. What runs inside that boundary may be imperative when that is the honest
-description of the estate, and when it is, the step is written down in the disaster-recovery runbook
-or the admission break-glass runbook rather than represented as something git controls.
+front instead: GitOps the guardrails always, the contents only when it helps. Namespaces, pod-
+security labels, NetworkPolicies, ServiceAccount patches and snapshot-group membership are always
+declared, and so is a disruption budget wherever a workload has more than one replica to protect,
+because they are the boundary that keeps a workload from doing harm regardless of what runs inside
+it. What runs inside that boundary may be imperative when that is the honest description of the
+estate, and when it is, the step is written down in the disaster-recovery runbook or the admission
+break-glass runbook rather than represented as something git controls.
 
 ## Decision
 

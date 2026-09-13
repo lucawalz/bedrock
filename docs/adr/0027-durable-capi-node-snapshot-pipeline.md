@@ -1,5 +1,5 @@
 ---
-status: accepted, CAPI estate superseded by 0062 and 0063
+status: superseded by 0081
 date: 2026-06-15
 ---
 

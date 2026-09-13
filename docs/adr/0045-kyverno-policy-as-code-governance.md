@@ -1,5 +1,5 @@
 ---
-status: accepted, audit-first rollout superseded by 2026-07-29 correction
+status: accepted
 date: 2026-06-20
 ---
 

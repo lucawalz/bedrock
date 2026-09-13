@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted, anonymous access replaced by a public dashboard link
 date: 2026-06-23
 ---
 
