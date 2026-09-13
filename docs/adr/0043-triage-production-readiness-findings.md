@@ -14,7 +14,7 @@ The cluster runs real workloads and was measured against a production hardening 
 The following trade-offs are accepted and left in place, each a deliberate choice:
 
 - Vendor controllers ship without resource limits, and the privileged Longhorn storage DaemonSets and the system DaemonSets that run as root are inherent to what those components do.
-- Most container images pin only a tag, which Renovate bumps, because a digest in the values once wedged the app-template schema; the cloudflare-tunnel, rackpeek, and home-assistant images are the exceptions, pinning a tag plus a digest.
+- Most container images pin only a tag, which Renovate bumps, because a digest in the values once wedged the app-template schema; a few images pin a tag plus a digest.
 - Identical liveness and readiness probes on several workloads come from upstream charts this repository does not template.
 - Single-replica apps are kept where the workload has no high-availability target worth protecting. [0053](0053-ha-critical-path-survives-node-loss.md) later moved the critical path off that position after a single node loss took down ingress and authentication, so the surviving single replicas are the ones outside that path.
 
@@ -26,4 +26,4 @@ The following trade-offs are accepted and left in place, each a deliberate choic
 
 ## Consequences
 
-The accepted trade-offs are written down, so a later reviewer sees which corners are deliberate. The cost is that this record has to be revisited when a trade-off stops being acceptable, which is the point of recording it, and two of them since have. PodDisruptionBudgets were adopted for the critical path in [0053](0053-ha-critical-path-survives-node-loss.md), and default-deny stopped being a blanket sweep and became a shared per-app component in [0066](0066-standardize-app-delivery-per-app-kustomizations.md), which is the reasoned version of what the rejected remediation would have done reflexively.
+The accepted trade-offs are written down, so a later reviewer sees which corners are deliberate. The cost is that this record has to be revisited when a trade-off stops being acceptable, which is the point of recording it. Default-deny is the clearest case: it stopped being a blanket sweep and became a shared per-app component in [0066](0066-standardize-app-delivery-per-app-kustomizations.md), which is the reasoned version of what the rejected remediation would have done reflexively.

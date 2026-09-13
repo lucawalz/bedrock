@@ -15,16 +15,17 @@ internal services off the public internet, with public exposure limited to the t
 ## Decision
 
 Self-host ntfy as an internal-only service at `ntfy.syslabs.dev`, deployed as a Flux HelmRelease from
-the bjw-s `app-template` chart, which it moved onto from a single-maintainer community chart once the
-estate standardized on that chart for plain Deployment and Service workloads. It is exposed through a
-Traefik IngressRoute and the split-horizon AdGuard rewrite with no public DNS record. Alertmanager's
-default route posts a webhook carrying the title and message as URL-encoded Go templates, which keeps
-the notification compact; `send_resolved` stays on, the `InfoInhibitor` matcher keeps its `null`
-sub-route, and the `Watchdog` matcher routes to a `deadman` receiver instead. Grafana's unified
-alerting posts to the same endpoint, and Flux publishes through a `generic` Provider and an `Alert`
-scoped to `eventSeverity: error`. ntfy runs without authentication and without persistence, because its
-NetworkPolicy admits only Traefik, monitoring, and flux-system, and it is reachable only over the
-overlay or the LAN.
+the bjw-s `app-template` chart and exposed through a Traefik IngressRoute and the split-horizon
+AdGuard rewrite with no public DNS record. It first ran from a single-maintainer community chart and
+moved once the estate standardized on `app-template` for plain Deployment and Service workloads.
+
+Alertmanager's default route posts a webhook carrying the title and message as URL-encoded Go
+templates, which keeps the notification compact; `send_resolved` stays on, the `InfoInhibitor` matcher
+keeps its `null` sub-route, and the `Watchdog` matcher routes to a `deadman` receiver instead.
+Grafana's unified alerting posts to the same endpoint, and Flux publishes through a `generic` Provider
+and an `Alert` scoped to `eventSeverity: error`. ntfy runs without authentication and without
+persistence, because its NetworkPolicy admits only Traefik, monitoring, and flux-system, and it is
+reachable only over the overlay or the LAN.
 
 ## Options considered
 
