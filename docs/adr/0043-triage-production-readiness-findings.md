@@ -14,7 +14,7 @@ The cluster runs real workloads and was measured against a production hardening 
 The following trade-offs are accepted and left in place, each a deliberate choice:
 
 - Vendor controllers ship without resource limits, and the privileged Longhorn storage DaemonSets and the system DaemonSets that run as root are inherent to what those components do.
-- Container image digests are not pinned, because tags are pinned and Renovate bumps them, and a digest in the values once wedged the app-template schema.
+- Most container images pin only a tag, which Renovate bumps, because a digest in the values once wedged the app-template schema; the cloudflare-tunnel, rackpeek, and home-assistant images are the exceptions, pinning a tag plus a digest.
 - Identical liveness and readiness probes on several workloads come from upstream charts this repository does not template.
 - Single-replica apps are kept where the workload has no high-availability target worth protecting. [0053](0053-ha-critical-path-survives-node-loss.md) later moved the critical path off that position after a single node loss took down ingress and authentication, so the surviving single replicas are the ones outside that path.
 

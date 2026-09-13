@@ -19,11 +19,12 @@ the bjw-s `app-template` chart, which it moved onto from a single-maintainer com
 estate standardized on that chart for plain Deployment and Service workloads. It is exposed through a
 Traefik IngressRoute and the split-horizon AdGuard rewrite with no public DNS record. Alertmanager's
 default route posts a webhook carrying the title and message as URL-encoded Go templates, which keeps
-the notification compact; `send_resolved` stays on and the `Watchdog` and `InfoInhibitor` matcher keeps
-its `null` sub-route. Grafana's unified alerting posts to the same endpoint, and Flux publishes through
-a `generic` Provider and an `Alert` scoped to `eventSeverity: error`. ntfy runs without authentication
-and without persistence, because its NetworkPolicy admits only Traefik, monitoring, and flux-system,
-and it is reachable only over the overlay or the LAN.
+the notification compact; `send_resolved` stays on, the `InfoInhibitor` matcher keeps its `null`
+sub-route, and the `Watchdog` matcher routes to a `deadman` receiver instead. Grafana's unified
+alerting posts to the same endpoint, and Flux publishes through a `generic` Provider and an `Alert`
+scoped to `eventSeverity: error`. ntfy runs without authentication and without persistence, because its
+NetworkPolicy admits only Traefik, monitoring, and flux-system, and it is reachable only over the
+overlay or the LAN.
 
 ## Options considered
 
