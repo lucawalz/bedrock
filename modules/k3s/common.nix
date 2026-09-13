@@ -13,18 +13,16 @@ let
     "registry.k8s.io" = "https://registry.k8s.io";
   };
 
-  mirrorStanza = registry: upstream: ''
-    ${registry}:
-      endpoint:
-        - "${pullThroughCache}"
-        - "${upstream}"
-      rewrite:
-        "^(.*)$": "${registry}/$1"
-  '';
-
-  indentBlock =
-    block:
-    lib.concatMapStrings (line: "  ${line}\n") (lib.splitString "\n" (lib.removeSuffix "\n" block));
+  mirrorStanza =
+    registry: upstream:
+    lib.concatMapStrings (line: "${line}\n") [
+      "  ${registry}:"
+      "    endpoint:"
+      "      - \"${pullThroughCache}\""
+      "      - \"${upstream}\""
+      "    rewrite:"
+      "      \"^(.*)$\": \"${registry}/$1\""
+    ];
 in
 {
   imports = [ ./estate.nix ];
@@ -54,7 +52,7 @@ in
 
   # k3s folds a trailing endpoint that equals the default one into the server fallback, where rewrites are not applied.
   environment.etc."rancher/k3s/registries.yaml".text =
-    "mirrors:\n" + indentBlock (lib.concatStrings (lib.mapAttrsToList mirrorStanza upstreamByRegistry));
+    "mirrors:\n" + lib.concatStrings (lib.mapAttrsToList mirrorStanza upstreamByRegistry);
 
   services.k3s.extraFlags = [
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
