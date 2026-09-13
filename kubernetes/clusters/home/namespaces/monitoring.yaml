@@ -3,5 +3,6 @@ kind: Namespace
 metadata:
   name: monitoring
   labels:
+    bedrock.io/traefik-routable: "true"
     pod-security.kubernetes.io/enforce: privileged
 

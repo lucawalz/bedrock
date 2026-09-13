@@ -3,4 +3,5 @@ kind: Namespace
 metadata:
   name: cattle-system
   labels:
+    bedrock.io/traefik-routable: "true"
     pod-security.kubernetes.io/enforce: privileged

@@ -32,61 +32,11 @@ spec:
     - to:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: llm
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: postgres
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: cattle-system
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: blog
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: homepage
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: monitoring
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: longhorn-system
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: ntfy
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: authentik
+              bedrock.io/traefik-routable: "true"
+        # flux-operator owns the flux-system namespace, so the routable label cannot be set from this repository
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: flux-system
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: rackpeek
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: paperless
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: minio
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: miniflux
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: kiwix
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: litellm
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: zot
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: horizon-system
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: home-assistant
     - to:
         - ipBlock:
             cidr: 10.43.0.1/32

@@ -3,6 +3,7 @@ kind: Namespace
 metadata:
   name: postgres
   labels:
+    bedrock.io/traefik-routable: "true"
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: baseline
 spec: {}
