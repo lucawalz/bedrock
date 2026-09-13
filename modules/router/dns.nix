@@ -124,11 +124,6 @@ in
             enabled = true;
           }
           {
-            domain = "n8n.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "ntfy.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;
