@@ -12,7 +12,6 @@ metadata:
     gethomepage.dev/description: S3 object storage console
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
     - match: Host(`minio.syslabs.dev`)
@@ -31,7 +30,6 @@ metadata:
   namespace: minio
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
     - match: Host(`s3.syslabs.dev`)

@@ -13,7 +13,6 @@ metadata:
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
-    - web
     - websecure
   routes:
     - match: Host(`kiwix.${cluster_domain}`)
