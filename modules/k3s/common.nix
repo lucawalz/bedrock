@@ -1,7 +1,31 @@
 {
+  lib,
   secretsDir ? ../../secrets,
   ...
 }:
+let
+  pullThroughCache = "https://registry.syslabs.dev";
+
+  upstreamByRegistry = {
+    "docker.io" = "https://registry-1.docker.io";
+    "ghcr.io" = "https://ghcr.io";
+    "quay.io" = "https://quay.io";
+    "registry.k8s.io" = "https://registry.k8s.io";
+  };
+
+  mirrorStanza = registry: upstream: ''
+    ${registry}:
+      endpoint:
+        - "${pullThroughCache}"
+        - "${upstream}"
+      rewrite:
+        "^(.*)$": "${registry}/$1"
+  '';
+
+  indentBlock =
+    block:
+    lib.concatMapStrings (line: "  ${line}\n") (lib.splitString "\n" (lib.removeSuffix "\n" block));
+in
 {
   imports = [ ./estate.nix ];
 
@@ -29,33 +53,8 @@
     ''{"Network":"10.42.0.0/16","Backend":{"Type":"vxlan","MTU":1280}}'';
 
   # k3s folds a trailing endpoint that equals the default one into the server fallback, where rewrites are not applied.
-  environment.etc."rancher/k3s/registries.yaml".text = ''
-    mirrors:
-      docker.io:
-        endpoint:
-          - "https://registry.syslabs.dev"
-          - "https://registry-1.docker.io"
-        rewrite:
-          "^(.*)$": "docker.io/$1"
-      ghcr.io:
-        endpoint:
-          - "https://registry.syslabs.dev"
-          - "https://ghcr.io"
-        rewrite:
-          "^(.*)$": "ghcr.io/$1"
-      quay.io:
-        endpoint:
-          - "https://registry.syslabs.dev"
-          - "https://quay.io"
-        rewrite:
-          "^(.*)$": "quay.io/$1"
-      registry.k8s.io:
-        endpoint:
-          - "https://registry.syslabs.dev"
-          - "https://registry.k8s.io"
-        rewrite:
-          "^(.*)$": "registry.k8s.io/$1"
-  '';
+  environment.etc."rancher/k3s/registries.yaml".text =
+    "mirrors:\n" + indentBlock (lib.concatStrings (lib.mapAttrsToList mirrorStanza upstreamByRegistry));
 
   services.k3s.extraFlags = [
     "--flannel-conf=/etc/k3s/flannel-net-conf.json"
