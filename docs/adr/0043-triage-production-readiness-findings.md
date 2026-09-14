@@ -13,7 +13,7 @@ The cluster runs real workloads and was measured against a production hardening 
 
 The following trade-offs are accepted and left in place, each a deliberate choice:
 
-- Rancher's system charts and Longhorn's own system-managed components (its instance managers, and longhorn-ui, whose chart exposes no resources key) run without resource limits; the privileged Longhorn storage DaemonSets and the system DaemonSets that run as root are inherent to what those components do.
+- Rancher's system charts and Longhorn's own system-managed components (its instance managers, and longhorn-ui, whose chart exposes no resources key) run without resource limits, as do the file-copy init containers of MetalLB's frr-k8s DaemonSet, which its chart likewise cannot bound; the privileged Longhorn storage DaemonSets and the system DaemonSets that run as root are inherent to what those components do.
 - Most container images pin only a tag, which Renovate bumps, because a digest in the values once wedged the app-template schema; a few images pin a tag plus a digest.
 - Identical liveness and readiness probes on several workloads come from upstream charts this repository does not template.
 - Single-replica apps are kept where the workload has no high-availability target worth protecting. [0053](0053-ha-critical-path-survives-node-loss.md) later moved the critical path off that position after a single node loss took down ingress and authentication, so the surviving single replicas are the ones outside that path.
