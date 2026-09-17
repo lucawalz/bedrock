@@ -5,7 +5,7 @@
     ":dependencyDashboard"
   ],
   "nix": {
-    "description": "the nix manager is in beta and ships disabled, so it stays opted in here",
+    "description": "Keep the beta nix manager opted in, since Renovate ships it disabled",
     "enabled": true
   },
   "flux": {
