@@ -55,7 +55,7 @@ NixOS does not manage device firmware, so firmware patching is manual: `rpi-eepr
 - A GitHub account that owns this repository, for the Flux bootstrap.
 - A Tailscale tailnet, with the subnet router running on the Pi.
 
-The dev shell pins the rest of the toolchain (kubectl, helm, flux, sops, age, nixos-anywhere):
+The dev shell pins the rest of the toolchain (kubectl, helm, flux, sops, age, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs:
 
 ```
 nix develop
