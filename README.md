@@ -211,7 +211,7 @@ Admission webhooks are a separate recovery path, because one that is unavailable
 
 ## Continuous integration
 
-Four workflows run on every pull request, covering four areas:
+The workflows run on every pull request, covering four areas:
 
 - The Nix side: formatting with `nixfmt`, linting with `statix` and `deadnix`, and `nix flake check` to evaluate every host configuration.
 - The Kubernetes manifests: `kubeconform` against the upstream and CRD schemas, `kustomize build` over every kustomization, and a render of the per-app Kustomizations with their Flux post-build substitutions applied so an unresolved variable fails a pull request rather than a reconcile.
