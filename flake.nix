@@ -37,6 +37,8 @@
         pkgs: with pkgs; [
           kubectl
           kubernetes-helm
+          kubeconform
+          kustomize
           fluxcd
           sops
           age
