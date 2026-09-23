@@ -1,17 +1,6 @@
 name: build-cluster-node-snapshot
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - flake.nix
-      - flake.lock
-      - modules/k3s/cluster-node.nix
-      - modules/k3s/estate.nix
-      - modules/k3s/hetzner-scaffolding.nix
-      - infra/packer/**
-      - scripts/nixos-image-hash.sh
-      - .github/workflows/build-cluster-node-snapshot.yml
   pull_request:
     paths:
       - infra/packer/**
