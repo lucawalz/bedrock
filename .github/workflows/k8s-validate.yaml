@@ -34,8 +34,7 @@ jobs:
 
       - name: Build all kustomizations
         run: |
-          # Skips encrypted secret files that kustomize can't process without SOPS key
-          find kubernetes/ -name "kustomization.yaml" -not -path "*/secrets/*" \
+          find kubernetes/ -name "kustomization.yaml" \
             | while read -r file; do
                 directory="$(dirname "$file")"
                 echo "Building $directory"
