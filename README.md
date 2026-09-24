@@ -12,7 +12,7 @@ A bare-metal Kubernetes homelab that lives entirely in Git.
 
 bedrock is the single source of truth for a small home cluster. Three mini PCs run [NixOS](https://nixos.org/) and a [K3s](https://k3s.io/) cluster, and a Raspberry Pi running NixOS acts as the router, gateway, and DNS for the network. Everything from each machine's disk layout to the workloads running on top is declared in this repository. Host configuration is applied with `nixos-rebuild`; cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a change to the `main` branch becomes a change to the cluster without anyone running commands against it by hand.
 
-The cluster runs a self-hosted LLM stack, workflow automation, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. Capacity is the three local nodes and nothing else: the cloud account that once supplied burst nodes was closed, and the machinery that used it is kept dormant rather than removed ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)).
+The cluster runs a self-hosted LLM stack, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. Capacity is the three local nodes and nothing else: the cloud account that once supplied burst nodes was closed, and the machinery that used it is kept dormant rather than removed ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)).
 
 ### Features
 
