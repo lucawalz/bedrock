@@ -9,13 +9,6 @@ result-*
 .direnv/
 .envrc.local
 
-# Terraform
-**/.terraform/
-**/.terraform.lock.hcl
-**/*.tfstate
-**/*.tfstate.backup
-**/terraform.tfvars
-
 # Secrets (backup - these should already be encrypted)
 *.age
 *.sops.yaml
