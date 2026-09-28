@@ -35,12 +35,6 @@ result-*
 # Generated promtool rule fixtures
 tests/promtool/*.gen.yaml
 
-# measure-burst.sh per-run artefacts
-/var/measure-burst-runs/
-
-# run-quantum.sh per-run artefacts
-/var/quantum-runs/
-
-# measure-policy.sh per-run artefacts
-/var/measure-policy-runs/
+# Per-run script artefacts
+/var/
 
