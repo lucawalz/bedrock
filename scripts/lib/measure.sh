@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2034,SC2154
 
 readonly MINIMUM_BASH_MAJOR=4
 if [ -z "${BASH_VERSINFO:-}" ] || [ "${BASH_VERSINFO[0]}" -lt "$MINIMUM_BASH_MAJOR" ]; then
