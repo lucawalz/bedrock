@@ -3,6 +3,8 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
+require_tools yq
+
 namespaces_dir=kubernetes/clusters/home/namespaces
 index="$namespaces_dir/default-serviceaccounts.yaml"
 

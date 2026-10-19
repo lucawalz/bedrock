@@ -3,6 +3,8 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
+require_tools yq
+
 k8s_dir=kubernetes
 gate_label="recurring-job.longhorn.io/source"
 
