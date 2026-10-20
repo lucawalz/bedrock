@@ -3,6 +3,8 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
+require_tools yq
+
 out="$repo_root/docs/inventory.md"
 
 rows=""
