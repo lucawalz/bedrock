@@ -42,8 +42,9 @@ index_entry() {
 file_title() {
   awk '
     /^# [0-9][0-9][0-9][0-9]\. / {
+      number = substr($0, 3, 4)
       sub(/^# [0-9][0-9][0-9][0-9]\. /, "")
-      print
+      print number "\t" $0
       exit
     }
   ' "$1"
@@ -88,9 +89,12 @@ for l in $linked; do
     status_drift="$status_drift$l records \"$recorded\" but the index says \"$indexed\""$'\n'
   fi
 
-  file_heading="$(file_title "$adr_dir/$l")"
+  heading_number="" file_heading=""
+  IFS=$'\t' read -r heading_number file_heading < <(file_title "$adr_dir/$l") || true
   if [ -z "$file_heading" ]; then
     title_drift="$title_drift$l has no \"# NNNN. Title\" heading to compare"$'\n'
+  elif [ "$heading_number" != "${l%%-*}" ]; then
+    title_drift="$title_drift$l heading is numbered $heading_number"$'\n'
   elif [ "$file_heading" != "$indexed_title" ]; then
     title_drift="$title_drift$l heading reads \"$file_heading\" but the index says \"$indexed_title\""$'\n'
   fi
