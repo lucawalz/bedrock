@@ -223,7 +223,7 @@ A rebuilt host can carry a stale `/var/lib/tailscale/tailscaled.state` from an e
 
 `tailscaled.service` restarts on a NixOS activation that changes it, taking the tunnel interface with it and orphaning `flannel.1`, which stays bound to an interface that no longer exists and is not recreated automatically. After a Tailscale package bump, check each node's `flannel.alpha.coreos.com/public-ip` annotation and delete `flannel.1` on any node where it has drifted, to force a rebind.
 
-The three Tailscale auth keys minted for this join, one per home node, are reusable rather than single-use and are valid until 3 November. Revoke each once its node has enrolled, which is what restores the one-key-one-node property the per-host split is meant to provide. This does not apply to the Pi router's own key, which was not minted for this join.
+An auth key is only read at first enrolment, so no live key is kept for an enrolled host and the keys encrypted under `secrets/tailscale-authkey*.age` are no longer valid. A rebuilt or re-enrolled host needs a new single-use key, pre-tagged `tag:cluster`, encrypted into its secret before the rebuild; revoking or expiring that key afterwards leaves the enrolled device untouched.
 
 No burst node can join the tailnet, because no provider is configured for horizon to lease one from ([ADR 0081](adr/0081-retire-the-hetzner-account.md)). The `tag:burst` guidance in [ADR 0073](adr/0073-generic-burst-node-image.md) applies only if that changes.
 
