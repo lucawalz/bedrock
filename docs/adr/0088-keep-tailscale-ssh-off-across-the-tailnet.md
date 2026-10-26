@@ -22,11 +22,11 @@ No Tailscale release fixes the report yet; 1.104.2 is both the latest and the ve
 - Remove the `ssh` section from the policy, chosen. It is enforced at the coordination server, covers every device including the Mac and phone, and needs no host rebuild.
 - Also pin `--ssh=false` on every NixOS host. Rejected for now: with no `ssh` rules, a locally enabled Tailscale SSH server accepts nobody, so the flag adds a host-side setting that changes nothing the policy does not already enforce.
 - Rely on a Tailscale upgrade instead. Rejected because no fixed release exists, so an upgrade alone leaves the report's chain open.
-- Enable Tailnet Lock. Deferred rather than rejected. In the report it stopped the final step, where the attacker enrolls a machine of their own. It also turns every rebuilt or re-enrolled host into a manual signing step and adds disablement secrets to hold safely. With Tailscale SSH granting nothing, the chain never starts, and the reusable per-host auth keys that would make enrollment cheap are already due for revocation under the runbook.
+- Enable Tailnet Lock. Deferred rather than rejected. In the report it stopped the final step, where the attacker enrolls a machine of their own. It also turns every rebuilt or re-enrolled host into a manual signing step and adds disablement secrets to hold safely. With Tailscale SSH granting nothing, the chain never starts, and no enrolled host keeps a live auth key that a compromised device could reuse.
 - Scope the member grant down from `*`. Out of scope. The report's chain does not use it once Tailscale SSH is off, and narrowing it risks locking the operator out, as the policy itself notes.
 
 ## Consequences
 
 Tailscale SSH is not available anywhere on the tailnet, and turning it on later needs a policy change as well as a device setting, which is the intended friction. A compromised tailnet device can still reach any host's OpenSSH on port 22, but needs a key to get anywhere, which is the same exposure as before the report.
 
-The policy remains outside the repository, so this record is the only trace of the change. The reusable per-host auth keys the runbook lists are still valid until 3 November and should be revoked now that every node has enrolled, independently of this record.
+The policy remains outside the repository, so this record is the only trace of the change.
