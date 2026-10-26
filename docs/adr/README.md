@@ -90,3 +90,4 @@ Number 0056 was never used. No record was written, withdrawn, or lost.
 - [0085. Guardrails silently failed when the value they were derived from moved](0085-guardrails-silently-failed-when-derived-basis-moved.md) (accepted)
 - [0086. Thin provision Longhorn, and detect what no derived expression can](0086-thin-provision-longhorn-and-detect-what-cannot-be-derived.md) (accepted)
 - [0087. Record the Flux Kustomization layering that replaced the four-way split](0087-kustomization-layering-succeeding-0058.md) (accepted)
+- [0088. Keep Tailscale SSH off across the tailnet](0088-keep-tailscale-ssh-off-across-the-tailnet.md) (accepted)
