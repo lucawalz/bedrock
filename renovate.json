@@ -6,7 +6,11 @@
   ],
   "nix": {
     "description": "Keep the beta nix manager opted in, since Renovate ships it disabled",
-    "enabled": true
+    "enabled": true,
+    "lockFileMaintenance": {
+      "enabled": true,
+      "minimumReleaseAge": null
+    }
   },
   "flux": {
     "managerFilePatterns": ["/kubernetes/.+\\.ya?ml$/"]
@@ -61,7 +65,7 @@
   "rebaseWhen": "conflicted",
   "platformAutomerge": true,
   "timezone": "Europe/Berlin",
-  "prConcurrentLimit": 3,
+  "prConcurrentLimit": 0,
   "prHourlyLimit": 2,
   "minimumReleaseAge": "3 days",
   "packageRules": [
