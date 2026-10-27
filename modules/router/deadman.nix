@@ -82,6 +82,8 @@ in
         socketConfig = {
           ListenStream = "${inventory.gateway}:${toString cfg.port}";
           Accept = true;
+          # sockets.target starts before networkd assigns the gateway address, so a strict bind fails for good
+          FreeBind = true;
         };
       };
 
