@@ -1,4 +1,9 @@
-{ modulesPath, ... }:
+{
+  lib,
+  modulesPath,
+  pkgs,
+  ...
+}:
 {
   imports = [
     "${modulesPath}/installer/sd-card/sd-image-aarch64.nix"
@@ -20,6 +25,13 @@
   nixpkgs.hostPlatform = "aarch64-linux";
 
   networking.hostName = "router";
+
+  hardware = {
+    # the full linux-firmware set does not fit twice on the SD card during an upgrade
+    enableRedistributableFirmware = lib.mkForce false;
+    firmware = [ pkgs.raspberrypiWirelessFirmware ];
+    wirelessRegulatoryDatabase = true;
+  };
 
   services = {
     kioskConsole.enable = true;
