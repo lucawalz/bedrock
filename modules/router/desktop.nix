@@ -38,6 +38,11 @@ let
 
   kioskUser = "kiosk";
 
+  # user units are installed for every account, so a root ssh session would otherwise launch its own kiosk
+  kioskOnly = lib.mapAttrs (
+    _: unit: lib.recursiveUpdate unit { unitConfig.ConditionUser = kioskUser; }
+  );
+
   output = "HDMI-A-1";
   mode = "1280x400";
 
@@ -209,7 +214,7 @@ in
       home = "/home/${kioskUser}";
     };
 
-    systemd.user.services = {
+    systemd.user.services = kioskOnly {
       kiosk-browser = {
         description = "Bar panel dashboard browser";
         restartTriggers = [ config.age.secrets.grafana-kiosk-url.file ];
@@ -246,7 +251,7 @@ in
       };
     };
 
-    systemd.user.timers = {
+    systemd.user.timers = kioskOnly {
       kiosk-watchdog = {
         description = "Probe the estate for the bar panel";
         wantedBy = [ "timers.target" ];
