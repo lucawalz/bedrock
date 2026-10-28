@@ -31,7 +31,7 @@ spec:
           app:
             image:
               repository: docker.io/library/redis
-              tag: "8.10.1"
+              tag: "8.10.2"
             command:
               - redis-server
               - --save
