@@ -37,4 +37,5 @@ tests/promtool/*.gen.yaml
 
 # Per-run script artefacts
 /var/
+__pycache__/
 
