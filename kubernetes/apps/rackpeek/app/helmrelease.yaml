@@ -52,7 +52,7 @@ spec:
           app:
             image:
               repository: aptacode/rackpeek
-              tag: v2.0.0@sha256:3b82af1f323346d90ce76fe4b2ad2e72cf3a2413606bcdc606b2dc23aa90d523
+              tag: v2.1.0@sha256:1aebe1c2825366dd21a2632182f997ca4cd4f1c7da5eb5b7947fa01996b2b9e9
             env:
               RPK_YAML_DIR: /app/config
             probes:
