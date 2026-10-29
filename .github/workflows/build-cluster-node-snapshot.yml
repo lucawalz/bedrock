@@ -34,7 +34,7 @@ jobs:
 
       - uses: hashicorp/setup-packer@ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789 # v3.4.0
         with:
-          version: "~1.11"
+          version: "v1.16.2"
 
       - name: Generate ephemeral SSH key
         run: ssh-keygen -t ed25519 -f /tmp/packer_key -N ""
@@ -67,7 +67,7 @@ jobs:
 
       - uses: hashicorp/setup-packer@ce93c3c08a6c2ff2275bf4b54ff0d9a75f6c9789 # v3.4.0
         with:
-          version: "~1.11"
+          version: "v1.16.2"
 
       - name: Compute nixos config tree hash
         id: hash
