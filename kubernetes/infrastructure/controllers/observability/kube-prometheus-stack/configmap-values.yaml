@@ -176,7 +176,7 @@ grafana:
     security:
       allow_embedding: true
   image:
-    tag: "13.2.4"
+    tag: "13.3.0"
   deploymentStrategy:
     type: Recreate
   admin:
