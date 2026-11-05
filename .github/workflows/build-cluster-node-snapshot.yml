@@ -17,7 +17,6 @@ permissions: {}
 env:
   SNAPSHOT_RETENTION: "3"
   SNAPSHOT_IMAGE_NAME: bedrock-cluster-node
-  # horizon reads this label to pick the boot image; the key is legacy and its default lives in horizon's config
   SELECTOR_LABEL: caph-image-name
 
 jobs:
