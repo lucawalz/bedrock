@@ -129,11 +129,6 @@ in
             enabled = true;
           }
           {
-            domain = "rackpeek.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "registry.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

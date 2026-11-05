@@ -176,7 +176,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Kiwix | offline library of ZIM archives | internal (`kiwix`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
 | Zot | in-cluster OCI registry | internal (`registry`) |
-| RackPeek | physical rack and node overview | internal (`rackpeek`) |
 | Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |

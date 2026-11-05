@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - llm/ks.yaml
   - homepage/ks.yaml
-  - rackpeek/ks.yaml
   - blog/ks.yaml
   - ntfy/ks.yaml
   - paperless/ks.yaml

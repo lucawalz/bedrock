@@ -14,7 +14,6 @@ resources:
   - longhorn-system.yaml
   - llm.yaml
   - homepage.yaml
-  - rackpeek.yaml
   - blog.yaml
   - authentik.yaml
   - ntfy.yaml

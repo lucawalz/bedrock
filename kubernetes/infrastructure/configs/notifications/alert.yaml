@@ -60,9 +60,6 @@ spec:
       namespace: paperless
     - kind: HelmRelease
       name: '*'
-      namespace: rackpeek
-    - kind: HelmRelease
-      name: '*'
       namespace: reloader
     - kind: HelmRelease
       name: '*'
