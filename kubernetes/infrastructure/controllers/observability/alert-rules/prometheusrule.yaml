@@ -125,7 +125,18 @@ spec:
             severity: warning
           annotations:
             summary: "Longhorn has taken no off-site backup of {{ $labels.pvc }} for {{ $value | printf \"%.0f\" }} days"
-            description: "Longhorn has not completed an off-site backup of {{ $labels.pvc }} in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded, since only volumes labelled for the offsite-backup job are expected to have one."
+            description: "Longhorn has not completed an off-site backup of {{ $labels.pvc }} in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded here; LonghornBackupNeverCompleted covers the labelled ones."
+        - alert: LonghornBackupNeverCompleted
+          expr: |
+            longhorn_volume_last_backup_at == 0
+              and on (pvc_namespace, pvc)
+            label_replace(label_replace(kube_persistentvolumeclaim_labels{label_recurring_job_longhorn_io_offsite_backup="enabled"}, "pvc", "$1", "persistentvolumeclaim", "(.*)"), "pvc_namespace", "$1", "namespace", "(.*)")
+          for: 2d
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn has never completed an off-site backup of {{ $labels.pvc_namespace }}/{{ $labels.pvc }}"
+            description: "The volume behind {{ $labels.pvc_namespace }}/{{ $labels.pvc }} is labelled for the offsite-backup job and has reported no successful backup for over two days. LonghornBackupStale cannot see it because a volume that never had a backup reports 0, so broken R2 credentials or an unreachable target on a freshly built volume surface here."
         - alert: LonghornVolumeUnschedulable
           expr: kube_longhornvolume_status_condition{type="Scheduled"} == 0
           for: 30m

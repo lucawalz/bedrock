@@ -95,6 +95,8 @@ kube-state-metrics:
   # Its own telemetry lives on a second port that goes unscraped by default, leaving the four KubeStateMetrics alerts with no series.
   selfMonitor:
     enabled: true
+  metricLabelsAllowlist:
+    - persistentvolumeclaims=[recurring-job.longhorn.io/offsite-backup]
   resources:
     requests:
       cpu: 25m

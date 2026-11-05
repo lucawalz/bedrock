@@ -831,7 +831,35 @@ tests:
               pvc: paperless-data
             exp_annotations:
               summary: "Longhorn has taken no off-site backup of paperless-data for 3 days"
-              description: "Longhorn has not completed an off-site backup of paperless-data in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded, since only volumes labelled for the offsite-backup job are expected to have one."
+              description: "Longhorn has not completed an off-site backup of paperless-data in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded here; LonghornBackupNeverCompleted covers the labelled ones."
+
+  - interval: 1m
+    name: a labelled volume stuck at no backup beyond the grace period alerts while a fresh or unlabelled one stays quiet
+    input_series:
+      - series: 'longhorn_volume_last_backup_at{pvc="stuck",pvc_namespace="paperless",volume="pvc-a"}'
+        values: '0x4500'
+      - series: 'kube_persistentvolumeclaim_labels{namespace="paperless",persistentvolumeclaim="stuck",label_recurring_job_longhorn_io_offsite_backup="enabled"}'
+        values: '1x4500'
+      - series: 'longhorn_volume_last_backup_at{pvc="fresh",pvc_namespace="llm",volume="pvc-b"}'
+        values: '0x4500'
+      - series: 'kube_persistentvolumeclaim_labels{namespace="llm",persistentvolumeclaim="fresh",label_recurring_job_longhorn_io_offsite_backup="enabled"}'
+        values: '_x2900 1x1600'
+      - series: 'longhorn_volume_last_backup_at{pvc="unlabelled",pvc_namespace="llm",volume="pvc-c"}'
+        values: '0x4500'
+      - series: 'kube_persistentvolumeclaim_labels{namespace="llm",persistentvolumeclaim="unlabelled"}'
+        values: '1x4500'
+    alert_rule_test:
+      - eval_time: 4400m
+        alertname: LonghornBackupNeverCompleted
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pvc: stuck
+              pvc_namespace: paperless
+              volume: pvc-a
+            exp_annotations:
+              summary: "Longhorn has never completed an off-site backup of paperless/stuck"
+              description: "The volume behind paperless/stuck is labelled for the offsite-backup job and has reported no successful backup for over two days. LonghornBackupStale cannot see it because a volume that never had a backup reports 0, so broken R2 credentials or an unreachable target on a freshly built volume surface here."
 
   - interval: 1m
     name: no backup recovery point at all alerts separately from a stale one
