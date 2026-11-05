@@ -78,6 +78,9 @@ jobs:
       - name: Check every custom resource waits for its CRD
         run: bash scripts/check-crd-order.sh
 
+      - name: Check every CRD-only chart keeps up with the chart it replaces
+        run: bash scripts/check-crd-charts.sh
+
   kyverno-policy:
     runs-on: ubuntu-latest
     timeout-minutes: 10

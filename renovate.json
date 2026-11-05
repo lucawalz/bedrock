@@ -111,6 +111,8 @@
         "/^kube-prometheus-stack$/",
         "/^cert-manager$/",
         "/^traefik$/",
+        "/^traefik-crds$/",
+        "/^prometheus-operator-crds$/",
         "/^authentik$/",
         "/^metallb$/",
         "/^flux-operator$/",
@@ -139,6 +141,22 @@
         "/^cert-manager$/"
       ],
       "separateMultipleMinor": true
+    },
+    {
+      "description": "Ship traefik-crds in the same PR as traefik, held for review",
+      "matchManagers": ["flux"],
+      "matchPackageNames": ["/^traefik$/", "/^traefik-crds$/"],
+      "groupName": "traefik and its crds",
+      "separateMajorMinor": false,
+      "automerge": false
+    },
+    {
+      "description": "Ship prometheus-operator-crds with kube-prometheus-stack, whose operator minor is the crds major",
+      "matchManagers": ["flux"],
+      "matchPackageNames": ["/^kube-prometheus-stack$/", "/^prometheus-operator-crds$/"],
+      "groupName": "kube-prometheus-stack and its crds",
+      "separateMajorMinor": false,
+      "automerge": false
     }
   ]
 }
