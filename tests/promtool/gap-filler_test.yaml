@@ -814,6 +814,26 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: a volume whose last off-site backup is older than two days alerts while a fresh one stays quiet
+    input_series:
+      - series: 'longhorn_volume_last_backup_at{pvc="paperless-data",pvc_namespace="paperless",volume="pvc-a"}'
+        values: '1000x4500'
+      - series: 'longhorn_volume_last_backup_at{pvc="open-webui",pvc_namespace="llm",volume="pvc-b"}'
+        values: '260000x4500'
+      - series: 'longhorn_volume_last_backup_at{pvc="never-backed-up",pvc_namespace="llm",volume="pvc-c"}'
+        values: '0x4500'
+    alert_rule_test:
+      - eval_time: 4400m
+        alertname: LonghornBackupStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pvc: paperless-data
+            exp_annotations:
+              summary: "Longhorn has taken no off-site backup of paperless-data for 3 days"
+              description: "Longhorn has not completed an off-site backup of paperless-data in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded, since only volumes labelled for the offsite-backup job are expected to have one."
+
+  - interval: 1m
     name: no backup recovery point at all alerts separately from a stale one
     input_series:
       - series: 'cnpg_pg_replication_in_recovery{namespace="postgres",pod="postgres-1"}'

@@ -86,6 +86,7 @@ spec:
         recurring-job.longhorn.io/snapshot: enabled
         recurring-job.longhorn.io/snapshot-prune: enabled
         recurring-job.longhorn.io/filesystem-trim: enabled
+        recurring-job.longhorn.io/offsite-backup: enabled
     ingress:
       enabled: false
     service:

@@ -118,6 +118,14 @@ spec:
           annotations:
             summary: "Longhorn volume {{ $labels.volume }} is faulted"
             description: "Longhorn reports volume {{ $labels.volume }} as faulted, meaning no replica is usable and the volume can serve neither reads nor writes. LonghornVolumeDegraded cannot stand in for this on a single-replica volume, which has no degraded state to pass through and moves straight from healthy to faulted."
+        - alert: LonghornBackupStale
+          expr: (time() - max by (pvc) (longhorn_volume_last_backup_at > 0)) / 86400 > 2
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Longhorn has taken no off-site backup of {{ $labels.pvc }} for {{ $value | printf \"%.0f\" }} days"
+            description: "Longhorn has not completed an off-site backup of {{ $labels.pvc }} in over two days, against a nightly schedule. This reads the last successful backup timestamp rather than the recurring job outcome, so an unreachable backup target and a job that never runs both surface here. Volumes that never had a backup report 0 and are excluded, since only volumes labelled for the offsite-backup job are expected to have one."
         - alert: LonghornVolumeUnschedulable
           expr: kube_longhornvolume_status_condition{type="Scheduled"} == 0
           for: 30m

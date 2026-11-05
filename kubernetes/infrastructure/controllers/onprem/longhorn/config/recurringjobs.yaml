@@ -36,3 +36,15 @@ spec:
     - default
   retain: 0
   concurrency: 2
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: offsite-backup
+  namespace: longhorn-system
+spec:
+  cron: "0 5 * * *"
+  task: backup
+  groups: []
+  retain: 14
+  concurrency: 2
