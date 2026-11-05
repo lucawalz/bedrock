@@ -92,7 +92,7 @@ spec:
       name: RetryOnFailure
   upgrade:
     crds: Skip
-    strategy:
-      name: RetryOnFailure
+    remediation:
+      retries: 3
   driftDetection:
     mode: warn
