@@ -87,7 +87,7 @@ awk -F'\t' -v base="$base_groups" '
     return 0
   }
   BEGIN { split(base, list, " "); for (i in list) based[list[i]] = 1 }
-  $1 == "node" { deps[$2] = $3 }
+  $1 == "node" { deps[$2] = $3; known[$2] = 1 }
   $1 == "provides" && !(($4, $2, $3) in seen_provider) {
     seen_provider[$4, $2, $3] = 1
     providers[$4]++
@@ -100,6 +100,20 @@ awk -F'\t' -v base="$base_groups" '
     use_ks[uses] = $2; use_origin[uses] = $3; use_kind[uses] = $4; use_object[uses] = $5
   }
   END {
+    for (node in known) {
+      count = split(deps[node], parts, ",")
+      for (i = 1; i <= count; i++) {
+        if (!(parts[i] in known)) {
+          print "FAIL " node ": dependsOn " parts[i] ", which no Kustomization defines"
+          failed = 1
+        }
+      }
+      delete visited
+      if (reaches(node, node)) {
+        print "FAIL " node ": dependsOn cycle, Flux would wait on it forever"
+        failed = 1
+      }
+    }
     for (crd in providers) {
       if (providers[crd] > 1) {
         owners = ""
