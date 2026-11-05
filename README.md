@@ -176,7 +176,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Miniflux | feed reader | internal (`rss`) |
 | Kiwix | offline library of ZIM archives | internal (`kiwix`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
-| MinIO | in-cluster S3 object storage and console | internal (`minio`, `s3`) |
 | Zot | in-cluster OCI registry | internal (`registry`) |
 | RackPeek | physical rack and node overview | internal (`rackpeek`) |
 | Traefik | router dashboard | internal (`traefik`) |

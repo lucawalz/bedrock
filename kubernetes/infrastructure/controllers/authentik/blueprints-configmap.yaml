@@ -322,25 +322,6 @@ data:
           name: Home Assistant
           slug: home-assistant
           provider: !KeyOf prov-home-assistant
-      - model: authentik_providers_proxy.proxyprovider
-        id: prov-minio
-        identifiers:
-          name: minio-forward-auth
-        attrs:
-          name: minio-forward-auth
-          mode: forward_domain
-          external_host: https://minio.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-minio
-        identifiers:
-          slug: minio
-        attrs:
-          name: MinIO
-          slug: minio
-          provider: !KeyOf prov-minio
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -359,4 +340,3 @@ data:
             - !KeyOf prov-ntfy
             - !KeyOf prov-kiwix
             - !KeyOf prov-home-assistant
-            - !KeyOf prov-minio

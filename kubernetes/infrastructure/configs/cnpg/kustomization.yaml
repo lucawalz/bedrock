@@ -5,7 +5,6 @@ components:
   - ../../../components/network-policies/base
 resources:
   - cnpg-cluster.yaml
-  - scheduledbackup.yaml
   - databases.yaml
   - networkpolicies.yaml
   - podmonitor.yaml

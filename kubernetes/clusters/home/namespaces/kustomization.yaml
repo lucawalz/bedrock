@@ -19,7 +19,6 @@ resources:
   - authentik.yaml
   - ntfy.yaml
   - paperless.yaml
-  - minio.yaml
   - reloader.yaml
   - kyverno.yaml
   - flagger.yaml

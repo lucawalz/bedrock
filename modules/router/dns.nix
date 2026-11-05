@@ -114,11 +114,6 @@ in
             enabled = true;
           }
           {
-            domain = "minio.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "ntfy.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;
@@ -150,11 +145,6 @@ in
           }
           {
             domain = "rss.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "s3.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;
           }

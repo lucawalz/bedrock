@@ -6,7 +6,6 @@ resources:
   - cloudflared-servicemonitor.yaml
   - flux-servicemonitor.yaml
   - kyverno-servicemonitor.yaml
-  - minio-servicemonitor.yaml
   - longhorn-servicemonitor.yaml
   - prometheusrule.yaml
   - slo-blog.yaml

@@ -80,11 +80,6 @@
       "groupName": "nixpkgs"
     },
     {
-      "description": "Read MinIO's dated RELEASE tags, which no built-in versioning parses",
-      "matchPackageNames": ["quay.io/minio/minio"],
-      "versioning": "regex:^RELEASE\\.(?<major>\\d{4})-(?<minor>\\d{2})-(?<patch>\\d{2})T(?<build>.+)$"
-    },
-    {
       "description": "Group infrastructure Helm charts together",
       "matchManagers": ["flux"],
       "groupName": "infrastructure charts",
@@ -118,15 +113,13 @@
         "/^traefik$/",
         "/^authentik$/",
         "/^metallb$/",
-        "/^minio$/",
         "/^flux-operator$/",
         "/^kyverno$/",
         "/^loki$/",
         "/^tempo$/",
         "/^alloy$/",
         "/^paperless-ngx$/",
-        "/^flagger$/",
-        "/^quay\\.io\\/minio\\/minio$/"
+        "/^flagger$/"
       ],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": false

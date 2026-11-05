@@ -131,10 +131,3 @@ spec:
       ports:
         - protocol: TCP
           port: 6443
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: minio
-      ports:
-        - protocol: TCP
-          port: 9000

@@ -29,59 +29,6 @@ spec:
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
-  name: minio-restricted
-  namespace: kyverno
-spec:
-  exceptions:
-    - policyName: require-drop-all-capabilities
-      ruleNames:
-        - "*"
-    - policyName: require-run-as-non-root
-      ruleNames:
-        - "*"
-  match:
-    any:
-      - resources:
-          kinds:
-            - Pod
-            - Deployment
-          namespaces:
-            - minio
-          names:
-            - minio-minio
-            - minio-minio-*
----
-apiVersion: kyverno.io/v2
-kind: PolicyException
-metadata:
-  name: minio-post-job
-  namespace: kyverno
-spec:
-  exceptions:
-    - policyName: require-drop-all-capabilities
-      ruleNames:
-        - "*"
-    - policyName: require-run-as-non-root
-      ruleNames:
-        - "*"
-    - policyName: require-resources
-      ruleNames:
-        - "*"
-  match:
-    any:
-      - resources:
-          kinds:
-            - Job
-            - Pod
-          namespaces:
-            - minio
-          names:
-            - minio-minio-post-job
-            - minio-minio-post-job-*
----
-apiVersion: kyverno.io/v2
-kind: PolicyException
-metadata:
   name: paperless-ngx-drop-capabilities
   namespace: kyverno
 spec:
