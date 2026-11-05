@@ -173,7 +173,7 @@ spec:
     - name: volume.rules
       rules:
         - alert: PersistentVolumeFillingUp
-          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100) > 85
+          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes{job="kubelet"} / kubelet_volume_stats_capacity_bytes{job="kubelet"} * 100) > 85
           for: 1h
           labels:
             severity: warning
@@ -181,7 +181,7 @@ spec:
             summary: "PersistentVolumeClaim {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} is {{ $value | printf \"%.0f\" }} percent full"
             description: "The volume claimed by {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim }} has been over 85 percent full for an hour. This measures bytes actually written inside the filesystem, which no other rule here covers: the Longhorn scheduling headroom alerts count space promised to replicas rather than space consumed, so a volume can fill completely while they stay quiet."
         - alert: PersistentVolumeAlmostFull
-          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100) > 95
+          expr: max by (namespace, persistentvolumeclaim) (kubelet_volume_stats_used_bytes{job="kubelet"} / kubelet_volume_stats_capacity_bytes{job="kubelet"} * 100) > 95
           for: 15m
           labels:
             severity: critical
@@ -225,7 +225,7 @@ spec:
             summary: "k3s has recorded no recent scheduled etcd snapshot"
             description: "No usable k3s etcd snapshot from the schedule has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot taken by hand would otherwise hide a schedule that has stopped running."
         - alert: EtcdWalFsyncSlow
-          expr: histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m]))) > 0.1
+          expr: histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket{job="kube-etcd"}[5m]))) > 0.1
           for: 15m
           labels:
             severity: warning
@@ -233,13 +233,13 @@ spec:
             summary: "etcd WAL fsync p99 is above 100ms"
             description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on control-plane-1, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
         - alert: EtcdRequestsSlow
-          expr: histogram_quantile(0.99, sum by (le, operation) (rate(etcd_request_duration_seconds_bucket[5m]))) > 0.15
+          expr: histogram_quantile(0.99, sum by (le, operation) (rate(etcd_request_duration_seconds_bucket{job="kube-etcd"}[5m]))) > 0.15
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "etcd {{ $labels.operation }} requests are slow"
-            description: "The p99 latency of etcd {{ $labels.operation }} requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. The apiserver and kubelet scrapes both report this histogram from the same k3s process; summing by le and operation folds the two copies into one, which leaves the quantile unchanged and raises one alert rather than two."
+            description: "The p99 latency of etcd {{ $labels.operation }} requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. k3s serves every component from one registry, so the apiserver scrape repeats this histogram; reading only the kube-etcd job counts it once."
     - name: container.rules
       rules:
         - alert: ContainerMemoryNearLimit
