@@ -138,6 +138,12 @@
       "automerge": false
     },
     {
+      "description": "Hold Flux distribution minors for manual review",
+      "matchDepNames": ["fluxcd/flux2"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false
+    },
+    {
       "description": "Hold the node image inputs, since a bump rebuilds the snapshot",
       "matchFileNames": ["infra/packer/**"],
       "automerge": false
