@@ -10,6 +10,15 @@ spec:
   eventSources:
     - kind: Kustomization
       name: '*'
+    - kind: GitRepository
+      name: '*'
+      namespace: flux-system
+    - kind: ImageUpdateAutomation
+      name: '*'
+      namespace: flux-system
+    - kind: FluxInstance
+      name: '*'
+      namespace: flux-system
     - kind: HelmRelease
       name: '*'
       namespace: authentik
