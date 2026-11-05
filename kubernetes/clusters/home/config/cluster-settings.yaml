@@ -7,4 +7,4 @@ metadata:
     reconcile.fluxcd.io/watch: "Enabled"
 data:
   cluster_domain: "syslabs.dev"
-
+  cloudflare_account_id: "52590e0180355fd2943c3cc27f10d4a3"

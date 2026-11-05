@@ -6,7 +6,7 @@ metadata:
 spec:
   podSelector:
     matchLabels:
-      cnpg.io/cluster: postgres
+      cnpg.io/podRole: instance
   policyTypes:
     - Ingress
   ingress:
@@ -40,7 +40,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              cnpg.io/cluster: postgres
+              cnpg.io/podRole: instance
       ports:
         - protocol: TCP
           port: 8000

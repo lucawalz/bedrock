@@ -3,8 +3,26 @@ kind: Kustomization
 namespace: postgres
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/internet-egress
 resources:
+  - objectstore.yaml
   - cnpg-cluster.yaml
   - databases.yaml
   - networkpolicies.yaml
   - podmonitor.yaml
+  - scheduledbackup.yaml
+patches:
+  - target:
+      kind: NetworkPolicy
+      name: allow-internet-egress
+    patch: |-
+      - op: replace
+        path: /spec/podSelector
+        value:
+          matchLabels:
+            cnpg.io/podRole: instance
+      - op: test
+        path: /spec/egress/0/ports/0/port
+        value: 80
+      - op: remove
+        path: /spec/egress/0/ports/0

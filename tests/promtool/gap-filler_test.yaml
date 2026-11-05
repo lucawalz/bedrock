@@ -797,7 +797,7 @@ tests:
   - interval: 1m
     name: a base backup older than two days alerts even while the cluster reports success
     input_series:
-      - series: 'cnpg_collector_last_available_backup_timestamp{namespace="postgres",pod="postgres-1"}'
+      - series: 'barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{namespace="postgres",pod="postgres-1"}'
         values: '-259200x200'
     alert_rule_test:
       - eval_time: 90m
@@ -846,7 +846,7 @@ tests:
               severity: critical
             exp_annotations:
               summary: "CloudNativePG is exporting no backup recovery point at all"
-              description: "The metric carrying the newest recoverable backup has disappeared entirely, which happens when CloudNativePG itself stops exporting it, not when its backup configuration is removed: verified live, a cluster with spec.backup unset keeps exporting the last timestamp the collector ever saw, so removing the configuration alone never triggers this. This covers the exporter or the cluster going away outright. CNPGBackupStale cannot fire on an absent series, so this is what notices when the signal itself, not just a fresh point on it, is gone."
+              description: "The metric carrying the newest recoverable backup has disappeared entirely. The barman-cloud plugin sidecar exports it through the instance manager, so the expected causes are the sidecar no longer running in the instances or the exporter or the cluster going away outright; whether removing the plugin configuration alone clears the series is unverified. CNPGBackupStale cannot fire on an absent series, so this is what notices when the signal itself, not just a fresh point on it, is gone."
       - eval_time: 90m
         alertname: CNPGBackupStale
         exp_alerts: []
