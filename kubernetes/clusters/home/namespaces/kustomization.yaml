@@ -23,7 +23,6 @@ resources:
   - kyverno.yaml
   - flagger.yaml
   - litellm.yaml
-  - miniflux.yaml
   - kiwix.yaml
   - zot.yaml
   - home-assistant.yaml

@@ -91,7 +91,7 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key. E
 
    - If the node disks survived and only the operating systems were rebuilt, Longhorn reattaches its replicas and the volumes come back with them. This is the common case and the one the rebuild is really designed for.
    - If the disks were wiped, every volume is gone. The workloads recreate empty ones on first attach, and the data they held is not recoverable.
-   - Postgres has no backup at all. If its volumes are gone, the databases behind Authentik, Paperless, Miniflux and Open WebUI come up empty and recreate their schemas on first boot, exactly as they did at the CloudNativePG cutover ([ADR 0046](adr/0046-cloudnative-pg-declarative-postgres.md)). Application state held in them is lost.
+   - Postgres has no backup at all. If its volumes are gone, the databases behind Authentik, Paperless and Open WebUI come up empty and recreate their schemas on first boot, exactly as they did at the CloudNativePG cutover ([ADR 0046](adr/0046-cloudnative-pg-declarative-postgres.md)). Application state held in them is lost.
    - kiwix is the one workload that recovers cleanly from nothing. Its ZIM files are re-downloaded by an idempotent init container, so its recovery is a download rather than a restore.
 
    If an etcd snapshot was copied off control-plane-1 beforehand, restoring it is a separate decision rather than a step here. See the next section.

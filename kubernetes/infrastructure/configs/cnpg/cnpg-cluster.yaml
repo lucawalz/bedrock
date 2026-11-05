@@ -48,10 +48,6 @@ spec:
         login: true
         passwordSecret:
           name: pg-paperless
-      - name: miniflux
-        login: true
-        passwordSecret:
-          name: pg-miniflux
       - name: open-webui
         login: true
         passwordSecret:

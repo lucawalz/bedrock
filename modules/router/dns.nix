@@ -144,11 +144,6 @@ in
             enabled = true;
           }
           {
-            domain = "rss.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "traefik.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

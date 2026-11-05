@@ -54,9 +54,6 @@ spec:
       namespace: metallb-system
     - kind: HelmRelease
       name: '*'
-      namespace: miniflux
-    - kind: HelmRelease
-      name: '*'
       namespace: monitoring
     - kind: HelmRelease
       name: '*'

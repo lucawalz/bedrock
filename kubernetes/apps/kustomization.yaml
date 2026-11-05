@@ -9,6 +9,5 @@ resources:
   - ntfy/ks.yaml
   - paperless/ks.yaml
   - litellm/ks.yaml
-  - miniflux/ks.yaml
   - kiwix/ks.yaml
   - home-assistant/ks.yaml
