@@ -33,9 +33,6 @@ spec:
       namespace: homepage
     - kind: HelmRelease
       name: '*'
-      namespace: kiwix
-    - kind: HelmRelease
-      name: '*'
       namespace: kube-system
     - kind: HelmRelease
       name: '*'

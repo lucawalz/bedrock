@@ -8,4 +8,3 @@ resources:
   - ntfy/ks.yaml
   - paperless/ks.yaml
   - litellm/ks.yaml
-  - kiwix/ks.yaml

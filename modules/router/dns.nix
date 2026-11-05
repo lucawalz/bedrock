@@ -94,11 +94,6 @@ in
             enabled = true;
           }
           {
-            domain = "kiwix.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "litellm.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

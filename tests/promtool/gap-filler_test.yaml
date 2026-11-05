@@ -719,11 +719,11 @@ tests:
   - interval: 1m
     name: a large volume in genuine use stays quiet even though its unused gap exceeds the budget floor
     input_series:
-      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="ollama",pvc_namespace="llm"}'
         values: '107374182400x200'
-      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="ollama",pvc_namespace="llm"}'
         values: '64000000000x200'
-      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="kiwix-library",pvc_namespace="kiwix"}'
+      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="ollama",pvc_namespace="llm"}'
         values: '1x200'
     alert_rule_test:
       - eval_time: 90m

@@ -22,7 +22,6 @@ resources:
   - kyverno.yaml
   - flagger.yaml
   - litellm.yaml
-  - kiwix.yaml
   - zot.yaml
   - default.yaml
   - default-serviceaccounts.yaml
