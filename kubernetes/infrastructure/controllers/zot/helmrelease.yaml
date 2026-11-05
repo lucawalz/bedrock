@@ -195,3 +195,4 @@ spec:
                 path: /spec/volumeClaimTemplates/0/metadata/labels
                 value:
                   recurring-job.longhorn.io/source: enabled
+                  recurring-job.longhorn.io/filesystem-trim: enabled
