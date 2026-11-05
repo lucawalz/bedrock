@@ -25,9 +25,6 @@ spec:
               kubernetes.io/metadata.name: miniflux
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: pgadmin4
-        - podSelector:
-            matchLabels:
               cnpg.io/cluster: postgres
       ports:
         - protocol: TCP
@@ -141,40 +138,3 @@ spec:
       ports:
         - protocol: TCP
           port: 9000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-pgadmin-ingress
-  namespace: postgres
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: pgadmin4
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: traefik
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-pgadmin-egress
-  namespace: postgres
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: pgadmin4
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - podSelector:
-            matchLabels:
-              cnpg.io/cluster: postgres
-      ports:
-        - protocol: TCP
-          port: 5432

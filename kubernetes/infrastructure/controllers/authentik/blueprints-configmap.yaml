@@ -341,25 +341,6 @@ data:
           name: MinIO
           slug: minio
           provider: !KeyOf prov-minio
-      - model: authentik_providers_proxy.proxyprovider
-        id: prov-pgadmin
-        identifiers:
-          name: pgadmin-forward-auth
-        attrs:
-          name: pgadmin-forward-auth
-          mode: forward_domain
-          external_host: https://pgadmin.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-pgadmin
-        identifiers:
-          slug: pgadmin
-        attrs:
-          name: pgAdmin
-          slug: pgadmin
-          provider: !KeyOf prov-pgadmin
       - model: authentik_outposts.outpost
         identifiers:
           name: authentik Embedded Outpost
@@ -379,4 +360,3 @@ data:
             - !KeyOf prov-kiwix
             - !KeyOf prov-home-assistant
             - !KeyOf prov-minio
-            - !KeyOf prov-pgadmin

@@ -134,11 +134,6 @@ in
             enabled = true;
           }
           {
-            domain = "pgadmin.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "prometheus.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

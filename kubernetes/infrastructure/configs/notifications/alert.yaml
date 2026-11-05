@@ -66,9 +66,6 @@ spec:
       namespace: paperless
     - kind: HelmRelease
       name: '*'
-      namespace: postgres
-    - kind: HelmRelease
-      name: '*'
       namespace: rackpeek
     - kind: HelmRelease
       name: '*'

@@ -175,7 +175,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | LiteLLM | OpenAI-compatible gateway in front of Ollama | internal (`litellm`) |
 | Miniflux | feed reader | internal (`rss`) |
 | Kiwix | offline library of ZIM archives | internal (`kiwix`) |
-| pgAdmin | Postgres administration | internal (`pgadmin`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
 | MinIO | in-cluster S3 object storage and console | internal (`minio`, `s3`) |
 | Zot | in-cluster OCI registry | internal (`registry`) |
@@ -186,7 +185,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 | Home Assistant | smart-home hub, currently a Withings scale | internal (`ha`) |
 
-One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, Miniflux, and Open WebUI, and pgAdmin connects to it as a client.
+One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, Miniflux, and Open WebUI.
 
 ## Security
 

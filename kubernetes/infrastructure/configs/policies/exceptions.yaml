@@ -82,31 +82,6 @@ spec:
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
-  name: pgadmin-restricted
-  namespace: kyverno
-spec:
-  exceptions:
-    - policyName: require-drop-all-capabilities
-      ruleNames:
-        - "*"
-    - policyName: require-run-as-non-root
-      ruleNames:
-        - "*"
-  match:
-    any:
-      - resources:
-          kinds:
-            - Pod
-            - Deployment
-          namespaces:
-            - postgres
-          names:
-            - pgadmin-pgadmin4
-            - pgadmin-pgadmin4-*
----
-apiVersion: kyverno.io/v2
-kind: PolicyException
-metadata:
   name: paperless-ngx-drop-capabilities
   namespace: kyverno
 spec:
