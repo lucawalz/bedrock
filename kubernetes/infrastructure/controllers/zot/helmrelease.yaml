@@ -36,7 +36,7 @@ spec:
       name: data
       accessModes:
         - ReadWriteOnce
-      storage: 20Gi
+      storage: 40Gi
       storageClassName: longhorn-disposable
     startupProbe:
       initialDelaySeconds: 5
@@ -64,7 +64,9 @@ spec:
                   "deleteUntagged": true,
                   "keepTags": [
                     {
-                      "mostRecentlyPushedCount": 3
+                      "patterns": [".*"],
+                      "pulledWithin": "168h",
+                      "mostRecentlyPulledCount": 1
                     }
                   ]
                 }
@@ -182,3 +184,14 @@ spec:
       limits:
         cpu: "1"
         memory: "1Gi"
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: StatefulSet
+              name: zot
+            patch: |
+              - op: add
+                path: /spec/volumeClaimTemplates/0/metadata/labels
+                value:
+                  recurring-job.longhorn.io/source: enabled
