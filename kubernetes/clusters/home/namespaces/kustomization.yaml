@@ -12,7 +12,6 @@ resources:
   - cloudflare-tunnel.yaml
   - monitoring.yaml
   - longhorn-system.yaml
-  - cattle-system.yaml
   - llm.yaml
   - homepage.yaml
   - rackpeek.yaml

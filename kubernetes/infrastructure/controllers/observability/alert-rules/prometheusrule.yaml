@@ -285,7 +285,7 @@ spec:
             severity: critical
           annotations:
             summary: "Node {{ $labels.node }} holds podCIDR {{ $labels.pod_cidr }}, which no NetworkPolicy allows"
-            description: "The NetworkPolicies that admit host-originated traffic into longhorn-system, cattle-system and postgres enumerate each node's flannel gateway pair as 10.42.N.0/32 and 10.42.N.1/32 for N from 0 to 7, because host traffic reaches a pod from cni0 or flannel.1 and never from the node's LAN address. Node {{ $labels.node }} now holds a podCIDR outside that range, so its kubelet and, on a control plane, its API server cannot reach pods in those namespaces. That presents as admission webhooks failing closed rather than as a network error. Widen the allowlists in the three networkpolicies files before the next reconcile depends on this node."
+            description: "The NetworkPolicies that admit host-originated traffic into longhorn-system and postgres enumerate each node's flannel gateway pair as 10.42.N.0/32 and 10.42.N.1/32 for N from 0 to 7, because host traffic reaches a pod from cni0 or flannel.1 and never from the node's LAN address. Node {{ $labels.node }} now holds a podCIDR outside that range, so its kubelet and, on a control plane, its API server cannot reach pods in those namespaces. That presents as admission webhooks failing closed rather than as a network error. Widen the allowlists in the two networkpolicies files before the next reconcile depends on this node."
     - name: kube-state-metrics.rules
       rules:
         - alert: KubeStateMetricsAbsent

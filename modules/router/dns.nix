@@ -149,11 +149,6 @@ in
             enabled = true;
           }
           {
-            domain = "rancher.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "registry.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

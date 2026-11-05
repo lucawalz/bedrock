@@ -15,9 +15,6 @@ spec:
       namespace: authentik
     - kind: HelmRelease
       name: '*'
-      namespace: cattle-system
-    - kind: HelmRelease
-      name: '*'
       namespace: cert-manager
     - kind: HelmRelease
       name: '*'

@@ -50,17 +50,6 @@ spec:
         - longhorn-system
         - metallb-system
         - monitoring
-        - cattle-capi-system
-        - cattle-fleet-clusters-system
-        - cattle-fleet-local-system
-        - cattle-fleet-system
-        - cattle-impersonation-system
-        - cattle-system
-        - cattle-turtles-system
-        - cattle-ui-plugin-system
-        - fleet-*
-        - cluster-fleet-*
-        - local
     admissionController:
       replicas: 2
       podDisruptionBudget:

@@ -285,25 +285,6 @@ data:
           slug: ntfy
           provider: !KeyOf prov-ntfy
       - model: authentik_providers_proxy.proxyprovider
-        id: prov-rancher
-        identifiers:
-          name: rancher-forward-auth
-        attrs:
-          name: rancher-forward-auth
-          mode: forward_domain
-          external_host: https://rancher.syslabs.dev
-          cookie_domain: .syslabs.dev
-          authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
-          invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
-      - model: authentik_core.application
-        id: app-rancher
-        identifiers:
-          slug: rancher
-        attrs:
-          name: Rancher
-          slug: rancher
-          provider: !KeyOf prov-rancher
-      - model: authentik_providers_proxy.proxyprovider
         id: prov-kiwix
         identifiers:
           name: kiwix-forward-auth
@@ -395,7 +376,6 @@ data:
             - !KeyOf prov-homepage
             - !KeyOf prov-litellm
             - !KeyOf prov-ntfy
-            - !KeyOf prov-rancher
             - !KeyOf prov-kiwix
             - !KeyOf prov-home-assistant
             - !KeyOf prov-minio

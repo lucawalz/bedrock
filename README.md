@@ -28,7 +28,7 @@ The point of the project is to keep a real cluster reproducible and reviewable. 
 
 ## Architecture
 
-The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `rancher`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
+The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat` and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
 Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. There is no path that adds capacity beyond the three local nodes.
 
@@ -157,7 +157,7 @@ kubernetes/
 
 `flake.nix` generates every cluster node from `lib.clusterNodes`, dispatching on the `role` each node carries in the inventory; the router, the cluster-node image and the installer image are written out in `flake.nix` itself. Workers have no directory of their own, and adding one is an inventory entry rather than a flake edit, but that entry is not the whole cost: it still needs an agenix entry in `secrets/secrets.nix`, its own `tailscale-authkey-<name>.age`, and its host key added to `k3s-token.age`.
 
-There is no capacity beyond the three local nodes. The Cluster API substrate a multi-region fleet once used was removed with the return to a single cluster ([ADR 0063](docs/adr/0063-return-to-single-region.md)), and the on-demand path that replaced it closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
+There is no capacity beyond the three local nodes. The on-demand path that once added capacity closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
 
 ## Services
 
@@ -167,7 +167,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 |---------|---------|--------|
 | Open WebUI | chat front-end for the local models | public (`chat`) |
 | Blog | static Hugo site | public (`lucawalz.dev`) |
-| Rancher | cluster management UI | public (`rancher`) |
 | Homepage | cluster dashboard and links | internal (`home`) |
 | Grafana | dashboards for the Prometheus stack | internal (`grafana`) |
 | Prometheus | metrics store and query browser | internal (`prometheus`) |
