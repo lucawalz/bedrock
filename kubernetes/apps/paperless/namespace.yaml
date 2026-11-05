@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: paperless
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
     bedrock.io/postgres-client: "true"
     bedrock.io/traefik-routable: "true"
