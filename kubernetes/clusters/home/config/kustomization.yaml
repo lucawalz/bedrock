@@ -5,6 +5,7 @@ resources:
   - namespaces.yaml
   - secrets.yaml
   - bootstrap-secrets.yaml
+  - crds.yaml
   - base.yaml
   - edge-onprem.yaml
   - platform.yaml

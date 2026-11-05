@@ -17,6 +17,7 @@ spec:
     - name: cluster-cnpg-operator
     - name: cluster-secrets
     - name: cluster-namespaces
+    - name: cluster-crds
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -33,7 +34,6 @@ spec:
     kind: GitRepository
     name: flux-system
   dependsOn:
-    - name: cluster-cert-manager
     - name: cluster-edge-onprem
     - name: cluster-namespaces
     - name: cluster-secrets
@@ -72,3 +72,4 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-flux-operator
+    - name: cluster-edge-onprem

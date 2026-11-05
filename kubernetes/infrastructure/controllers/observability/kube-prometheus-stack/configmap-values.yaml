@@ -1,4 +1,6 @@
 # Reduce resource usage for homelab
+crds:
+  enabled: false
 prometheus:
   prometheusSpec:
     priorityClassName: system-cluster-critical

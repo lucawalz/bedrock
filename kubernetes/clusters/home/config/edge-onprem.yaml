@@ -17,6 +17,8 @@ spec:
     - name: cluster-sources
     - name: cluster-secrets
     - name: cluster-namespaces
+    - name: cluster-crds
+    - name: cluster-cert-manager
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -35,3 +37,20 @@ spec:
   dependsOn:
     - name: cluster-edge-onprem
     - name: cluster-namespaces
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: cluster-longhorn-config
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/infrastructure/controllers/onprem/longhorn/config
+  prune: true
+  wait: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-edge-onprem

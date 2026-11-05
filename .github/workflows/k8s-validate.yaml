@@ -75,6 +75,9 @@ jobs:
       - name: Render every HelmRelease and validate the output
         run: bash scripts/render-helm-releases.sh
 
+      - name: Check every custom resource waits for its CRD
+        run: bash scripts/check-crd-order.sh
+
   kyverno-policy:
     runs-on: ubuntu-latest
     timeout-minutes: 10

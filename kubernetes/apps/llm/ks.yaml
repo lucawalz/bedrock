@@ -15,6 +15,7 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-edge-onprem
+    - name: cluster-cnpg-db
   postBuild:
     substituteFrom:
       - kind: ConfigMap

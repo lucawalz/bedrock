@@ -16,6 +16,8 @@ spec:
     - name: cluster-sources
     - name: cluster-secrets
     - name: cluster-namespaces
+    - name: cluster-crds
+    - name: cluster-edge-onprem
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
