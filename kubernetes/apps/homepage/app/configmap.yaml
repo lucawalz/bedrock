@@ -64,9 +64,6 @@ data:
         - bedrock:
             - icon: github.png
               href: https://github.com/lucawalz/bedrock
-        - horizon:
-            - icon: github.png
-              href: https://github.com/lucawalz/horizon
 
   services.yaml: |
     - Network:

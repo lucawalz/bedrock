@@ -39,9 +39,6 @@ spec:
       namespace: homepage
     - kind: HelmRelease
       name: '*'
-      namespace: horizon-system
-    - kind: HelmRelease
-      name: '*'
       namespace: kiwix
     - kind: HelmRelease
       name: '*'

@@ -28,7 +28,6 @@ resources:
   - miniflux.yaml
   - kiwix.yaml
   - zot.yaml
-  - horizon-system.yaml
   - home-assistant.yaml
   - default.yaml
   - media-encode.yaml

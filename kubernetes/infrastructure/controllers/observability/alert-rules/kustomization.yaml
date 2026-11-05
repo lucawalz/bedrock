@@ -8,6 +8,5 @@ resources:
   - kyverno-servicemonitor.yaml
   - minio-servicemonitor.yaml
   - longhorn-servicemonitor.yaml
-  - horizon-servicemonitor.yaml
   - prometheusrule.yaml
   - slo-blog.yaml

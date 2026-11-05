@@ -99,11 +99,6 @@ in
             enabled = true;
           }
           {
-            domain = "horizon.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "kiwix.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

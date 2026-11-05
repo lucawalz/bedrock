@@ -24,13 +24,13 @@ The cluster runs a self-hosted LLM stack, monitoring, and a few supporting servi
 
 ### Background
 
-The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Cloud capacity followed the same principle for a while: an elastic autoscaler scaled a pool from zero until [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md) retired it, and the companion [horizon](https://github.com/lucawalz/horizon) tool then added and removed reserved nodes on demand. That path closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)). The horizon operator, the node image and the measurement harness stay in the repository, configured against no provider, so the estate reads as three nodes and nothing that bursts.
+The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Cloud capacity followed the same principle for a while: an elastic autoscaler scaled a pool from zero until [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md) retired it, and a companion operator then added and removed reserved nodes on demand. That path closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)) and the operator has since been removed, so the estate reads as three nodes and nothing that bursts.
 
 ## Architecture
 
 The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat`, `rancher`, and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites the internal service hostnames to the Traefik VIP while the public hosts continue to resolve through Cloudflare. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
 
-Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. There is no path that adds capacity beyond the three local nodes. The horizon operator still runs and still owns lease and orphan-node collection ([ADR 0071](docs/adr/0071-deploy-horizon-operator-from-published-chart.md)), but it has no provider to lease from, so it provisions nothing until one is configured again.
+Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. There is no path that adds capacity beyond the three local nodes.
 
 ## Hardware
 
@@ -145,7 +145,7 @@ modules/
   services/            Longhorn storage prerequisites
 secrets/               agenix-encrypted host secrets: the K3s join token, the router's Tailscale and AdGuard credentials, the wifi passphrase, and the kiosk dashboard URL
 infra/packer/          the dormant Packer template that bakes a cloud node snapshot
-scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering) plus the horizon burst-node measurement harness, the fixed synthetic quantum, and the requirements-based sizing campaign driver that prices it
+scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering)
 tests/                 Kyverno policy tests and promtool alert-rule tests
 docs/                  the ADR log, the cluster inventory, and the disaster recovery, admission break-glass and alert selector audit runbooks
 kubernetes/
@@ -183,7 +183,6 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | RackPeek | physical rack and node overview | internal (`rackpeek`) |
 | Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
-| horizon | lease and machine catalogue view, with no provider configured | internal (`horizon`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive with AI and GPT companions | internal (`paperless`) |
 | Home Assistant | smart-home hub, currently a Withings scale | internal (`ha`) |

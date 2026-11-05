@@ -132,13 +132,7 @@ Rehearsing this is hazardous. A restored snapshot contains the live estate's Met
 
 ## Live objects the backup removal leaves behind
 
-Withdrawing the backup stack is not entirely expressible in Git. Three cleanups need a command, and two of them have an ordering constraint that cannot be recovered from cheaply if it is missed.
-
-**Sequence the push ahead of the account closure.** The `hetzner` ProviderConfig carries the finalizer `horizon.dev/provider-config`, set by the running horizon operator rather than by any manifest. Flux prunes the object when the removal lands, but Kubernetes holds it in `Terminating` until the operator clears that finalizer, and the operator's teardown releases leases against the hcloud API before giving up ownership ([ADR 0071](adr/0071-deploy-horizon-operator-from-published-chart.md)). If the credential is already dead at that moment, the finalizer never clears and the object hangs indefinitely. Push and let the cluster reconcile before revoking account access. If it is ever found stuck, clear the finalizer by hand:
-
-```
-kubectl patch providerconfig hetzner --type=json -p '[{"op":"remove","path":"/metadata/finalizers"}]'
-```
+Withdrawing the backup stack is not entirely expressible in Git. Two cleanups need a command.
 
 **Blank the Longhorn BackupTarget.** It carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing its manifest leaves the live object in place, polling dead object storage every five minutes. Longhorn refuses to delete the target named `default`, answering `deleting default backup target is not allowed`, because it always keeps one. Clearing its URL and credential is the equivalent, and it also drops the BackupVolume records that indexed the remote bucket:
 
@@ -209,7 +203,7 @@ Host secrets use agenix. Each `.age` file under `secrets/` is encrypted to the S
 
 Cluster secrets use SOPS with age and live in the private `bedrock-secrets` repository ([ADR 0060](adr/0060-private-secrets-repo-per-cluster-keys.md)). Files matching `clusters/home/.*\.sops\.yaml` have their `data` and `stringData` encrypted to the recipient in that repository's `.sops.yaml`, and `cluster-secrets` decrypts them at apply time with the `sops-age` secret. Secrets are grouped under `bootstrap/`, `platform/`, `identity/`, and `apps/`, each with its own kustomization listing its files explicitly. Edit in place with `sops <path>`; add a new one by encrypting it and listing it in the folder kustomization.
 
-The Velero and object-storage credentials were removed from that repository with the backup stack. The horizon and hcloud secrets under `bootstrap/` remain, and they carry credentials for an account that no longer exists, so they decrypt to values nothing consumes. The hcloud token among them is shared with the vigil project, so its cancellation affects that repository too.
+The Velero and object-storage credentials were removed from that repository with the backup stack.
 
 Exactly one SOPS file remains in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, carrying the read-only deploy key for the private repository and decrypted by the same cluster age key. That key is the only irreducible root: it opens the bootstrap secret, which opens the secrets repository, which holds everything else.
 
@@ -224,8 +218,6 @@ A rebuilt host can carry a stale `/var/lib/tailscale/tailscaled.state` from an e
 `tailscaled.service` restarts on a NixOS activation that changes it, taking the tunnel interface with it and orphaning `flannel.1`, which stays bound to an interface that no longer exists and is not recreated automatically. After a Tailscale package bump, check each node's `flannel.alpha.coreos.com/public-ip` annotation and delete `flannel.1` on any node where it has drifted, to force a rebind.
 
 An auth key is only read at first enrolment, so no live key is kept for an enrolled host and the keys encrypted under `secrets/tailscale-authkey*.age` are no longer valid. A rebuilt or re-enrolled host needs a new single-use key, pre-tagged `tag:cluster`, encrypted into its secret before the rebuild; revoking or expiring that key afterwards leaves the enrolled device untouched.
-
-No burst node can join the tailnet, because no provider is configured for horizon to lease one from ([ADR 0081](adr/0081-retire-the-hetzner-account.md)). The `tag:burst` guidance in [ADR 0073](adr/0073-generic-burst-node-image.md) applies only if that changes.
 
 ## Rehearsing recovery without an outage
 
