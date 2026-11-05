@@ -119,6 +119,7 @@
       "matchPackageNames": [
         "/^longhorn$/",
         "/^cloudnative-pg$/",
+        "/^plugin-barman-cloud$/",
         "/^kube-prometheus-stack$/",
         "/^cert-manager$/",
         "/^traefik$/",

@@ -72,6 +72,7 @@ spec:
   dependsOn:
     - name: cluster-sources
     - name: cluster-namespaces
+    - name: cluster-cert-manager
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
