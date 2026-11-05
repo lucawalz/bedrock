@@ -23,27 +23,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-paperless-egress-ollama
-  namespace: paperless
-spec:
-  podSelector: {}
-  policyTypes:
-    - Egress
-  egress:
-    - to:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: llm
-          podSelector:
-            matchLabels:
-              app.kubernetes.io/name: ollama
-      ports:
-        - protocol: TCP
-          port: 11434
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-paperless-ngx-ingress
   namespace: paperless
 spec:
@@ -60,23 +39,3 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-paperless-ai-ingress
-  namespace: paperless
-spec:
-  podSelector:
-    matchLabels:
-      app.kubernetes.io/name: paperless-ai
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: traefik
-      ports:
-        - protocol: TCP
-          port: 3000

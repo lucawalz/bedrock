@@ -69,8 +69,6 @@ spec:
           names:
             - paperless-ngx
             - paperless-ngx-*
-            - paperless-ai
-            - paperless-ai-*
 ---
 apiVersion: kyverno.io/v2
 kind: PolicyException

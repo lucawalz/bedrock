@@ -9,6 +9,5 @@ resources:
   - redis
   - gotenberg
   - tika
-  - paperless-ai
   - ingress.yaml
   - networkpolicies.yaml

@@ -705,11 +705,11 @@ tests:
   - interval: 1m
     name: a small volume with a high ratio stays quiet because the wasted budget is trivial
     input_series:
-      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+      - series: 'kube_longhornvolume_declared_bytes{name="pvc-abc",pvc="grafana",pvc_namespace="monitoring"}'
         values: '2147483648x200'
-      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+      - series: 'kube_longhornvolume_actual_bytes{name="pvc-abc",pvc="grafana",pvc_namespace="monitoring"}'
         values: '100000000x200'
-      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="paperless-ai",pvc_namespace="paperless"}'
+      - series: 'kube_longhornvolume_replicas{name="pvc-abc",pvc="grafana",pvc_namespace="monitoring"}'
         values: '3x200'
     alert_rule_test:
       - eval_time: 90m

@@ -114,11 +114,6 @@ in
             enabled = true;
           }
           {
-            domain = "paperless-ai.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "prometheus.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

@@ -178,7 +178,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
-| Paperless | document archive with AI and GPT companions | internal (`paperless`) |
+| Paperless | document archive | internal (`paperless`) |
 
 One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, and Open WebUI.
 
