@@ -17,6 +17,10 @@ in
     worker-2
     luca
   ];
+  "etcd-s3-credentials.age".publicKeys = [
+    control-plane-1
+    luca
+  ];
   "tailscale-authkey.age".publicKeys = [
     router
     luca
