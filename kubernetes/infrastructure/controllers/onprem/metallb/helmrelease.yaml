@@ -82,11 +82,11 @@ spec:
             release: kube-prometheus-stack
   install:
     crds: Create
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   upgrade:
     crds: CreateReplace
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn

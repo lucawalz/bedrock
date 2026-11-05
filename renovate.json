@@ -55,6 +55,17 @@
     },
     {
       "customType": "regex",
+      "description": "Track the Flux minor line pinned on the FluxInstance distribution",
+      "managerFilePatterns": ["/^kubernetes/clusters/home/flux-operator/instance/fluxinstance\\.yaml$/"],
+      "matchStrings": ["version:\\s*\"(?<currentValue>\\d+\\.\\d+)\\.x\""],
+      "depNameTemplate": "fluxcd/flux2",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+)\\.\\d+$",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)$",
+      "autoReplaceStringTemplate": "version: \"{{{newValue}}}.x\""
+    },
+    {
+      "customType": "regex",
       "description": "Update the nixos-anywhere flake reference used by Packer",
       "managerFilePatterns": ["/^infra/packer/.+\\.pkr\\.hcl$/"],
       "matchStrings": ["github:nix-community/nixos-anywhere\\?ref=(?<currentValue>[^'\"\\s]+)"],

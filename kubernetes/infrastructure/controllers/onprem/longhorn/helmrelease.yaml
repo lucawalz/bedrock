@@ -18,13 +18,12 @@ spec:
       version: 1.12.1
   install:
     timeout: 15m
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   upgrade:
     timeout: 15m
-    remediation:
-      retries: 3
-      remediateLastFailure: false
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn
   interval: 30m0s

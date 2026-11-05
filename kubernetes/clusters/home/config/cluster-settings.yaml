@@ -3,6 +3,8 @@ kind: ConfigMap
 metadata:
   name: cluster-settings
   namespace: flux-system
+  labels:
+    reconcile.fluxcd.io/watch: "Enabled"
 data:
   cluster_domain: "syslabs.dev"
 

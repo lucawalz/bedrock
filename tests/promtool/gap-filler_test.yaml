@@ -456,7 +456,7 @@ tests:
               reason: UpgradeFailed
             exp_annotations:
               summary: "HelmRelease cnpg-system/cloudnative-pg is stalled"
-              description: "The HelmRelease cnpg-system/cloudnative-pg has reported Ready=False for over 5 minutes, most recently with reason UpgradeFailed. Some HelmReleases in this cluster set remediateLastFailure to false so a failed upgrade stays deployed instead of rolling back, and once retries are exhausted the release stops changing on its own. FluxReconciliationFailure already reports the same condition for every Flux kind at warning severity behind a twelve hour digest; this alert covers HelmRelease specifically at critical severity so a stalled release reaches a human promptly instead of waiting in that digest."
+              description: "The HelmRelease cnpg-system/cloudnative-pg has reported Ready=False for over 5 minutes, most recently with reason UpgradeFailed. Every HelmRelease in this cluster uses the RetryOnFailure strategy, so a failed upgrade stays deployed instead of rolling back and is retried every five minutes, which can repeat the same failure indefinitely. FluxReconciliationFailure already reports the same condition for every Flux kind at warning severity behind a twelve hour digest; this alert covers HelmRelease specifically at critical severity so a stalled release reaches a human promptly instead of waiting in that digest."
 
   - interval: 1m
     name: a ready HelmRelease raises nothing
