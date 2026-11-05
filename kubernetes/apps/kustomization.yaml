@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - llm/ks.yaml
-  - homepage/ks.yaml
-  - blog/ks.yaml
-  - ntfy/ks.yaml
-  - paperless/ks.yaml
-  - litellm/ks.yaml
+  - llm
+  - homepage
+  - blog
+  - ntfy
+  - paperless
+  - litellm

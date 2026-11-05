@@ -1,8 +1,15 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: paperless
+  name: ntfy
   labels:
     bedrock.io/traefik-routable: "true"
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: baseline
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: ntfy
+automountServiceAccountToken: false

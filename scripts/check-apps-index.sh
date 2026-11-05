@@ -12,7 +12,7 @@ work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
 find "$apps_dir" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort > "$work/present"
-yq -N '.resources[]' "$index" | sed 's|/ks\.yaml$||' | sort > "$work/listed"
+yq -N '.resources[]' "$index" | sort > "$work/listed"
 
 status=0
 
