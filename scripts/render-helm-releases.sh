@@ -78,6 +78,11 @@ while read -r directory; do
       value_args+=(-f "$work/values.yaml")
     fi
 
+    crd_args=(--include-crds)
+    if [ "$(yq -N '.spec.install.crds // "Create"' "$work/hr.yaml")" = "Skip" ]; then
+      crd_args=()
+    fi
+
     chart_ref="$chart"
     repo_args=(--repo "$url")
     if [ "$type" = "oci" ]; then
@@ -90,7 +95,7 @@ while read -r directory; do
       "${repo_args[@]}" \
       --version "$version" \
       --namespace "$namespace" \
-      --include-crds \
+      "${crd_args[@]}" \
       "${value_args[@]}" \
       "${helm_args[@]}" > "$work/raw.yaml"; then
       fail=1
