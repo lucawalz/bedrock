@@ -232,13 +232,6 @@ grafana:
       uid: loki
       access: proxy
       url: http://loki.monitoring.svc.cluster.local:3100
-      jsonData:
-        derivedFields:
-          - name: TraceID
-            matcherType: label
-            matcherRegex: traceID
-            datasourceUid: tempo
-            url: "$${__value.raw}"
     - name: Tempo
       type: tempo
       uid: tempo

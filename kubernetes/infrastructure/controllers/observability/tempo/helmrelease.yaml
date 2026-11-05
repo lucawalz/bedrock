@@ -25,6 +25,10 @@ spec:
   values:
     tempo:
       reportingEnabled: false
+      memBallastSizeMbs: 0
+      extraEnv:
+        - name: GOMEMLIMIT
+          value: 450MiB
       retention: 168h
       storage:
         trace:
