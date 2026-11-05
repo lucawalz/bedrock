@@ -8,25 +8,3 @@ spec:
   owner: authentik
   cluster:
     name: postgres
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Database
-metadata:
-  name: paperless
-  namespace: postgres
-spec:
-  name: paperless
-  owner: paperless
-  cluster:
-    name: postgres
----
-apiVersion: postgresql.cnpg.io/v1
-kind: Database
-metadata:
-  name: open-webui
-  namespace: postgres
-spec:
-  name: open-webui
-  owner: open-webui
-  cluster:
-    name: postgres

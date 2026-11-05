@@ -44,14 +44,6 @@ spec:
         login: true
         passwordSecret:
           name: pg-authentik
-      - name: paperless
-        login: true
-        passwordSecret:
-          name: pg-paperless
-      - name: open-webui
-        login: true
-        passwordSecret:
-          name: pg-open-webui
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true

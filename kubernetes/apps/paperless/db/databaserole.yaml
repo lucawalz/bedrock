@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: paperless
+spec:
+  name: paperless
+  cluster:
+    name: postgres
+  login: true
+  passwordSecret:
+    name: pg-paperless

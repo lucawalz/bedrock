@@ -13,13 +13,7 @@ spec:
     - from:
         - namespaceSelector:
             matchLabels:
-              kubernetes.io/metadata.name: llm
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: authentik
-        - namespaceSelector:
-            matchLabels:
-              kubernetes.io/metadata.name: paperless
+              bedrock.io/postgres-client: "true"
         - podSelector:
             matchLabels:
               cnpg.io/cluster: postgres
