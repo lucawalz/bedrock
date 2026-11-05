@@ -25,6 +25,5 @@ resources:
   - litellm.yaml
   - kiwix.yaml
   - zot.yaml
-  - home-assistant.yaml
   - default.yaml
   - default-serviceaccounts.yaml

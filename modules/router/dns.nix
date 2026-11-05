@@ -89,11 +89,6 @@ in
             enabled = true;
           }
           {
-            domain = "ha.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
             domain = "home.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;

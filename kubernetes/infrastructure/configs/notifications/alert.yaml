@@ -30,9 +30,6 @@ spec:
       namespace: flux-system
     - kind: HelmRelease
       name: '*'
-      namespace: home-assistant
-    - kind: HelmRelease
-      name: '*'
       namespace: homepage
     - kind: HelmRelease
       name: '*'
