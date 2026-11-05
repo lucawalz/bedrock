@@ -16,6 +16,14 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-cnpg-db
+  # no failed expression: a Database reports applied false until its owner role exists, which is transient here
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: DatabaseRole
+      current: has(status.applied) && status.applied && status.observedGeneration == metadata.generation
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: has(status.applied) && status.applied && status.observedGeneration == metadata.generation
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
