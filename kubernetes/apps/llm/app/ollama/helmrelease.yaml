@@ -66,3 +66,14 @@ spec:
               - op: add
                 path: /spec/progressDeadlineSeconds
                 value: 3600
+          - target:
+              kind: PersistentVolumeClaim
+              name: ollama
+            patch: |
+              apiVersion: v1
+              kind: PersistentVolumeClaim
+              metadata:
+                name: ollama
+                labels:
+                  recurring-job.longhorn.io/source: enabled
+                  recurring-job.longhorn.io/filesystem-trim: enabled
