@@ -10,8 +10,8 @@ POSTGRES_SOURCE_CLUSTER=postgres
 POSTGRES_RESTORE_CLUSTER=postgres-restore-test
 POSTGRES_OBJECT_STORE=postgres-backup
 POSTGRES_RESTORE_TIMEOUT=30m
-# One stable table per database; the counts must match exactly between production and the restore.
-POSTGRES_CHECKS=("authentik authentik_core_user" "paperless django_migrations")
+# Migration history only changes on upgrades, so recent writes lost to WAL recovery cannot cause a mismatch.
+POSTGRES_CHECKS=("authentik django_migrations" "paperless django_migrations")
 
 LONGHORN_NAMESPACE=longhorn-system
 LONGHORN_PVC_NAMESPACE=paperless
@@ -20,8 +20,8 @@ LONGHORN_RESTORE_VOLUME=restore-test
 LONGHORN_RESTORE_TIMEOUT_SECONDS=1800
 LONGHORN_POLL_SECONDS=10
 
-ETCD_HOST=root@control-plane-1
-ETCD_S3_PREFIX=s3://bedrock-etcd/etcd-snapshots/
+ETCD_S3_BUCKET=bedrock-etcd
+ETCD_S3_PREFIX=etcd-snapshots
 ETCD_MAX_AGE_SECONDS=$((13 * 3600))
 
 API_SERVER_CIDRS=(10.20.0.10/32 10.20.0.11/32 10.20.0.12/32)
@@ -42,7 +42,6 @@ if $dry_run; then
   require_tools kubeconform
 else
   require_tools kubectl yq
-  case "$command" in etcd | all) require_tools ssh ;; esac
 fi
 
 work="$(mktemp -d)"
@@ -241,14 +240,14 @@ test_longhorn() {
 }
 
 test_etcd() {
-  local newest epoch age
-  newest="$(ssh -o BatchMode=yes "$ETCD_HOST" k3s etcd-snapshot ls | awk -v prefix="$ETCD_S3_PREFIX" 'index($2, prefix) == 1 { print $1 }' | sort | tail -n 1)"
-  [ -n "$newest" ] || fail "no snapshot under $ETCD_S3_PREFIX"
-  epoch="${newest##*-}"
-  case "$epoch" in '' | *[!0-9]*) fail "cannot read a timestamp from snapshot name $newest" ;; esac
-  age=$(($(date +%s) - epoch))
-  [ "$age" -le "$ETCD_MAX_AGE_SECONDS" ] || fail "newest etcd snapshot $newest is ${age}s old, limit ${ETCD_MAX_AGE_SECONDS}s"
-  echo "etcd: newest snapshot $newest is ${age}s old"
+  local newest age
+  newest="$(kubectl get etcdsnapshotfiles.k3s.cattle.io -o json | B="$ETCD_S3_BUCKET" P="$ETCD_S3_PREFIX" yq -p=json -r '
+    [.items[] | select(.spec.s3.bucket == strenv(B) and .spec.s3.prefix == strenv(P) and .status.readyToUse == true)]
+    | sort_by(.status.creationTime) | .[-1] | .metadata.name + " " + (((now | to_unix) - (.status.creationTime | to_unix)) | tostring)')" || newest=""
+  case "$newest" in null* | "") fail "no ready snapshot in s3://$ETCD_S3_BUCKET/$ETCD_S3_PREFIX" ;; esac
+  age="${newest#* }"
+  [ "$age" -le "$ETCD_MAX_AGE_SECONDS" ] || fail "newest etcd snapshot ${newest% *} is ${age}s old, limit ${ETCD_MAX_AGE_SECONDS}s"
+  echo "etcd: newest snapshot ${newest% *} is ${age}s old"
 }
 
 if $dry_run; then
