@@ -3,7 +3,7 @@ kind: Kustomization
 namespace: traefik
 
 components:
-  - ../../../../components/authentik-middleware
+  - ../../../../components/forward-auth
   - ../../../../components/network-policies/base
 
 resources:

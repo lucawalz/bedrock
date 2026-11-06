@@ -7,7 +7,6 @@ components:
 resources:
   - objectstore.yaml
   - cnpg-cluster.yaml
-  - databases.yaml
   - networkpolicies.yaml
   - podmonitor.yaml
   - scheduledbackup.yaml

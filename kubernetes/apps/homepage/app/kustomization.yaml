@@ -4,7 +4,7 @@ namespace: homepage
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/traefik-ingress
-  - ../../../components/authentik-middleware
+  - ../../../components/forward-auth
   - ../../../components/topology-spread
 resources:
   - helmrelease.yaml

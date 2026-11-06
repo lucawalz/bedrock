@@ -18,7 +18,7 @@ spec:
     - match: Host(`prometheus.syslabs.dev`)
       kind: Rule
       middlewares:
-        - name: authentik-forward-auth
+        - name: forward-auth
       services:
         - name: kube-prometheus-stack-prometheus
           port: 9090

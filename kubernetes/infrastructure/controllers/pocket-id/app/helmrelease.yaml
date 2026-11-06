@@ -1,0 +1,116 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.3.0"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    force: true
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: warn
+  values:
+    controllers:
+      pocket-id:
+        # Pocket ID allows only one instance per database
+        strategy: Recreate
+        replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: ghcr.io/pocket-id/pocket-id
+              tag: v2.19.2-distroless@sha256:a21166a4eb513d2ffcbf815398480998d996a9e719cfba029395517658626f9e
+            env:
+              APP_URL: https://id.syslabs.dev
+              TRUST_PROXY: 10.42.0.0/16
+              FILE_BACKEND: database
+              UI_CONFIG_DISABLED: "true"
+              EMAILS_VERIFIED: "true"
+              ALLOW_USER_SIGNUPS: disabled
+              AUTO_CREATE_OIDC_CLIENT_SECRET: "false"
+              ANALYTICS_DISABLED: "true"
+              VERSION_CHECK_DISABLED: "true"
+              ICON_LIBRARY_URL: disabled
+            envFrom:
+              - secretRef:
+                  name: pocket-id
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 1411
+                  periodSeconds: 30
+                  timeoutSeconds: 5
+                  failureThreshold: 3
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 1411
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+              startup:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /healthz
+                    port: 1411
+                  periodSeconds: 5
+                  failureThreshold: 30
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: pocket-id
+        ports:
+          http:
+            port: 1411
+    persistence:
+      data:
+        type: emptyDir
+        globalMounts:
+          - path: /app/data
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

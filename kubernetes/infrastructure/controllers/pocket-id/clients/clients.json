@@ -1,0 +1,12 @@
+[
+  {
+    "id": "oauth2-proxy",
+    "name": "oauth2-proxy",
+    "callbackURLs": ["https://auth.syslabs.dev/oauth2/callback"],
+    "logoutCallbackURLs": [],
+    "isPublic": false,
+    "pkceEnabled": true,
+    "skipConsent": true,
+    "isGroupRestricted": false
+  }
+]

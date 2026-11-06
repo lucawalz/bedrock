@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: pocket-id
+spec:
+  name: pocket-id
+  cluster:
+    name: postgres
+  login: true
+  passwordSecret:
+    name: pg-pocket-id

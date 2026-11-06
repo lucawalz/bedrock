@@ -1,0 +1,46 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pocket-id-ingress
+  namespace: pocket-id
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pocket-id
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pocket-id-clients
+      ports:
+        - protocol: TCP
+          port: 1411
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pocket-id-egress-postgres
+  namespace: pocket-id
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pocket-id
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: postgres
+          podSelector:
+            matchLabels:
+              cnpg.io/cluster: postgres
+      ports:
+        - protocol: TCP
+          port: 5432

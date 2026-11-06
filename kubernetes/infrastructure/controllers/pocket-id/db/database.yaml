@@ -1,10 +1,9 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Database
 metadata:
-  name: authentik
-  namespace: postgres
+  name: pocket-id
 spec:
-  name: authentik
-  owner: authentik
+  name: pocket-id
+  owner: pocket-id
   cluster:
     name: postgres

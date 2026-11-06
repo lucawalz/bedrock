@@ -2,33 +2,6 @@
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
-  name: authentik-restricted
-  namespace: kyverno
-spec:
-  exceptions:
-    - policyName: require-drop-all-capabilities
-      ruleNames:
-        - "*"
-    - policyName: require-run-as-non-root
-      ruleNames:
-        - "*"
-  match:
-    any:
-      - resources:
-          kinds:
-            - Pod
-            - Deployment
-          namespaces:
-            - authentik
-          names:
-            - authentik-server
-            - authentik-server-*
-            - authentik-worker
-            - authentik-worker-*
----
-apiVersion: kyverno.io/v2
-kind: PolicyException
-metadata:
   name: paperless-ngx-drop-capabilities
   namespace: kyverno
 spec:

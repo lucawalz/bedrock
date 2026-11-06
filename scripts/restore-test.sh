@@ -11,7 +11,7 @@ POSTGRES_RESTORE_CLUSTER=postgres-restore-test
 POSTGRES_OBJECT_STORE=postgres-backup
 POSTGRES_RESTORE_TIMEOUT=30m
 # Migration history only changes on upgrades, so recent writes lost to WAL recovery cannot cause a mismatch.
-POSTGRES_CHECKS=("authentik django_migrations" "paperless django_migrations")
+POSTGRES_CHECKS=("pocket-id schema_migrations" "paperless django_migrations")
 
 LONGHORN_NAMESPACE=longhorn-system
 LONGHORN_PVC_NAMESPACE=paperless

@@ -18,7 +18,7 @@ spec:
     - match: Host(`alertmanager.syslabs.dev`)
       kind: Rule
       middlewares:
-        - name: authentik-forward-auth
+        - name: forward-auth
       services:
         - name: kube-prometheus-stack-alertmanager
           port: 9093

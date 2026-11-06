@@ -12,7 +12,8 @@ resources:
   - cloudflare-tunnel.yaml
   - monitoring.yaml
   - longhorn-system.yaml
-  - authentik.yaml
+  - pocket-id.yaml
+  - oauth2-proxy.yaml
   - reloader.yaml
   - kyverno.yaml
   - flagger.yaml

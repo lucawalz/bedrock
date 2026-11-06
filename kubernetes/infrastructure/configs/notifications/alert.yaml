@@ -21,9 +21,6 @@ spec:
       namespace: flux-system
     - kind: HelmRelease
       name: '*'
-      namespace: authentik
-    - kind: HelmRelease
-      name: '*'
       namespace: cert-manager
     - kind: HelmRelease
       name: '*'
@@ -63,7 +60,13 @@ spec:
       namespace: ntfy
     - kind: HelmRelease
       name: '*'
+      namespace: oauth2-proxy
+    - kind: HelmRelease
+      name: '*'
       namespace: paperless
+    - kind: HelmRelease
+      name: '*'
+      namespace: pocket-id
     - kind: HelmRelease
       name: '*'
       namespace: reloader

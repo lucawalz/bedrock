@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: pocket-id
+resources:
+  - job.yaml
+  - networkpolicies.yaml
+configMapGenerator:
+  - name: pocket-id-clients
+    files:
+      - clients.json
+      - sync.py

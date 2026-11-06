@@ -171,7 +171,8 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Grafana | dashboards for the Prometheus stack | internal (`grafana`) |
 | Prometheus | metrics store and query browser | internal (`prometheus`) |
 | Alertmanager | alert routing, grouping, and silences | internal (`alertmanager`) |
-| Authentik | single sign-on and identity provider | internal (`auth`) |
+| Pocket ID | passkey identity provider for single sign-on | internal (`id`) |
+| oauth2-proxy | forward-auth gate in front of the admin UIs | internal (`auth`) |
 | LiteLLM | OpenAI-compatible gateway in front of Ollama | internal (`litellm`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
 | Zot | in-cluster OCI registry | internal (`registry`) |
@@ -180,7 +181,7 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive | internal (`paperless`) |
 
-One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Authentik, Paperless, and Open WebUI.
+One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Pocket ID, Paperless, and Open WebUI.
 
 ## Security
 

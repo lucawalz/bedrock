@@ -18,7 +18,7 @@ spec:
     - match: Host(`litellm.${cluster_domain}`)
       kind: Rule
       middlewares:
-        - name: authentik-forward-auth
+        - name: forward-auth
       services:
         - name: litellm
           port: 4000

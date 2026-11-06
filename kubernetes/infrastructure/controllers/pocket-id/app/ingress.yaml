@@ -1,0 +1,23 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pocket-id
+  namespace: pocket-id
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Pocket ID
+    gethomepage.dev/group: Platform
+    gethomepage.dev/icon: pocket-id.png
+    gethomepage.dev/href: https://id.syslabs.dev
+    gethomepage.dev/podSelector: app.kubernetes.io/name=pocket-id
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`id.syslabs.dev`)
+      kind: Rule
+      services:
+        - name: pocket-id
+          port: 1411
+  tls: {}

@@ -1,0 +1,73 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy
+  namespace: oauth2-proxy
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: "10.7.1"
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: flux-system
+  install:
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    remediation:
+      retries: 3
+  driftDetection:
+    mode: warn
+  values:
+    replicaCount: 2
+    serviceAccount:
+      automountServiceAccountToken: false
+    deploymentAnnotations:
+      reloader.stakater.com/auto: "true"
+    config:
+      existingSecret: oauth2-proxy
+      # "*" would authorize every address and bypass the allowlist file
+      emailDomains: []
+      upstreams:
+        - static://202
+    authenticatedEmailsFile:
+      enabled: true
+      persistence: secret
+      template: oauth2-proxy-emails
+    extraArgs:
+      provider: oidc
+      provider-display-name: Pocket ID
+      oidc-issuer-url: https://id.syslabs.dev
+      code-challenge-method: S256
+      scope: openid email profile
+      redirect-url: https://auth.syslabs.dev/oauth2/callback
+      cookie-domain: .syslabs.dev
+      whitelist-domain: .syslabs.dev
+      cookie-samesite: lax
+      reverse-proxy: true
+      trusted-proxy-ip: 10.42.0.0/16
+      skip-provider-button: true
+      set-xauthrequest: true
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 2000
+      runAsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 128Mi
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: oauth2-proxy

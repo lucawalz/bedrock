@@ -18,7 +18,7 @@ spec:
     - match: Host(`longhorn.syslabs.dev`)
       kind: Rule
       middlewares:
-        - name: authentik-forward-auth
+        - name: forward-auth
       services:
         - name: longhorn-frontend
           port: 80
