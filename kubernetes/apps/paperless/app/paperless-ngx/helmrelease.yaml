@@ -36,7 +36,8 @@ spec:
       PAPERLESS_DBPORT: "5432"
       PAPERLESS_DBNAME: paperless
       PAPERLESS_DBUSER: paperless
-      PAPERLESS_OCR_LANGUAGE: eng
+      PAPERLESS_OCR_LANGUAGE: deu+eng
+      PAPERLESS_FILENAME_FORMAT: "{{`{{ created_year }}/{{ document_type }}/{{ correspondent }}/{{ created_year }}-{{ created_month }}-{{ created_day }} {{ title }}`}}"
       PAPERLESS_TASK_WORKERS: "2"
       PAPERLESS_THREADS_PER_WORKER: "1"
       PAPERLESS_REDIS: redis://paperless-redis:6379
