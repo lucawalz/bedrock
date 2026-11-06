@@ -64,67 +64,7 @@ in
         filtering_enabled = true;
         rewrites = [
           {
-            domain = "alertmanager.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "auth.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "chat.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "flux.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "grafana.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "home.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "litellm.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "longhorn.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "ntfy.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "paperless.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "prometheus.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "registry.syslabs.dev";
-            answer = inventory.serviceVip;
-            enabled = true;
-          }
-          {
-            domain = "traefik.syslabs.dev";
+            domain = "*.syslabs.dev";
             answer = inventory.serviceVip;
             enabled = true;
           }
