@@ -29,7 +29,7 @@ in
     firewall = {
       enable = true;
       filterForward = true;
-      allowedUDPPorts = [ 53 ];
+      extraInputRules = ''iifname "end0" ip saddr ${homeSubnet} meta l4proto { tcp, udp } th dport 53 accept'';
       trustedInterfaces = [
         "vlan20"
         "tailscale0"
