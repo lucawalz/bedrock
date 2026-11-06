@@ -45,6 +45,7 @@
           nixos-rebuild
           git
           yq-go
+          just
           prometheus.cli
           jq
           curl
