@@ -18,6 +18,24 @@ data:
         litellm_params:
           model: ollama/nomic-embed-text
           api_base: http://ollama.llm.svc.cluster.local:11434
+      - model_name: paperless-haiku
+        litellm_params:
+          model: anthropic/claude-haiku-5-5
+          api_key: os.environ/ANTHROPIC_API_KEY
+          thinking:
+            type: disabled
+          # Haiku 5.5 rejects any temperature but 1, and paperless-gpt always sends one
+          additional_drop_params:
+            - temperature
+          # list price up to 100K prompt tokens; without it the model is unpriced and key budgets never trip
+          input_cost_per_token: 0.0000001
+          output_cost_per_token: 0.0000005
+        # custom pricing registers a map entry that hides the Claude fallback rules, so restate the capabilities
+        model_info:
+          mode: chat
+          supports_vision: true
+          supports_reasoning: true
+          supports_adaptive_thinking: true
     general_settings:
       master_key: os.environ/LITELLM_MASTER_KEY
     litellm_settings:

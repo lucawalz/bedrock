@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: litellm
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/internet-egress
   - ../../../components/forward-auth
   - ../../../components/topology-spread
 resources:
@@ -10,3 +11,18 @@ resources:
   - configmap.yaml
   - ingress.yaml
   - networkpolicies.yaml
+patches:
+  - target:
+      kind: NetworkPolicy
+      name: allow-internet-egress
+    patch: |-
+      - op: replace
+        path: /spec/podSelector
+        value:
+          matchLabels:
+            app.kubernetes.io/name: litellm
+      - op: test
+        path: /spec/egress/0/ports/0/port
+        value: 80
+      - op: remove
+        path: /spec/egress/0/ports/0

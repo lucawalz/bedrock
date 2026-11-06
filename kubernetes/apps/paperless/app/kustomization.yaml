@@ -4,7 +4,6 @@ namespace: paperless
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/intra-namespace
-  - ../../../components/network-policies/internet-egress
   - ../../../components/forward-auth
 resources:
   - paperless-ngx
@@ -14,18 +13,3 @@ resources:
   - tika
   - ingress.yaml
   - networkpolicies.yaml
-patches:
-  - target:
-      kind: NetworkPolicy
-      name: allow-internet-egress
-    patch: |-
-      - op: replace
-        path: /spec/podSelector
-        value:
-          matchLabels:
-            app.kubernetes.io/name: paperless-gpt
-      - op: test
-        path: /spec/egress/0/ports/0/port
-        value: 80
-      - op: remove
-        path: /spec/egress/0/ports/0

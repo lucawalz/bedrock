@@ -1,0 +1,9 @@
+[
+  {
+    "key_alias": "paperless-gpt",
+    "env": "PAPERLESS_GPT_KEY",
+    "models": ["paperless-haiku"],
+    "max_budget": 5,
+    "budget_duration": "30d"
+  }
+]

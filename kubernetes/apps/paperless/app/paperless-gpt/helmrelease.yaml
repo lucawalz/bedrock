@@ -37,22 +37,23 @@ spec:
             env:
               PAPERLESS_BASE_URL: http://paperless-ngx:8000
               PAPERLESS_PUBLIC_URL: https://paperless.${cluster_domain}
-              LLM_PROVIDER: anthropic
-              LLM_MODEL: claude-haiku-4-5
+              LLM_PROVIDER: openai
+              LLM_MODEL: paperless-haiku
               OCR_PROVIDER: llm
-              VISION_LLM_PROVIDER: anthropic
-              VISION_LLM_MODEL: claude-haiku-4-5
+              VISION_LLM_PROVIDER: openai
+              VISION_LLM_MODEL: paperless-haiku
+              OPENAI_BASE_URL: http://litellm.litellm.svc.cluster.local:4000/v1
               VISION_LLM_MAX_TOKENS: "8192"
               PAPERLESS_API_TOKEN:
                 valueFrom:
                   secretKeyRef:
                     name: paperless-gpt
                     key: PAPERLESS_API_TOKEN
-              ANTHROPIC_API_KEY:
+              OPENAI_API_KEY:
                 valueFrom:
                   secretKeyRef:
                     name: paperless-gpt
-                    key: ANTHROPIC_API_KEY
+                    key: OPENAI_API_KEY
             probes:
               liveness:
                 enabled: true

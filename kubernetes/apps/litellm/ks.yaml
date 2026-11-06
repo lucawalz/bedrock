@@ -1,6 +1,33 @@
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: litellm-db
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/apps/litellm/db
+  targetNamespace: postgres
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-cnpg-db
+  # no failed expression: a Database reports applied false until its owner role exists, which is transient here
+  healthCheckExprs:
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: DatabaseRole
+      current: has(status.applied) && status.applied && status.observedGeneration == metadata.generation
+    - apiVersion: postgresql.cnpg.io/v1
+      kind: Database
+      current: has(status.applied) && status.applied && status.observedGeneration == metadata.generation
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: litellm
   namespace: flux-system
 spec:
@@ -15,10 +42,31 @@ spec:
     name: flux-system
   dependsOn:
     - name: cluster-edge-onprem
+    - name: litellm-db
   postBuild:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-settings
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: litellm-keys
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/apps/litellm/keys
+  prune: true
+  wait: true
+  timeout: 5m
+  # Job pod templates are immutable, so a changed key list or script needs the Job recreated
+  force: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: litellm
 ---
 apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Alert

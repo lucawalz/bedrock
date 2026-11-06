@@ -173,16 +173,16 @@ Each service is reached at a subdomain of the cluster domain. The public ones go
 | Alertmanager | alert routing, grouping, and silences | internal (`alertmanager`) |
 | Pocket ID | passkey identity provider for single sign-on | internal (`id`) |
 | oauth2-proxy | forward-auth gate in front of the admin UIs | internal (`auth`) |
-| LiteLLM | OpenAI-compatible gateway in front of Ollama | internal (`litellm`) |
+| LiteLLM | OpenAI-compatible gateway in front of Ollama and Anthropic | internal (`litellm`) |
 | Longhorn | storage management UI | internal (`longhorn`) |
 | Zot | in-cluster OCI registry | internal (`registry`) |
 | Traefik | router dashboard | internal (`traefik`) |
 | Flux | GitOps reconciliation dashboard | internal (`flux`) |
 | ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
 | Paperless | document archive | internal (`paperless`) |
-| paperless-gpt | Claude Haiku vision OCR and tagging for Paperless | internal (`paperless-gpt`) |
+| paperless-gpt | Claude Haiku vision OCR and tagging for Paperless, through LiteLLM | internal (`paperless-gpt`) |
 
-One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Pocket ID, Paperless, and Open WebUI.
+One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. LiteLLM also holds the only Anthropic key: paperless-gpt calls Claude Haiku 5.5 through it with a virtual key that is limited to that model and carries its own budget, and a Job recreates that key from git after a rebuild. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Pocket ID, Paperless, Open WebUI, and LiteLLM.
 
 ## Security
 

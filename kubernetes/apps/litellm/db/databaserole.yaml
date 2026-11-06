@@ -1,0 +1,11 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: litellm
+spec:
+  name: litellm
+  cluster:
+    name: postgres
+  login: true
+  passwordSecret:
+    name: pg-litellm
