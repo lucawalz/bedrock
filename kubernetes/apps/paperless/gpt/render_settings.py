@@ -15,6 +15,7 @@ PROMPTS_DST = "/app/prompts"
 SETTINGS_PATH = "/app/config/settings.json"
 RETRY_DELAY_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 10
+PROMPT_SUFFIX = ".tmpl"
 
 
 def fetch_fields(token):
@@ -54,6 +55,14 @@ def wait_for_ids(names, fetch, sleep=time.sleep):
             sleep(RETRY_DELAY_SECONDS)
 
 
+# ConfigMap volumes also hold ..data and a timestamped directory beside the keys
+def copy_prompts(src, dst):
+    for name in os.listdir(src):
+        if not name.endswith(PROMPT_SUFFIX):
+            continue
+        shutil.copyfile(os.path.join(src, name), os.path.join(dst, name))
+
+
 def main():
     token = os.environ["PAPERLESS_API_TOKEN"]
     with open(TEMPLATE_PATH, encoding="utf-8") as handle:
@@ -61,8 +70,7 @@ def main():
     with open(TAXONOMY_PATH, encoding="utf-8") as handle:
         names = field_names(yaml.safe_load(handle))
     ids = wait_for_ids(names, lambda: fetch_fields(token))
-    for name in os.listdir(PROMPTS_SRC):
-        shutil.copyfile(os.path.join(PROMPTS_SRC, name), os.path.join(PROMPTS_DST, name))
+    copy_prompts(PROMPTS_SRC, PROMPTS_DST)
     with open(SETTINGS_PATH, "w", encoding="utf-8") as handle:
         json.dump(build_settings(template, ids), handle, indent=2, ensure_ascii=False)
 

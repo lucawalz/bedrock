@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import tempfile
 import unittest
 
 import yaml
@@ -67,6 +68,35 @@ class RenderSettingsTest(unittest.TestCase):
         ids = rs.wait_for_ids(["A"], lambda: responses.pop(0), sleep=sleeps.append)
         self.assertEqual(ids, [4])
         self.assertEqual(len(sleeps), UNRESOLVED_ATTEMPTS)
+
+
+PROMPT_FILES = {
+    "correspondent_prompt.tmpl": "correspondent body",
+    "title_prompt.tmpl": "title body",
+}
+CONFIGMAP_TIMESTAMP_DIR = "..2026_11_06_00_00_00.000000000"
+
+
+class CopyPromptsTest(unittest.TestCase):
+    def test_copies_only_templates_from_configmap_volume(self):
+        with tempfile.TemporaryDirectory() as root:
+            src = os.path.join(root, "src")
+            dst = os.path.join(root, "dst")
+            os.makedirs(os.path.join(src, CONFIGMAP_TIMESTAMP_DIR))
+            os.makedirs(dst)
+            for name, body in PROMPT_FILES.items():
+                with open(os.path.join(src, CONFIGMAP_TIMESTAMP_DIR, name), "w", encoding="utf-8") as handle:
+                    handle.write(body)
+            os.symlink(CONFIGMAP_TIMESTAMP_DIR, os.path.join(src, "..data"))
+            for name in PROMPT_FILES:
+                os.symlink(os.path.join("..data", name), os.path.join(src, name))
+            rs.copy_prompts(src, dst)
+            self.assertEqual(sorted(os.listdir(dst)), sorted(PROMPT_FILES))
+            for name, body in PROMPT_FILES.items():
+                path = os.path.join(dst, name)
+                self.assertFalse(os.path.islink(path))
+                with open(path, encoding="utf-8") as handle:
+                    self.assertEqual(handle.read(), body)
 
 
 if __name__ == "__main__":
