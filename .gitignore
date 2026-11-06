@@ -38,3 +38,4 @@ tests/promtool/*.gen.yaml
 # Per-run script artefacts
 /var/
 
+.wrangler/
