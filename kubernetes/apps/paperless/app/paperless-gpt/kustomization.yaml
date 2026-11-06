@@ -5,3 +5,14 @@ components:
 resources:
   - helmrelease.yaml
   - pvc.yaml
+configMapGenerator:
+  - name: paperless-gpt-prompts
+    files:
+      - prompts/title_prompt.tmpl
+      - prompts/correspondent_prompt.tmpl
+  - name: paperless-gpt-settings
+    files:
+      - settings.template.json
+      - render_settings.py
+generatorOptions:
+  disableNameSuffixHash: true

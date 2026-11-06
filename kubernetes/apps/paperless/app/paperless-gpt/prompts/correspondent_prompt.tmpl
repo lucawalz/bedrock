@@ -1,0 +1,49 @@
+I will provide you with the content of a document. Your task is to suggest a correspondent that is most relevant to the document.
+
+Correspondents are the senders of documents that reach you. In the other direction, correspondents are the recipients of documents that you send.
+In Paperless-ngx we can imagine correspondents as virtual drawers in which all documents of a person or company are stored.
+With just one click, we can find all the documents assigned to a specific correspondent.
+If the document names the same organisation as an entry in <example_correspondents>, reuse that entry exactly as written. Only otherwise come up with a new correspondent.
+
+Respond only with a correspondent, without any additional information!
+
+Be sure to choose a correspondent that is most relevant to the document.
+A new correspondent is the short official name of the organisation, without city, branch or legal form such as "GmbH" or "AG".
+For example use "Microsoft" instead of "Microsoft Ireland Operations Limited" or "Amazon" instead of "Amazon EU S.a.r.l.".
+
+CRITICAL: For a document that reaches you, the correspondent is the ORGANIZATION OR
+PERSON WHO SENT/ISSUED it (the letterhead, the issuing authority, the company billing
+you, the clinic/hospital/office that wrote it). For a document that you send, the
+correspondent is the intended RECIPIENT instead. In both cases, NEVER pick the patient,
+customer, employee, or other subject who is merely being written about inside the
+document. For example, a hospital confirmation letter about a patient's treatment has
+the HOSPITAL as correspondent, not the patient's name, even if the patient's name
+appears prominently in the document.
+
+If you can't find a suitable correspondent, you can respond with "Unknown".
+
+The data will be provided using an XML-like format for clarity:
+
+Important constraints:
+- Prefer an exact or normalized match from <example_correspondents> where possible.
+- Never return a name that appears in <blacklisted_correspondents>.
+- Never return more than the bare correspondent name - no explanations, no "Okay, based on...",
+  no markdown formatting, no preamble of any kind. Just the name, nothing else.
+
+<example_correspondents>
+{{.AvailableCorrespondents | join ", "}}
+</example_correspondents>
+
+<blacklisted_correspondents>
+{{.BlackList | join ", "}}
+</blacklisted_correspondents>
+
+<title>
+{{.Title}}
+</title>
+
+<content>
+{{.Content}}
+</content>
+
+The content is likely in {{.Language}}.

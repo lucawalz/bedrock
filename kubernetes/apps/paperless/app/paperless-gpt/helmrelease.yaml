@@ -29,6 +29,33 @@ spec:
         strategy: Recreate
         annotations:
           reloader.stakater.com/auto: "true"
+        initContainers:
+          render-config:
+            image:
+              repository: ghcr.io/paperless-ngx/paperless-ngx
+              tag: 3.1.3@sha256:aa810a36942c63d4ee70d00eda7236cd3d6acfb7eb3f7987fb568ed14df8817a
+            command:
+              - python3
+              - /src/settings/render_settings.py
+            env:
+              PYTHONDONTWRITEBYTECODE: "1"
+              PAPERLESS_API_TOKEN:
+                valueFrom:
+                  secretKeyRef:
+                    name: paperless-gpt
+                    key: PAPERLESS_API_TOKEN
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                memory: 128Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
         containers:
           app:
             image:
@@ -44,6 +71,9 @@ spec:
               VISION_LLM_MODEL: paperless-haiku
               OPENAI_BASE_URL: http://litellm.litellm.svc.cluster.local:4000/v1
               VISION_LLM_MAX_TOKENS: "8192"
+              CREATE_NEW_TAGS: "false"
+              AUTO_TAG: paperless-gpt-auto
+              TOKEN_LIMIT: "8000"
               PAPERLESS_API_TOKEN:
                 valueFrom:
                   secretKeyRef:
@@ -109,12 +139,32 @@ spec:
       data:
         existingClaim: paperless-gpt
         globalMounts:
-          - path: /app/config
-            subPath: config
           - path: /app/db
             subPath: db
+      config:
+        type: emptyDir
+        globalMounts:
+          - path: /app/config
+      prompts:
+        type: emptyDir
+        globalMounts:
           - path: /app/prompts
-            subPath: prompts
+      prompts-src:
+        type: configMap
+        name: paperless-gpt-prompts
+        advancedMounts:
+          paperless-gpt:
+            render-config:
+              - path: /src/prompts
+                readOnly: true
+      settings-src:
+        type: configMap
+        name: paperless-gpt-settings
+        advancedMounts:
+          paperless-gpt:
+            render-config:
+              - path: /src/settings
+                readOnly: true
       tmp:
         type: emptyDir
         sizeLimit: 1Gi
