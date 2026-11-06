@@ -38,10 +38,11 @@ spec:
               PAPERLESS_BASE_URL: http://paperless-ngx:8000
               PAPERLESS_PUBLIC_URL: https://paperless.${cluster_domain}
               LLM_PROVIDER: anthropic
-              LLM_MODEL: claude-haiku-5-5
+              LLM_MODEL: claude-haiku-4-5
               OCR_PROVIDER: llm
               VISION_LLM_PROVIDER: anthropic
-              VISION_LLM_MODEL: claude-haiku-5-5
+              VISION_LLM_MODEL: claude-haiku-4-5
+              VISION_LLM_MAX_TOKENS: "8192"
               PAPERLESS_API_TOKEN:
                 valueFrom:
                   secretKeyRef:
