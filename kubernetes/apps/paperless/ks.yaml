@@ -48,6 +48,26 @@ spec:
       - kind: ConfigMap
         name: cluster-settings
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: paperless-gpt-access
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/apps/paperless/access
+  prune: true
+  wait: true
+  timeout: 5m
+  # Job pod templates are immutable, so a changed script needs the Job recreated
+  force: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: paperless
+---
 apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Alert
 metadata:
