@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: paperless-gpt-token
+  name: paperless-gpt-access
   namespace: paperless
 spec:
   backoffLimit: 10
@@ -10,7 +10,7 @@ spec:
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: paperless-gpt-token
+        app.kubernetes.io/name: paperless-gpt-access
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false
@@ -21,7 +21,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       containers:
-        - name: token
+        - name: access
           image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3@sha256:aa810a36942c63d4ee70d00eda7236cd3d6acfb7eb3f7987fb568ed14df8817a
           command:
             - python3
@@ -30,16 +30,66 @@ spec:
             - --command
             - |
               import os
-              from django.contrib.auth.models import User
+              from django.contrib.auth.models import Group, Permission, User
               from rest_framework.authtoken.models import Token
-              user, _ = User.objects.get_or_create(username="paperless-gpt")
-              user.is_superuser = True
+              from documents.models import UiSettings, Workflow, WorkflowAction, WorkflowTrigger
+
+              NAME = "paperless-gpt"
+              CODENAMES = [
+                  "view_document", "change_document",
+                  "view_tag", "add_tag",
+                  "view_correspondent", "add_correspondent",
+                  "view_documenttype",
+                  "view_customfield",
+              ]
+
+              group, _ = Group.objects.get_or_create(name=NAME)
+              permissions = Permission.objects.filter(content_type__app_label="documents", codename__in=CODENAMES)
+              if permissions.count() != len(CODENAMES):
+                  raise SystemExit("a paperless-gpt permission codename is missing")
+              group.permissions.set(permissions)
+
+              user, _ = User.objects.get_or_create(username=NAME)
+              user.is_superuser = False
               user.is_staff = False
               user.set_unusable_password()
               user.save()
+              user.groups.set([group])
+              user.user_permissions.clear()
+
               key = os.environ["PAPERLESS_API_TOKEN"]
-              Token.objects.filter(user=user).exclude(key=key).delete()
-              Token.objects.get_or_create(key=key, defaults={"user": user})
+              token = Token.objects.filter(user=user).first()
+              if token is not None and token.key != key:
+                  token.delete()
+                  token = None
+              if token is None:
+                  Token.objects.create(user=user, key=key)
+
+              workflow, _ = Workflow.objects.get_or_create(name=NAME)
+              trigger = workflow.triggers.first() or WorkflowTrigger()
+              trigger.type = WorkflowTrigger.WorkflowTriggerType.DOCUMENT_ADDED
+              trigger.save()
+              action = workflow.actions.first() or WorkflowAction()
+              action.type = WorkflowAction.WorkflowActionType.ASSIGNMENT
+              action.save()
+              action.assign_view_groups.add(group)
+              action.assign_change_groups.add(group)
+              workflow.triggers.set([trigger])
+              workflow.actions.set([action])
+              workflow.enabled = True
+              workflow.save()
+
+              owner = User.objects.get(username=os.environ["PAPERLESS_ADMIN_USER"])
+              ui_settings, _ = UiSettings.objects.get_or_create(user=owner, defaults={"settings": {}})
+              stored = ui_settings.settings or {}
+              defaults = stored.setdefault("permissions", {})
+              # the frontend reads general-settings:permissions:default-edit-groups, stored as default_edit_groups
+              for setting in ("default_view_groups", "default_edit_groups"):
+                  ids = defaults.get(setting) or []
+                  if group.pk not in ids:
+                      defaults[setting] = [*ids, group.pk]
+              ui_settings.settings = stored
+              ui_settings.save()
           env:
             - name: PAPERLESS_DATA_DIR
               value: /tmp/data
@@ -65,6 +115,11 @@ spec:
                 secretKeyRef:
                   name: paperless
                   key: PAPERLESS_SECRET_KEY
+            - name: PAPERLESS_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: paperless
+                  key: PAPERLESS_ADMIN_USER
             - name: PAPERLESS_API_TOKEN
               valueFrom:
                 secretKeyRef:
