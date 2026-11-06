@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: paperless-gpt-token
+  namespace: paperless
+spec:
+  backoffLimit: 10
+  # deleting the finished Job lets Flux recreate it on a later reconcile, which repairs drift such as a restored database
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: paperless-gpt-token
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: token
+          image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3@sha256:aa810a36942c63d4ee70d00eda7236cd3d6acfb7eb3f7987fb568ed14df8817a
+          command:
+            - python3
+            - manage.py
+            - shell
+            - --command
+            - |
+              import os
+              from django.contrib.auth.models import User
+              from rest_framework.authtoken.models import Token
+              user, _ = User.objects.get_or_create(username="paperless-gpt")
+              user.is_superuser = True
+              user.is_staff = False
+              user.set_unusable_password()
+              user.save()
+              key = os.environ["PAPERLESS_API_TOKEN"]
+              Token.objects.filter(user=user).exclude(key=key).delete()
+              Token.objects.get_or_create(key=key, defaults={"user": user})
+          env:
+            - name: PAPERLESS_DATA_DIR
+              value: /tmp/data
+            - name: PAPERLESS_REDIS
+              value: redis://paperless-redis:6379
+            - name: PAPERLESS_DBENGINE
+              value: postgresql
+            - name: PAPERLESS_DBHOST
+              value: postgres-rw.postgres.svc.cluster.local
+            - name: PAPERLESS_DBPORT
+              value: "5432"
+            - name: PAPERLESS_DBNAME
+              value: paperless
+            - name: PAPERLESS_DBUSER
+              value: paperless
+            - name: PAPERLESS_DBPASS
+              valueFrom:
+                secretKeyRef:
+                  name: paperless
+                  key: PAPERLESS_DBPASS
+            - name: PAPERLESS_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: paperless
+                  key: PAPERLESS_SECRET_KEY
+            - name: PAPERLESS_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-gpt
+                  key: PAPERLESS_API_TOKEN
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
