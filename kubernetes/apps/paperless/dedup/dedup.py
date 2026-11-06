@@ -17,7 +17,7 @@ API = "https://api.github.com/repos/lucawalz/bedrock-secrets"
 TAXONOMY_FILE = "clusters/home/apps/paperless-taxonomy.yaml"
 TAXONOMY_KEY = "taxonomy.yaml"
 BRANCH_PREFIX = "paperless/dedup-"
-TITLE = "feat(paperless): merge duplicate correspondents"
+TITLE = "feat(paperless): merge duplicate correspondents proposed by the weekly job"
 TIMEOUT_SECONDS = 30
 PULLS_PAGE = 100
 LEGAL_SUFFIXES = {"gmbh", "ag", "kg", "mbh", "se", "ev", "ltd", "inc"}
@@ -53,8 +53,7 @@ def reason(first, second):
 
 
 def find_pairs(names, known):
-    if len(set(names)) != len(names):
-        raise ValueError("correspondent names must be unique")
+    names = list(dict.fromkeys(names))
     tokens = {name: normalise(name) for name in names}
     pairs = []
     for index, keep in enumerate(names):
@@ -176,7 +175,7 @@ def open_pr(pairs, token):
         return None
     if not token:
         raise ValueError("a GitHub token is required")
-    # ponytail: only the newest page of pulls is read, follow the Link header if the repository outgrows it
+    # reads only the newest PULLS_PAGE pulls per state; past that the Link header needs following
     pulls = github("GET", f"/pulls?state=open&per_page={PULLS_PAGE}", token)
     if any(pull["head"]["ref"].startswith(BRANCH_PREFIX) for pull in pulls):
         return None

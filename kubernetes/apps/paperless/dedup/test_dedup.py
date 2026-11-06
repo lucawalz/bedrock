@@ -12,6 +12,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paperless.settings")
 django.setup()
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from django.contrib.auth.models import User  # noqa: E402
 from django.test import TestCase  # noqa: E402
 from documents.models import Correspondent, Document  # noqa: E402
 
@@ -43,6 +44,7 @@ UPDATED = CONFIG_MAP.replace(
 CANONICAL = CONFIG_MAP.replace("    correspondents: []\n", "    correspondents:\n      - name: Example\n")
 SWAPPED = CANONICAL.replace("      - name: Example\n", "      - name: Example\n        aliases:\n          - Example GmbH\n")
 PAIR = ("Example GmbH", "Example", "obvious")
+TITLE = "feat(paperless): merge duplicate correspondents proposed by the weekly job"
 PR_URL = "https://github.com/lucawalz/bedrock-secrets/pull/1"
 
 
@@ -122,6 +124,14 @@ class DedupTest(TestCase):
             document(name, many)
         self.assertEqual(find_pairs(list(document_counts()), {}), [("Example GmbH", "Example", "obvious")])
 
+    def test_names_shared_across_owners_count_once(self):
+        self.assertEqual(find_pairs(["Example GmbH", "Example", "Example"], {}), [PAIR])
+        for username in ("first", "second"):
+            document(username, Correspondent.objects.create(name="Example", owner=User.objects.create(username=username)))
+        document("third", Correspondent.objects.create(name="Example GmbH"))
+        self.assertEqual(document_counts(), {"Example": 2, "Example GmbH": 1})
+        self.assertEqual(find_pairs(list(document_counts()), {}), [("Example", "Example GmbH", "obvious")])
+
     def test_pr_adds_aliases_and_keeps_the_rest_of_the_file(self):
         document("one", Correspondent.objects.create(name="Example GmbH"))
         fake = self.github([{"head": {"ref": "renovate/sops"}}])
@@ -134,6 +144,7 @@ class DedupTest(TestCase):
         self.assertEqual((commit["sha"], commit["branch"]), ("blob", branch["ref"].removeprefix("refs/heads/")))
         pull = fake.body("POST", f"{REPOSITORY}/pulls")
         self.assertEqual((pull["head"], pull["base"]), (commit["branch"], "main"))
+        self.assertEqual((pull["title"], commit["message"]), (TITLE, TITLE))
         self.assertIn("| Example GmbH | 1 | Example | 0 | obvious |", pull["body"])
         self.assertIn('<!-- paperless-dedup: [["Example GmbH", "Example"]] -->', pull["body"])
 
