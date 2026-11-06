@@ -94,6 +94,7 @@ class SyncTest(TestCase):
         rules = MailRule.objects.filter(account__name="paperless")
         self.assertEqual(sorted(rule.filter_from for rule in rules), ["a@x.de", "b@y.de"])
         self.assertEqual({rule.attachment_type for rule in rules}, {MailRule.AttachmentProcessing.ATTACHMENTS_ONLY})
+        self.assertEqual({rule.action for rule in rules}, {MailRule.MailAction.DELETE})
 
         counts = self.run_sync(mail_env=mail("b@y.de"))
         self.assertEqual([rule.filter_from for rule in rules.all()], ["b@y.de"])
@@ -101,6 +102,13 @@ class SyncTest(TestCase):
 
         self.run_sync(mail_env=mail(""))
         self.assertFalse(rules.all().exists())
+
+    def test_existing_rule_action_is_updated(self):
+        self.run_sync(mail_env=mail("a@x.de"))
+        MailRule.objects.filter(name="paperless-1").update(action=MailRule.MailAction.MARK_READ)
+        counts = self.run_sync(mail_env=mail("a@x.de"))
+        self.assertEqual(MailRule.objects.get(name="paperless-1").action, MailRule.MailAction.DELETE)
+        self.assertEqual(counts["updated"], 1)
 
     def test_alias_merge_edge_cases(self):
         alias = Correspondent.objects.create(name="EU")

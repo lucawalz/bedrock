@@ -202,6 +202,7 @@ def sync_mail(account_fields, senders, counts):
             "filter_from": sender,
             "attachment_type": MailRule.AttachmentProcessing.ATTACHMENTS_ONLY,
             "consumption_scope": MailRule.ConsumptionScope.ATTACHMENTS_ONLY,
+            "action": MailRule.MailAction.DELETE,
             "enabled": True,
         }
         rule = account.rules.filter(name=name).first()
