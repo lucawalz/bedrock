@@ -1,0 +1,97 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: paperless-taxonomy
+  namespace: paperless
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 300
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: paperless-taxonomy
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: sync
+              image: ghcr.io/paperless-ngx/paperless-ngx:3.1.3@sha256:aa810a36942c63d4ee70d00eda7236cd3d6acfb7eb3f7987fb568ed14df8817a
+              command:
+                - python3
+                - manage.py
+                - shell
+                - --command
+                # manage.py shell runs its command under the shell module name, so run_name is what fires the main guard
+                - import runpy; runpy.run_path("/etc/paperless-taxonomy-sync/sync.py", run_name="__main__")
+              env:
+                - name: PAPERLESS_DATA_DIR
+                  value: /tmp/data
+                - name: PAPERLESS_REDIS
+                  value: redis://paperless-redis:6379
+                - name: PAPERLESS_DBENGINE
+                  value: postgresql
+                - name: PAPERLESS_DBHOST
+                  value: postgres-rw.postgres.svc.cluster.local
+                - name: PAPERLESS_DBPORT
+                  value: "5432"
+                - name: PAPERLESS_DBNAME
+                  value: paperless
+                - name: PAPERLESS_DBUSER
+                  value: paperless
+                - name: PAPERLESS_DBPASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless
+                      key: PAPERLESS_DBPASS
+                - name: PAPERLESS_SECRET_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: paperless
+                      key: PAPERLESS_SECRET_KEY
+              envFrom:
+                - secretRef:
+                    name: paperless-mail
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 256Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: taxonomy
+                  mountPath: /etc/paperless-taxonomy
+                  readOnly: true
+                - name: script
+                  mountPath: /etc/paperless-taxonomy-sync
+                  readOnly: true
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: taxonomy
+              configMap:
+                name: paperless-taxonomy
+            - name: script
+              configMap:
+                name: paperless-taxonomy-sync
