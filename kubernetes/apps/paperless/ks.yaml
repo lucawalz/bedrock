@@ -86,6 +86,24 @@ spec:
   dependsOn:
     - name: paperless
 ---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: paperless-dedup
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/apps/paperless/dedup
+  prune: true
+  wait: true
+  timeout: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: paperless-taxonomy
+---
 apiVersion: notification.toolkit.fluxcd.io/v1
 kind: Alert
 metadata:
