@@ -53,6 +53,7 @@
           coreutils
           python3
           bashInteractive
+          wrangler
         ];
       devShellExtraPackages = {
         x86_64-linux =

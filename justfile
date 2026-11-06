@@ -26,6 +26,12 @@ new-secret app:
 login app show="false":
     bash scripts/login.sh {{ quote(app) }} {{ quote(show) }}
 
+# Deploy the paperless mail sender gate, then prompt for ALLOWED_SENDERS and DESTINATION
+email-gate-deploy:
+    cd cloudflare/email-gate && wrangler deploy
+    cd cloudflare/email-gate && wrangler secret put ALLOWED_SENDERS
+    cd cloudflare/email-gate && wrangler secret put DESTINATION
+
 # Fetch the repository and reconcile the app's Flux Kustomization
 reconcile app:
     flux reconcile kustomization {{ quote(app) }} --with-source
