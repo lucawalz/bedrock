@@ -70,6 +70,16 @@ in
           }
         ];
       };
+      querylog = {
+        enabled = true;
+        file_enabled = false;
+        size_memory = 1000;
+        interval = "24h";
+      };
+      statistics = {
+        enabled = true;
+        interval = "168h";
+      };
       filters = [
         {
           enabled = true;

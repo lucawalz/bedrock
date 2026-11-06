@@ -33,7 +33,12 @@
     wirelessRegulatoryDatabase = true;
   };
 
+  documentation.enable = false;
+
+  nix.gc.options = lib.mkForce "--delete-older-than 7d";
+
   services = {
+    journald.settings.Journal.SystemMaxUse = "50M";
     kioskConsole.enable = true;
     openssh = {
       settings.PermitRootLogin = "prohibit-password";
@@ -42,7 +47,7 @@
   };
 
   boot = {
-    loader.generic-extlinux-compatible.configurationLimit = 10;
+    loader.generic-extlinux-compatible.configurationLimit = 2;
 
     zfs.forceImportRoot = false;
 
