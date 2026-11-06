@@ -22,6 +22,10 @@ new-app name host port db="false" sso="false" image="":
 new-secret app:
     bash scripts/new-secret.sh {{ quote(app) }}
 
+# Show an app's admin login and copy its password, for example: just login grafana; add show=true to print it
+login app show="false":
+    bash scripts/login.sh {{ quote(app) }} {{ quote(show) }}
+
 # Fetch the repository and reconcile the app's Flux Kustomization
 reconcile app:
     flux reconcile kustomization {{ quote(app) }} --with-source
