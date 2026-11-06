@@ -124,11 +124,11 @@ test("accepts the supported From forms", async () => {
   const forms = [
     ALLOWED,
     `<${ALLOWED}>`,
-    `Luca Walz <${ALLOWED}>`,
-    `"Paperless (Luca)" <${ALLOWED}>`,
-    `Paperless (Luca) <${ALLOWED}>`,
-    `=?UTF-8?Q?L=C3=BCca?= <${ALLOWED}>`,
-    `Lüca Ünal <${ALLOWED}>`,
+    `Alice Example <${ALLOWED}>`,
+    `"Scanner (Alice)" <${ALLOWED}>`,
+    `Scanner (Alice) <${ALLOWED}>`,
+    `=?UTF-8?Q?J=C3=B6rg?= <${ALLOWED}>`,
+    `Jörg Ünal <${ALLOWED}>`,
   ];
   for (const headerFrom of forms) {
     const calls = await run({ headerFrom });
