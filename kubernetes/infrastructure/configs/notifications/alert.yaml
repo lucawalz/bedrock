@@ -36,19 +36,10 @@ spec:
       namespace: flux-system
     - kind: HelmRelease
       name: '*'
-      namespace: homepage
-    - kind: HelmRelease
-      name: '*'
       namespace: kube-system
     - kind: HelmRelease
       name: '*'
       namespace: kyverno
-    - kind: HelmRelease
-      name: '*'
-      namespace: litellm
-    - kind: HelmRelease
-      name: '*'
-      namespace: llm
     - kind: HelmRelease
       name: '*'
       namespace: metallb-system
@@ -57,13 +48,7 @@ spec:
       namespace: monitoring
     - kind: HelmRelease
       name: '*'
-      namespace: ntfy
-    - kind: HelmRelease
-      name: '*'
       namespace: oauth2-proxy
-    - kind: HelmRelease
-      name: '*'
-      namespace: paperless
     - kind: HelmRelease
       name: '*'
       namespace: pocket-id

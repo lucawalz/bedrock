@@ -19,3 +19,20 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-settings
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Alert
+metadata:
+  name: litellm-flux
+  namespace: flux-system
+spec:
+  providerRef:
+    name: ntfy
+  eventSeverity: error
+  eventSources:
+    - kind: HelmRelease
+      name: '*'
+      namespace: litellm
+    - kind: Kustomization
+      name: litellm
+      namespace: flux-system

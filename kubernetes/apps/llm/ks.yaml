@@ -47,3 +47,23 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: cluster-settings
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Alert
+metadata:
+  name: llm-flux
+  namespace: flux-system
+spec:
+  providerRef:
+    name: ntfy
+  eventSeverity: error
+  eventSources:
+    - kind: HelmRelease
+      name: '*'
+      namespace: llm
+    - kind: Kustomization
+      name: llm
+      namespace: flux-system
+    - kind: Kustomization
+      name: llm-db
+      namespace: flux-system

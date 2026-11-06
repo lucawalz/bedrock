@@ -16,3 +16,17 @@ spec:
   dependsOn:
     - name: cluster-edge-onprem
     - name: cluster-delivery
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Alert
+metadata:
+  name: blog-flux
+  namespace: flux-system
+spec:
+  providerRef:
+    name: ntfy
+  eventSeverity: error
+  eventSources:
+    - kind: Kustomization
+      name: blog
+      namespace: flux-system

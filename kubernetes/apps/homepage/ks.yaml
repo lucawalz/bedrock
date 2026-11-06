@@ -22,3 +22,20 @@ spec:
     substitute:
       APP: homepage
       APP_PORT: "3000"
+---
+apiVersion: notification.toolkit.fluxcd.io/v1
+kind: Alert
+metadata:
+  name: homepage-flux
+  namespace: flux-system
+spec:
+  providerRef:
+    name: ntfy
+  eventSeverity: error
+  eventSources:
+    - kind: HelmRelease
+      name: '*'
+      namespace: homepage
+    - kind: Kustomization
+      name: homepage
+      namespace: flux-system
