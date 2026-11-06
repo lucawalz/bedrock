@@ -79,27 +79,28 @@ The order matters: network, then hosts, then K3s, then Flux, then the age key. E
 
    `disko` wipes and formats the disk. Two recovery details: control-plane-1's `hardware-configuration.nix` pins filesystem UUIDs that go stale after a wipe and must be regenerated, and agenix needs the original host SSH keys restored, or the secrets re-keyed to the new host keys (see Secret recovery), before the K3s join token can decrypt.
 4. K3s. control-plane-1 starts first and initializes etcd through `clusterInit`. The workers join it through the static `10.20.0.10` address recorded as `nodes.control-plane-1.address` in `lib/inventory.nix`, which `modules/k3s/agent.nix` resolves via `inventory.bootstrapControlPlane`, and the shared token, so the join depends on no name resolution at all. This yields an empty three-node cluster.
-5. Flux. Seed it once against the repository:
+5. Cluster DNS. K3s runs with `--disable=coredns`, so a cold cluster has no DNS and Flux cannot fetch the repository that would install it. `scripts/bootstrap.sh` applies `kubernetes/infrastructure/controllers/coredns` with `kubectl apply --server-side -k` and waits for the rollout; `cluster-coredns` adopts the objects afterwards.
+6. Flux. Seed it once against the repository:
 
    ```
    flux bootstrap github --owner <user> --repository <repo> --path kubernetes/clusters/home --personal
    ```
 
    The Flux Operator then adopts the install in place and carries it as a `FluxInstance` ([ADR 0037](adr/0037-flux-operator-controlplane-install.md)).
-6. Age key. Create the `sops-age` secret in `flux-system` from the recovered key. This unblocks `cluster-secrets`:
+7. Age key. Create the `sops-age` secret in `flux-system` from the recovered key. This unblocks `cluster-secrets`:
 
    ```
    kubectl -n flux-system create secret generic sops-age --from-file=age.agekey=<keyfile>
    ```
-7. Reconcile. Flux works through the order above and rebuilds the platform and the apps. Nothing else is applied by hand.
-8. Data, such as it is. There is no restore step, because there is nothing off-cluster to restore from. What returns depends entirely on whether the disks survived:
+8. Reconcile. Flux works through the order above and rebuilds the platform and the apps. Nothing else is applied by hand.
+9. Data, such as it is. There is no restore step, because there is nothing off-cluster to restore from. What returns depends entirely on whether the disks survived:
 
    - If the node disks survived and only the operating systems were rebuilt, Longhorn reattaches its replicas and the volumes come back with them. This is the common case and the one the rebuild is really designed for.
    - If the disks were wiped, every volume is gone. The workloads recreate empty ones on first attach, and the data they held is not recoverable.
    - Postgres has no backup at all. If its volumes are gone, the databases behind Pocket ID, Paperless and Open WebUI come up empty and recreate their schemas on first boot, exactly as they did at the CloudNativePG cutover ([ADR 0046](adr/0046-cloudnative-pg-declarative-postgres.md)). Application state held in them is lost. An empty Pocket ID database reopens `https://id.syslabs.dev/setup`, so the owner passkey is registered there before anything else, and the `cluster-pocket-id-clients` Job recreates the OIDC clients. The `paperless-gpt-access` Job likewise recreates the non-admin Paperless service user, its API token from `bedrock-secrets`, and the workflow that shares new documents with it.
 
    If an etcd snapshot was copied off control-plane-1 beforehand, restoring it is a separate decision rather than a step here. See the next section.
-9. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
+10. Verify DNS and the Cloudflare tunnel, certificate issuance, ingress, and the app set.
 
 ## Restoring etcd from a snapshot
 

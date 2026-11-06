@@ -13,6 +13,8 @@ instance_crd=fluxinstances.fluxcd.controlplane.io
 age_key_file="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
 deploy_key_file="${BEDROCK_DEPLOY_KEY:-}"
 context=default
+coredns=kubernetes/infrastructure/controllers/coredns
+coredns_timeout=2m
 crd_timeout=2m
 instance_timeout=10m
 
@@ -46,6 +48,12 @@ kube=(kubectl --context "$context")
 fluxctl=(flux --context "$context")
 echo
 echo "Target: context $context, server $("${kube[@]}" config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+
+# k3s runs with --disable=coredns, so a cold cluster has no DNS for Flux to fetch git until this lands
+if step "Apply cluster DNS from $coredns and wait up to $coredns_timeout for the rollout"; then
+  "${kube[@]}" apply --server-side -k "$coredns"
+  "${kube[@]}" -n kube-system rollout status deployment/coredns --timeout "$coredns_timeout"
+fi
 
 if step "Install the $operator_chart chart $operator_version as release $operator_name in $namespace"; then
   helm upgrade --install "$operator_name" "$operator_repository/$operator_chart" \
