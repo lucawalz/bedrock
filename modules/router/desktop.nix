@@ -64,6 +64,15 @@ let
   probeTimeoutSeconds = 10;
   failuresBeforeAlarm = 3;
   panelLitSeconds = 120;
+  panelOnTimes = [
+    "Mon..Fri 06:00"
+    "Mon..Wed 19:30"
+    "Sat,Sun 08:00"
+  ];
+  panelOffTimes = [
+    "Mon..Wed 07:30"
+    "*-*-* 22:45"
+  ];
 
   pageFile = "$XDG_RUNTIME_DIR/wall.html";
   stateFile = "$XDG_RUNTIME_DIR/kiosk-state";
@@ -151,7 +160,8 @@ let
 
   autostart = pkgs.writeShellScript "labwc-autostart" ''
     ${pkgs.systemd}/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR XDG_SESSION_TYPE
-    ${pkgs.systemd}/bin/systemctl --user start kiosk-browser.service kiosk-panel.service kiosk-watchdog.timer
+    ${pkgs.systemd}/bin/systemctl --user start kiosk-browser.service kiosk-panel.service kiosk-watchdog.timer \
+      kiosk-panel-schedule-on.timer kiosk-panel-schedule-off.timer
   '';
 
   rcXml = pkgs.writeText "labwc-rc.xml" ''
@@ -234,6 +244,14 @@ in
         };
       };
 
+      kiosk-panel-schedule-on = {
+        description = "Bar panel scheduled power on";
+        serviceConfig = {
+          Type = "oneshot";
+          ExecStart = panelOn;
+        };
+      };
+
       kiosk-panel-off = {
         description = "Bar panel power off";
         serviceConfig = {
@@ -267,6 +285,19 @@ in
         timerConfig = {
           OnActiveSec = "${toString panelLitSeconds}s";
           AccuracySec = "5s";
+        };
+      };
+
+      kiosk-panel-schedule-on = {
+        description = "Light the bar panel during waking hours";
+        timerConfig.OnCalendar = panelOnTimes;
+      };
+
+      kiosk-panel-schedule-off = {
+        description = "Blank the bar panel outside waking hours";
+        timerConfig = {
+          OnCalendar = panelOffTimes;
+          Unit = "kiosk-panel-off.service";
         };
       };
     };
