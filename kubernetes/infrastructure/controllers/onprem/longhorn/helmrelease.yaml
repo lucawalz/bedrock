@@ -22,9 +22,8 @@ spec:
       name: RetryOnFailure
   upgrade:
     timeout: 15m
-    remediation:
-      retries: 3
-      remediateLastFailure: false
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn
   interval: 30m0s

@@ -20,9 +20,8 @@ spec:
       name: RetryOnFailure
   upgrade:
     crds: CreateReplace
-    remediation:
-      retries: 3
-      remediateLastFailure: false
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn
   values:

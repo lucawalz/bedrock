@@ -17,8 +17,8 @@ spec:
     strategy:
       name: RetryOnFailure
   upgrade:
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   values:
     crds:
       annotations:

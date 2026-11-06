@@ -18,9 +18,8 @@ spec:
     strategy:
       name: RetryOnFailure
   upgrade:
-    remediation:
-      retries: 3
-      remediateLastFailure: false
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn
   values:

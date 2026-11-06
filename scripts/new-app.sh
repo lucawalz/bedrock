@@ -245,8 +245,8 @@ spec:
       name: RetryOnFailure
   upgrade:
     force: true
-    remediation:
-      retries: 3
+    strategy:
+      name: RetryOnFailure
   driftDetection:
     mode: warn
   values:
