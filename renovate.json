@@ -127,6 +127,7 @@
         "/^prometheus-operator-crds$/",
         "/^oauth2-proxy$/",
         "/^ghcr\\.io/pocket-id/pocket-id$/",
+        "/^python$/",
         "/^metallb$/",
         "/^flux-operator$/",
         "/^kyverno$/",
