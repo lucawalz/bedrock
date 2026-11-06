@@ -17,6 +17,10 @@ in
     worker-2
     luca
   ];
+  "k3s-ca.age".publicKeys = [
+    control-plane-1
+    luca
+  ];
   "etcd-s3-credentials.age".publicKeys = [
     control-plane-1
     luca

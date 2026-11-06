@@ -42,6 +42,7 @@
           fluxcd
           sops
           age
+          openssl
           nixos-rebuild
           git
           yq-go

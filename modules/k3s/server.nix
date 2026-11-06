@@ -1,5 +1,7 @@
 {
   config,
+  lib,
+  pkgs,
   meta,
   inventory,
   secretsDir,
@@ -9,6 +11,7 @@ let
   self = inventory.nodes.${meta.hostname};
   isBootstrap = meta.hostname == inventory.bootstrapControlPlane;
   bootstrap = inventory.nodes.${inventory.bootstrapControlPlane};
+  tlsDir = "/var/lib/rancher/k3s/server/tls";
 in
 {
   imports = [ ./common.nix ];
@@ -49,6 +52,30 @@ in
     mode = "0400";
     owner = "root";
     group = "root";
+  };
+
+  age.secrets.k3s-ca = lib.mkIf isBootstrap {
+    file = "${secretsDir}/k3s-ca.age";
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
+
+  # k3s adopts CA files only if they exist before its first start, and an existing cluster CA must never be replaced.
+  systemd.services.k3s-ca = lib.mkIf isBootstrap {
+    description = "Install the stable cluster CA before the first k3s start";
+    requiredBy = [ "k3s.service" ];
+    before = [ "k3s.service" ];
+    unitConfig.ConditionPathExists = "!${tlsDir}/server-ca.crt";
+    serviceConfig = {
+      Type = "oneshot";
+      UMask = "0077";
+    };
+    path = [ pkgs.gnutar ];
+    script = ''
+      mkdir -p ${tlsDir}
+      tar -xf ${config.age.secrets.k3s-ca.path} -C ${tlsDir} --no-same-owner
+    '';
   };
 
   networking.firewall.allowedTCPPorts = [
