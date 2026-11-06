@@ -1,5 +1,6 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+apps_dir := "kubernetes/apps"
 postgres_namespace := "postgres"
 postgres_cluster := "postgres"
 primary_selector := "cnpg.io/cluster=" + postgres_cluster + ",cnpg.io/instanceRole=primary"
@@ -33,8 +34,11 @@ logs app:
 psql app:
     #!/usr/bin/env bash
     set -euo pipefail
+    app={{ quote(app) }}
+    database_file="{{ apps_dir }}/$app/db/database.yaml"
+    database="$(yq -e '.spec.name' "$database_file" 2>/dev/null)" || { echo "$database_file is missing or declares no .spec.name, so $app has no database" >&2; exit 1; }
     primary="$(kubectl -n {{ postgres_namespace }} get pod -l {{ primary_selector }} -o jsonpath='{.items[0].metadata.name}')"
-    kubectl -n {{ postgres_namespace }} exec -it "$primary" -c postgres -- psql -d {{ quote(app) }}
+    kubectl -n {{ postgres_namespace }} exec -it "$primary" -c postgres -- psql -d "$database"
 
 # Take an on-demand plugin backup of the CNPG cluster to object storage and wait for it
 backup:
@@ -62,9 +66,12 @@ dump app:
     #!/usr/bin/env bash
     set -euo pipefail
     umask 077
+    app={{ quote(app) }}
+    database_file="{{ apps_dir }}/$app/db/database.yaml"
+    database="$(yq -e '.spec.name' "$database_file" 2>/dev/null)" || { echo "$database_file is missing or declares no .spec.name, so $app has no database" >&2; exit 1; }
     primary="$(kubectl -n {{ postgres_namespace }} get pod -l {{ primary_selector }} -o jsonpath='{.items[0].metadata.name}')"
-    out={{ quote(invocation_directory() / app) }}-"$(date +%Y%m%d%H%M%S)".dump
-    if ! kubectl -n {{ postgres_namespace }} exec -i "$primary" -c postgres -- pg_dump -Fc -d {{ quote(app) }} > "$out"; then
+    out={{ quote(join(invocation_directory(), app)) }}-"$(date +%Y%m%d%H%M%S)".dump
+    if ! kubectl -n {{ postgres_namespace }} exec -i "$primary" -c postgres -- pg_dump -Fc -d "$database" > "$out"; then
       rm -f "$out"
       exit 1
     fi
@@ -75,23 +82,26 @@ restore app file:
     #!/usr/bin/env bash
     set -euo pipefail
     app={{ quote(app) }}
-    file={{ quote(absolute_path(invocation_directory() / file)) }}
+    database_file="{{ apps_dir }}/$app/db/database.yaml"
+    database="$(yq -e '.spec.name' "$database_file" 2>/dev/null)" || { echo "$database_file is missing or declares no .spec.name, so $app has no database" >&2; exit 1; }
+    file={{ quote(absolute_path(join(invocation_directory(), file))) }}
     [ -s "$file" ] || { echo "$file is missing or empty" >&2; exit 1; }
-    echo "This drops and recreates every object in database $app from $file, with $app scaled to 0 meanwhile."
+    echo "This drops and recreates every object in database $database from $file, with everything in namespace $app scaled to 0 meanwhile."
     read -r -p "Type the app name to continue: " answer
     [ "$answer" = "$app" ] || { echo "Aborted."; exit 1; }
     primary="$(kubectl -n {{ postgres_namespace }} get pod -l {{ primary_selector }} -o jsonpath='{.items[0].metadata.name}')"
     replicas="$(kubectl -n "$app" get deploy,statefulset -o jsonpath='{range .items[*]}{.kind}/{.metadata.name}={.spec.replicas}{"\n"}{end}')"
     resume() {
+      set +e
       while IFS='=' read -r workload count; do
         if [ -n "$workload" ]; then kubectl -n "$app" scale "$workload" --replicas "$count"; fi
       done <<< "$replicas"
       flux resume helmrelease --all -n "$app"
       flux resume kustomization "$app"
     }
+    trap resume EXIT
     flux suspend kustomization "$app"
     flux suspend helmrelease --all -n "$app"
-    trap resume EXIT
     kubectl -n "$app" scale deploy,statefulset --all --replicas 0
     deadline=$((SECONDS + {{ scale_down_timeout_seconds }}))
     while [ -n "$(kubectl -n "$app" get pod --field-selector status.phase=Running -o name)" ]; do
@@ -99,8 +109,8 @@ restore app file:
       sleep {{ poll_seconds }}
     done
     kubectl -n {{ postgres_namespace }} exec -i "$primary" -c postgres -- \
-      pg_restore --clean --if-exists --single-transaction --exit-on-error -d "$app" < "$file"
-    echo "Restored $app from $file"
+      pg_restore --clean --if-exists --single-transaction --exit-on-error -d "$database" < "$file"
+    echo "Restored $database from $file"
 
 # Run the restore drills, for example: just restore-test --dry-run postgres
 restore-test *args="all":

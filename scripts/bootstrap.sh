@@ -11,6 +11,8 @@ operator_source=kubernetes/clusters/home/sources/helm/controlplane.yaml
 instance=kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml
 instance_crd=fluxinstances.fluxcd.controlplane.io
 age_key_file="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
+deploy_key_file="${BEDROCK_DEPLOY_KEY:-}"
+context=default
 crd_timeout=2m
 instance_timeout=10m
 
@@ -39,20 +41,24 @@ if step "Refresh the default kubeconfig entry from control-plane-1 (the cluster 
   bash scripts/refresh-kubeconfig.sh
 fi
 
+kubectl config get-contexts "$context" >/dev/null 2>&1 || { echo "kubeconfig has no context $context" >&2; exit 1; }
+kube=(kubectl --context "$context")
+fluxctl=(flux --context "$context")
 echo
-echo "Target: context $(kubectl config current-context), server $(kubectl config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
+echo "Target: context $context, server $("${kube[@]}" config view --minify -o jsonpath='{.clusters[0].cluster.server}')"
 
 if step "Install the $operator_chart chart $operator_version as release $operator_name in $namespace"; then
   helm upgrade --install "$operator_name" "$operator_repository/$operator_chart" \
     --version "$operator_version" \
     --namespace "$namespace" \
     --create-namespace \
-    --wait
-  kubectl wait --for condition=established --timeout "$crd_timeout" "crd/$instance_crd"
+    --wait \
+    --kube-context "$context"
+  "${kube[@]}" wait --for condition=established --timeout "$crd_timeout" "crd/$instance_crd"
 fi
 
 if step "Apply the FluxInstance $instance_name from $instance"; then
-  kubectl apply -f "$instance"
+  "${kube[@]}" apply -f "$instance"
 fi
 
 if step "Create the sops-age secret in $namespace from $age_key_file"; then
@@ -60,20 +66,25 @@ if step "Create the sops-age secret in $namespace from $age_key_file"; then
     echo "$age_key_file holds no identity for the .sops.yaml recipient $recipient" >&2
     exit 1
   fi
-  kubectl -n "$namespace" create secret generic sops-age \
+  "${kube[@]}" -n "$namespace" create secret generic sops-age \
     --from-file=age.agekey="$age_key_file" \
-    --dry-run=client -o yaml | kubectl apply -f -
+    --dry-run=client -o yaml | "${kube[@]}" apply -f -
 fi
 
-if step "Create the sync secret $sync_secret for $sync_url with a new SSH deploy key"; then
-  flux create secret git "$sync_secret" --namespace "$namespace" --url "$sync_url"
+if [ -n "$deploy_key_file" ]; then
+  if step "Create the sync secret $sync_secret for $sync_url from the existing deploy key $deploy_key_file"; then
+    [ -r "$deploy_key_file" ] || { echo "$deploy_key_file is not readable" >&2; exit 1; }
+    "${fluxctl[@]}" create secret git "$sync_secret" --namespace "$namespace" --url "$sync_url" --private-key-file "$deploy_key_file"
+  fi
+elif step "Create the sync secret $sync_secret for $sync_url with a new SSH deploy key (set BEDROCK_DEPLOY_KEY to reuse one)"; then
+  "${fluxctl[@]}" create secret git "$sync_secret" --namespace "$namespace" --url "$sync_url"
   echo "Add this public key to the repository as a deploy key with write access (image automation pushes to main):"
-  kubectl -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d
+  "${kube[@]}" -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d
 fi
 
 if step "Wait up to $instance_timeout for the FluxInstance $instance_name to become Ready"; then
-  kubectl -n "$namespace" wait "fluxinstance/$instance_name" --for condition=Ready --timeout "$instance_timeout"
+  "${kube[@]}" -n "$namespace" wait "fluxinstance/$instance_name" --for condition=Ready --timeout "$instance_timeout"
 fi
 
 echo
-echo "Follow the reconcile with: flux get kustomizations --watch"
+echo "Follow the reconcile with: flux --context $context get kustomizations --watch"
