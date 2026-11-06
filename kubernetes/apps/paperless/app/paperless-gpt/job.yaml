@@ -3,6 +3,8 @@ kind: Job
 metadata:
   name: paperless-gpt-access
   namespace: paperless
+  annotations:
+    kustomize.toolkit.fluxcd.io/force: enabled
 spec:
   backoffLimit: 10
   # deleting the finished Job lets Flux recreate it on a later reconcile, which repairs drift such as a restored database
