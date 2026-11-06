@@ -7,6 +7,9 @@ import urllib.error
 from unittest import mock
 
 import django
+import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "paperless.settings")
 django.setup()
@@ -16,7 +19,7 @@ from django.contrib.auth.models import User  # noqa: E402
 from django.test import TestCase  # noqa: E402
 from documents.models import Correspondent, Document  # noqa: E402
 
-from dedup import document_counts, find_pairs, open_pr  # noqa: E402
+from dedup import document_counts, find_pairs, installation_token, open_pr  # noqa: E402
 
 REPOSITORY = "https://api.github.com/repos/lucawalz/bedrock-secrets"
 TAXONOMY_FILE = "clusters/home/apps/paperless-taxonomy.yaml"
@@ -46,11 +49,19 @@ SWAPPED = CANONICAL.replace("      - name: Example\n", "      - name: Example\n 
 PAIR = ("Example GmbH", "Example", "obvious")
 TITLE = "feat(paperless): merge duplicate correspondents proposed by the weekly job"
 PR_URL = "https://github.com/lucawalz/bedrock-secrets/pull/1"
+APP_ID = "123"
+INSTALLATION_ID = "456"
+INSTALLATION_TOKEN = "installation-token"
+ACCESS_TOKENS = f"https://api.github.com/app/installations/{INSTALLATION_ID}/access_tokens"
+JWT_MAX_LIFETIME_SECONDS = 600
+KEY_BITS = 2048
+PUBLIC_EXPONENT = 65537
 
 
 class FakeGitHub:
     def __init__(self, open_pulls, closed_pulls=(), config_map=CONFIG_MAP, failing=()):
         self.calls = []
+        self.authorizations = []
         self.failing = failing
         self.routes = {
             ("GET", f"{REPOSITORY}/pulls?state=open&per_page=100"): open_pulls,
@@ -64,12 +75,14 @@ class FakeGitHub:
             ("POST", f"{REPOSITORY}/git/refs"): {},
             ("PUT", f"{REPOSITORY}/contents/{TAXONOMY_FILE}"): {},
             ("POST", f"{REPOSITORY}/pulls"): {"html_url": PR_URL},
+            ("POST", ACCESS_TOKENS): {"token": INSTALLATION_TOKEN},
         }
 
     def urlopen(self, request, timeout):
         method = request.get_method()
         body = json.loads(request.data) if request.data else None
         self.calls.append((method, request.full_url, body))
+        self.authorizations.append(request.get_header("Authorization"))
         if method in self.failing:
             raise urllib.error.HTTPError(request.full_url, 500, "error", {}, None)
         if method == "DELETE":
@@ -173,3 +186,23 @@ class DedupTest(TestCase):
         fake = self.github([])
         open_pr([("Example | Partner", "Example", "obvious")], "not-a-token")
         self.assertIn("| Example \\| Partner | 0 |", fake.body("POST", f"{REPOSITORY}/pulls")["body"])
+
+    def test_app_token_exchange(self):
+        key = rsa.generate_private_key(public_exponent=PUBLIC_EXPONENT, key_size=KEY_BITS)
+        pem = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.PKCS8, serialization.NoEncryption()).decode()
+        fake = self.github([])
+        self.assertEqual(open_pr([PAIR], installation_token(APP_ID, INSTALLATION_ID, pem)), PR_URL)
+        self.assertEqual(fake.calls[0], ("POST", ACCESS_TOKENS, {"repositories": ["bedrock-secrets"], "permissions": {"contents": "write", "pull_requests": "write"}}))
+        claims = jwt.decode(fake.authorizations[0].removeprefix("Bearer "), key.public_key(), algorithms=["RS256"])
+        self.assertEqual(claims["iss"], APP_ID)
+        self.assertLessEqual(claims["exp"] - claims["iat"], JWT_MAX_LIFETIME_SECONDS)
+        self.assertTrue(all(url.startswith(REPOSITORY) for _, url, _ in fake.calls[1:]))
+        self.assertEqual(set(fake.authorizations[1:]), {f"Bearer {INSTALLATION_TOKEN}"})
+
+    def test_missing_app_credentials(self):
+        fake = self.github([])
+        for credentials in [("", INSTALLATION_ID, "key"), (APP_ID, "", "key"), (APP_ID, INSTALLATION_ID, "")]:
+            with self.assertRaisesRegex(ValueError, "a GitHub token is required"):
+                open_pr([PAIR], installation_token(*credentials))
+        self.assertIsNone(open_pr([], installation_token("", "", "")))
+        self.assertEqual(fake.calls, [])

@@ -4,16 +4,25 @@ import json
 import os
 import re
 import textwrap
+import time
 import urllib.error
 import urllib.request
 
+import jwt
 import yaml
 from django.db.models import Count, Q
 from documents.models import Correspondent
 from rapidfuzz import fuzz
 
 KNOWN_PATH = "/etc/paperless-taxonomy/taxonomy.yaml"
-API = "https://api.github.com/repos/lucawalz/bedrock-secrets"
+GITHUB = "https://api.github.com"
+REPOSITORY = "bedrock-secrets"
+API = f"{GITHUB}/repos/lucawalz/{REPOSITORY}"
+TOKEN_PERMISSIONS = {"contents": "write", "pull_requests": "write"}
+JWT_ALGORITHM = "RS256"
+JWT_BACKDATE_SECONDS = 60
+JWT_LIFETIME_SECONDS = 540
+APP_ENV = ("GITHUB_APP_ID", "GITHUB_APP_INSTALLATION_ID", "GITHUB_APP_PRIVATE_KEY")
 TAXONOMY_FILE = "clusters/home/apps/paperless-taxonomy.yaml"
 TAXONOMY_KEY = "taxonomy.yaml"
 BRANCH_PREFIX = "paperless/dedup-"
@@ -78,9 +87,9 @@ def known_aliases(taxonomy):
     return {alias: entry["name"] for entry in taxonomy["correspondents"] for alias in entry.get("aliases", [])}
 
 
-def github(method, path, token, body=None):
+def github(method, path, token, body=None, root=API):
     request = urllib.request.Request(
-        API + path,
+        root + path,
         method=method,
         data=None if body is None else json.dumps(body).encode(),
         headers={
@@ -95,7 +104,17 @@ def github(method, path, token, body=None):
             data = response.read()
             return json.loads(data) if data else None
     except urllib.error.HTTPError as error:
-        raise RuntimeError(f"GitHub {method} {API}{path} answered {error.code}") from None
+        raise RuntimeError(f"GitHub {method} {root}{path} answered {error.code}") from None
+
+
+def installation_token(app_id, installation_id, private_key):
+    if not (app_id and installation_id and private_key):
+        return ""
+    now = int(time.time())
+    claims = {"iat": now - JWT_BACKDATE_SECONDS, "exp": now + JWT_LIFETIME_SECONDS, "iss": app_id}
+    assertion = jwt.encode(claims, private_key, algorithm=JWT_ALGORITHM)
+    body = {"repositories": [REPOSITORY], "permissions": TOKEN_PERMISSIONS}
+    return github("POST", f"/app/installations/{installation_id}/access_tokens", assertion, body, root=GITHUB)["token"]
 
 
 def add_aliases(taxonomy, pairs):
@@ -204,6 +223,7 @@ def open_pr(pairs, token):
 if __name__ == "__main__":
     with open(KNOWN_PATH) as handle:
         known = known_aliases(yaml.safe_load(handle))
+    token = installation_token(*(os.environ.get(name, "").strip() for name in APP_ENV))
     pairs = find_pairs(list(document_counts()), known)
-    url = open_pr(pairs, os.environ.get("GITHUB_TOKEN", "").strip())
+    url = open_pr(pairs, token)
     print(f"paperless dedup: {len(pairs)} pairs, pull request {url or 'not opened'}")
