@@ -5,7 +5,7 @@ metadata:
   namespace: paperless
 spec:
   interval: 30m
-  timeout: 10m
+  timeout: 20m
   chart:
     spec:
       chart: app-template
@@ -164,6 +164,14 @@ spec:
           paperless-gpt:
             render-config:
               - path: /src/settings
+                readOnly: true
+      taxonomy-src:
+        type: configMap
+        name: paperless-taxonomy
+        advancedMounts:
+          paperless-gpt:
+            render-config:
+              - path: /src/taxonomy
                 readOnly: true
       tmp:
         type: emptyDir

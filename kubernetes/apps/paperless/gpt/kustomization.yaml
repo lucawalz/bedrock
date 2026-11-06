@@ -1,10 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: paperless
 components:
-  - ../../../../components/topology-spread
+  - ../../../components/topology-spread
 resources:
   - helmrelease.yaml
-  - pvc.yaml
 configMapGenerator:
   - name: paperless-gpt-prompts
     files:

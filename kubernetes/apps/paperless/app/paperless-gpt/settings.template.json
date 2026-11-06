@@ -1,5 +1,0 @@
-{
-  "custom_fields_enable": true,
-  "custom_fields_write_mode": "update",
-  "custom_field_names": ["Betrag", "Fällig am", "Vertragsende", "IBAN", "Steuerjahr"]
-}

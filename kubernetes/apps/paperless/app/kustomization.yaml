@@ -7,7 +7,7 @@ components:
   - ../../../components/forward-auth
 resources:
   - paperless-ngx
-  - paperless-gpt
+  - paperless-gpt/pvc.yaml
   - redis
   - gotenberg
   - tika
