@@ -18,10 +18,11 @@ trap 'rm -rf "$work"' EXIT
 scp -q "$control_plane:$remote_kubeconfig" "$work/k3s.yaml"
 
 extract() {
-  local query="$1" out="$2"
-  ENTRY="$entry" yq -N "$query" "$work/k3s.yaml" | base64 -d > "$out"
-  if [ ! -s "$out" ]; then
-    echo "$remote_kubeconfig on $control_plane has no $query for $entry" >&2
+  local query="$1" out="$2" encoded
+  if ! encoded="$(ENTRY="$entry" yq -N -e "$query" "$work/k3s.yaml" 2>/dev/null)" \
+    || ! printf '%s' "$encoded" | base64 -d > "$out" 2>/dev/null \
+    || [ ! -s "$out" ]; then
+    echo "$remote_kubeconfig on $control_plane has no valid $query for $entry" >&2
     exit 1
   fi
 }
