@@ -14,9 +14,14 @@ grep -rl 'kind: HelmRelease' kubernetes --include='*.yaml' \
   | xargs yq -N 'select(.kind == "HelmRelease" and .metadata.namespace != null) | .metadata.namespace' \
   | sort -u > "$work/present"
 
-grep -rlE '^kind: Alert$' kubernetes --include='*.yaml' \
-  | xargs yq -N 'select(.kind == "Alert") | .spec.eventSources[] | select(.kind == "HelmRelease") | .namespace' \
-  | sort -u > "$work/listed"
+grep -rlE '^kind: Alert$' kubernetes --include='*.yaml' > "$work/alerts" || true
+if [ ! -s "$work/alerts" ]; then
+  echo "No Alert manifests found under kubernetes/." >&2
+  exit 1
+fi
+
+xargs yq -N 'select(.kind == "Alert") | .spec.eventSources[] | select(.kind == "HelmRelease") | .namespace' \
+  < "$work/alerts" | sort -u > "$work/listed"
 
 compare_sets "$work/present" "$work/listed" \
   "Namespaces holding a HelmRelease that no Alert lists, so their events never reach ntfy:" \

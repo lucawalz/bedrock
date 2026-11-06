@@ -33,6 +33,3 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: litellm
-    - kind: Kustomization
-      name: litellm
-      namespace: flux-system

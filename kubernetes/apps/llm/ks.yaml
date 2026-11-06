@@ -61,9 +61,3 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: llm
-    - kind: Kustomization
-      name: llm
-      namespace: flux-system
-    - kind: Kustomization
-      name: llm-db
-      namespace: flux-system

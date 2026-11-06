@@ -36,6 +36,3 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: homepage
-    - kind: Kustomization
-      name: homepage
-      namespace: flux-system

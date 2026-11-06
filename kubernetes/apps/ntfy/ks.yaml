@@ -33,6 +33,3 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: ntfy
-    - kind: Kustomization
-      name: ntfy
-      namespace: flux-system

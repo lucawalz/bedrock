@@ -61,9 +61,3 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: paperless
-    - kind: Kustomization
-      name: paperless
-      namespace: flux-system
-    - kind: Kustomization
-      name: paperless-db
-      namespace: flux-system
