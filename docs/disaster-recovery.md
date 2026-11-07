@@ -40,7 +40,7 @@ These cannot live in the repository and must be kept somewhere that survives the
 | The secrets repository | The private `bedrock-secrets` repository. | Holds every cluster Secret as SOPS ciphertext ([ADR 0060](adr/0060-private-secrets-repo-per-cluster-keys.md)). Encrypted, but the cluster cannot be reconstituted without it. |
 | Operator identity | The admin SSH key, a recipient on every agenix secret. | Needed to re-key host secrets when host keys are lost. |
 
-There is no backup-data seed. Nothing outside the cluster holds cluster data, which is the whole of [ADR 0081](adr/0081-retire-the-hetzner-account.md).
+Cluster data now also lives outside the cluster: Longhorn volume backups, the CloudNativePG archive and etcd snapshots go to Cloudflare R2, and the backups of the encrypted paperless-ngx volumes open only with the Longhorn volume encryption key above.
 
 An etcd snapshot copied off control-plane-1 by hand is the closest thing to one, and it is worth treating as a seed while it exists. It carries the cluster CA material and every Secret, so it belongs wherever the age key belongs rather than on a convenient share.
 
