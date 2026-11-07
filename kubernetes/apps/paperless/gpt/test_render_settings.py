@@ -148,9 +148,18 @@ class DefinitionsTest(unittest.TestCase):
             ("tags", {"name": "Category A"}),
             ("tags", {"name": "Category A", "description": " "}),
             ("custom_fields", {"name": "A", "data_type": "monetary"}),
-            ("custom_fields", {"name": "A", "description": "a {{.Title}} amount", "data_type": "monetary"}),
         ):
-            with self.subTest(entry=entry), self.assertRaises(ValueError):
+            with self.subTest(entry=entry), self.assertRaisesRegex(ValueError, "non-empty description"):
+                rs.definition_blocks({**taxonomy, key: [entry]})
+
+    def test_entry_with_template_delimiters_fails(self):
+        taxonomy = yaml.safe_load(TAXONOMY)
+        for key, entry in (
+            ("tags", {"name": "Category {{A", "description": "Private purchases."}),
+            ("custom_fields", {"name": "A", "description": "a {{.Title}} amount", "data_type": "monetary"}),
+            ("custom_fields", {"name": "A", "description": "an amount}}", "data_type": "monetary"}),
+        ):
+            with self.subTest(entry=entry), self.assertRaisesRegex(ValueError, "template delimiters"):
                 rs.definition_blocks({**taxonomy, key: [entry]})
 
     def test_shipped_prompts_hold_their_marker_once(self):

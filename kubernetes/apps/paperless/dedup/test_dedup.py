@@ -31,12 +31,12 @@ metadata:
 data:
   taxonomy.yaml: |
     document_types:
-      - Rechnung
-      - Kündigung
+      - Type A
+      - Typ Ü
     tags:
-      - Steuern
+      - Area A
     custom_fields:
-      - name: Fällig am
+      - name: Feld ä
         data_type: date
     correspondents: []
 """
@@ -54,14 +54,14 @@ metadata:
 data:
   taxonomy.yaml: |
     document_types:
-      - Rechnung
+      - Type A
     tags:
       - name: Category A
         description: Invoices, orders and receipts for private purchases and subscriptions, including those sent to a work address, kept for the yearly return.
       - name: Category B
         description: 'Letters from offices: courts, registries and the like.'
     custom_fields:
-      - name: Fällig am
+      - name: Feld ä
         description: The date by which something must be paid or done. Not the letter's own date.
         data_type: date
     correspondents: []
