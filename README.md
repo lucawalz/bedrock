@@ -25,7 +25,7 @@ In November 2026 the cluster was wiped and rebuilt from this repository to prove
 - No inbound port from the internet. Public traffic arrives over an outbound Cloudflare tunnel; admins use Tailscale.
 - Default-deny NetworkPolicies in every namespace and Kyverno policies in `Enforce` mode.
 - Passkey single sign-on through Pocket ID and oauth2-proxy, with the OIDC clients declared in git.
-- Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless volumes.
+- Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless and Open WebUI volumes.
 - A scaffold, `just new-app`, that writes a self-contained app folder which passes every check.
 
 ## Architecture
@@ -93,7 +93,7 @@ A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi ad
 | Cluster CA | Stable CA under an offline root | [ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md) |
 | GitOps | Flux 2.10 under the Flux Operator | [ADR 0001](docs/adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md) |
 | Secrets | agenix for hosts, SOPS with age in the private `bedrock-secrets` repository | [ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md) |
-| Storage | Longhorn, with LUKS-encrypted volumes for Paperless | [ADR 0006](docs/adr/0006-store-volumes-on-longhorn.md) |
+| Storage | Longhorn, with LUKS-encrypted volumes for Paperless and Open WebUI | [ADR 0006](docs/adr/0006-store-volumes-on-longhorn.md) |
 | Databases | One CloudNativePG cluster with per-app roles and databases, barman-cloud plugin | [ADR 0007](docs/adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md) |
 | Network policy | Default deny, reusable Kustomize components, kube-router enforcement | [ADR 0008](docs/adr/0008-deny-network-traffic-by-default.md) |
 | Admission | Kyverno in `Enforce` mode | [ADR 0009](docs/adr/0009-enforce-workload-policy-with-kyverno.md) |
@@ -255,7 +255,6 @@ Every pull request and push to `main` runs:
 - strata, a project that builds on Paperless, CloudNativePG, the tunnel and the off-site backups.
 - Tunnel DNS records managed from git instead of the Cloudflare dashboard.
 - Migration from Traefik IngressRoutes to the Gateway API.
-- Client-side encryption for the remaining backups.
 - A rebuild that reinstalls the operating system with disko, not only the K3s state.
 - A dedicated write-only deploy key for blog image automation.
 

@@ -77,18 +77,7 @@ spec:
       enabled: false
     persistence:
       enabled: true
-      size: 5Gi
-      storageClass: longhorn
-      accessModes:
-        - ReadWriteOnce
-      annotations:
-        helm.sh/resource-policy: keep
-      labels:
-        recurring-job.longhorn.io/source: enabled
-        recurring-job.longhorn.io/snapshot: enabled
-        recurring-job.longhorn.io/snapshot-prune: enabled
-        recurring-job.longhorn.io/filesystem-trim: enabled
-        recurring-job.longhorn.io/offsite-backup: enabled
+      existingClaim: open-webui-encrypted
     ingress:
       enabled: false
     service:

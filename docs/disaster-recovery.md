@@ -15,7 +15,7 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 | A volume deleted or corrupted | Yes for volumes with jobs, from the last nightly snapshot (7 kept) or backup (14 kept) | Longhorn `snapshot` at 03:30 and `offsite-backup` at 05:00 ([ADR 0006](adr/0006-store-volumes-on-longhorn.md)) |
 | control-plane-1's datastore lost | Yes, to the last 12-hourly snapshot | etcd snapshots on the node and in R2 ([ADR 0003](adr/0003-run-k3s-as-one-server-and-two-agents-on-the-tailnet.md)) |
 | Loss of the building | Yes for Postgres, Paperless and Open WebUI, given new hardware and the offline keys | Rebuild from git, data from R2; volumes without an off-site backup (Grafana, paperless-gpt, metrics, logs) come back empty |
-| Loss of the Longhorn volume key | No for Paperless data | Encrypted volumes and their backups are LUKS ciphertext |
+| Loss of the Longhorn volume key | No for Paperless and Open WebUI data | Encrypted volumes and their backups are LUKS ciphertext |
 
 ## Recovery seeds
 
@@ -25,7 +25,7 @@ The age key, the K3s root CA and the Longhorn volume encryption key are the thre
 | --- | --- | --- |
 | SOPS age key | `~/.config/sops/age/keys.txt` on the Mac, the offline medium, and the `sops-age` Secret in `flux-system` | Decrypts every file in `bedrock-secrets`, including the deploy key for that repository |
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `~/.config/bedrock/k3s-root-ca/` and the offline medium | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
-| Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless backups unrecoverable |
+| Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin SSH key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
@@ -37,7 +37,7 @@ The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`sec
 | Data | Bucket | Schedule and retention | Encryption | Alerts |
 | --- | --- | --- | --- | --- |
 | Postgres (all app databases) | `bedrock-postgres`, under `postgres/` | WAL continuously (`archive_timeout` 5 min), base backup daily at 02:30, 30 days | None client-side, an accepted risk ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)) | `CNPGBackupStale`, `CNPGBackupNotConfigured` |
-| Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | Paperless volumes are LUKS, so their backups are ciphertext; Open WebUI is not encrypted | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
+| Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | All of them are LUKS, so their backups are ciphertext | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
 | etcd | `bedrock-etcd`, under `etcd-snapshots/` | Every 12 hours, 5 kept, also on control-plane-1's disk | None client-side; a snapshot holds every Secret, encrypted at rest under the server token | `EtcdSnapshotTooOld` |
 
 Ollama models and the zot cache are refetched, never backed up. The Postgres instances carry Longhorn snapshots but no Longhorn backup, since barman-cloud covers them.
@@ -232,7 +232,7 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 
 - Restores into production, the etcd restore and an operating system reinstall have never been run.
 - control-plane-1 is the only API server. While it is down, running workloads keep serving, but nothing reschedules, and a CNPG instance that restarts cannot start, because its instance manager reads the Cluster from the API first.
-- Postgres backups and the Open WebUI volume backup are plaintext in R2. Postgres is an accepted risk; client-side encryption for the rest is on the roadmap.
+- Postgres backups are plaintext in R2, which is an accepted risk.
 - Cloudflare R2 is the only off-site copy, and the tunnel DNS records and Access applications are kept only in the Cloudflare dashboard.
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.
