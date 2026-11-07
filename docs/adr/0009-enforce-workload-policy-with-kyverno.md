@@ -11,7 +11,7 @@ Charts from upstream ship with uneven security contexts and resource settings. A
 
 ## Decision
 
-- Kyverno runs in `Enforce` mode with six cluster policies in `kubernetes/infrastructure/configs/policies`: CPU and memory requests and a memory limit on every container, `runAsNonRoot`, no privilege escalation (with a mutation that defaults `allowPrivilegeEscalation` to false), all capabilities dropped, and no `latest` tag.
+- Five validation policies in `kubernetes/infrastructure/configs/policies` run in `Enforce` mode: CPU and memory requests and a memory limit on every container, `runAsNonRoot`, no privilege escalation, all capabilities dropped, and no `latest` tag. A sixth, mutating policy defaults `allowPrivilegeEscalation` to false.
 - The webhooks skip the namespaces of the platform components that cannot meet the policies or that must keep working while Kyverno is down: kube-system, flux-system, longhorn-system, cert-manager, metallb-system, monitoring and cnpg-system.
 - Each remaining violation is a named `PolicyException` in `exceptions.yaml`, scoped to one policy, namespace and workload. The current ones cover the Paperless image, which starts as root and switches to its mapped user itself, and the Open WebUI, ntfy and Reloader containers.
 - Policy Reporter collects results so background scans surface drift in resources that were admitted before a policy changed.

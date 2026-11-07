@@ -7,7 +7,7 @@ date: 2026-11-07
 
 ## Context
 
-Several admin UIs (Flux, Homepage, LiteLLM, Longhorn, Prometheus, Alertmanager, ntfy, paperless-gpt, the Traefik dashboard) ship with weak or no authentication of their own. One person administers the cluster. The previous identity provider was a large stack whose configuration lived mostly in its database rather than in git.
+Several admin UIs (Flux, Homepage, Longhorn, Prometheus, Alertmanager, ntfy, paperless-gpt, the Traefik dashboard) ship with weak or no authentication of their own. One person administers the cluster. The previous identity provider was a large stack whose configuration lived mostly in its database rather than in git.
 
 ## Decision
 
@@ -15,7 +15,7 @@ Several admin UIs (Flux, Homepage, LiteLLM, Longhorn, Prometheus, Alertmanager, 
 - OIDC clients are declared in git. `kubernetes/infrastructure/controllers/pocket-id/clients/clients.json` lists them, and an idempotent Job upserts each one through the Pocket ID API with a static API key and client secrets taken from `bedrock-secrets`.
 - One oauth2-proxy at `auth.syslabs.dev` is the only OIDC client. Its cookie covers `.syslabs.dev`, and it admits only the addresses in an email allowlist kept in a SOPS Secret. It requires a verified email and is not relaxed to accept unverified ones.
 - Apps opt into protection with the `kubernetes/components/forward-auth` component, which adds one Traefik forward-auth Middleware pointing at oauth2-proxy.
-- Apps with a proper login of their own (Grafana, Paperless, Open WebUI, LiteLLM, AdGuard) keep it. Open WebUI is public at `chat.syslabs.dev`, and Pocket ID stays internal rather than being exposed so that it could protect it.
+- Apps with a proper login of their own (Grafana, Paperless, Open WebUI, LiteLLM, AdGuard) keep it. LiteLLM also sits behind forward-auth, so its login is a second layer. Open WebUI is public at `chat.syslabs.dev`, and Pocket ID stays internal rather than being exposed so that it could protect it.
 
 ## Consequences
 
