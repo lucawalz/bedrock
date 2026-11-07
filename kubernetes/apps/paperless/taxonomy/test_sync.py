@@ -37,6 +37,8 @@ MAIL = {
     "IMAP_PORT": "993",
     "IMAP_USERNAME": "inbox",
     "IMAP_PASSWORD": "not-a-secret",
+    "ATTACHMENT_ADDRESS": "docs@example.com",
+    "FULL_MAIL_ADDRESS": "docs-mail@example.com",
     "ALLOWED_SENDERS": "",
 }
 REINDEX = "sync.bulk_update_documents.apply_async"
@@ -92,16 +94,48 @@ class SyncTest(TestCase):
     def test_mail_rules_only_for_allowed_senders(self):
         self.run_sync(mail_env=mail("a@x.de,b@y.de"))
         rules = MailRule.objects.filter(account__name="paperless")
-        self.assertEqual(sorted(rule.filter_from for rule in rules), ["a@x.de", "b@y.de"])
+        self.assertEqual(sorted({rule.filter_from for rule in rules}), ["a@x.de", "b@y.de"])
         self.assertEqual({rule.attachment_type for rule in rules}, {MailRule.AttachmentProcessing.ATTACHMENTS_ONLY})
         self.assertEqual({rule.action for rule in rules}, {MailRule.MailAction.DELETE})
 
         counts = self.run_sync(mail_env=mail("b@y.de"))
-        self.assertEqual([rule.filter_from for rule in rules.all()], ["b@y.de"])
-        self.assertEqual(counts["deleted"], 1)
+        self.assertEqual({rule.filter_from for rule in rules.all()}, {"b@y.de"})
+        self.assertEqual(counts["deleted"], 2)
 
         self.run_sync(mail_env=mail(""))
         self.assertFalse(rules.all().exists())
+
+    def test_full_mail_rule_per_sender(self):
+        self.run_sync(mail_env=mail("a@x.de,b@y.de"))
+        rules = {rule.name: rule for rule in MailRule.objects.filter(account__name="paperless")}
+        self.assertEqual(sorted(rules), ["paperless-1", "paperless-1-mail", "paperless-2", "paperless-2-mail"])
+        self.assertEqual(len({rule.order for rule in rules.values()}), 4)
+        for name, sender in (("paperless-1", "a@x.de"), ("paperless-2", "b@y.de")):
+            attachment, full = rules[name], rules[name + "-mail"]
+            self.assertEqual((attachment.filter_from, attachment.filter_to), (sender, "docs@example.com"))
+            self.assertEqual((full.filter_from, full.filter_to), (sender, "docs-mail@example.com"))
+            self.assertEqual(attachment.consumption_scope, MailRule.ConsumptionScope.ATTACHMENTS_ONLY)
+            self.assertEqual(full.consumption_scope, MailRule.ConsumptionScope.EML_ONLY)
+            for rule in (attachment, full):
+                self.assertEqual(rule.action, MailRule.MailAction.DELETE)
+                self.assertTrue(rule.enabled)
+        self.assertEqual(self.run_sync(mail_env=mail("a@x.de,b@y.de")), {"created": 0, "updated": 0, "merged": 0, "deleted": 0})
+
+    def test_removed_sender_drops_both_rules(self):
+        self.run_sync(mail_env=mail("a@x.de,b@y.de"))
+        counts = self.run_sync(mail_env=mail("a@x.de"))
+        self.assertEqual(counts["deleted"], 2)
+        self.assertEqual(
+            sorted(MailRule.objects.filter(account__name="paperless").values_list("name", flat=True)),
+            ["paperless-1", "paperless-1-mail"],
+        )
+
+    def test_overlapping_addresses_rejected(self):
+        for attachment, full in (("docs@example.com", "mydocs@example.com"), ("a@example.com", "A@example.com")):
+            env = {**mail("a@x.de"), "ATTACHMENT_ADDRESS": attachment, "FULL_MAIL_ADDRESS": full}
+            with self.assertRaisesRegex(ValueError, "must not contain each other"):
+                self.run_sync(mail_env=env)
+        self.assertFalse(MailRule.objects.exists())
 
     def test_existing_rule_action_is_updated(self):
         self.run_sync(mail_env=mail("a@x.de"))

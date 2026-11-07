@@ -32,8 +32,9 @@ WORKFLOW_SOURCES = [
     str(WorkflowTrigger.DocumentSourceChoices.MAIL_FETCH.value),
 ]
 MAIL_ACCOUNT_NAME = "paperless"
-MAIL_RULE_NAME = re.compile(r"paperless-\d+")
-MAIL_KEYS = ("IMAP_HOST", "IMAP_PORT", "IMAP_USERNAME", "IMAP_PASSWORD")
+MAIL_RULE_NAME = re.compile(r"paperless-\d+(-mail)?")
+FULL_MAIL_SUFFIX = "-mail"
+MAIL_KEYS = ("IMAP_HOST", "IMAP_PORT", "IMAP_USERNAME", "IMAP_PASSWORD", "ATTACHMENT_ADDRESS", "FULL_MAIL_ADDRESS")
 MAX_PORT = 65535
 SENDER = re.compile(r"[^@\s,]+@[^@\s,]+\.[^@\s,]+")
 COUNTERS = ("created", "updated", "merged", "deleted")
@@ -96,6 +97,12 @@ def parse_mail(mail):
     senders = list(dict.fromkeys(s.strip() for s in mail.get("ALLOWED_SENDERS", "").split(",") if s.strip()))
     if any(not SENDER.fullmatch(sender) for sender in senders):
         raise ValueError("ALLOWED_SENDERS holds an entry that is not a mail address")
+    addresses = {key: mail[key].strip() for key in ("ATTACHMENT_ADDRESS", "FULL_MAIL_ADDRESS")}
+    if any(not SENDER.fullmatch(address) for address in addresses.values()):
+        raise ValueError("ATTACHMENT_ADDRESS and FULL_MAIL_ADDRESS must be mail addresses")
+    attachment, full = (address.lower() for address in addresses.values())
+    if attachment in full or full in attachment:
+        raise ValueError("ATTACHMENT_ADDRESS and FULL_MAIL_ADDRESS must not contain each other: IMAP TO matches substrings")
     account = {
         "imap_server": mail["IMAP_HOST"].strip(),
         "imap_port": int(port),
@@ -104,7 +111,7 @@ def parse_mail(mail):
         "password": mail["IMAP_PASSWORD"],
         "account_type": MailAccount.MailAccountType.IMAP,
     }
-    return account, senders
+    return account, senders, addresses
 
 
 def assign(instance, fields):
@@ -189,22 +196,29 @@ def sync_workflow(tag, counts):
         counts["updated"] += 1
 
 
-def sync_mail(account_fields, senders, counts):
+def sync_mail(account_fields, senders, addresses, counts):
     account = ensure(MailAccount, MAIL_ACCOUNT_NAME, account_fields, counts)
-    wanted = {f"{MAIL_ACCOUNT_NAME}-{number}": sender for number, sender in enumerate(senders, start=1)}
+    attachments = {
+        "attachment_type": MailRule.AttachmentProcessing.ATTACHMENTS_ONLY,
+        "consumption_scope": MailRule.ConsumptionScope.ATTACHMENTS_ONLY,
+        "filter_to": addresses["ATTACHMENT_ADDRESS"],
+    }
+    whole_mails = {
+        "attachment_type": MailRule.AttachmentProcessing.ATTACHMENTS_ONLY,
+        "consumption_scope": MailRule.ConsumptionScope.EML_ONLY,
+        "filter_to": addresses["FULL_MAIL_ADDRESS"],
+    }
+    wanted = {}
+    for number, sender in enumerate(senders, start=1):
+        name = f"{MAIL_ACCOUNT_NAME}-{number}"
+        wanted[name] = {"order": 2 * number - 1, "filter_from": sender, **attachments}
+        wanted[name + FULL_MAIL_SUFFIX] = {"order": 2 * number, "filter_from": sender, **whole_mails}
     for rule in account.rules.all():
         if MAIL_RULE_NAME.fullmatch(rule.name) and rule.name not in wanted:
             rule.delete()
             counts["deleted"] += 1
-    for number, (name, sender) in enumerate(wanted.items(), start=1):
-        fields = {
-            "order": number,
-            "filter_from": sender,
-            "attachment_type": MailRule.AttachmentProcessing.ATTACHMENTS_ONLY,
-            "consumption_scope": MailRule.ConsumptionScope.ATTACHMENTS_ONLY,
-            "action": MailRule.MailAction.DELETE,
-            "enabled": True,
-        }
+    for name, fields in wanted.items():
+        fields = {**fields, "action": MailRule.MailAction.DELETE, "enabled": True}
         rule = account.rules.filter(name=name).first()
         if rule is None:
             MailRule.objects.create(name=name, account=account, **fields)
@@ -230,7 +244,7 @@ def reindex(document_ids):
 
 def sync(taxonomy, mail):
     vocabulary = parse_taxonomy(taxonomy)
-    account_fields, senders = parse_mail(mail)
+    account_fields, senders, addresses = parse_mail(mail)
     counts = dict.fromkeys(COUNTERS, 0)
     unmatched = {"matching_algorithm": MatchingModel.MATCH_NONE}
     with transaction.atomic():
@@ -246,7 +260,7 @@ def sync(taxonomy, mail):
         for name, aliases in vocabulary["correspondents"].items():
             moved += merge(ensure(Correspondent, name, {}, counts), aliases, counts)
         sync_workflow(auto_tag, counts)
-        sync_mail(account_fields, senders, counts)
+        sync_mail(account_fields, senders, addresses, counts)
         if moved:
             transaction.on_commit(lambda: reindex(moved))
     return counts
