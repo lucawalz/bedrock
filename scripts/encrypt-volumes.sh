@@ -82,6 +82,8 @@ manifest() (
   find . -path ./lost+found -prune -o -type f -print0 | sort -z | xargs -0r sha256sum
 )
 for volume in ${volumes[*]}; do
+  find "/new/\$volume" -mindepth 1 -maxdepth 1 ! -name lost+found -exec rm -rf {} +
+  [ "\$(id -u)" -ne 0 ] || chmod --reference="/old/\$volume" "/new/\$volume"
   find "/old/\$volume" -mindepth 1 -maxdepth 1 ! -name lost+found -exec cp -a -t "/new/\$volume" {} +
   manifest "/old/\$volume" > "/tmp/\$volume.old"
   manifest "/new/\$volume" > "/tmp/\$volume.new"
@@ -109,12 +111,11 @@ spec:
     bedrock.io/storage: "true"
   securityContext:
 MANIFEST
-  [ "$OWNER_UID" -eq "$ROOT_UID" ] || echo "    runAsNonRoot: true"
+  # fsGroup marks every directory setgid, which a root owner neither needs nor has in the original
+  [ "$OWNER_UID" -eq "$ROOT_UID" ] || printf '    runAsNonRoot: true\n    fsGroup: %s\n    fsGroupChangePolicy: OnRootMismatch\n' "$OWNER_GID"
   cat <<MANIFEST
     runAsUser: ${OWNER_UID}
     runAsGroup: ${OWNER_GID}
-    fsGroup: ${OWNER_GID}
-    fsGroupChangePolicy: OnRootMismatch
     seccompProfile:
       type: RuntimeDefault
   containers:
