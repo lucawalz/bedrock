@@ -76,52 +76,16 @@ spec:
     persistence:
       data:
         enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        retain: true
-        size: 5Gi
-        labels:
-          recurring-job.longhorn.io/source: enabled
-          recurring-job.longhorn.io/snapshot: enabled
-          recurring-job.longhorn.io/snapshot-prune: enabled
-          recurring-job.longhorn.io/filesystem-trim: enabled
-          recurring-job.longhorn.io/offsite-backup: enabled
+        existingClaim: paperless-ngx-data-encrypted
       media:
         enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        retain: true
-        size: 20Gi
-        labels:
-          recurring-job.longhorn.io/source: enabled
-          recurring-job.longhorn.io/snapshot: enabled
-          recurring-job.longhorn.io/snapshot-prune: enabled
-          recurring-job.longhorn.io/filesystem-trim: enabled
-          recurring-job.longhorn.io/offsite-backup: enabled
+        existingClaim: paperless-ngx-media-encrypted
       export:
         enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        retain: true
-        size: 5Gi
-        labels:
-          recurring-job.longhorn.io/source: enabled
-          recurring-job.longhorn.io/snapshot: enabled
-          recurring-job.longhorn.io/snapshot-prune: enabled
-          recurring-job.longhorn.io/filesystem-trim: enabled
-          recurring-job.longhorn.io/offsite-backup: enabled
+        existingClaim: paperless-ngx-export-encrypted
       consume:
         enabled: true
-        storageClass: longhorn
-        accessMode: ReadWriteOnce
-        retain: true
-        size: 5Gi
-        labels:
-          recurring-job.longhorn.io/source: enabled
-          recurring-job.longhorn.io/snapshot: enabled
-          recurring-job.longhorn.io/snapshot-prune: enabled
-          recurring-job.longhorn.io/filesystem-trim: enabled
-          recurring-job.longhorn.io/offsite-backup: enabled
+        existingClaim: paperless-ngx-consume-encrypted
     podSecurityContext:
       fsGroup: 1000
       fsGroupChangePolicy: OnRootMismatch
