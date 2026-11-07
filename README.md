@@ -1,252 +1,284 @@
 # bedrock
 
-[![nix flake check](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml)
-[![kubernetes manifests](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml)
+[![nix-check](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml)
+[![k8s-validate](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml)
+[![lint](https://github.com/lucawalz/bedrock/actions/workflows/lint.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/lint.yaml)
+[![docs](https://github.com/lucawalz/bedrock/actions/workflows/docs.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/docs.yaml)
+[![GitOps: Flux](https://img.shields.io/badge/GitOps-Flux-316CE6)](https://fluxcd.io/)
+[![NixOS flakes](https://img.shields.io/badge/NixOS-flakes-5277C3?logo=nixos&logoColor=white)](https://nixos.org/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![NixOS flakes](https://img.shields.io/badge/NixOS-flakes-5277C3?logo=nixos&logoColor=white)
-![GitOps: Flux v2](https://img.shields.io/badge/GitOps-Flux%20v2-316CE6)
 
-A bare-metal Kubernetes homelab that lives entirely in Git.
+A bare-metal Kubernetes home lab that is rebuilt from Git.
 
 ## Description
 
-bedrock is the single source of truth for a small home cluster. Three mini PCs run [NixOS](https://nixos.org/) and a [K3s](https://k3s.io/) cluster, and a Raspberry Pi running NixOS acts as the router, gateway, and DNS for the network. Everything from each machine's disk layout to the workloads running on top is declared in this repository. Host configuration is applied with `nixos-rebuild`; cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a change to the `main` branch becomes a change to the cluster without anyone running commands against it by hand.
+bedrock is the single source of truth for a small home cluster. Three Lenovo ThinkCentre m920q mini PCs run [NixOS](https://nixos.org/) and [K3s](https://k3s.io/), and a Raspberry Pi running NixOS is the router, gateway and DNS. Hosts are declared as NixOS flakes and applied with `nixos-rebuild`. Cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a commit to `main` is the only way a change reaches the cluster.
 
-The cluster runs a self-hosted LLM stack, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. Capacity is the three local nodes and nothing else: the cloud account that once supplied burst nodes was closed, and the machinery that used it is kept dormant rather than removed ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)).
+The cluster runs a document archive with LLM tagging, a local LLM stack, a blog, monitoring and the platform behind them. Two hosts are public through a Cloudflare tunnel; everything else is reachable only from the LAN or over Tailscale, behind passkey single sign-on.
+
+In November 2026 the cluster was wiped and rebuilt from this repository to prove that it can be. The measured run and the procedure are in the [disaster recovery runbook](docs/disaster-recovery.md).
 
 ### Features
 
-- Fully declarative hosts with NixOS flakes, including disk partitioning ([disko](https://github.com/nix-community/disko)) and per-host secrets ([agenix](https://github.com/ryantm/agenix)).
-- GitOps reconciliation with Flux v2, carried declaratively by the Flux Operator: the repository is the only way state reaches the cluster.
-- Effectively no open inbound ports. Public access goes through an outbound [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/); admins reach the cluster over [Tailscale](https://tailscale.com/), where every node joins the tailnet directly and NAT traversal needs no forwarded port.
-- Replicated storage with [Longhorn](https://longhorn.io/), which keeps three replicas of every volume across the three nodes. There are no off-site backups; see [Disaster recovery](#disaster-recovery).
-- Secrets committed encrypted with [SOPS](https://github.com/getsops/sops) and age, decrypted only inside the cluster.
-
-### Background
-
-The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Cloud capacity followed the same principle for a while: an elastic autoscaler scaled a pool from zero until [archived ADR 0062](docs/adr/archive/0062-retire-elastic-cluster-autoscaler.md) retired it, and a companion operator then added and removed reserved nodes on demand. That path closed with the cloud account ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)) and the operator has since been removed, so the estate reads as three nodes and nothing that bursts.
+- Every host declared with NixOS flakes, including disk layout ([disko](https://github.com/nix-community/disko)) and host secrets ([agenix](https://github.com/ryantm/agenix)).
+- GitOps with Flux under the Flux Operator, ordered by `dependsOn` and checked in CI so a cold bootstrap converges.
+- No inbound port from the internet. Public traffic arrives over an outbound Cloudflare tunnel; admins use Tailscale.
+- Default-deny NetworkPolicies in every namespace and Kyverno policies in `Enforce` mode.
+- Passkey single sign-on through Pocket ID and oauth2-proxy, with the OIDC clients declared in git.
+- Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless volumes.
+- A scaffold, `just new-app`, that writes a self-contained app folder which passes every check.
 
 ## Architecture
 
-The network is zoned. The cluster and servers sit on VLAN 20 (`10.20.0.0/24`); a separate DMZ on VLAN 30 (`10.30.0.0/24`) holds untrusted and future hosts, and the router firewall denies DMZ traffic to the cluster and the home network by default. Public traffic never reaches the LAN directly: Cloudflare terminates TLS at its edge and forwards only `chat` and `lucawalz.dev` through the tunnel to Traefik, which routes by hostname. The internal services stay off the public internet and are reached over Tailscale or the LAN through split-horizon DNS, where AdGuard on the Pi rewrites every `*.syslabs.dev` hostname to the Traefik VIP, including the public hosts, which continue to resolve through Cloudflare outside the network. cert-manager issues a wildcard `*.syslabs.dev` certificate over Let's Encrypt DNS-01, and Traefik serves it as the default certificate.
+```mermaid
+flowchart LR
+  internet(("Internet")) --> edge["Cloudflare edge"]
+  admin["Admin Mac"] -- "Tailscale" --> router
+  lan["Home LAN"] --> router
+  github["GitHub: bedrock and bedrock-secrets"]
+  r2[("Cloudflare R2")]
 
-Cluster state flows the other way: a push to `main` is pulled by Flux, which applies the manifests in dependency order. There is no path that adds capacity beyond the three local nodes.
+  subgraph pi["Raspberry Pi router"]
+    router["nftables, kea DHCP, AdGuard DNS, Tailscale subnet router"]
+  end
 
-## Hardware
+  subgraph vlan20["VLAN 20, 10.20.0.0/24"]
+    subgraph k3s["K3s: control-plane-1, worker-1, worker-2"]
+      cloudflared["cloudflared"]
+      vip["MetalLB VIP 10.20.0.50"]
+      traefik["Traefik"]
+      sso["oauth2-proxy and Pocket ID"]
+      apps["Apps"]
+      pg[("CloudNativePG")]
+      lh[("Longhorn")]
+      flux["Flux"]
+    end
+  end
 
-Three Lenovo ThinkCentre m920q nodes on VLAN 20, with a Raspberry Pi as the router, gateway, and DNS:
+  edge -- "outbound tunnel" --> cloudflared
+  cloudflared --> traefik
+  router --> vip
+  vip --> traefik
+  traefik -- "forward-auth" --> sso
+  traefik --> apps
+  apps --> pg
+  apps --> lh
+  flux -- "pulls" --> github
+  pg -- "WAL and base backups" --> r2
+  lh -- "volume backups" --> r2
+  k3s -- "etcd snapshots" --> r2
+```
+
+The network is zoned. The servers sit on VLAN 20 (`10.20.0.0/24`), and VLAN 30 (`10.30.0.0/24`) is a DMZ that the router firewall denies towards the cluster and the home LAN. From the home LAN the router forwards nothing into VLAN 20 except the service VIP `10.20.0.50` on ports 80 and 443 ([ADR 0002](docs/adr/0002-declare-every-host-with-nixos-flakes.md)).
+
+Public traffic never reaches the LAN directly. Cloudflare terminates TLS at its edge, and the tunnel routes only `chat.syslabs.dev` and `lucawalz.dev` to Traefik. Internally, AdGuard on the Pi answers every `*.syslabs.dev` name with the IPv4 service VIP through one wildcard rewrite, public names included, and returns an empty answer for AAAA queries, so clients on the LAN or the tailnet always land on the VIP. cert-manager issues one wildcard certificate over Let's Encrypt DNS-01, so an internal host needs neither a DNS record nor an open port. Devices that do not use the Pi as resolver see only the public records, which exist for the two tunnel hosts ([ADR 0011](docs/adr/0011-serve-through-traefik-and-a-cloudflare-tunnel.md)).
+
+### Hardware
 
 | Node | Role | Address |
-|------|------|---------|
-| control-plane-1 | K3s server and control plane | 10.20.0.10 |
+| --- | --- | --- |
+| control-plane-1 | K3s server with embedded etcd, also runs workloads | 10.20.0.10 |
 | worker-1 | K3s agent | 10.20.0.11 |
 | worker-2 | K3s agent | 10.20.0.12 |
-| router | Pi gateway, firewall, DNS, Tailscale subnet router | 10.20.0.1 |
+| router | Raspberry Pi: gateway, firewall, DHCP, DNS, Tailscale subnet router, bar panel kiosk | 10.20.0.1 |
 
-A TP-Link TL-SG108PE carries the VLAN tags at layer 2 and powers the Pi over PoE on port 2, so the router runs from a single cable. It is managed at a static address on the home LAN, and its port map is recorded in [archived ADR 0050](docs/adr/archive/0050-poe-switch-powers-the-router.md).
+A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi advertises `10.20.0.0/24` to the tailnet, and each node also joins the tailnet as its own `tag:cluster` device, so the nodes stay reachable when the Pi is not ([ADR 0003](docs/adr/0003-run-k3s-as-one-server-and-two-agents-on-the-tailnet.md)). Firmware sits outside Nix and is patched by hand: `rpi-eeprom` on the Pi and the BIOS on the nodes.
 
-Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi joins the tailnet as a subnet router and advertises `10.20.0.0/24`, so admins with `--accept-routes` reach the cluster on its LAN addresses from anywhere, and the three nodes join the tailnet directly as well ([ADR 0002](docs/adr/0002-declare-every-host-with-nixos-flakes.md)).
+## Stack
 
-NixOS does not manage device firmware, so firmware patching is manual: `rpi-eeprom` on the Pi and the m920q BIOS on the nodes.
+| Layer | Component | Decision |
+| --- | --- | --- |
+| Hosts | NixOS flakes, disko, agenix | [ADR 0002](docs/adr/0002-declare-every-host-with-nixos-flakes.md) |
+| Kubernetes | K3s, one server and two agents, flannel over Tailscale | [ADR 0003](docs/adr/0003-run-k3s-as-one-server-and-two-agents-on-the-tailnet.md) |
+| Cluster CA | Stable CA under an offline root | [ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md) |
+| GitOps | Flux 2.10 under the Flux Operator | [ADR 0001](docs/adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md) |
+| Secrets | agenix for hosts, SOPS with age in the private `bedrock-secrets` repository | [ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md) |
+| Storage | Longhorn, with LUKS-encrypted volumes for Paperless | [ADR 0006](docs/adr/0006-store-volumes-on-longhorn.md) |
+| Databases | One CloudNativePG cluster with per-app roles and databases, barman-cloud plugin | [ADR 0007](docs/adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md) |
+| Network policy | Default deny, reusable Kustomize components, kube-router enforcement | [ADR 0008](docs/adr/0008-deny-network-traffic-by-default.md) |
+| Admission | Kyverno in `Enforce` mode | [ADR 0009](docs/adr/0009-enforce-workload-policy-with-kyverno.md) |
+| Identity | Pocket ID with passkeys, oauth2-proxy forward-auth | [ADR 0010](docs/adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md) |
+| Ingress | MetalLB, Traefik, cert-manager, Cloudflare tunnel | [ADR 0011](docs/adr/0011-serve-through-traefik-and-a-cloudflare-tunnel.md) |
+| Backups | Cloudflare R2 and restore drills | [ADR 0012](docs/adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md) |
+| Apps | Self-contained app folders on the bjw-s app-template chart | [ADR 0013](docs/adr/0013-keep-each-app-self-contained-and-scaffold-new-ones.md) |
+| Updates | Pinned versions, Renovate | [ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md) |
+| Observability | kube-prometheus-stack, Loki, Tempo, Alloy, ntfy, a deadman on the router | [ADR 0015](docs/adr/0015-observe-with-prometheus-loki-and-tempo.md) |
 
-## Requirements
+The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm release with its chart is listed in the generated [inventory](docs/inventory.md).
 
-- [Nix](https://nixos.org/download.html) with flakes enabled, for the host configurations and the dev shell.
-- A GitHub account that owns this repository, for the Flux bootstrap.
-- A Tailscale tailnet, with the subnet router running on the Pi.
+### Services
 
-The dev shell pins the rest of the toolchain (kubectl, helm, flux, sops, age, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs:
+| Service | Purpose | Access |
+| --- | --- | --- |
+| Blog | Static Hugo site, released by Flagger | public (`lucawalz.dev`) |
+| Open WebUI | Chat front end for the local models, own login | public (`chat`) |
+| Paperless | Document archive, own login | internal (`paperless`) |
+| paperless-gpt | Vision OCR and tagging for Paperless with Claude Haiku through LiteLLM | internal, forward-auth (`paperless-gpt`) |
+| LiteLLM | OpenAI-compatible gateway in front of Ollama and Anthropic | internal, forward-auth and own login (`litellm`) |
+| Homepage | Dashboard and links | internal, forward-auth (`home`) |
+| Grafana | Dashboards, own login | internal (`grafana`) |
+| Prometheus | Metrics and query browser | internal, forward-auth (`prometheus`) |
+| Alertmanager | Alert routing and silences | internal, forward-auth (`alertmanager`) |
+| ntfy | Notifications from Alertmanager and Flux | internal, forward-auth (`ntfy`) |
+| Flux | Flux Operator web UI | internal, forward-auth (`flux`) |
+| Longhorn | Storage UI | internal, forward-auth (`longhorn`) |
+| Traefik | Router dashboard | internal, forward-auth (`traefik`) |
+| Pocket ID | Passkey identity provider | internal (`id`) |
+| oauth2-proxy | Forward-auth gate for the admin UIs | internal (`auth`) |
+| Zot | Pull-through image cache, no UI | internal (`registry`) |
+| AdGuard Home | DNS filtering and the wildcard rewrite, own login | router, `10.20.0.1:3000` |
 
-```
-nix develop
-```
+Internal names are subdomains of `syslabs.dev`. Ollama serves the local models inside the cluster only. LiteLLM holds the only Anthropic key and gives paperless-gpt a virtual key limited to one model and its own budget.
 
 ## Installation
 
-A fresh cluster is brought up in two stages: the hosts, then Flux.
+### Requirements
 
-1. Install NixOS on each machine and apply its configuration. For an existing host, build the configuration and push it over SSH:
+- [Nix](https://nixos.org/download.html) with flakes. `nix develop` pins the toolchain (kubectl, helm, flux, sops, age, just, yq, kubeconform, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs.
+- A GitHub account holding this repository and the private `bedrock-secrets` repository.
+- A Tailscale tailnet, a Cloudflare account with the `syslabs.dev` zone, and three R2 buckets (`bedrock-postgres`, `bedrock-longhorn`, `bedrock-etcd`) with one bucket-scoped token each.
+- The three recovery keys: the SOPS age key, the K3s root CA in `~/.config/bedrock/k3s-root-ca/`, and the Longhorn volume encryption key. They are kept together on an encrypted offline medium ([ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 
-   ```
-   nixos-rebuild switch --flake .#control-plane-1 --target-host root@<control-plane-1-ip> --build-host root@<control-plane-1-ip>
-   ```
+### Hosts
 
-   `--build-host` is not optional here. See [Rebuilding a host](#rebuilding-a-host).
+1. Router first, because nothing else has a network without it. Flash the `router-installer` SD image, then push the real configuration, which brings up the VLANs, DHCP and DNS.
+2. Install NixOS on each node (disko lays out the disk) and push its configuration. control-plane-1 starts K3s with `clusterInit`, and the `k3s-ca` unit installs the stable cluster CA from `secrets/k3s-ca.age` before the first start, so the agents join with the token already in agenix. `scripts/generate-cluster-ca.sh` creates that CA once from the offline root and is not part of a routine rebuild.
 
-2. Fork this repository, then seed Flux once against the fork so the cluster reconciles from a repo under the operator's own control:
+```
+nixos-rebuild switch --flake .#control-plane-1 --target-host root@10.20.0.10 --build-host root@10.20.0.10
+```
 
-   ```
-   flux bootstrap github \
-     --owner=<github-user> \
-     --repository=<fork> \
-     --path=kubernetes/clusters/home \
-     --personal
-   ```
+### Flux
 
-   This installs the controllers and the `flux-system` Git source, which then reconcile `kubernetes/clusters/home`. The manifests there include the [Flux Operator](https://fluxcd.control-plane.io/operator/), which adopts the install in place and carries it declaratively as a `FluxInstance` from then on, so changing the controllers, the distribution, or the source is a commit rather than a re-bootstrap. The reasoning is in [ADR 0001](docs/adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md).
+With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before it runs:
 
-Flux reads `kubernetes/clusters/home` and reconciles the whole cluster from Git.
+1. Refresh the default kubeconfig entry from control-plane-1 (`just kubeconfig`).
+2. Apply CoreDNS from `kubernetes/infrastructure/controllers/coredns`. K3s runs with `--disable=coredns`, and without cluster DNS Flux cannot fetch the repository that installs it.
+3. Install the flux-operator chart at the version pinned in its HelmRelease.
+4. Apply the `FluxInstance` from `kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml`.
+5. Create the `sops-age` Secret from `~/.config/sops/age/keys.txt` (or `SOPS_AGE_KEY_FILE`), after checking that it matches the recipient in `.sops.yaml`.
+6. Create the sync Secret with a new SSH deploy key and print its public half, or reuse a key from `BEDROCK_DEPLOY_KEY`.
+7. Wait for the `FluxInstance` to become Ready.
+
+Three steps stay manual afterwards:
+
+- Add the printed public key to the repository as a deploy key with write access, since image automation pushes to `main`, and delete the previous cluster's key.
+- Open `https://id.syslabs.dev/setup` at once, register the owner passkey, and mark the owner email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login.
+- The public DNS records for the tunnel hostnames are made by hand in the Cloudflare dashboard.
+
+Flux then works through `kubernetes/clusters/home/config/` in `dependsOn` order. `flux get kustomizations -A` and `flux get helmreleases -A` show the progress. A cold start takes over an hour, most of it image pulls through the empty zot cache.
 
 ## Usage
 
-Confirm the nodes are up:
+Day-two operations are `just` recipes; `just --list` prints them with their help text.
+
+| Recipe | What it does |
+| --- | --- |
+| `just bootstrap` | Bring Flux up on a fresh cluster, confirming each step |
+| `just kubeconfig` | Refresh the default kubeconfig entry from control-plane-1 |
+| `just reconcile <app>` | Fetch the repository and reconcile the app's Flux Kustomization |
+| `just logs <app>` | Follow the logs of every labelled pod in the app's namespace |
+| `just login <app> [show=true]` | Show an app's admin login and copy its password, or print it |
+| `just psql <app>` | Open psql on the app's database on the CNPG primary |
+| `just dump <app>` | Write a `pg_dump` custom-format dump of the app's database |
+| `just restore <app> <file>` | Replace the app's database with a dump, with the app suspended and scaled to zero |
+| `just backup` | Take an on-demand CNPG backup to R2 and wait for it |
+| `just restore-test [postgres\|longhorn\|etcd\|all]` | Run the restore drills; `--dry-run` prints and validates the manifests |
+| `just new-app ...` | Scaffold an app, see below |
+| `just new-secret <app>` | Create the app's encrypted secrets in `bedrock-secrets` with random values |
+| `just paperless-import <dir>` | Copy a local folder of scans into the Paperless consume folder |
+| `just paperless-encrypt` | Copy the Paperless volumes onto encrypted twins (a one-time migration, already done) |
+| `just email-gate-deploy` | Deploy the Cloudflare Worker that gates the Paperless mail address by sender |
+
+### Changing a host
 
 ```
-$ kubectl get nodes
-NAME              STATUS   ROLES                  AGE    VERSION
-control-plane-1   Ready    control-plane,etcd     219d   v1.35.2+k3s1
-worker-1          Ready    <none>                 219d   v1.35.2+k3s1
-worker-2          Ready    <none>                 219d   v1.35.2+k3s1
+nixos-rebuild switch --flake .#worker-1 --target-host root@10.20.0.11 --build-host root@10.20.0.10
 ```
 
-Change anything under `kubernetes/` by committing to `main`. Flux applies it within a minute, with no manual `kubectl apply`. Check what reconciled:
+`--build-host` is required. An arm64 Mac can produce neither the x86_64-linux closure the nodes need nor the aarch64-linux closure the router needs, so the build runs on control-plane-1, which also emulates aarch64 for the router. During a cold rebuild, before control-plane-1 exists, point `--build-host` at the target itself. Do not prefix the command with `sudo`: nothing is built or activated locally, and sudo moves `$HOME` to `/var/root`, which holds no SSH key for the cluster.
 
-```
-$ flux get kustomizations
-NAME                     READY   MESSAGE
-cluster-sources          True    Applied revision: main@sha1:...
-cluster-storage          True    Applied revision: main@sha1:...
-cluster-edge-onprem      True    Applied revision: main@sha1:...
-cluster-apps             True    Applied revision: main@sha1:...
-```
+A router rebuild restarts tailscaled, which cuts any session through the Pi's subnet route, so router changes are pushed through control-plane-1's own tailnet address.
 
-Update a physical node after editing its NixOS configuration:
-
-```
-nixos-rebuild switch --flake .#worker-1 --target-host root@<worker-1-ip> --build-host root@10.20.0.10
-```
-
-### Rebuilding a host
-
-`--target-host` on its own builds the closure on the machine the command runs from. From an arm64 macOS workstation that fails for every host in this repository, because it can produce neither the x86_64-linux closure the cluster nodes need nor the aarch64-linux one the router needs. `--build-host` moves the build to a machine that can.
-
-control-plane-1 is the build host for day-to-day work, and `boot.binfmt.emulatedSystems` on control-plane-1 covers the router's aarch64 closure as well as the nodes' own. During a cold rebuild, when control-plane-1 does not exist yet, point `--build-host` at the target itself.
-
-Do not prefix the command with `sudo`. With both hosts set, nothing is built or activated locally, so local root is never needed, and sudo relocates `$HOME` to `/var/root`, which holds no SSH key for the cluster. The same cause makes a `builders` line in a user-level `nix.conf` inert.
-
-Flux applies the Kustomizations in dependency order, and a layer whose dependencies are not ready waits rather than failing: `cluster-sources` and `cluster-namespaces` first, then `cluster-bootstrap-secrets` and `cluster-secrets`, then the platform Kustomizations under `infrastructure/`, then `cluster-issuers` on top of cert-manager, and finally `cluster-apps`, which fans out into one Kustomization per app. The platform layer is roughly twenty Kustomizations, each carrying its own `dependsOn`; `cluster-cert-manager`, `cluster-storage`, `cluster-edge-onprem`, and `cluster-observability` are examples rather than the whole set. All of them are defined in `kubernetes/clusters/home/config/`, which is the list to read.
-
-To add an app, scaffold it and let the scaffold run every check:
+### Adding an app
 
 ```
 just new-app <name> <host> <port> db=true sso=true image=<repository>:<tag>
 ```
 
-This writes `kubernetes/apps/<name>/` (namespace, Flux Kustomizations, per-app alert, app-template HelmRelease, IngressRoute, network policies, and with `db=true` a CNPG role and database), lists it in `kubernetes/apps/kustomization.yaml` and regenerates `docs/inventory.md`. With `db=true` the app expects two secrets in the private `bedrock-secrets` repository ([ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)): `pg-<name>` in `postgres` and `<name>` in the app namespace. `just new-secret <name>` creates both encrypted, with random values. Commit both repositories, and Flux applies the app on its next pass. The Namespace carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing an app needs a manual `kubectl delete namespace`. `just --list` shows the day-2 recipes.
+The scaffold writes `kubernetes/apps/<name>/` with its namespace, Flux Kustomizations and Alert, an app-template HelmRelease, an IngressRoute, network policies, forward-auth when `sso=true`, and a CNPG role and database when `db=true`. It adds the app to `kubernetes/apps/kustomization.yaml`, regenerates `docs/inventory.md` and runs every repository check, then prints the remaining steps. With `db=true`, `just new-secret <name>` creates `pg-<name>` and `<name>` in `bedrock-secrets` with random values. Commit both repositories, and Flux applies the app on its next pass ([ADR 0013](docs/adr/0013-keep-each-app-self-contained-and-scaffold-new-ones.md)).
+
+Namespaces carry `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing an app from the index leaves its namespace and volumes until a deliberate `kubectl delete namespace`.
 
 ## Repository layout
 
 ```
-flake.nix              entry point; defines every host and the dev shells
-lib/                   the inventory and the clusterNodes builder that keeps host definitions small
-hosts/
-  common/              shared base: boot, locale, networking, users, packages, nix
-  control-plane-1/     control-plane node, with its disk layout and hardware scan
-  router/              the Pi, composed from the router modules
-  router-installer.nix the installer image that writes the Pi's first system
+flake.nix              every host and the dev shells
+lib/                   the node inventory and the builder that generates the cluster nodes
+hosts/                 shared base, control-plane-1, the router and the router installer image
 modules/
-  k3s/                 server and agent roles, plus the dormant burst-node role
-  router/              firewall, NAT, DHCP, DNS, wireless, and the bar-display kiosk
-  tailscale/           the client that joins a host to the tailnet, optionally advertising the LAN
-  services/            Longhorn storage prerequisites
-secrets/               agenix-encrypted host secrets: the K3s join token, the router's Tailscale and AdGuard credentials, the wifi passphrase, and the kiosk dashboard URL
-infra/packer/          the dormant Packer template that bakes a cloud node snapshot
-scripts/               the checks CI runs (ADR index, inventory generation, substitution rendering)
-tests/                 Kyverno policy tests and promtool alert-rule tests
-docs/                  the ADR log, the cluster inventory, and the disaster recovery, admission break-glass and alert selector audit runbooks
+  k3s/                 server and agent roles, plus the dormant cloud node image
+  router/              firewall, DHCP, DNS, wireless, deadman and the bar panel kiosk
+  tailscale/           the tailnet client
+  services/            host prerequisites for Longhorn
+secrets/               agenix-encrypted host secrets, recipients in secrets.nix
 kubernetes/
-  apps/                workloads Flux reconciles, one directory per app
-  components/          shared kustomize components (network policies, forward-auth)
-  infrastructure/      the platform, split into controllers/ (operator installs) and configs/ (their custom resources)
-  clusters/home/       the cluster entrypoint: the Flux Kustomization definitions, namespaces, sources, and the bootstrap secret that reaches the private secrets repository
+  clusters/home/       the cluster entrypoint: Flux Kustomizations, FluxInstance, namespaces, sources
+  infrastructure/      the platform: controllers/ (installs) and configs/ (their custom resources)
+  components/          shared Kustomize components (network policies, forward-auth, dependency wait)
+  apps/                one self-contained folder per app
+cloudflare/            the email gate Worker
+infra/packer/          the dormant Packer template for a cloud node snapshot
+scripts/               bootstrap, scaffold, restore drills and the CI checks
+tests/                 Kyverno policy tests and promtool alert-rule tests
+docs/                  ADRs, the inventory and the runbooks
 ```
 
-`flake.nix` generates every cluster node from `lib.clusterNodes`, dispatching on the `role` each node carries in the inventory; the router, the cluster-node image and the installer image are written out in `flake.nix` itself. Workers have no directory of their own, and adding one is an inventory entry rather than a flake edit, but that entry is not the whole cost: it still needs an agenix entry in `secrets/secrets.nix`, its own `tailscale-authkey-<name>.age`, and its host key added to `k3s-token.age`.
+## Recovery
 
-There is no capacity beyond the three local nodes. The on-demand path that once added capacity closed with the cloud account ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
-
-## Services
-
-Each service is reached at a subdomain of the cluster domain. The public ones go through the tunnel; the rest are internal-only, reachable over Tailscale or the LAN through split-horizon DNS:
-
-| Service | Purpose | Access |
-|---------|---------|--------|
-| Open WebUI | chat front-end for the local models | public (`chat`) |
-| Blog | static Hugo site | public (`lucawalz.dev`) |
-| Homepage | cluster dashboard and links | internal (`home`) |
-| Grafana | dashboards for the Prometheus stack | internal (`grafana`) |
-| Prometheus | metrics store and query browser | internal (`prometheus`) |
-| Alertmanager | alert routing, grouping, and silences | internal (`alertmanager`) |
-| Pocket ID | passkey identity provider for single sign-on | internal (`id`) |
-| oauth2-proxy | forward-auth gate in front of the admin UIs | internal (`auth`) |
-| LiteLLM | OpenAI-compatible gateway in front of Ollama and Anthropic | internal (`litellm`) |
-| Longhorn | storage management UI | internal (`longhorn`) |
-| Zot | in-cluster OCI registry | internal (`registry`) |
-| Traefik | router dashboard | internal (`traefik`) |
-| Flux | GitOps reconciliation dashboard | internal (`flux`) |
-| ntfy | alert sink for Alertmanager and Flux | internal (`ntfy`) |
-| Paperless | document archive | internal (`paperless`) |
-| paperless-gpt | Claude Haiku vision OCR and tagging for Paperless, through LiteLLM | internal (`paperless-gpt`) |
-
-One Ollama instance serves the local models and stays internal. The models it holds are declared in its HelmRelease and pulled at container startup, and LiteLLM fronts them with an OpenAI-compatible API for clients that expect one. LiteLLM also holds the only Anthropic key: paperless-gpt calls Claude Haiku 5.5 through it with a virtual key that is limited to that model and carries its own budget, and a Job recreates that key from git after a rebuild. A three-instance CloudNativePG cluster named `postgres` runs Postgres in HA; its declared databases back Pocket ID, Paperless, Open WebUI, and LiteLLM.
-
-## Security
-
-Secrets use two mechanisms, both committed encrypted, never in plaintext:
-
-- Host secrets use agenix, encrypted to each node's SSH host key, so a node decrypts its own secrets at boot with no shared passphrase. `secrets/secrets.nix` lists the recipients; the K3s join token, the router's Tailscale and AdGuard credentials, the wifi passphrase, and the kiosk dashboard URL live here.
-- Kubernetes secrets use SOPS with age, and they are held in a separate private repository, `bedrock-secrets`, rather than in this one ([ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)). Flux reconciles that repository as a second source through the `cluster-secrets` Kustomization and decrypts it in-cluster at reconcile time. Exactly one SOPS file remains here, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, which carries the read-only deploy key for the private repository and is itself decrypted by the same cluster age key, so the age key stays the only irreducible root.
-
-Editing secrets, re-keying them, and recovering them on a fresh cluster are covered in the [disaster recovery runbook](docs/disaster-recovery.md).
-
-Several layers of defense-in-depth sit on top. The app namespaces run default-deny NetworkPolicies, so a pod reaches only what it is explicitly allowed to. Workloads run with a non-root, dropped-capability securityContext, and K3s encrypts Secrets at rest.
-
-## Disaster recovery
-
-The cluster is reproducible from this repository plus two seeds it cannot hold: the age key that decrypts the secrets and the host SSH keys.
-
-There is no off-site copy of any cluster data. The object storage that held the backups went with the cloud account, and nothing replaced it ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)), so the estate survives a lost disk or a lost node and does not survive the loss of the building. Postgres has no point-in-time recovery. What that means scenario by scenario, along with the full rebuild from total loss and the procedures for rehearsing recovery without an outage, is in the [disaster recovery runbook](docs/disaster-recovery.md).
-
-Admission webhooks are a separate recovery path, because one that is unavailable rejects the very writes needed to repair it. Recognising that failure, relaxing enforcement, and restoring it afterwards are covered in the [admission break-glass runbook](docs/admission-break-glass.md).
+Recovery depends on the repositories, the three offline keys and the R2 buckets. The [disaster recovery runbook](docs/disaster-recovery.md) covers the measured rebuild, restores from R2, the drill cadence and the known gaps. The [admission break-glass runbook](docs/admission-break-glass.md) covers a webhook that blocks the writes needed to repair it, and the [alert selector audit](docs/alert-selector-audit.md) covers the live check of alert rules.
 
 ## Continuous integration
 
-The workflows run on every pull request, covering four areas:
+Every pull request and push to `main` runs:
 
-- The Nix side: formatting with `nixfmt`, linting with `statix` and `deadnix`, and `nix flake check` to evaluate every host configuration.
-- The Kubernetes manifests: `kubeconform` against the upstream and CRD schemas, `kustomize build` over every kustomization, and a render of the per-app Kustomizations with their Flux post-build substitutions applied so an unresolved variable fails a pull request rather than a reconcile.
-- Policy and alerting: the Kyverno policies run against their unit tests and against a first-party manifest, and the Prometheus alert rules are checked and unit-tested with `promtool`.
-- Repository hygiene: a check that no SOPS file was committed unencrypted, a check that the ADR index matches the ADRs on disk, a check that every Helm source is both listed for deployment and referenced by a release, a check that every namespace holding a HelmRelease is listed in the Flux alert that forwards those events, and a regeneration of `docs/inventory.md` that fails on drift. The Renovate configuration is validated on the same trigger.
+- `nix-check`: `nixfmt`, `statix`, `deadnix`, `nix flake check` and a build of every cluster node. `nix-build-router` builds the router closure on an arm64 runner when router files change, and weekly.
+- `k8s-validate`: kubeconform against upstream and CRD schemas, `kustomize build` of every kustomization, a render of every HelmRelease, a render of the Flux Kustomizations with their substitutions, the Kyverno policy tests, the promtool rule tests, a check that SOPS files are encrypted, and the repository checks in `scripts/check-*.sh` (CRD order, CRD-only charts, HelmRelease retry strategy, apps index, Helm sources, alert namespaces, default ServiceAccounts, snapshot coverage).
+- `lint`: shellcheck and actionlint.
+- `docs`: the ADR index and the generated inventory.
+- `renovate-validate`: the Renovate configuration.
 
-One gate deliberately does not run in CI. `promtool` proves a rule parses and behaves as its fixture says, but the fixture supplies the series, so a rule selecting a metric name, a label value, or a bucket boundary that nothing in the estate emits passes exactly as a working rule does and then stays silent forever. Catching that needs the live series database, so `scripts/check-alert-selectors.sh` is run by an operator against the cluster rather than by a pull request runner that cannot reach it. The [alert selector audit](docs/alert-selector-audit.md) covers when to run it and what to do with each finding.
-
-[Renovate](https://docs.renovatebot.com/) keeps `flake.lock`, Helm chart versions, and GitHub Actions current through automated pull requests.
+`scripts/check-alert-selectors.sh` needs the live Prometheus and is run by hand after rule changes and rebuilds ([alert selector audit](docs/alert-selector-audit.md)). [Renovate](https://docs.renovatebot.com/) keeps the pins current ([ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md)).
 
 ## Roadmap
 
-- Off-site backups again, once a NAS in the rack replaces the object storage that was retired with the cloud account.
-- Broader alerting on top of the existing Prometheus and Grafana stack.
+- strata, a project that builds on Paperless, CloudNativePG, the tunnel and the off-site backups.
+- Tunnel DNS records managed from git instead of the Cloudflare dashboard.
+- Migration from Traefik IngressRoutes to the Gateway API.
+- Client-side encryption for the remaining backups.
+- A rebuild that reinstalls the operating system with disko, not only the K3s state.
+- A dedicated write-only deploy key for blog image automation.
 
-This is a personal setup that changes as needs change, so the roadmap is a direction rather than a commitment.
+The roadmap is a direction, not a commitment.
 
 ## Contributing
 
-This is a personal homelab, not a product, but issues and forks are welcome. Anyone reusing the layout is encouraged to adapt it to their own hardware and domain.
+This is a personal home lab, not a product, but issues and forks are welcome. Anyone reusing the layout will need to adapt it to their own hardware, domain and accounts.
 
-To work on it locally, clone the repository and enter the dev shell with `nix develop`, then run `nix flake check` before opening a pull request. The Kubernetes manifest validation that runs in CI is `scripts/check-manifests.sh`, which runs the same way locally, alongside the other `scripts/check-*.sh` gates.
+To work on it, enter the dev shell with `nix develop` and run `nix flake check` and `scripts/check-*.sh` before opening a pull request. Report security issues as described in [SECURITY.md](SECURITY.md).
 
 ## Support
 
-Open an issue on the [GitHub repository](https://github.com/lucawalz/bedrock/issues) for questions or problems.
+Open an issue on the [GitHub repository](https://github.com/lucawalz/bedrock/issues).
 
 ## Authors and acknowledgment
 
-Built and maintained by Luca Walz. It stands on a lot of open-source work, in particular NixOS, K3s, Flux, nixos-anywhere, disko, agenix, SOPS, Longhorn, Traefik, and the chart maintainers behind the services it runs.
+Built and maintained by Luca Walz. It stands on open-source work, in particular NixOS, K3s, Flux, disko, agenix, SOPS, Longhorn, CloudNativePG, Kyverno, Pocket ID, Traefik, and the chart maintainers behind the services it runs.
 
 ## License
 
-Released under the MIT License. See [`LICENSE`](LICENSE).
+Released under the MIT License. See [LICENSE](LICENSE).
 
 ## Project status
 
-Actively maintained and running in production at home.
+Actively maintained and running at home. Rebuilt from git in November 2026.

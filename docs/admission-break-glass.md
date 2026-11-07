@@ -2,7 +2,7 @@
 
 How to recover the cluster when an admission webhook refuses the writes needed to fix it.
 
-A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims. The recovery is always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
+Kyverno enforces the workload policies in [ADR 0009](adr/0009-enforce-workload-policy-with-kyverno.md), and several platform operators run their own webhooks. A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims. The recovery is always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
 
 Blast radius is set by two fields on the configuration object: `failurePolicy`, and the `namespaceSelector` deciding where the webhook is consulted. A `Fail` webhook with an empty selector reaches everywhere.
 
@@ -29,7 +29,7 @@ All of these are `failurePolicy: Fail`. The first row reaches across resource ki
 
 | Configuration | Owner | What it blocks while unavailable |
 | --- | --- | --- |
-| `kyverno-resource-validating-webhook-cfg`, `kyverno-resource-mutating-webhook-cfg` | Kyverno | Pods, deployments, daemonsets, jobs and cronjobs, in every namespace outside the webhook `namespaceSelector` |
+| `kyverno-resource-validating-webhook-cfg` | Kyverno | Pods, deployments, daemonsets, jobs and cronjobs, in every namespace outside the webhook `namespaceSelector` |
 | the remaining six `Fail` `kyverno-*` configurations | Kyverno | Kyverno's own policies, exceptions and global context entries |
 | `longhorn-webhook-validator`, `longhorn-webhook-mutator` | Longhorn | Volumes, backups, backup targets and backing images, so volume and backup recovery |
 | `cnpg-validating-webhook-configuration`, `cnpg-mutating-webhook-configuration` | CNPG operator | Clusters, backups, scheduled backups, databases and poolers, so database restore and failover changes |
@@ -38,6 +38,8 @@ All of these are `failurePolicy: Fail`. The first row reaches across resource ki
 | `cert-manager-webhook` validating and mutating | cert-manager | `cert-manager.io` and `acme.cert-manager.io` resources, so certificate issuance and renewal |
 
 The subsystem webhooks are circular: a Longhorn outage blocks the Longhorn writes needed to repair it, and the same holds for CNPG and MetalLB. The procedure below applies unchanged with the configuration name substituted.
+
+The resource mutating webhook, `kyverno-resource-mutating-webhook-cfg`, is `Ignore`, because the only mutating policy sets `failurePolicy: Ignore`, so a Kyverno outage skips the mutation rather than blocking the write.
 
 The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
 
@@ -106,16 +108,17 @@ kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations \
   | select(.failurePolicy=="Ignore") | "\($i.metadata.name) \(.name)"'
 ```
 
-Five entries are `Ignore` by design and are expected in that output at rest. Anything beyond this set still needs restoring.
+Six entries are `Ignore` by design and are expected in that output at rest. Anything beyond this set still needs restoring.
 
 | Configuration | Webhook |
 | --- | --- |
 | `kube-prometheus-stack-admission` | `alertmanagerconfigsvalidate.monitoring.coreos.com` |
 | `kube-prometheus-stack-admission` | `prometheusrulemutate.monitoring.coreos.com` |
 | `kube-prometheus-stack-admission` | `prometheusrulevalidate.monitoring.coreos.com` |
+| `kyverno-resource-mutating-webhook-cfg` | `mutate.kyverno.svc-ignore` |
 | `kyverno-ttl-validating-webhook-cfg` | `kyverno-cleanup-controller.kyverno.svc` |
 | `kyverno-verify-mutating-webhook-cfg` | `monitor-webhooks.kyverno.svc` |
 
 ## Known gaps
 
-- The `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks are served by the cleanup controller, whose binary has no timeout flag. They stay at a 10 second timeout while the rest of Kyverno runs at 5.
+- `--webhookTimeout=5` reaches only the Kyverno resource and policy webhooks. The exception, CEL exception and global context webhooks, and the `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks served by the cleanup controller, whose binary has no timeout flag, stay at 10 seconds.
