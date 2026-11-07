@@ -16,6 +16,17 @@ node_md_disks{job="node-exporter",state="failed"}
 # A failure condition nothing in the estate has hit inside the retention window.
 kubelet_evictions{job="kubelet",metrics_path="/metrics"}
 kube_pod_owner{job="kube-state-metrics",owner_kind="Node"}
+kube_state_metrics_watch_total{job="kube-state-metrics",result="error"}
+aggregator_unavailable_apiservice_total{job="apiserver"}
+
+# Per-object series for objects the estate has none of: no HorizontalPodAutoscaler
+# exists, and no node carries a taint until the node controller marks one unreachable.
+kube_horizontalpodautoscaler_spec_max_replicas{job="kube-state-metrics"}
+kube_horizontalpodautoscaler_spec_min_replicas{job="kube-state-metrics"}
+kube_horizontalpodautoscaler_status_current_replicas{job="kube-state-metrics"}
+kube_horizontalpodautoscaler_status_desired_replicas{job="kube-state-metrics"}
+kube_node_spec_taint{effect="NoSchedule",job="kube-state-metrics",key="node.kubernetes.io/unreachable"}
+kube_node_spec_taint{job="kube-state-metrics"}
 
 # Remote write is not configured, so the whole remote storage subsystem is unexported.
 prometheus_remote_storage_failed_samples_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
