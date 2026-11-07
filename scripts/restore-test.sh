@@ -15,10 +15,20 @@ POSTGRES_CHECKS=("pocket-id schema_migrations" "paperless django_migrations")
 
 LONGHORN_NAMESPACE=longhorn-system
 LONGHORN_PVC_NAMESPACE=paperless
-LONGHORN_PVC=paperless-ngx-data
+LONGHORN_DEPLOYMENT=paperless-ngx
+LONGHORN_DEPLOYMENT_VOLUME=data
 LONGHORN_RESTORE_VOLUME=restore-test
 LONGHORN_RESTORE_TIMEOUT_SECONDS=1800
+LONGHORN_MOUNT_TIMEOUT_SECONDS=600
 LONGHORN_POLL_SECONDS=10
+LONGHORN_KEY_SECRET=longhorn-crypto
+LONGHORN_WRONG_KEY_SECRET=restore-test-wrong-key
+LONGHORN_WRONG_KEY_BYTES=32
+LONGHORN_KEY_ATTEMPT=restore-test-key
+LONGHORN_WRONG_KEY_ATTEMPT=restore-test-wrong-key
+# the paperless volumes belong to USERMAP_UID
+LONGHORN_READER_UID=1000
+LONGHORN_DRY_RUN_IMAGE=ghcr.io/paperless-ngx/paperless-ngx:dry-run
 
 ETCD_S3_BUCKET=bedrock-etcd
 ETCD_S3_PREFIX=etcd-snapshots
@@ -152,6 +162,112 @@ spec:
   dataEngine: v1
   frontend: blockdev
   accessMode: rwo
+  encrypted: true
+MANIFEST
+}
+
+wrong_key_secret() {
+  cat <<MANIFEST
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ${LONGHORN_WRONG_KEY_SECRET}
+  namespace: ${LONGHORN_NAMESPACE}
+type: Opaque
+stringData:
+  CRYPTO_KEY_PROVIDER: secret
+  CRYPTO_KEY_VALUE: "$(od -An -tx1 -N"$LONGHORN_WRONG_KEY_BYTES" /dev/urandom | tr -d ' \n')"
+MANIFEST
+}
+
+# A static claim on the restored volume, staged with the given key secret, and a reader that lists it.
+mount_attempt() {
+  local name="$1" secret="$2" size="$3" image="$4"
+  cat <<MANIFEST
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ${name}
+spec:
+  capacity:
+    storage: "${size}"
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  claimRef:
+    namespace: ${LONGHORN_PVC_NAMESPACE}
+    name: ${name}
+  csi:
+    driver: driver.longhorn.io
+    volumeHandle: ${LONGHORN_RESTORE_VOLUME}
+    fsType: ext4
+    nodeStageSecretRef:
+      name: ${secret}
+      namespace: ${LONGHORN_NAMESPACE}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ${name}
+  namespace: ${LONGHORN_PVC_NAMESPACE}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ""
+  volumeName: ${name}
+  resources:
+    requests:
+      storage: "${size}"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ${name}
+  namespace: ${LONGHORN_PVC_NAMESPACE}
+  labels:
+    app.kubernetes.io/name: ${name}
+spec:
+  restartPolicy: Never
+  automountServiceAccountToken: false
+  enableServiceLinks: false
+  nodeSelector:
+    bedrock.io/storage: "true"
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: ${LONGHORN_READER_UID}
+    runAsGroup: ${LONGHORN_READER_UID}
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: read
+      image: ${image}
+      command: ["bash", "-c"]
+      args:
+        - |
+          entries="\$(ls -A /restore | grep -cvx lost+found)"
+          echo "\$entries entries"
+          [ "\$entries" -gt 0 ]
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          memory: 64Mi
+      volumeMounts:
+        - name: restore
+          mountPath: /restore
+          readOnly: true
+  volumes:
+    - name: restore
+      persistentVolumeClaim:
+        claimName: ${name}
+        readOnly: true
 MANIFEST
 }
 
@@ -167,7 +283,10 @@ dry_run_manifests() {
   restore_network_policy > "$work/netpol.yaml"
   restore_cluster > "$work/cluster.yaml"
   longhorn_volume "s3://example@auto/?backup=backup-0&volume=pvc-0" 5368709120 > "$work/volume.yaml"
-  for name in netpol cluster volume; do
+  wrong_key_secret | sed 's/CRYPTO_KEY_VALUE: .*/CRYPTO_KEY_VALUE: redacted/' > "$work/wrong-key.yaml"
+  mount_attempt "$LONGHORN_WRONG_KEY_ATTEMPT" "$LONGHORN_WRONG_KEY_SECRET" 5368709120 "$LONGHORN_DRY_RUN_IMAGE" > "$work/wrong-key-attempt.yaml"
+  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" 5368709120 "$LONGHORN_DRY_RUN_IMAGE" > "$work/key-attempt.yaml"
+  for name in netpol cluster volume wrong-key wrong-key-attempt key-attempt; do
     echo "--- $name"
     cat "$work/$name.yaml"
     validate "$work/$name.yaml"
@@ -211,32 +330,92 @@ longhorn_field() {
   kubectl get volumes.longhorn.io "$LONGHORN_RESTORE_VOLUME" -n "$LONGHORN_NAMESPACE" -o jsonpath="{.status.$1}"
 }
 
+wait_until() {
+  local timeout="$1" description="$2" waited=0
+  shift 2
+  until "$@"; do
+    [ "$waited" -lt "$timeout" ] || fail "$description did not happen within ${timeout}s"
+    sleep "$LONGHORN_POLL_SECONDS"
+    waited=$((waited + LONGHORN_POLL_SECONDS))
+  done
+}
+
+restore_finished() {
+  [ "$(longhorn_field restoreInitiated)" = true ] && [ "$(longhorn_field restoreRequired)" = false ] \
+    && [ "$(longhorn_field state)" = detached ]
+}
+
+restore_detached() {
+  [ "$(longhorn_field state)" = detached ]
+}
+
+attempt_phase() {
+  kubectl get pod "$1" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.status.phase}'
+}
+
+attempt_failed_to_unlock() {
+  local name="$1"
+  case "$(attempt_phase "$name")" in
+    Running | Succeeded) fail "pod $name mounted the restored volume with a wrong key" ;;
+  esac
+  kubectl get events -n "$LONGHORN_PVC_NAMESPACE" --field-selector "involvedObject.name=$name,reason=FailedMount" \
+    -o jsonpath='{.items[*].message}' | grep -qi 'luksOpen\|passphrase'
+}
+
+attempt_finished() {
+  case "$(attempt_phase "$1")" in
+    Succeeded) return 0 ;;
+    Failed) kubectl logs "$1" -n "$LONGHORN_PVC_NAMESPACE" >&2 || true; fail "pod $1 could not read the restored volume" ;;
+    *) return 1 ;;
+  esac
+}
+
+remove_attempt() {
+  kubectl delete pod "$1" -n "$LONGHORN_PVC_NAMESPACE" --ignore-not-found --wait
+  kubectl delete pvc "$1" -n "$LONGHORN_PVC_NAMESPACE" --ignore-not-found --wait
+  kubectl delete pv "$1" --ignore-not-found --wait
+}
+
 longhorn_cleanup() {
+  remove_attempt "$LONGHORN_WRONG_KEY_ATTEMPT"
+  remove_attempt "$LONGHORN_KEY_ATTEMPT"
+  kubectl delete secret "$LONGHORN_WRONG_KEY_SECRET" -n "$LONGHORN_NAMESPACE" --ignore-not-found
   kubectl delete volumes.longhorn.io "$LONGHORN_RESTORE_VOLUME" -n "$LONGHORN_NAMESPACE" --ignore-not-found --wait
 }
 
 test_longhorn() {
-  local volume backup_url size waited=0
-  volume="$(kubectl get pvc "$LONGHORN_PVC" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.volumeName}')"
-  [ -n "$volume" ] || fail "pvc $LONGHORN_PVC_NAMESPACE/$LONGHORN_PVC is not bound"
-  read -r backup_url size < <(kubectl get backups.longhorn.io -n "$LONGHORN_NAMESPACE" -o json \
+  local claim volume backup_url size encrypted image
+  claim="$(kubectl get deploy "$LONGHORN_DEPLOYMENT" -n "$LONGHORN_PVC_NAMESPACE" \
+    -o jsonpath="{.spec.template.spec.volumes[?(@.name==\"$LONGHORN_DEPLOYMENT_VOLUME\")].persistentVolumeClaim.claimName}")"
+  [ -n "$claim" ] || fail "deployment $LONGHORN_DEPLOYMENT mounts no claim as $LONGHORN_DEPLOYMENT_VOLUME"
+  volume="$(kubectl get pvc "$claim" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.volumeName}')"
+  [ -n "$volume" ] || fail "pvc $LONGHORN_PVC_NAMESPACE/$claim is not bound"
+  read -r backup_url size encrypted < <(kubectl get backups.longhorn.io -n "$LONGHORN_NAMESPACE" -o json \
     | VOLUME="$volume" yq -p=json -r '
         [.items[] | select(.status.volumeName == strenv(VOLUME) and .status.state == "Completed")]
-        | sort_by(.status.backupCreatedAt) | (.[-1].status | .url + " " + .volumeSize)')
+        | sort_by(.status.backupCreatedAt) | (.[-1].status | .url + " " + .volumeSize + " " + (.labels["volume-encrypted"] // "disabled"))')
   case "$backup_url" in null | "") fail "no completed backup of volume $volume" ;; esac
+  [ "$encrypted" = enabled ] || fail "the newest backup of $claim ($volume) is not from an encrypted volume"
   kubectl get volumes.longhorn.io "$LONGHORN_RESTORE_VOLUME" -n "$LONGHORN_NAMESPACE" >/dev/null 2>&1 \
     && fail "volume $LONGHORN_RESTORE_VOLUME already exists; delete it first"
-  echo "longhorn: restoring $backup_url into $LONGHORN_RESTORE_VOLUME"
+  image="$(kubectl get deploy "$LONGHORN_DEPLOYMENT" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}')"
+  echo "longhorn: restoring $backup_url of $claim into $LONGHORN_RESTORE_VOLUME"
   cleanups+=(longhorn_cleanup)
   longhorn_volume "$backup_url" "$size" | kubectl apply -f -
-  while ! { [ "$(longhorn_field restoreInitiated)" = true ] && [ "$(longhorn_field restoreRequired)" = false ] \
-    && [ "$(longhorn_field state)" = detached ]; }; do
-    [ "$waited" -lt "$LONGHORN_RESTORE_TIMEOUT_SECONDS" ] || fail "restore of $backup_url did not finish within ${LONGHORN_RESTORE_TIMEOUT_SECONDS}s"
-    sleep "$LONGHORN_POLL_SECONDS"
-    waited=$((waited + LONGHORN_POLL_SECONDS))
-  done
+  wait_until "$LONGHORN_RESTORE_TIMEOUT_SECONDS" "restore of $backup_url" restore_finished
   [ "$(longhorn_field robustness)" != faulted ] || fail "restored volume is faulted"
   echo "longhorn: restore of $backup_url completed"
+
+  wrong_key_secret | kubectl apply -f -
+  mount_attempt "$LONGHORN_WRONG_KEY_ATTEMPT" "$LONGHORN_WRONG_KEY_SECRET" "$size" "$image" | kubectl apply -f -
+  wait_until "$LONGHORN_MOUNT_TIMEOUT_SECONDS" "a LUKS unlock failure with a wrong key" attempt_failed_to_unlock "$LONGHORN_WRONG_KEY_ATTEMPT"
+  echo "longhorn: the restored volume refuses to unlock with a wrong key"
+  remove_attempt "$LONGHORN_WRONG_KEY_ATTEMPT"
+  wait_until "$LONGHORN_MOUNT_TIMEOUT_SECONDS" "detach of $LONGHORN_RESTORE_VOLUME" restore_detached
+
+  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" "$size" "$image" | kubectl apply -f -
+  wait_until "$LONGHORN_MOUNT_TIMEOUT_SECONDS" "a read of the restored volume with the key" attempt_finished "$LONGHORN_KEY_ATTEMPT"
+  echo "longhorn: the restored volume unlocks with $LONGHORN_KEY_SECRET and lists $(kubectl logs "$LONGHORN_KEY_ATTEMPT" -n "$LONGHORN_PVC_NAMESPACE")"
 }
 
 test_etcd() {
