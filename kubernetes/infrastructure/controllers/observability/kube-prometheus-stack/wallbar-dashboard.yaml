@@ -132,7 +132,7 @@ data:
                 "type": "prometheus",
                 "uid": "prometheus"
               },
-              "expr": "ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\"} or (label_replace(vector(1),\"alertname\",\"All clear\",\"\",\"\") and on() (count(ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\"}) or vector(0)) == 0)",
+              "expr": "ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\",severity!=\"info\"} or (label_replace(vector(1),\"alertname\",\"All clear\",\"\",\"\") and on() (count(ALERTS{alertstate=\"firing\",alertname!~\"Watchdog|InfoInhibitor\",severity!=\"info\"}) or vector(0)) == 0)",
               "format": "table",
               "instant": true,
               "refId": "A"

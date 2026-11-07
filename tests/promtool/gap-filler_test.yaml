@@ -694,7 +694,7 @@ tests:
         alertname: LonghornVolumeOverDeclared
         exp_alerts:
           - exp_labels:
-              severity: warning
+              severity: info
               name: pvc-abc
               pvc: paperless-ngx-media
               pvc_namespace: paperless
