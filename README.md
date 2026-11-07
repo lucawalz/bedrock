@@ -198,7 +198,7 @@ nixos-rebuild switch --flake .#worker-1 --target-host root@10.20.0.11 --build-ho
 
 `--build-host` is required. An arm64 Mac can produce neither the x86_64-linux closure the nodes need nor the aarch64-linux closure the router needs, so the build runs on control-plane-1, which also emulates aarch64 for the router. During a cold rebuild, before control-plane-1 exists, point `--build-host` at the target itself. Do not prefix the command with `sudo`: nothing is built or activated locally, and sudo moves `$HOME` to `/var/root`, which holds no SSH key for the cluster.
 
-A router rebuild restarts tailscaled, which cuts any session through the Pi's subnet route, so router changes are pushed through control-plane-1's own tailnet address.
+A router rebuild restarts tailscaled, which cuts any session through the Pi's subnet route, so router changes are pushed through control-plane-1's own tailnet address with an SSH config file passed as `NIX_SSHOPTS="-F <config file>"`; the [disaster recovery runbook](docs/disaster-recovery.md#wipe-and-rebuild-the-nodes) has the config and the command.
 
 ### Adding an app
 

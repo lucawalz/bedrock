@@ -72,14 +72,30 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
 
 ### Before the wipe
 
-1. Confirm the seeds: `sops -d` of a file in `bedrock-secrets` succeeds with the age key, and `/run/agenix/k3s-token` exists on control-plane-1.
+1. Confirm the seeds: `sops -d` of a file in `bedrock-secrets` succeeds with the age key, and on control-plane-1 both `/run/agenix/k3s-token` and `/run/agenix/k3s-ca` exist, so the cluster CA in `secrets/k3s-ca.age` decrypts there.
 2. Run `nix flake check` and every `scripts/check-*.sh`.
 3. If `main` carries changes the running cluster has not applied, freeze the cluster before pushing, so it never applies them or writes into R2: annotate the `FluxInstance` with `fluxcd.controlplane.io/reconcile: disabled`, then `flux suspend source git flux-system` and suspend every Kustomization and HelmRelease. `flux suspend` takes no `-A`, so loop over the namespaces with `--all -n <namespace>`.
-4. Decide what happens to the data. A fresh `postgres` cluster runs `initdb`, and its archive check fails if `s3://bedrock-postgres/postgres/` already holds WAL from an earlier cluster. A BackupVolume left in `bedrock-longhorn` re-syncs into the new cluster. For a rebuild that discards data, list both with their own credentials after the wipe and, once the owner confirms, delete what is there. For a rebuild that keeps data, leave them and follow [Restoring data from R2](#restoring-data-from-r2) instead.
+4. Decide what happens to the data: a rebuild that discards it, or one that keeps it and follows [Restoring data from R2](#restoring-data-from-r2). The first step of [Bootstrap and converge](#bootstrap-and-converge) depends on the choice.
 
 ### Wipe and rebuild the nodes
 
-1. Rebuild the router first if its configuration changed, through control-plane-1's own tailnet address: a router switch restarts tailscaled and cuts any session through the Pi's subnet route.
+1. Rebuild the router first if its configuration changed, through control-plane-1's own tailnet address: a router switch restarts tailscaled and cuts any session through the Pi's subnet route. An SSH config file for the jump:
+
+   ```
+   Host cp1-direct
+     HostName 100.105.211.67
+     HostKeyAlias 10.20.0.10
+     User root
+
+   Host 10.20.0.1 10.20.0.10
+     ProxyJump cp1-direct
+   ```
+
+   ```
+   NIX_SSHOPTS="-F <config file>" nixos-rebuild switch --flake .#router --target-host root@10.20.0.1 --build-host root@10.20.0.10
+   ```
+
+   `100.105.211.67` is control-plane-1's tailnet address from `lib/inventory.nix`. `NIX_SSHOPTS` is split on spaces, so the jump goes in a config file rather than an inline `ProxyCommand`.
 2. Build and stage the new generation on every node with `nixos-rebuild boot` (see [Changing a host](../README.md#changing-a-host) for `--build-host`), so each node comes up once, fresh, on the new generation.
 3. On worker-2, then worker-1, then control-plane-1: `systemctl stop k3s` and `k3s-killall.sh`, then confirm that `findmnt` lists nothing under `/var/lib/kubelet` or `/var/lib/longhorn`. A Longhorn CSI mount whose engine lived on an already stopped node can hang the forced unmount; `umount -l` clears it.
 4. Remove the state and purge the iSCSI node records in the same command as the reboot, since stale records break the next attach in either direction. Reboot control-plane-1 first:
@@ -93,11 +109,12 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
 
 ### Bootstrap and converge
 
-1. Run `just bootstrap` ([README](../README.md#flux)). It refreshes the kubeconfig, applies CoreDNS, installs the flux-operator chart, applies the `FluxInstance`, creates `sops-age` and the sync deploy key, and waits for the `FluxInstance`.
-2. Add the printed public key as a deploy key with write access on GitHub, and delete the previous cluster's key.
-3. Open `https://id.syslabs.dev/setup` as soon as Pocket ID runs and register the owner passkey; the claim page is open to the home LAN until then. In the Pocket ID admin UI, mark the owner email as verified. oauth2-proxy rejects an unverified email, and every forward-auth login answers 500 until this is done ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)).
-4. Check that the public DNS records for `chat.syslabs.dev` and `lucawalz.dev` still point at the tunnel. They are made by hand in the Cloudflare dashboard.
-5. Watch `flux get kustomizations -A` and `flux get helmreleases -A` until everything is Ready. Any stall gets a root-cause fix in git, never a live patch.
+1. After the wipe and before `just bootstrap`, check the R2 targets with each bucket's own credentials. Flux creates the `postgres` Cluster with `initdb`, and its archive check fails if `s3://bedrock-postgres/postgres/` already holds WAL from an earlier cluster; a BackupVolume left in `bedrock-longhorn` re-syncs into the new cluster. For a rebuild that discards data, delete what is there once the owner confirms. For a rebuild that keeps data, leave both and restore as in [Restoring data from R2](#restoring-data-from-r2).
+2. Run `just bootstrap` ([README](../README.md#flux)). It refreshes the kubeconfig, applies CoreDNS, installs the flux-operator chart, applies the `FluxInstance`, creates `sops-age` and the sync deploy key, and waits for the `FluxInstance`.
+3. Add the printed public key as a deploy key with write access on GitHub, and delete the previous cluster's key.
+4. Open `https://id.syslabs.dev/setup` as soon as Pocket ID runs and register the owner passkey; the claim page is open to the home LAN until then. In the Pocket ID admin UI, mark the owner email as verified. oauth2-proxy rejects an unverified email, and every forward-auth login answers 500 until this is done ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)).
+5. Check that the public DNS records for `chat.syslabs.dev` and `lucawalz.dev` still point at the tunnel. They are made by hand in the Cloudflare dashboard.
+6. Watch `flux get kustomizations -A` and `flux get helmreleases -A` until everything is Ready. Any stall gets a root-cause fix in git, never a live patch.
 
 ### Cold-start behaviour to expect
 
@@ -130,11 +147,12 @@ Longhorn lists the backups in `bedrock-longhorn` once its BackupTarget polls the
 
 ### etcd
 
-A snapshot restores the whole Kubernetes API state. It is the right tool only when the API holds state that Flux cannot reconcile back. The server token governs the restore: a snapshot restored under a different token gives a cluster that starts and returns ciphertext for every Secret, without an error. On control-plane-1, with the S3 credentials from `/run/agenix/etcd-s3-credentials` in the environment:
+A snapshot restores the whole Kubernetes API state. It is the right tool only when the API holds state that Flux cannot reconcile back. The server token governs the restore: a snapshot restored under a different token gives a cluster that starts and returns ciphertext for every Secret, without an error. On control-plane-1, as root, with the token and the S3 credentials that the `k3s` unit reads from agenix:
 
 ```
 systemctl stop k3s
-k3s server --cluster-reset --secrets-encryption \
+set -a; . /run/agenix/etcd-s3-credentials; set +a
+k3s server --cluster-reset --secrets-encryption --token-file=/run/agenix/k3s-token \
   --etcd-s3 --etcd-s3-bucket=bedrock-etcd --etcd-s3-folder=etcd-snapshots \
   --etcd-s3-endpoint=<account id>.r2.cloudflarestorage.com --etcd-s3-region=auto \
   --cluster-reset-restore-path=<snapshot name>
@@ -155,7 +173,7 @@ The rebuild above keeps the operating systems. A full reinstall has not been reh
 
 `just restore-test` runs three drills and removes everything it creates:
 
-- `postgres`: a point-in-time clone from R2, compared with production by row count on `pocket-id.schema_migrations` and `paperless.django_migrations`, which change only on upgrades.
+- `postgres`: a clone from R2 replayed to the latest archived WAL, compared with production by row count on `pocket-id.schema_migrations` and `paperless.django_migrations`, which change only on upgrades.
 - `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with `longhorn-crypto`.
 - `etcd`: the newest snapshot in `s3://bedrock-etcd/etcd-snapshots` must be under 13 hours old.
 
@@ -165,7 +183,7 @@ The cadence is a monthly `just restore-test`, a full rebuild from git every six 
 | --- | --- | --- |
 | Full rebuild from git | 2026-11-06 | Passed, about 2 h 20 min, four defects fixed in git |
 | Age key decrypts `bedrock-secrets` | 2026-11-06 | Passed |
-| Postgres point-in-time clone from R2 | 2026-11-07 | Passed: 1 and 242 rows in both |
+| Postgres clone from R2, replayed to the latest WAL | 2026-11-07 | Passed: 1 and 242 rows in both |
 | Encrypted Longhorn restore, wrong key refused | 2026-11-07 | Passed |
 | etcd snapshot in R2 under 13 hours old | 2026-11-07 | Passed |
 | Host configurations build | Every pull request | `nix-check` in CI |
