@@ -43,7 +43,13 @@ metadata:
   name: allow-scrape-egress
   namespace: monitoring
 spec:
-  podSelector: {}
+  # the public dashboard creator holds the Grafana admin password, so it gets egress to Grafana alone
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: NotIn
+        values:
+          - grafana-public-dashboard
   policyTypes:
     - Egress
   egress:

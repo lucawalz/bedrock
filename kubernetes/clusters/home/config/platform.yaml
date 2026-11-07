@@ -22,6 +22,26 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: cluster-grafana-public-dashboard
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./kubernetes/infrastructure/configs/grafana-public-dashboard
+  prune: true
+  wait: true
+  timeout: 5m
+  # Job pod templates are immutable, so a changed script needs the Job recreated
+  force: true
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  dependsOn:
+    - name: cluster-observability
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: cluster-flux-operator
   namespace: flux-system
 spec:

@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: grafana-public-dashboard
+  namespace: monitoring
+spec:
+  backoffLimit: 6
+  # deleting the finished Job lets Flux recreate it on a later reconcile, which repairs drift such as an emptied Grafana database
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      annotations:
+        bedrock.io/wait-for: kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80
+      labels:
+        app.kubernetes.io/name: grafana-public-dashboard
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: share
+          image: python:3.15.1-alpine3.24@sha256:54448f67d7c31c39e5cdd3ea2d6382395ce142806c284425f8e897d78a0465b3
+          command:
+            - python3
+            - -I
+            - -B
+            - /config/share.py
+          env:
+            - name: GRAFANA_URL
+              value: http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local
+            - name: DASHBOARD_UID
+              value: wallbar
+            - name: GRAFANA_USER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-user
+            - name: GRAFANA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-password
+            - name: ACCESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-public-dashboard
+                  key: access-token
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+      volumes:
+        - name: config
+          configMap:
+            name: grafana-public-dashboard
