@@ -37,6 +37,7 @@ schema_fields() {
   read -r version source <<< "$release"
   url="$(SOURCE="$source" yq -N 'select(.kind == "HelmRepository" and .metadata.name == strenv(SOURCE)) | .spec.url' "$sources_dir"/*.yaml | awk 'NF { print; exit }')"
   echo "Comparing $chart $version" >&2
+  # shellcheck disable=SC2016
   helm template crds "$chart" --repo "$url" --version "$version" --kube-version "$KUBE_VERSION" --include-crds \
     | yq -N 'select(.kind == "CustomResourceDefinition") | .metadata.name as $name | .. | select((parent | key) == "properties") | $name + " " + (path | join("."))' \
     | sort -u
