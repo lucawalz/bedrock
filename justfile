@@ -126,9 +126,9 @@ restore app file:
       pg_restore --clean --if-exists --single-transaction --exit-on-error -d "$database" < "$file"
     echo "Restored $database from $file"
 
-# Copy the paperless volumes onto encrypted twins, leaving paperless down until the claims are swapped; add --dry-run to print the copy pod
-paperless-encrypt *args="":
-    bash scripts/paperless-encrypt.sh {{ args }}
+# Copy an app's volumes onto encrypted twins, leaving the app down until the claims are swapped, for example: just encrypt-volumes open-webui --dry-run
+encrypt-volumes app *args="":
+    bash scripts/encrypt-volumes.sh {{ quote(app) }} {{ args }}
 
 # Run the restore drills, for example: just restore-test --dry-run postgres
 restore-test *args="all":

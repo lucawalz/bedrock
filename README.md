@@ -187,7 +187,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just new-app ...` | Scaffold an app, see below |
 | `just new-secret <app>` | Create the app's encrypted secrets in `bedrock-secrets` with random values |
 | `just paperless-import <dir>` | Copy a local folder of scans into the Paperless consume folder |
-| `just paperless-encrypt` | Copy the Paperless volumes onto encrypted twins (a one-time migration, already done) |
+| `just encrypt-volumes <app>` | Copy an app's volumes onto encrypted twins before its claims are swapped; add `--dry-run` to print the copy pod |
 | `just email-gate-deploy` | Deploy the Cloudflare Worker that gates the Paperless mail address by sender |
 
 ### Changing a host
