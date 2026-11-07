@@ -78,6 +78,18 @@ spec:
     persistence:
       enabled: true
       existingClaim: open-webui-encrypted
+    # the model cache is refetched on start so it never reaches the backed-up volume
+    volumes:
+      - name: model-cache
+        emptyDir:
+          sizeLimit: 2Gi
+    volumeMounts:
+      initContainer:
+        - name: model-cache
+          mountPath: /tmp/app-data/cache
+      container:
+        - name: model-cache
+          mountPath: /app/backend/data/cache
     ingress:
       enabled: false
     service:
