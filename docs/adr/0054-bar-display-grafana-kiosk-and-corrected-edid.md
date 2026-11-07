@@ -60,3 +60,7 @@ rather than a configuration edit. The reasoning holds, because a wall display wi
 cannot complete an interactive login, but the scope narrows: anonymous Viewer opened every
 dashboard, while a public link opens one and its unguessable token is the only credential, which is
 why the URL is treated as a secret rather than committed in the clear.
+
+## Update 2026-11-07
+
+The public dashboard was created by hand, so the cluster rebuild that emptied the Grafana database took it with it, and the panel showed an empty frame because Grafana answers the share page with 200 whether or not the share exists. The share is now recreated from git: the `grafana-public-dashboard` Job creates the public dashboard for the `wallbar` dashboard through the Grafana API with a fixed access token, which the API accepts on create, and replaces the share when the token is rotated. The token lives in `bedrock-secrets` for the Job and in the agenix secret for the router, never in this repository. The kiosk probe now asks the share's API rather than the page, so a missing or disabled share counts as unreachable, and the page re-renders whenever the deadman status changes, not only when reachability flips.

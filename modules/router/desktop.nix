@@ -78,10 +78,12 @@ let
   stateFile = "$XDG_RUNTIME_DIR/kiosk-state";
   failureFile = "$XDG_RUNTIME_DIR/kiosk-failures";
   lastContactFile = "$XDG_RUNTIME_DIR/kiosk-last-contact";
+  renderedDeadmanFile = "$XDG_RUNTIME_DIR/kiosk-rendered-deadman";
 
   renderPage = pkgs.writeShellScript "kiosk-render-page" ''
     umask 077
     deadman="$(cat ${deadmanStatusFile} 2>/dev/null || echo unknown)"
+    printf '%s' "$deadman" > ${renderedDeadmanFile}
     if [ "$deadman" = ok ]; then deadmanColor=#8fd19e; else deadmanColor=#e2a0a0; fi
     if [ "$1" = reachable ]; then
       {
@@ -121,8 +123,12 @@ let
     current="$(cat ${stateFile} 2>/dev/null || echo reachable)"
     previousFailures="$(cat ${failureFile} 2>/dev/null || echo 0)"
     reload=0
-    if ${pkgs.curl}/bin/curl -sS -o /dev/null --max-time ${toString probeTimeoutSeconds} \
-      "$(cat ${dashboardUrlFile})"; then
+    url="$(cat ${dashboardUrlFile})"
+    token="''${url#*/public-dashboards/}"
+    token="''${token%%\?*}"
+    # Grafana serves the share page with 200 even for a missing share, so probe the share's API instead
+    if ${pkgs.curl}/bin/curl -fsS -o /dev/null --max-time ${toString probeTimeoutSeconds} \
+      "''${url%%/public-dashboards/*}/api/public/dashboards/$token"; then
       ${pkgs.coreutils}/bin/date '+%Y-%m-%d %H:%M:%S %Z' > ${lastContactFile}
       echo 0 > ${failureFile}
       next=reachable
@@ -132,7 +138,9 @@ let
       echo "$failures" > ${failureFile}
       if [ "$failures" -ge ${toString failuresBeforeAlarm} ]; then next=unreachable; else next="$current"; fi
     fi
-    if [ "$next" != "$current" ] || [ ! -f ${stateFile} ]; then
+    deadman="$(cat ${deadmanStatusFile} 2>/dev/null || echo unknown)"
+    if [ "$next" != "$current" ] || [ ! -f ${stateFile} ] \
+      || [ "$deadman" != "$(cat ${renderedDeadmanFile} 2>/dev/null)" ]; then
       echo "$next" > ${stateFile}
       ${renderPage} "$next"
       reload=1
