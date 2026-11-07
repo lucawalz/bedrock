@@ -938,7 +938,7 @@ tests:
               description: "The cert-manager certificate traefik/wildcard-syslabs-dev expired 5m 0s ago."
 
   - interval: 1m
-    name: slow etcd requests raise one alert and ignore the apiserver copy of the histogram
+    name: slow etcd requests raise one alert and ignore the kubelet copy of the histogram
     input_series:
       - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="0.1"}'
         values: '0+0x60'
@@ -946,11 +946,11 @@ tests:
         values: '0+10x60'
       - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="+Inf"}'
         values: '0+10x60'
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="0.1"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="kubelet",operation="update",le="0.1"}'
         values: '0+0x60'
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="0.25"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="kubelet",operation="update",le="0.25"}'
         values: '0+10x60'
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="+Inf"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="kubelet",operation="update",le="+Inf"}'
         values: '0+10x60'
     alert_rule_test:
       - eval_time: 30m
@@ -961,16 +961,16 @@ tests:
               operation: update
             exp_annotations:
               summary: "etcd update requests are slow"
-              description: "The p99 latency of etcd update requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. k3s serves every component from one registry, so the apiserver scrape repeats this histogram; reading only the kube-etcd job counts it once."
+              description: "The p99 latency of etcd update requests has exceeded 150 milliseconds for 15 minutes, against the 5 to 25 millisecond range this estate operates in. This replaces the upstream etcdGRPCRequestsSlow alert, which reads grpc_server_handling_seconds_bucket: k3s runs etcd with basic metrics and exports no grpc_server_* series at all, so that alert could never fire. This reads the client side of the same path instead, so it includes any delay between the caller and etcd. The kubelet scrape repeats this histogram from the same k3s process while the kube-etcd endpoint does not serve it at all, so reading only the apiserver job counts it once."
 
   - interval: 1m
     name: etcd requests inside the latency budget raise nothing
     input_series:
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="0.1"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="0.1"}'
         values: '0+10x60'
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="0.25"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="0.25"}'
         values: '0+10x60'
-      - series: 'etcd_request_duration_seconds_bucket{job="kube-etcd",operation="update",le="+Inf"}'
+      - series: 'etcd_request_duration_seconds_bucket{job="apiserver",operation="update",le="+Inf"}'
         values: '0+10x60'
     alert_rule_test:
       - eval_time: 30m
