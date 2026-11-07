@@ -180,7 +180,6 @@ stringData:
 MANIFEST
 }
 
-# A static claim on the restored volume, staged with the given key secret, and a reader that lists it.
 mount_attempt() {
   local name="$1" secret="$2" size="$3" image="$4"
   cat <<MANIFEST
