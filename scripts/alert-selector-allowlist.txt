@@ -28,6 +28,11 @@ kube_horizontalpodautoscaler_status_desired_replicas{job="kube-state-metrics"}
 kube_node_spec_taint{effect="NoSchedule",job="kube-state-metrics",key="node.kubernetes.io/unreachable"}
 kube_node_spec_taint{job="kube-state-metrics"}
 
+# client-go 0.36 syncs informers through a streaming watch-list, so kube-state-metrics
+# only calls List, and only counts it, when the reflector falls back after a failure.
+kube_state_metrics_list_total{job="kube-state-metrics",result="error"}
+kube_state_metrics_list_total{job="kube-state-metrics"}
+
 # Remote write is not configured, so the whole remote storage subsystem is unexported.
 prometheus_remote_storage_failed_samples_total{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
 prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="kube-prometheus-stack-prometheus",namespace="monitoring"}
