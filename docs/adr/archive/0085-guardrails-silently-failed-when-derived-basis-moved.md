@@ -136,7 +136,7 @@ changes landed, and told to look for nothing in particular, it reported every de
 availability numerator directly, and that one indirectly through the recording rule it left empty.
 
 The gate needs cluster access, so it is an operator gate, documented in
-[the alert selector audit](../alert-selector-audit.md) and deliberately absent from the workflow: a
+[the alert selector audit](../../alert-selector-audit.md) and deliberately absent from the workflow: a
 job that cannot reach Prometheus would either fail on every pull request or be made to pass by
 skipping the work, and a gate that has been made to pass is what this record is about. Its claim is
 narrower than the one this record made when it first closed. It observes the relationship between a

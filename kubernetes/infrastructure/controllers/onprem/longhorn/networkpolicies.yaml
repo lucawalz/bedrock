@@ -10,7 +10,7 @@ spec:
     - Ingress
   ingress:
     # host-originated traffic reaches a pod from cni0 (10.42.N.1) or flannel.1 (10.42.N.0), never the node LAN address
-    # N spans 0-7: covers today's three nodes, the ADR-0082 three-plus-three control-plane goal, and a re-registration landing on a freed slot rather than a low one
+    # N spans 0-7: covers today's three nodes, the ADR-0003 three-plus-three node target, and a re-registration landing on a freed slot rather than a low one
     - from:
         - ipBlock:
             cidr: 10.42.0.0/32

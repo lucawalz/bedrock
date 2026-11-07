@@ -12,7 +12,7 @@ A bare-metal Kubernetes homelab that lives entirely in Git.
 
 bedrock is the single source of truth for a small home cluster. Three mini PCs run [NixOS](https://nixos.org/) and a [K3s](https://k3s.io/) cluster, and a Raspberry Pi running NixOS acts as the router, gateway, and DNS for the network. Everything from each machine's disk layout to the workloads running on top is declared in this repository. Host configuration is applied with `nixos-rebuild`; cluster state is reconciled by [Flux](https://fluxcd.io/) from `kubernetes/clusters/home`, so a change to the `main` branch becomes a change to the cluster without anyone running commands against it by hand.
 
-The cluster runs a self-hosted LLM stack, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. Capacity is the three local nodes and nothing else: the cloud account that once supplied burst nodes was closed, and the machinery that used it is kept dormant rather than removed ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)).
+The cluster runs a self-hosted LLM stack, monitoring, and a few supporting services. A handful are public through a Cloudflare Tunnel; the rest are reachable only over Tailscale or the LAN. Capacity is the three local nodes and nothing else: the cloud account that once supplied burst nodes was closed, and the machinery that used it is kept dormant rather than removed ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)).
 
 ### Features
 
@@ -24,7 +24,7 @@ The cluster runs a self-hosted LLM stack, monitoring, and a few supporting servi
 
 ### Background
 
-The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Cloud capacity followed the same principle for a while: an elastic autoscaler scaled a pool from zero until [ADR 0062](docs/adr/0062-retire-elastic-cluster-autoscaler.md) retired it, and a companion operator then added and removed reserved nodes on demand. That path closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)) and the operator has since been removed, so the estate reads as three nodes and nothing that bursts.
+The point of the project is to keep a real cluster reproducible and reviewable. Rebuilding a node, recovering from a failure, or adding a service should be a matter of reading the repository and applying it, not remembering what was done by hand. Cloud capacity followed the same principle for a while: an elastic autoscaler scaled a pool from zero until [archived ADR 0062](docs/adr/archive/0062-retire-elastic-cluster-autoscaler.md) retired it, and a companion operator then added and removed reserved nodes on demand. That path closed with the cloud account ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)) and the operator has since been removed, so the estate reads as three nodes and nothing that bursts.
 
 ## Architecture
 
@@ -43,9 +43,9 @@ Three Lenovo ThinkCentre m920q nodes on VLAN 20, with a Raspberry Pi as the rout
 | worker-2 | K3s agent | 10.20.0.12 |
 | router | Pi gateway, firewall, DNS, Tailscale subnet router | 10.20.0.1 |
 
-A TP-Link TL-SG108PE carries the VLAN tags at layer 2 and powers the Pi over PoE on port 2, so the router runs from a single cable. It is managed at a static address on the home LAN, and its port map is recorded in [ADR 0050](docs/adr/0050-poe-switch-powers-the-router.md).
+A TP-Link TL-SG108PE carries the VLAN tags at layer 2 and powers the Pi over PoE on port 2, so the router runs from a single cable. It is managed at a static address on the home LAN, and its port map is recorded in [archived ADR 0050](docs/adr/archive/0050-poe-switch-powers-the-router.md).
 
-Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi joins the tailnet as a subnet router and advertises `10.20.0.0/24`, so admins with `--accept-routes` reach the cluster on its LAN addresses from anywhere, and the three nodes join the tailnet directly as well ([ADR 0074](docs/adr/0074-home-nodes-on-the-tailnet.md)).
+Services are exposed on a MetalLB VIP at `10.20.0.50`. The Pi joins the tailnet as a subnet router and advertises `10.20.0.0/24`, so admins with `--accept-routes` reach the cluster on its LAN addresses from anywhere, and the three nodes join the tailnet directly as well ([ADR 0002](docs/adr/0002-declare-every-host-with-nixos-flakes.md)).
 
 NixOS does not manage device firmware, so firmware patching is manual: `rpi-eeprom` on the Pi and the m920q BIOS on the nodes.
 
@@ -83,7 +83,7 @@ A fresh cluster is brought up in two stages: the hosts, then Flux.
      --personal
    ```
 
-   This installs the controllers and the `flux-system` Git source, which then reconcile `kubernetes/clusters/home`. The manifests there include the [Flux Operator](https://fluxcd.control-plane.io/operator/), which adopts the install in place and carries it declaratively as a `FluxInstance` from then on, so changing the controllers, the distribution, or the source is a commit rather than a re-bootstrap. The reasoning is in [ADR 0037](docs/adr/0037-flux-operator-controlplane-install.md).
+   This installs the controllers and the `flux-system` Git source, which then reconcile `kubernetes/clusters/home`. The manifests there include the [Flux Operator](https://fluxcd.control-plane.io/operator/), which adopts the install in place and carries it declaratively as a `FluxInstance` from then on, so changing the controllers, the distribution, or the source is a commit rather than a re-bootstrap. The reasoning is in [ADR 0001](docs/adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md).
 
 Flux reads `kubernetes/clusters/home` and reconciles the whole cluster from Git.
 
@@ -132,7 +132,7 @@ To add an app, scaffold it and let the scaffold run every check:
 just new-app <name> <host> <port> db=true sso=true image=<repository>:<tag>
 ```
 
-This writes `kubernetes/apps/<name>/` (namespace, Flux Kustomizations, per-app alert, app-template HelmRelease, IngressRoute, network policies, and with `db=true` a CNPG role and database), lists it in `kubernetes/apps/kustomization.yaml` and regenerates `docs/inventory.md`. With `db=true` the app expects two secrets in the private `bedrock-secrets` repository ([ADR 0060](docs/adr/0060-private-secrets-repo-per-cluster-keys.md)): `pg-<name>` in `postgres` and `<name>` in the app namespace. `just new-secret <name>` creates both encrypted, with random values. Commit both repositories, and Flux applies the app on its next pass. The Namespace carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing an app needs a manual `kubectl delete namespace`. `just --list` shows the day-2 recipes.
+This writes `kubernetes/apps/<name>/` (namespace, Flux Kustomizations, per-app alert, app-template HelmRelease, IngressRoute, network policies, and with `db=true` a CNPG role and database), lists it in `kubernetes/apps/kustomization.yaml` and regenerates `docs/inventory.md`. With `db=true` the app expects two secrets in the private `bedrock-secrets` repository ([ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)): `pg-<name>` in `postgres` and `<name>` in the app namespace. `just new-secret <name>` creates both encrypted, with random values. Commit both repositories, and Flux applies the app on its next pass. The Namespace carries `kustomize.toolkit.fluxcd.io/prune: disabled`, so removing an app needs a manual `kubectl delete namespace`. `just --list` shows the day-2 recipes.
 
 ## Repository layout
 
@@ -163,7 +163,7 @@ kubernetes/
 
 `flake.nix` generates every cluster node from `lib.clusterNodes`, dispatching on the `role` each node carries in the inventory; the router, the cluster-node image and the installer image are written out in `flake.nix` itself. Workers have no directory of their own, and adding one is an inventory entry rather than a flake edit, but that entry is not the whole cost: it still needs an agenix entry in `secrets/secrets.nix`, its own `tailscale-authkey-<name>.age`, and its host key added to `k3s-token.age`.
 
-There is no capacity beyond the three local nodes. The on-demand path that once added capacity closed with the cloud account ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
+There is no capacity beyond the three local nodes. The on-demand path that once added capacity closed with the cloud account ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)). Flux reconciles the platform under `kubernetes/infrastructure/`, and nothing here is applied by hand.
 
 ## Services
 
@@ -195,7 +195,7 @@ One Ollama instance serves the local models and stays internal. The models it ho
 Secrets use two mechanisms, both committed encrypted, never in plaintext:
 
 - Host secrets use agenix, encrypted to each node's SSH host key, so a node decrypts its own secrets at boot with no shared passphrase. `secrets/secrets.nix` lists the recipients; the K3s join token, the router's Tailscale and AdGuard credentials, the wifi passphrase, and the kiosk dashboard URL live here.
-- Kubernetes secrets use SOPS with age, and they are held in a separate private repository, `bedrock-secrets`, rather than in this one ([ADR 0060](docs/adr/0060-private-secrets-repo-per-cluster-keys.md)). Flux reconciles that repository as a second source through the `cluster-secrets` Kustomization and decrypts it in-cluster at reconcile time. Exactly one SOPS file remains here, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, which carries the read-only deploy key for the private repository and is itself decrypted by the same cluster age key, so the age key stays the only irreducible root.
+- Kubernetes secrets use SOPS with age, and they are held in a separate private repository, `bedrock-secrets`, rather than in this one ([ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)). Flux reconciles that repository as a second source through the `cluster-secrets` Kustomization and decrypts it in-cluster at reconcile time. Exactly one SOPS file remains here, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, which carries the read-only deploy key for the private repository and is itself decrypted by the same cluster age key, so the age key stays the only irreducible root.
 
 Editing secrets, re-keying them, and recovering them on a fresh cluster are covered in the [disaster recovery runbook](docs/disaster-recovery.md).
 
@@ -205,7 +205,7 @@ Several layers of defense-in-depth sit on top. The app namespaces run default-de
 
 The cluster is reproducible from this repository plus two seeds it cannot hold: the age key that decrypts the secrets and the host SSH keys.
 
-There is no off-site copy of any cluster data. The object storage that held the backups went with the cloud account, and nothing replaced it ([ADR 0081](docs/adr/0081-retire-the-hetzner-account.md)), so the estate survives a lost disk or a lost node and does not survive the loss of the building. Postgres has no point-in-time recovery. What that means scenario by scenario, along with the full rebuild from total loss and the procedures for rehearsing recovery without an outage, is in the [disaster recovery runbook](docs/disaster-recovery.md).
+There is no off-site copy of any cluster data. The object storage that held the backups went with the cloud account, and nothing replaced it ([archived ADR 0081](docs/adr/archive/0081-retire-the-hetzner-account.md)), so the estate survives a lost disk or a lost node and does not survive the loss of the building. Postgres has no point-in-time recovery. What that means scenario by scenario, along with the full rebuild from total loss and the procedures for rehearsing recovery without an outage, is in the [disaster recovery runbook](docs/disaster-recovery.md).
 
 Admission webhooks are a separate recovery path, because one that is unavailable rejects the very writes needed to repair it. Recognising that failure, relaxing enforcement, and restoring it afterwards are covered in the [admission break-glass runbook](docs/admission-break-glass.md).
 

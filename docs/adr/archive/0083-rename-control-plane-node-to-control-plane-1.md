@@ -38,7 +38,7 @@ apiserver's Subject Alternative Names, the CoreDNS entry and the workers' join t
 move in the same window as the hostname, or the operator loses apiserver access during the very
 rebuild that is supposed to prove the rename worked. The prepared response to a control plane that
 does not return under the new name is restoring that snapshot rather than improvising a repair, by
-the procedure in [the disaster-recovery runbook](../disaster-recovery.md).
+the procedure in [the disaster-recovery runbook](../../disaster-recovery.md).
 
 ## Options considered
 
