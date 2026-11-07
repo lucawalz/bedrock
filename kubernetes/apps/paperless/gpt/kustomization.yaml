@@ -10,6 +10,7 @@ configMapGenerator:
     files:
       - prompts/title_prompt.tmpl
       - prompts/correspondent_prompt.tmpl
+      - prompts/tag_prompt.tmpl
       - prompts/custom_field_prompt.tmpl
   - name: paperless-gpt-settings
     files:

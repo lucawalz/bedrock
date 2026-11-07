@@ -16,6 +16,15 @@ SETTINGS_PATH = "/app/config/settings.json"
 RETRY_DELAY_SECONDS = 30
 REQUEST_TIMEOUT_SECONDS = 10
 PROMPT_SUFFIX = ".tmpl"
+TAG_PROMPT = "tag_prompt.tmpl"
+FIELD_PROMPT = "custom_field_prompt.tmpl"
+TAG_MARKER = "@@TAG_DEFINITIONS@@"
+FIELD_MARKER = "@@FIELD_DEFINITIONS@@"
+TEMPLATE_DELIMITERS = ("{{", "}}")
+DEFINITIONS = (
+    (TAG_PROMPT, TAG_MARKER, "tags", "tag_definitions"),
+    (FIELD_PROMPT, FIELD_MARKER, "custom_fields", "field_definitions"),
+)
 
 
 def fetch_fields(token):
@@ -63,14 +72,46 @@ def copy_prompts(src, dst):
         shutil.copyfile(os.path.join(src, name), os.path.join(dst, name))
 
 
+def definitions(entries, element):
+    lines = []
+    for entry in entries:
+        description = entry.get("description") if isinstance(entry, dict) else None
+        if not isinstance(description, str) or not description.strip():
+            raise ValueError(f"taxonomy entry {entry!r} needs a non-empty description")
+        line = f"{entry['name']}: {description.strip()}"
+        # the block lands in a Go text/template before it is parsed
+        if any(delimiter in line for delimiter in TEMPLATE_DELIMITERS):
+            raise ValueError(f"taxonomy entry {entry['name']!r} holds template delimiters")
+        lines.append(line)
+    return "\n".join([f"<{element}>", *lines, f"</{element}>"])
+
+
+def definition_blocks(taxonomy):
+    return {prompt: (marker, definitions(taxonomy[key], element)) for prompt, marker, key, element in DEFINITIONS}
+
+
+def insert_definitions(directory, blocks):
+    for prompt, (marker, block) in blocks.items():
+        path = os.path.join(directory, prompt)
+        with open(path, encoding="utf-8") as handle:
+            lines = handle.read().split("\n")
+        if lines.count(marker) != 1:
+            raise ValueError(f"{prompt} needs the line {marker} exactly once")
+        with open(path, "w", encoding="utf-8") as handle:
+            handle.write("\n".join(block if line == marker else line for line in lines))
+
+
 def main():
     token = os.environ["PAPERLESS_API_TOKEN"]
     with open(TEMPLATE_PATH, encoding="utf-8") as handle:
         template = json.load(handle)
     with open(TAXONOMY_PATH, encoding="utf-8") as handle:
-        names = field_names(yaml.safe_load(handle))
+        taxonomy = yaml.safe_load(handle)
+    names = field_names(taxonomy)
+    blocks = definition_blocks(taxonomy)
     ids = wait_for_ids(names, lambda: fetch_fields(token))
     copy_prompts(PROMPTS_SRC, PROMPTS_DST)
+    insert_definitions(PROMPTS_DST, blocks)
     with open(SETTINGS_PATH, "w", encoding="utf-8") as handle:
         json.dump(build_settings(template, ids), handle, indent=2, ensure_ascii=False)
 

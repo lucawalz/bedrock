@@ -46,6 +46,30 @@ UPDATED = CONFIG_MAP.replace(
 )
 CANONICAL = CONFIG_MAP.replace("    correspondents: []\n", "    correspondents:\n      - name: Example\n")
 SWAPPED = CANONICAL.replace("      - name: Example\n", "      - name: Example\n        aliases:\n          - Example GmbH\n")
+DESCRIBED = """apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: paperless-taxonomy
+  namespace: paperless
+data:
+  taxonomy.yaml: |
+    document_types:
+      - Rechnung
+    tags:
+      - name: Category A
+        description: Invoices, orders and receipts for private purchases and subscriptions, including those sent to a work address, kept for the yearly return.
+      - name: Category B
+        description: 'Letters from offices: courts, registries and the like.'
+    custom_fields:
+      - name: Fällig am
+        description: The date by which something must be paid or done. Not the letter's own date.
+        data_type: date
+    correspondents: []
+"""
+DESCRIBED_UPDATED = DESCRIBED.replace(
+    "    correspondents: []\n",
+    "    correspondents:\n      - name: Example GmbH\n        aliases:\n          - Example\n",
+)
 PAIR = ("Example GmbH", "Example", "obvious")
 TITLE = "feat(paperless): merge duplicate correspondents proposed by the weekly job"
 PR_URL = "https://github.com/lucawalz/bedrock-secrets/pull/1"
@@ -160,6 +184,12 @@ class DedupTest(TestCase):
         self.assertEqual((pull["title"], commit["message"]), (TITLE, TITLE))
         self.assertIn("| Example GmbH | 1 | Example | 0 | obvious |", pull["body"])
         self.assertIn('<!-- paperless-dedup: [["Example GmbH", "Example"]] -->', pull["body"])
+
+    def test_described_taxonomy_round_trips(self):
+        fake = self.github([], config_map=DESCRIBED)
+        self.assertEqual(open_pr([PAIR], "not-a-token"), PR_URL)
+        commit = fake.body("PUT", f"{REPOSITORY}/contents/{TAXONOMY_FILE}")
+        self.assertEqual(base64.b64decode(commit["content"]).decode(), DESCRIBED_UPDATED)
 
     def test_closed_pr_rejects_its_pairs(self):
         closed = {"head": {"ref": "paperless/dedup-2026-11-02"}, "body": '<!-- paperless-dedup: [["Example", "Example GmbH"]] -->'}

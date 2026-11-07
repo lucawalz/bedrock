@@ -13,6 +13,9 @@ You have to find the values for a list of custom fields that are provided as an 
 **Custom Fields to Extract:**
 {{ .CustomFieldsXML }}
 
+**Field definitions** (what each field means; after "Not" come the look-alike values that do not belong in it):
+@@FIELD_DEFINITIONS@@
+
 **Instructions:**
 1.  Analyze the document content to find the values for the custom fields listed in the XML. The language of the custom fields and of the document may differ.
 2.  The `type` attribute in each `<field>` tag indicates the data type you should look for (e.g., `string`, `date`, `integer`).
@@ -25,7 +28,8 @@ You have to find the values for a list of custom fields that are provided as an 
 9.  For fields of type `date`, use only a date that the document names for that specific purpose, such as a payment due date, a deadline to act, or a contract end or notice date. Never use the date of the document itself, the sending or printing date, the creation date, or a date of birth.
 10. For fields of type `monetary`, use only the main amount the document is about, such as an invoice total, an amount to pay, or a refund or payout amount. Never use a sub-total, a fee schedule entry or an account balance unless that is the subject of the document.
 11. For IBAN-like and year-like fields, output a value only when it is printed in the document for that purpose, for example the account to pay to or receive on, or the tax year the document concerns.
-12. Ensure the output is only the JSON array, with no additional text or explanations.
+12. Fill a field only with a value that matches its definition in `<field_definitions>`, because a value in the wrong field is shown and searched as if it meant something else. A date or amount that matches no definition belongs in no field.
+13. Ensure the output is only the JSON array, with no additional text or explanations.
 
 **Output format** (the values are placeholders, not data):
 ```json
@@ -39,3 +43,40 @@ You have to find the values for a list of custom fields that are provided as an 
     "value": "<YYYY-MM-DD>"
   }
 ]
+```
+
+**Examples** (invented fields with their own definitions; for the document above, use only the fields and definitions given above):
+
+In each example, the line after </content> is the complete answer, written exactly as the answer is to be written.
+
+<examples>
+<example>
+<field_definitions>
+Amount: The main amount the document is about, such as an invoice total or a payout.
+Due date: The date by which something must be paid or done. Not the document's own date.
+Contract end: The date a contract ends or a cancellation takes effect. Not a renewal or next billing date.
+</field_definitions>
+<content>Example Hosting Inc. Invoice INV-20431. Invoice date: October 3, 2026. Web hosting, 12 months: USD 1,180.00. Domain: USD 70.00. Total: USD 1,250.00. Paid by credit card on October 3, 2026. Thank you for your business.</content>
+[{"field": "Amount", "value": "USD1250.00"}]
+</example>
+<example>
+<field_definitions>
+Amount: The main amount the document is about, such as an invoice total or a payout.
+Due date: The date by which something must be paid or done. Not the document's own date.
+Contract end: The date a contract ends or a cancellation takes effect. Not a renewal or next billing date.
+</field_definitions>
+<content>Musterstadt, 05.10.2026. Sehr geehrte Frau Muster, wir bestaetigen den Eingang Ihrer Unterlagen und melden uns, sobald die Pruefung abgeschlossen ist. Mit freundlichen Gruessen, Ihr Kundenservice</content>
+[]
+</example>
+<example>
+<field_definitions>
+Amount: The main amount the document is about, such as an invoice total or a payout.
+Due date: The date by which something must be paid or done. Not the document's own date.
+Contract end: The date a contract ends or a cancellation takes effect. Not a renewal or next billing date.
+</field_definitions>
+<content>Welcome to Example Music Premium. Your subscription started on 15 October 2026 and renews automatically every month on the 15th. Next billing date: 15 November 2026. Price: EUR 10.99 per month, charged to your saved card. Cancel anytime in your account settings.</content>
+[{"field": "Amount", "value": "EUR10.99"}]
+</example>
+</examples>
+
+Answer with the JSON array alone, in the same bare form as the example answers.

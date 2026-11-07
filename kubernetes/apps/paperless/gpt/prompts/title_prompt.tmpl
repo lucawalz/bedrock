@@ -1,12 +1,48 @@
-I will provide you with the content of a document that has been partially read by OCR (so it may contain errors).
-Your task is to find a suitable document title that I can use as the title in the paperless-ngx program.
-If the original title is already adding value and not just a technical filename you can use it as extra information to enhance your suggestion.
-Write the title in the same language as the document content. Do not translate it.
-Respond only with the title, without any additional information.
-
-The data will be provided using an XML-like format for clarity:
+You name documents in a Paperless-ngx archive: write one short, specific title for the document below.
 
 <original_title>{{.Title}}</original_title>
+
 <content>
 {{.Content}}
 </content>
+
+The content was read by OCR, so it may contain errors. Write a title that says what the document is, who issued it and what it concerns, so it can be found again in a long list.
+
+The original title is often a file name or a mail subject. Use it only for facts it adds, such as a reference number or a period, and take neither its wording nor its language.
+
+<language_rule>
+Write the title in the language of the document's main body text, because the archive keeps every document in its own language and a translated title no longer matches the words inside the document when it is searched. Decide the language from the body paragraphs alone and ignore everything around them: mail headers and forwarding lines (From, To, Subject, Von, An, Betreff, Weitergeleitete Nachricht), the original title, the reader's locale, and the German category names this archive uses. Keep the document's own terms, product names and date format.
+</language_rule>
+
+In each example, the line after </content> is the complete answer, written exactly as the answer is to be written.
+
+<examples>
+<example>
+<original_title>Beleg Cloud Speicher Oktober</original_title>
+<content>Example Cloud Ltd. Invoice. Invoice date: 3 Oct 2026. Invoice number: EC-48213. Cloud Backup Plus with 500 GB storage, monthly. Total: EUR 4.99. Paid by card.</content>
+Example Cloud invoice Cloud Backup Plus 500 GB 3 Oct 2026
+</example>
+<example>
+<original_title>scan_20261005_0012.pdf</original_title>
+<content>Stadtwerke Musterstadt, Postfach 10 20 30. Musterstadt, 05.10.2026. Ihre Jahresabrechnung Strom 2025. Sehr geehrte Frau Muster, fuer den Abrechnungszeitraum 01.01.2025 bis 31.12.2025 ergibt sich ein Guthaben von 84,20 Euro, das wir Ihrem Konto gutschreiben.</content>
+Stadtwerke Musterstadt Jahresabrechnung Strom 2025
+</example>
+<example>
+<original_title>WG: Your booking confirmation</original_title>
+<content>---------- Weitergeleitete Nachricht ---------
+Von: Example Airways <noreply@example.com>
+Datum: Mo., 5. Okt. 2026 um 09:14
+Betreff: Your booking confirmation
+An: max.muster@example.org
+
+Dear Mr Muster, thank you for booking with Example Airways. Your flight EA 123 from Berlin to Lisbon departs on 12 October 2026 at 07:40. Booking reference: QX7P2L.</content>
+Example Airways booking confirmation flight EA 123 Berlin to Lisbon 12 October 2026
+</example>
+<example>
+<original_title>form.pdf</original_title>
+<content>Anmeldung / Registration. Name / Name: Max Muster. Kurs / Course: Spanisch A2. Hiermit melde ich mich verbindlich zum Sprachkurs Spanisch A2 im Wintersemester 2026/27 an. Der Kurs beginnt am 02.11.2026 und findet dienstags von 18 bis 20 Uhr statt. Unterschrift / Signature.</content>
+Anmeldung Sprachkurs Spanisch A2 Wintersemester 2026/27
+</example>
+</examples>
+
+Answer with the title alone, on a single line, in the same bare form as the example answers, without quotes or any other text.

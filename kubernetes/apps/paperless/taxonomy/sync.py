@@ -64,10 +64,18 @@ def entries(value, kind, required, optional=()):
     return value
 
 
+def described(value, kind, required=()):
+    listed = entries(value, kind, ("name", "description", *required))
+    for entry in listed:
+        if not isinstance(entry["description"], str) or not entry["description"].strip():
+            raise ValueError(f"{kind} entry {entry['name']!r} needs a non-empty description")
+    return listed
+
+
 def parse_taxonomy(taxonomy):
     if not isinstance(taxonomy, dict) or taxonomy.keys() != TAXONOMY_KEYS:
         raise ValueError(f"taxonomy needs exactly the keys {sorted(TAXONOMY_KEYS)}")
-    fields = entries(taxonomy["custom_fields"], "custom_fields", ("name", "data_type"))
+    fields = described(taxonomy["custom_fields"], "custom_fields", ("data_type",))
     for field in fields:
         if field["data_type"] not in CustomField.FieldDataType.values:
             raise ValueError(f"custom field {field['name']!r} has unknown data_type {field['data_type']!r}")
@@ -81,7 +89,7 @@ def parse_taxonomy(taxonomy):
         raise ValueError(f"aliases name canonical correspondents: {sorted(clash)}")
     return {
         "document_types": names(taxonomy["document_types"], "document_types"),
-        "tags": names(taxonomy["tags"], "tags"),
+        "tags": [tag["name"].strip() for tag in described(taxonomy["tags"], "tags")],
         "custom_fields": {field["name"].strip(): field["data_type"] for field in fields},
         "correspondents": correspondents,
     }

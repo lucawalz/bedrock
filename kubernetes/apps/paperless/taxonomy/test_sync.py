@@ -28,8 +28,11 @@ from sync import sync  # noqa: E402
 
 TAXONOMY = {
     "document_types": ["Rechnung", "Vertrag"],
-    "tags": ["Steuern", "Bank"],
-    "custom_fields": [{"name": "Betrag", "data_type": "monetary"}, {"name": "Steuerjahr", "data_type": "integer"}],
+    "tags": [{"name": "Steuern", "description": "Tax documents."}, {"name": "Bank", "description": "Bank statements."}],
+    "custom_fields": [
+        {"name": "Betrag", "description": "The main amount.", "data_type": "monetary"},
+        {"name": "Steuerjahr", "description": "The tax year.", "data_type": "integer"},
+    ],
     "correspondents": [{"name": "Example University", "aliases": ["EU"]}],
 }
 MAIL = {
@@ -206,3 +209,17 @@ class SyncTest(TestCase):
             self.run_sync(taxonomy={**TAXONOMY, "tags": "Steuern"})
         with self.assertRaises(ValueError):
             self.run_sync(mail_env=mail("x.de"))
+
+    def test_undescribed_entries_write_nothing(self):
+        field = TAXONOMY["custom_fields"][0]
+        for taxonomy in (
+            {**TAXONOMY, "tags": ["Steuern", "Bank"]},
+            {**TAXONOMY, "tags": [{"name": "Steuern"}]},
+            {**TAXONOMY, "tags": [{"name": "Steuern", "description": " "}]},
+            {**TAXONOMY, "custom_fields": [{"name": "Betrag", "data_type": "monetary"}]},
+            {**TAXONOMY, "custom_fields": [{**field, "description": None}]},
+        ):
+            with self.subTest(taxonomy=taxonomy), self.assertRaises(ValueError):
+                self.run_sync(taxonomy=taxonomy)
+        self.assertFalse(Tag.objects.exists())
+        self.assertFalse(CustomField.objects.exists())
