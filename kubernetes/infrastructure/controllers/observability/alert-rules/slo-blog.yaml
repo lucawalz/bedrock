@@ -13,44 +13,44 @@ spec:
           labels:
             window: 5m
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[5m])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[5m])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[5m]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[5m]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 30m
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[30m])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[30m])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[30m]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[30m]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 1h
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[1h])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[1h])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[1h]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[1h]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 6h
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[6h])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[6h])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[6h]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[6h]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 3d
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[3d])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[3d])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[3d]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[3d]))
         - record: slo:blog_availability:error_ratio
           labels:
             window: 30d
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"blog-blog-.*", code=~"5.."}[30d])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[30d])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"blog-blog-.*"}[30d]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[30d]))
         - record: slo:blog_availability:error_budget_remaining_ratio
           expr: |
             1 - (
@@ -64,54 +64,54 @@ spec:
             window: 5m
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[5m]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[5m]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[5m]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[5m]))
             )
         - record: slo:blog_latency:error_ratio
           labels:
             window: 30m
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[30m]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[30m]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[30m]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[30m]))
             )
         - record: slo:blog_latency:error_ratio
           labels:
             window: 1h
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[1h]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[1h]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[1h]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[1h]))
             )
         - record: slo:blog_latency:error_ratio
           labels:
             window: 6h
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[6h]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[6h]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[6h]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[6h]))
             )
         - record: slo:blog_latency:error_ratio
           labels:
             window: 3d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[3d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[3d]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[3d]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[3d]))
             )
         - record: slo:blog_latency:error_ratio
           labels:
             window: 30d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"blog-blog-.*", le="0.3"}[30d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[30d]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"blog-blog-.*"}[30d]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[30d]))
             )
         - record: slo:blog_latency:error_budget_remaining_ratio
           expr: |

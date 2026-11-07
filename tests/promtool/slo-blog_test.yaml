@@ -140,3 +140,19 @@ tests:
       - alertname: BlogAvailabilityErrorBudgetBurnFast
         eval_time: 70m
         exp_alerts: []
+
+  - interval: 1m
+    name: a websecure-prefixed router counts and a web redirect router does not
+    input_series:
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="200"}'
+        values: '0+95x90'
+      - series: 'traefik_router_requests_total{router="websecure-blog-blog-abc123@kubernetescrd", code="500"}'
+        values: '0+5x90'
+      - series: 'traefik_router_requests_total{router="web-blog-blog-abc123@kubernetescrd", code="301"}'
+        values: '0+100x90'
+    promql_expr_test:
+      - expr: slo:blog_availability:error_ratio{window="5m"}
+        eval_time: 70m
+        exp_samples:
+          - labels: 'slo:blog_availability:error_ratio{window="5m"}'
+            value: 0.05
