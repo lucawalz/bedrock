@@ -9,6 +9,8 @@ spec:
   ttlSecondsAfterFinished: 3600
   template:
     metadata:
+      annotations:
+        bedrock.io/wait-for: litellm.litellm.svc.cluster.local:4000
       labels:
         app.kubernetes.io/name: litellm-keys
     spec:

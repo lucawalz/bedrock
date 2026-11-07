@@ -9,6 +9,8 @@ spec:
   ttlSecondsAfterFinished: 3600
   template:
     metadata:
+      annotations:
+        bedrock.io/wait-for: pocket-id.pocket-id.svc.cluster.local:1411
       labels:
         app.kubernetes.io/name: pocket-id-clients
     spec:

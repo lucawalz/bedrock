@@ -16,6 +16,8 @@ spec:
       ttlSecondsAfterFinished: 600
       template:
         metadata:
+          annotations:
+            bedrock.io/wait-for: postgres-rw.postgres.svc.cluster.local:5432 api.github.com:443
           labels:
             app.kubernetes.io/name: paperless-dedup
         spec:

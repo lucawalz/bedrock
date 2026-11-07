@@ -1,0 +1,60 @@
+# kube-router admits a new pod's IP to a target's ingress allow rules seconds after the pod starts and rejects until then
+- op: add
+  path: /spec/template/spec/initContainers
+  value:
+    - name: wait-for-dependencies
+      command:
+        - python3
+        - -I
+        - -B
+        - -c
+        - |
+          import os
+          import socket
+          import time
+
+          DEADLINE_SECONDS = 120
+          INTERVAL_SECONDS = 1
+          CONNECT_TIMEOUT_SECONDS = 2
+
+          targets = []
+          for target in os.environ["DEPENDENCIES"].split():
+              host, _, port = target.rpartition(":")
+              if not host or not port.isdigit():
+                  raise SystemExit(f"malformed dependency {target!r}, expected host:port")
+              targets.append((host, int(port)))
+          if not targets:
+              raise SystemExit("no dependencies declared in the bedrock.io/wait-for pod annotation")
+
+          started = time.monotonic()
+          deadline = started + DEADLINE_SECONDS
+          for host, port in targets:
+              while True:
+                  try:
+                      socket.create_connection((host, port), timeout=CONNECT_TIMEOUT_SECONDS).close()
+                      break
+                  except OSError as error:
+                      if time.monotonic() >= deadline:
+                          raise SystemExit(f"{host}:{port} still unreachable after {DEADLINE_SECONDS}s: {error}")
+                      time.sleep(INTERVAL_SECONDS)
+              print(f"reached {host}:{port} after {time.monotonic() - started:.1f}s", flush=True)
+      env:
+        - name: DEPENDENCIES
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.annotations['bedrock.io/wait-for']
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop:
+            - ALL
+- op: copy
+  from: /spec/template/spec/containers/0/image
+  path: /spec/template/spec/initContainers/0/image

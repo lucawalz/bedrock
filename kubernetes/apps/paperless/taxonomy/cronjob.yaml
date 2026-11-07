@@ -16,6 +16,8 @@ spec:
       ttlSecondsAfterFinished: 600
       template:
         metadata:
+          annotations:
+            bedrock.io/wait-for: postgres-rw.postgres.svc.cluster.local:5432 paperless-redis:6379
           labels:
             app.kubernetes.io/name: paperless-taxonomy
         spec:
