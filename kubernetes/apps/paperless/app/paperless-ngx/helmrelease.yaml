@@ -78,6 +78,7 @@ spec:
         enabled: true
         storageClass: longhorn
         accessMode: ReadWriteOnce
+        retain: true
         size: 5Gi
         labels:
           recurring-job.longhorn.io/source: enabled
@@ -89,6 +90,7 @@ spec:
         enabled: true
         storageClass: longhorn
         accessMode: ReadWriteOnce
+        retain: true
         size: 20Gi
         labels:
           recurring-job.longhorn.io/source: enabled
@@ -100,6 +102,7 @@ spec:
         enabled: true
         storageClass: longhorn
         accessMode: ReadWriteOnce
+        retain: true
         size: 5Gi
         labels:
           recurring-job.longhorn.io/source: enabled
@@ -111,6 +114,7 @@ spec:
         enabled: true
         storageClass: longhorn
         accessMode: ReadWriteOnce
+        retain: true
         size: 5Gi
         labels:
           recurring-job.longhorn.io/source: enabled
