@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Observability
     gethomepage.dev/icon: alertmanager.png
     gethomepage.dev/href: https://alertmanager.syslabs.dev
-    gethomepage.dev/podSelector: app.kubernetes.io/name=alertmanager
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=alertmanager
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

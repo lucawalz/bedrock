@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Observability
     gethomepage.dev/icon: flux.png
     gethomepage.dev/href: https://flux.syslabs.dev
-    gethomepage.dev/podSelector: app.kubernetes.io/name=flux-operator
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=flux-operator
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/group: Documents
     gethomepage.dev/icon: paperless-ngx.png
     gethomepage.dev/href: https://paperless.${cluster_domain}
-    gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-ngx
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=paperless-ngx
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
@@ -31,9 +31,9 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: Paperless-GPT
     gethomepage.dev/group: Documents
-    gethomepage.dev/icon: paperless-ngx.png
+    gethomepage.dev/icon: paperless-gpt.png
     gethomepage.dev/href: https://paperless-gpt.${cluster_domain}
-    gethomepage.dev/podSelector: app.kubernetes.io/name=paperless-gpt
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=paperless-gpt
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
