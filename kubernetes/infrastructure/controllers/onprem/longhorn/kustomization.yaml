@@ -11,6 +11,7 @@ resources:
 - networkpolicies.yaml
 - pdb.yaml
 - storageclass-disposable.yaml
+- storageclass-encrypted.yaml
 - storageclass-retain.yaml
 patches:
 # the longhorn HelmRelease lives in flux-system, so this kustomization cannot carry a namespace transformer
