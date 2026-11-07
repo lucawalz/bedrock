@@ -26,9 +26,9 @@ LONGHORN_WRONG_KEY_SECRET=restore-test-wrong-key
 LONGHORN_WRONG_KEY_BYTES=32
 LONGHORN_KEY_ATTEMPT=restore-test-key
 LONGHORN_WRONG_KEY_ATTEMPT=restore-test-wrong-key
-# the paperless volumes belong to USERMAP_UID
 LONGHORN_READER_UID=1000
 LONGHORN_DRY_RUN_IMAGE=ghcr.io/paperless-ngx/paperless-ngx:dry-run
+LONGHORN_DRY_RUN_SIZE_BYTES=$((5 * 1024 ** 3))
 
 ETCD_S3_BUCKET=bedrock-etcd
 ETCD_S3_PREFIX=etcd-snapshots
@@ -281,10 +281,10 @@ dry_run_manifests() {
   local name
   restore_network_policy > "$work/netpol.yaml"
   restore_cluster > "$work/cluster.yaml"
-  longhorn_volume "s3://example@auto/?backup=backup-0&volume=pvc-0" 5368709120 > "$work/volume.yaml"
+  longhorn_volume "s3://example@auto/?backup=backup-0&volume=pvc-0" "$LONGHORN_DRY_RUN_SIZE_BYTES" > "$work/volume.yaml"
   wrong_key_secret | sed 's/CRYPTO_KEY_VALUE: .*/CRYPTO_KEY_VALUE: redacted/' > "$work/wrong-key.yaml"
-  mount_attempt "$LONGHORN_WRONG_KEY_ATTEMPT" "$LONGHORN_WRONG_KEY_SECRET" 5368709120 "$LONGHORN_DRY_RUN_IMAGE" > "$work/wrong-key-attempt.yaml"
-  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" 5368709120 "$LONGHORN_DRY_RUN_IMAGE" > "$work/key-attempt.yaml"
+  mount_attempt "$LONGHORN_WRONG_KEY_ATTEMPT" "$LONGHORN_WRONG_KEY_SECRET" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_DRY_RUN_IMAGE" > "$work/wrong-key-attempt.yaml"
+  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_DRY_RUN_IMAGE" > "$work/key-attempt.yaml"
   for name in netpol cluster volume wrong-key wrong-key-attempt key-attempt; do
     echo "--- $name"
     cat "$work/$name.yaml"

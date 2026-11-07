@@ -14,7 +14,6 @@ ENCRYPTED_CLASS=longhorn-encrypted
 KEY_NAMESPACE=longhorn-system
 KEY_SECRET=longhorn-crypto
 COPY_POD=paperless-encrypt-copy
-# paperless runs as USERMAP_UID and USERMAP_GID, which own every file on the volumes
 PAPERLESS_UID=1000
 PAPERLESS_GID=1000
 DRY_RUN_IMAGE=ghcr.io/paperless-ngx/paperless-ngx:dry-run
