@@ -49,7 +49,8 @@ copy_script() {
 set -euo pipefail
 manifest() (
   cd "\$1"
-  find . -mindepth 1 \( -path ./lost+found -prune \) -o \( -type f -printf '%y %m %U:%G %s %T@ %p\n' \) -o -printf '%y %m %U:%G %p\n' | sort
+  find . -mindepth 1 \( -path ./lost+found -prune \) -o \( -type f -printf '%y %m %U:%G %n %s %T@ %p\n' \) -o -printf '%y %m %U:%G %p -> %l\n' | sort
+  find . -path ./lost+found -prune -o -type f -links +1 -printf '%i %p\n' | sort -k2 | awk '{ inode = \$1; sub(/^[^ ]+ /, ""); print (inode in first ? first[inode] : (first[inode] = \$0)) " <= " \$0 }'
   find . -path ./lost+found -prune -o -type f -print0 | sort -z | xargs -0r sha256sum
 )
 for volume in ${VOLUMES[*]}; do
@@ -57,7 +58,7 @@ for volume in ${VOLUMES[*]}; do
   manifest "/old/\$volume" > "/tmp/\$volume.old"
   manifest "/new/\$volume" > "/tmp/\$volume.new"
   diff "/tmp/\$volume.old" "/tmp/\$volume.new" || { echo "\$volume: the encrypted copy differs from the original"; exit 1; }
-  echo "\$volume: \$(grep -c '^f ' "/tmp/\$volume.old" || true) files, \$(awk '\$1 == "f" { sum += \$4 } END { print sum + 0 }' "/tmp/\$volume.old") bytes; paths, modes, owners, sizes and checksums match"
+  echo "\$volume: \$(grep -c '^f ' "/tmp/\$volume.old" || true) files, \$(awk '\$1 == "f" { sum += \$5 } END { print sum + 0 }' "/tmp/\$volume.old") bytes; paths, modes, owners, link targets, hard links, sizes and checksums match"
 done
 SCRIPT
 }
@@ -132,10 +133,18 @@ pvc_field() {
   kubectl get pvc "$1" -n "$NAMESPACE" -o jsonpath="{$2}"
 }
 
+deploy_field() {
+  kubectl get deploy "$DEPLOYMENT" -n "$NAMESPACE" -o jsonpath="{$1}"
+}
+
+replicas="$(deploy_field .spec.replicas)"
+[ "$replicas" -gt 0 ] || fail "$DEPLOYMENT is already scaled to 0, perhaps by an earlier run; finish or undo that run first"
 kubectl get secret "$KEY_SECRET" -n "$KEY_NAMESPACE" >/dev/null || fail "secret $KEY_NAMESPACE/$KEY_SECRET is missing"
 for volume in "${VOLUMES[@]}"; do
   old="$(old_claim "$volume")"
   new="$(new_claim "$volume")"
+  mounted="$(deploy_field ".spec.template.spec.volumes[?(@.name==\"$volume\")].persistentVolumeClaim.claimName")"
+  [ "$mounted" = "$old" ] || fail "$DEPLOYMENT mounts $mounted as $volume, not $old; the copy only runs before the claim swap"
   [ "$(pvc_field "$old" .status.phase)" = Bound ] || fail "pvc $old is not bound"
   [ "$(pvc_field "$old" '.metadata.annotations.helm\.sh/resource-policy')" = keep ] \
     || fail "pvc $old lacks helm.sh/resource-policy keep, so swapping the claims would delete it"
@@ -143,8 +152,7 @@ for volume in "${VOLUMES[@]}"; do
   [ "$(pvc_field "$new" .spec.storageClassName)" = "$ENCRYPTED_CLASS" ] || fail "pvc $new is not on $ENCRYPTED_CLASS"
 done
 ! kubectl get pod "$COPY_POD" -n "$NAMESPACE" >/dev/null 2>&1 || fail "pod $COPY_POD already exists; delete it first"
-image="$(kubectl get deploy "$DEPLOYMENT" -n "$NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}')"
-replicas="$(kubectl get deploy "$DEPLOYMENT" -n "$NAMESPACE" -o jsonpath='{.spec.replicas}')"
+image="$(deploy_field '.spec.template.spec.containers[0].image')"
 
 echo "This suspends Flux for $KUSTOMIZATION, scales $DEPLOYMENT to 0 and copies each paperless volume onto its encrypted twin."
 echo "On success paperless stays down and Flux stays suspended until the claims are swapped; on failure both are restored."
