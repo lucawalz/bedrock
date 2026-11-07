@@ -83,6 +83,13 @@ prometheusOperator:
       limits:
         memory: 64Mi
 
+nodeExporter:
+  operatingSystems:
+    aix:
+      enabled: false
+    darwin:
+      enabled: false
+
 prometheus-node-exporter:
   resources:
     requests:
