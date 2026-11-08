@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: flux-system
 components:
   - ../../../../components/network-policies/base
+  - ../../../../components/network-policies/default-deny
   - ../../../../components/network-policies/intra-namespace
   - ../../../../components/network-policies/internet-egress
 patches:

@@ -4,6 +4,7 @@ namespace: monitoring
 
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/default-deny
 
 resources:
   - kube-prometheus-stack

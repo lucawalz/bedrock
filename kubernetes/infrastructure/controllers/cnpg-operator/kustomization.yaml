@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: cnpg-system
 components:
   - ../../../components/network-policies/base
+  - ../../../components/network-policies/default-deny
 resources:
   - helmrelease.yaml
   - barman-cloud
