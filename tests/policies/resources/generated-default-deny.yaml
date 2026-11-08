@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: new-namespace
+  annotations:
+    kustomize.toolkit.fluxcd.io/prune: disabled
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress

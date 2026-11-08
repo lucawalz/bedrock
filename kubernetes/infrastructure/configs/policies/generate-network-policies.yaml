@@ -1,0 +1,93 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: generate-network-policies
+  annotations:
+    policies.kyverno.io/title: Generate baseline NetworkPolicies
+    policies.kyverno.io/category: Network
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Namespace, NetworkPolicy
+spec:
+  webhookConfiguration:
+    failurePolicy: Ignore
+  useServerSideApply: true
+  rules:
+    - name: default-deny
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+      preconditions:
+        all:
+          # kube-system would lose cluster DNS; the others are skipped by Kyverno resource filters and carry Flux copies.
+          - key: "{{request.object.metadata.name}}"
+            operator: AnyNotIn
+            value: &unmanaged-namespaces
+              - kube-system
+              - kube-public
+              - kube-node-lease
+              - flux-system
+              - kyverno
+              - cnpg-system
+              - cert-manager
+              - longhorn-system
+              - metallb-system
+              - monitoring
+      generate:
+        generateExisting: true
+        synchronize: true
+        orphanDownstreamOnPolicyDelete: true
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        name: default-deny
+        namespace: "{{request.object.metadata.name}}"
+        data:
+          metadata:
+            annotations:
+              kustomize.toolkit.fluxcd.io/prune: disabled
+          spec:
+            podSelector: {}
+            policyTypes:
+              - Ingress
+              - Egress
+    - name: allow-dns
+      match:
+        any:
+          - resources:
+              kinds:
+                - Namespace
+      preconditions:
+        all:
+          - key: "{{request.object.metadata.name}}"
+            operator: AnyNotIn
+            value: *unmanaged-namespaces
+      generate:
+        generateExisting: true
+        synchronize: true
+        orphanDownstreamOnPolicyDelete: true
+        apiVersion: networking.k8s.io/v1
+        kind: NetworkPolicy
+        name: allow-dns
+        namespace: "{{request.object.metadata.name}}"
+        data:
+          metadata:
+            annotations:
+              kustomize.toolkit.fluxcd.io/prune: disabled
+          spec:
+            podSelector: {}
+            policyTypes:
+              - Egress
+            egress:
+              - to:
+                  - namespaceSelector:
+                      matchLabels:
+                        kubernetes.io/metadata.name: kube-system
+                    podSelector:
+                      matchLabels:
+                        k8s-app: kube-dns
+                ports:
+                  - protocol: TCP
+                    port: 53
+                  - protocol: UDP
+                    port: 53

@@ -8,4 +8,5 @@ resources:
   - mutate-privilege-escalation.yaml
   - require-drop-all-capabilities.yaml
   - disallow-latest-tag.yaml
+  - generate-network-policies.yaml
   - exceptions.yaml
