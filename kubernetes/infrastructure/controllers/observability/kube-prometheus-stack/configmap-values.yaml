@@ -99,6 +99,8 @@ prometheus-node-exporter:
       memory: 64Mi
 
 kube-state-metrics:
+  collectorsExclude:
+    - secrets
   # Its own telemetry lives on a second port that goes unscraped by default, leaving the four KubeStateMetrics alerts with no series.
   selfMonitor:
     enabled: true
@@ -232,6 +234,9 @@ grafana:
       cpu: "500m"
       memory: "512Mi"
 
+  rbac:
+    create: false
+
   sidecar:
     resources:
       requests:
@@ -239,6 +244,12 @@ grafana:
         memory: "96Mi"
       limits:
         memory: "192Mi"
+    dashboards:
+      resource: configmap
+      searchNamespace:
+        - monitoring
+    datasources:
+      resource: configmap
 
   downloadDashboards:
     resources:

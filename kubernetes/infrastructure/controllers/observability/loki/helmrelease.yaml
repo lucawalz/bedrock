@@ -79,6 +79,9 @@ spec:
       resources:
         requests: { cpu: 10m, memory: 96Mi }
         limits: { memory: 192Mi }
+      # The chart grants Secret read with the rules sidecar whatever its resource setting, and no loki_rule object exists.
+      rules:
+        enabled: false
     minio: { enabled: false }
     gateway: { enabled: false }
     read: { replicas: 0 }
