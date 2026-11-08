@@ -13,6 +13,7 @@ spec:
         bedrock.io/wait-for: postgres-rw.postgres.svc.cluster.local:5432 paperless-redis:6379
       labels:
         app.kubernetes.io/name: paperless-gpt-access
+        bedrock.io/postgres-client: "true"
     spec:
       restartPolicy: Never
       automountServiceAccountToken: false

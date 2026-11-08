@@ -70,6 +70,7 @@ app="$apps_dir/$name"
 mkdir -p "$app/app"
 
 postgres_label=""
+postgres_pod_label=""
 db_kustomization=""
 db_dependency=""
 env_from=""
@@ -79,6 +80,9 @@ sso_middleware=""
 
 if [ "$db" = true ]; then
   postgres_label='    bedrock.io/postgres-client: "true"'$'\n'
+  postgres_pod_label='        pod:
+          labels:
+            bedrock.io/postgres-client: "true"'$'\n'
   db_dependency="    - name: $name-db"$'\n'
   env_from="            envFrom:
               - secretRef:
@@ -255,7 +259,7 @@ spec:
     controllers:
       $name:
         strategy: RollingUpdate
-        annotations:
+${postgres_pod_label}        annotations:
           reloader.stakater.com/auto: "true"
         containers:
           app:

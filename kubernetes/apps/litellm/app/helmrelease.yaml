@@ -27,6 +27,9 @@ spec:
     controllers:
       litellm:
         strategy: RollingUpdate
+        pod:
+          labels:
+            bedrock.io/postgres-client: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:

@@ -20,6 +20,7 @@ spec:
             bedrock.io/wait-for: postgres-rw.postgres.svc.cluster.local:5432 api.github.com:443
           labels:
             app.kubernetes.io/name: paperless-dedup
+            bedrock.io/postgres-client: "true"
         spec:
           restartPolicy: Never
           automountServiceAccountToken: false

@@ -14,6 +14,9 @@ spec:
         - namespaceSelector:
             matchLabels:
               bedrock.io/postgres-client: "true"
+          podSelector:
+            matchLabels:
+              bedrock.io/postgres-client: "true"
         - podSelector:
             matchLabels:
               cnpg.io/cluster: postgres

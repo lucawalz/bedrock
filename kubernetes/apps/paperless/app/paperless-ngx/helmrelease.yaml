@@ -86,6 +86,8 @@ spec:
       consume:
         enabled: true
         existingClaim: paperless-ngx-consume-encrypted
+    podLabels:
+      bedrock.io/postgres-client: "true"
     podSecurityContext:
       fsGroup: 1000
       fsGroupChangePolicy: OnRootMismatch

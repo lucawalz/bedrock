@@ -25,6 +25,8 @@ spec:
   values:
     fullnameOverride: open-webui
     replicaCount: 1
+    podLabels:
+      bedrock.io/postgres-client: "true"
     extraEnvVars:
       - name: DATABASE_URL
         valueFrom:

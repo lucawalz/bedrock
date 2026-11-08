@@ -29,6 +29,9 @@ spec:
         # Pocket ID allows only one instance per database
         strategy: Recreate
         replicas: 1
+        pod:
+          labels:
+            bedrock.io/postgres-client: "true"
         annotations:
           reloader.stakater.com/auto: "true"
         containers:

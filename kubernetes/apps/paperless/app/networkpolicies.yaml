@@ -5,7 +5,9 @@ metadata:
   name: allow-paperless-egress-postgres
   namespace: paperless
 spec:
-  podSelector: {}
+  podSelector:
+    matchLabels:
+      bedrock.io/postgres-client: "true"
   policyTypes:
     - Egress
   egress:
