@@ -68,6 +68,39 @@ spec:
       limits:
         cpu: "500m"
         memory: "256Mi"
+    rbac:
+      namespaced: true
+    providers:
+      kubernetesCRD:
+        namespaces:
+          - blog
+          - flux-system
+          - homepage
+          - litellm
+          - llm
+          - longhorn-system
+          - monitoring
+          - ntfy
+          - oauth2-proxy
+          - paperless
+          - pocket-id
+          - traefik
+          - zot
+      kubernetesIngress:
+        namespaces:
+          - blog
+          - flux-system
+          - homepage
+          - litellm
+          - llm
+          - longhorn-system
+          - monitoring
+          - ntfy
+          - oauth2-proxy
+          - paperless
+          - pocket-id
+          - traefik
+          - zot
     tlsStore:
       default:
         defaultCertificate:
