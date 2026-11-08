@@ -136,4 +136,56 @@ if [ -n "$unexpected" ]; then
   status=1
 fi
 
+baseline_network_policies=(default-deny allow-dns)
+builtin_namespaces=(default kube-node-lease kube-public kube-system)
+baseline_exempt_namespaces=(kube-system)
+
+{
+  yq -N 'select(.kind == "Namespace") | .metadata.name' "$work/built.yaml"
+  printf '%s\n' "${builtin_namespaces[@]}"
+} | sort -u > "$work/namespaces"
+
+yq -N 'select(.kind == "ConfigMap" and .metadata.namespace == "kyverno" and .metadata.name == "kyverno") | .data.resourceFilters' "$work/built.yaml" \
+  | grep -o '\[[^]]*\]' \
+  | awk -F'[][,]' '($2 == "*/*" || $2 == "*") && $4 == "*" { print $3 }' \
+  | sort -u > "$work/filtered-namespaces"
+
+yq -N 'select(.kind == "ClusterPolicy") | .spec.rules[] | select(.generate.kind == "NetworkPolicy")
+  | .generate.name + " " + ([.preconditions.all[]? | select(.key == "{{request.object.metadata.name}}" and .operator == "AnyNotIn") | .value[]] | join(","))' \
+  "$work/built.yaml" > "$work/generated-network-policies"
+
+yq -N 'select(.kind == "NetworkPolicy") | .metadata.namespace + "/" + .metadata.name' "$work/built.yaml" \
+  | sort -u > "$work/declared-network-policies"
+
+while read -r generated excluded; do
+  if [ "$(tr ',' '\n' <<< "$excluded" | sort -u)" != "$(cat "$work/filtered-namespaces")" ]; then
+    echo "generate rule $generated excludes [$excluded], not the Kyverno resource-filter namespaces [$(paste -sd, "$work/filtered-namespaces")]"
+    status=1
+  fi
+done < "$work/generated-network-policies"
+
+generated_in() {
+  local namespace="$1" name="$2" generated excluded
+  while read -r generated excluded; do
+    [ "$generated" = "$name" ] || continue
+    [[ ",$excluded," == *",$namespace,"* ]] || return 0
+  done < "$work/generated-network-policies"
+  return 1
+}
+
+uncovered=""
+while read -r namespace; do
+  [[ " ${baseline_exempt_namespaces[*]} " == *" $namespace "* ]] && continue
+  for name in "${baseline_network_policies[@]}"; do
+    grep -qxF "$namespace/$name" "$work/declared-network-policies" && continue
+    generated_in "$namespace" "$name" && continue
+    uncovered+="  - $name in $namespace"$'\n'
+  done
+done < "$work/namespaces"
+if [ -n "$uncovered" ]; then
+  echo "Namespaces neither generated nor declared with a baseline NetworkPolicy:"
+  printf '%s' "$uncovered"
+  status=1
+fi
+
 exit "$status"
