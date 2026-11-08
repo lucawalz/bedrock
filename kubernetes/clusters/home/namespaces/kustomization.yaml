@@ -20,3 +20,5 @@ resources:
   - zot.yaml
   - default.yaml
   - default-serviceaccounts.yaml
+  - kube-public
+  - kube-node-lease
