@@ -1,7 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+namespace: cert-manager
+
+components:
+  - ../../../components/network-policies/default-deny
+  - ../../../components/network-policies/base
 
 resources:
   - helmrelease.yaml
   - pdb.yaml
-
+  - networkpolicies.yaml
