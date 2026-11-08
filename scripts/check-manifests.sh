@@ -3,11 +3,24 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-require_tools kubeconform yq
+require_tools kubeconform yq kustomize
 
 k8s_dir=kubernetes
 kubernetes_version="${KUBECONFORM_KUBERNETES_VERSION:-1.35.0}"
 derived_schemas="${1:-}"
+rendered_releases="${2:-}"
+
+# Each entry's reason is recorded in docs/adr/0009-enforce-workload-policy-with-kyverno.md.
+cluster_secret_readers=(
+  cert-manager/cert-manager
+  cert-manager/cert-manager-cainjector
+  cnpg-system/cloudnative-pg
+  cnpg-system/plugin-barman-cloud
+  flux-system/flux-operator
+  longhorn-system/longhorn-service-account
+  longhorn-system/longhorn-support-bundle
+  monitoring/kube-prometheus-stack-operator
+)
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -55,9 +68,62 @@ if [ -n "$skipped" ]; then
   printf '%s\n' "$skipped" | sed 's/^/  /'
 fi
 
+status=0
 xargs -a "$work/manifests" kubeconform \
   -strict \
   -ignore-missing-schemas \
   "${schema_locations[@]}" \
   -kubernetes-version "$kubernetes_version" \
-  -summary
+  -summary || status=1
+
+if [ -z "$rendered_releases" ]; then
+  rendered_releases="$work/rendered"
+  if ! RENDER_OUTPUT_DIR="$rendered_releases" scripts/render-helm-releases.sh > "$work/render.log" 2>&1; then
+    cat "$work/render.log" >&2
+    echo "render-helm-releases.sh failed, so cluster-wide Secret readers cannot be resolved" >&2
+    exit 1
+  fi
+fi
+
+grep -rl "kustomize.toolkit.fluxcd.io" "$k8s_dir" --include="*.yaml" \
+  | xargs yq -N 'select(.kind == "Kustomization" and .apiVersion == "kustomize.toolkit.fluxcd.io/v1") | .spec.path' \
+  | grep "^\./$k8s_dir/" | sort -u > "$work/flux-paths"
+: > "$work/built.yaml"
+while IFS= read -r path; do
+  printf -- '---\n' >> "$work/built.yaml"
+  kustomize build "$path" >> "$work/built.yaml"
+done < "$work/flux-paths"
+cat "$rendered_releases"/*.yaml >> "$work/built.yaml"
+
+# yq treats a bare "*" in == as a glob, so wildcards are matched with test().
+# shellcheck disable=SC2016
+yq ea -N '
+  [.] as $documents
+  | ($documents | map(select(.kind == "ClusterRole" and (
+      .rules // [] | any_c(
+        ((.apiGroups // [""]) | any_c(test("^(|\\*)$")))
+        and ((.resources // []) | any_c(test("^(secrets|\\*)$")))
+        and ((.verbs // []) | any_c(test("^(get|list|watch|\\*)$")))
+      )
+    )))) as $direct
+  | ($documents | map(select(.kind == "ClusterRole" and .aggregationRule) | select(
+      .aggregationRule.clusterRoleSelectors // [] | any_c(.matchLabels as $wanted
+        | $direct | any_c(.metadata.labels as $labels
+          | $wanted | to_entries | all_c($labels[.key] == .value)))))) as $aggregated
+  | (($direct + $aggregated | map(.metadata.name)) + ["cluster-admin", "admin", "edit"]) as $readers
+  | $documents[]
+  | select(.kind == "ClusterRoleBinding" and .roleRef.kind == "ClusterRole")
+  | select(.roleRef.name as $role | $readers | any_c(. == $role))
+  | .subjects[]?
+  | (.namespace // .kind) + "/" + .name
+' "$work/built.yaml" | sort -u > "$work/secret-readers"
+printf '%s\n' "${cluster_secret_readers[@]}" | sort -u > "$work/allowed-secret-readers"
+
+unexpected="$(comm -23 "$work/secret-readers" "$work/allowed-secret-readers")"
+if [ -n "$unexpected" ]; then
+  echo "Subjects outside the allowlist can read Secrets in every namespace:"
+  printf '%s\n' "$unexpected" | sed 's/^/  - /'
+  status=1
+fi
+
+exit "$status"

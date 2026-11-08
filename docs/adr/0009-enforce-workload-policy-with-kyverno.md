@@ -16,9 +16,18 @@ Charts from upstream ship with uneven security contexts and resource settings. A
 - Each remaining violation is a named `PolicyException` in `exceptions.yaml`, scoped to one policy, namespace and workload. The current ones cover the Paperless image, which starts as root and switches to its mapped user itself, and the Open WebUI, ntfy and Reloader containers.
 - Policy Reporter collects results so background scans surface drift in resources that were admitted before a policy changed.
 - `docs/admission-break-glass.md` is the runbook for a webhook that blocks the writes needed to repair it.
+- Reading Secrets in every namespace is allowlisted in git. `scripts/check-manifests.sh` fails CI when a ClusterRoleBinding, directly or through an aggregated ClusterRole, lets a subject outside `cluster_secret_readers` get, list or watch Secrets. Each entry needs it:
+  - `cert-manager/cert-manager` writes certificate Secrets wherever a Certificate lives, and `cert-manager/cert-manager-cainjector` reads them to inject CA bundles into webhooks and CRDs.
+  - `cnpg-system/cloudnative-pg` manages the superuser, replication and role password Secrets of the Postgres cluster, and `cnpg-system/plugin-barman-cloud` reads the R2 credentials an ObjectStore references.
+  - `flux-system/flux-operator` holds cluster-admin to install and run the Flux controllers, which apply every manifest including Secrets.
+  - `longhorn-system/longhorn-service-account` and `longhorn-system/longhorn-support-bundle` are the Longhorn manager, which reads volume encryption and backup target Secrets, and its support bundle collector.
+  - `monitoring/kube-prometheus-stack-operator` reads the Secrets that monitors and Alertmanager configs reference and writes the generated Prometheus and Alertmanager configuration Secrets.
+- Every other controller is scoped to the namespaces it serves. Grafana's sidecars read ConfigMaps in `monitoring` through a hand-written Role, Reloader and Traefik get chart Roles in the namespaces they list, Flagger runs on a hand-written ClusterRole without Secrets, and Loki, Alloy and kube-state-metrics do not touch Secrets.
 
 ## Consequences
 
 - A workload that violates policy fails at admission with the rule named in the error, so new apps set `runAsNonRoot`, a user ID and resources from the start. The scaffold does this by default ([0013](0013-keep-each-app-self-contained-and-scaffold-new-ones.md)).
 - The skipped namespaces carry no admission guarantee, which is the price of keeping storage, DNS, certificates and GitOps out of Kyverno's blast radius.
 - Excluding a resource later leaves stale failures in existing policy reports until the reports are deleted and rebuilt.
+- A namespace with an IngressRoute, Middleware or Reloader annotation must be listed in the Traefik or Reloader values, or its routes and restarts stop working; the scaffold adds new apps to both.
+- Traefik still reads every Secret in the namespaces it watches, including `flux-system` and `longhorn-system`, because its Secret informer lists whole namespaces and the chart's `rbac.secretResourceNames` breaks that informer.

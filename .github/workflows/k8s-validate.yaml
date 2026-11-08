@@ -26,7 +26,7 @@ jobs:
           bash scripts/gen-crd-schemas.sh "$RUNNER_TEMP/crd-schemas" kubernetes "$RUNNER_TEMP/rendered"
 
       - name: Validate Kubernetes manifests
-        run: bash scripts/check-manifests.sh "$RUNNER_TEMP/crd-schemas"
+        run: bash scripts/check-manifests.sh "$RUNNER_TEMP/crd-schemas" "$RUNNER_TEMP/rendered"
 
   kustomize-build:
     runs-on: ubuntu-latest
