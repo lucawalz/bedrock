@@ -26,6 +26,9 @@ spec:
     mode: warn
   values:
     meshProvider: traefik
+    # The chart RBAC grants Secret read and write in every namespace; rbac.yaml grants the rest.
+    rbac:
+      create: false
     metricsServer: http://kube-prometheus-stack-prometheus.monitoring:9090
     resources:
       requests:
