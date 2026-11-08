@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - flagger
   - loadtester
+  - networkpolicies.yaml
