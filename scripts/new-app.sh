@@ -8,6 +8,8 @@ require_tools yq kustomize
 usage="usage: new-app.sh <name> <host> <port> [db=true|false] [sso=true|false] [image=<repository>:<tag>]"
 apps_dir=kubernetes/apps
 index="$apps_dir/kustomization.yaml"
+traefik_release=kubernetes/infrastructure/controllers/onprem/traefik/helmrelease.yaml
+reloader_release=kubernetes/infrastructure/controllers/security/reloader/helmrelease.yaml
 cluster_domain="$(yq -N '.data.cluster_domain' kubernetes/clusters/home/config/cluster-settings.yaml)"
 chart_version="5.3.0"
 placeholder_registry=registry.invalid
@@ -396,6 +398,11 @@ EOF
 fi
 
 NAME="$name" yq -i '.resources += [strenv(NAME)]' "$index"
+NAME="$name" yq -i '
+  .spec.values.providers.kubernetesCRD.namespaces += [strenv(NAME)]
+  | .spec.values.providers.kubernetesIngress.namespaces += [strenv(NAME)]
+' "$traefik_release"
+NAME="$name" yq -i '.spec.values.reloader.namespaces += [strenv(NAME)]' "$reloader_release"
 bash scripts/gen-inventory.sh
 
 # resolves alert selectors against live Prometheus, which a new app neither changes nor can satisfy offline
@@ -433,4 +440,4 @@ if [ "$db" = true ]; then
   echo "  - List both in clusters/home/apps/kustomization.yaml there. just new-secret $name does all of this with random values."
   echo "  - Commit bedrock-secrets."
 fi
-echo "  - Commit $app, $index and docs/inventory.md."
+echo "  - Commit $app, $index, $traefik_release, $reloader_release and docs/inventory.md."
