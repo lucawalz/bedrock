@@ -15,19 +15,22 @@ spec:
     enablePodAntiAffinity: true
     topologyKey: kubernetes.io/hostname
     podAntiAffinityType: required
-  enableSuperuserAccess: true
+  enableSuperuserAccess: false
   priorityClassName: system-cluster-critical
   primaryUpdateMethod: switchover
   postgresql:
     parameters:
       max_slot_wal_keep_size: 2GB
+    pg_hba:
+      - hostssl sameuser all all scram-sha-256
+      - host all all all reject
     synchronous:
       method: any
       number: 1
       dataDurability: preferred
   storage:
     size: 8Gi
-    storageClass: longhorn
+    storageClass: longhorn-encrypted
   resources:
     requests:
       cpu: 100m

@@ -186,4 +186,14 @@ if [ -n "$uncovered" ]; then
   status=1
 fi
 
+pg_hba_closing_rule="host all all all reject"
+open_postgres="$(PG_HBA_CLOSING_RULE="$pg_hba_closing_rule" yq -N 'select(.kind == "Cluster" and .apiVersion == "postgresql.cnpg.io/*")
+  | select(.spec.enableSuperuserAccess != false or (.spec.postgresql.pg_hba[-1] // "") != strenv(PG_HBA_CLOSING_RULE))
+  | .metadata.namespace + "/" + .metadata.name' "$work/built.yaml")"
+if [ -n "$open_postgres" ]; then
+  echo "CNPG Clusters that allow superuser access or do not end pg_hba with '$pg_hba_closing_rule':"
+  printf '%s\n' "$open_postgres" | sed 's/^/  - /'
+  status=1
+fi
+
 exit "$status"

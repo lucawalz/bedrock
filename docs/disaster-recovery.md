@@ -36,7 +36,7 @@ The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`sec
 
 | Data | Bucket | Schedule and retention | Encryption | Alerts |
 | --- | --- | --- | --- | --- |
-| Postgres (all app databases) | `bedrock-postgres`, under `postgres/` | WAL continuously (`archive_timeout` 5 min), base backup daily at 02:30, 30 days | None client-side, an accepted risk ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)) | `CNPGBackupStale`, `CNPGBackupNotConfigured` |
+| Postgres (all app databases: Paperless document OCR text and metadata, Open WebUI chats, Pocket ID users and OIDC clients, LiteLLM keys and spend) | `bedrock-postgres`, under `postgres/` | WAL continuously (`archive_timeout` 5 min), base backup daily at 02:30, 30 days | None client-side, an accepted risk ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)) | `CNPGBackupStale`, `CNPGBackupNotConfigured` |
 | Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | All of them are LUKS, so their backups are ciphertext | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
 | etcd | `bedrock-etcd`, under `etcd-snapshots/` | Every 12 hours, 5 kept, also on control-plane-1's disk | None client-side; a snapshot holds every Secret, encrypted at rest under the server token | `EtcdSnapshotTooOld` |
 
@@ -139,7 +139,7 @@ The drills below restore each backup into a scratch object and compare it with p
 
 ### Postgres
 
-`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres`) through the barman-cloud plugin, which is the manifest to copy. To bring the production cluster back after a rebuild, change `bootstrap` in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` from `initdb` to the same `recovery` source before Flux first creates the Cluster, and point its WAL archiver at a new server name so it does not write into the archive it reads from. For a single app, `just dump` and `just restore` move one database without touching the others.
+`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres`) through the barman-cloud plugin, which is the manifest to copy. To bring the production cluster back after a rebuild, change `bootstrap` in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` from `initdb` to the same `recovery` source before Flux first creates the Cluster, and point its WAL archiver at a new server name so it does not write into the archive it reads from. The Cluster declares `longhorn-encrypted`, so the recovered instances land on LUKS volumes; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
 
 ### Longhorn volumes
 
