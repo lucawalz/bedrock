@@ -1,15 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-frontend
+spec:
+  type: ExternalName
+  externalName: longhorn-frontend.longhorn-system.svc.cluster.local
+  ports:
+    - name: http
+      port: 80
+---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: longhorn-ui
-  namespace: longhorn-system
   annotations:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: Longhorn
     gethomepage.dev/group: Storage
     gethomepage.dev/icon: longhorn.png
     gethomepage.dev/href: https://longhorn.syslabs.dev
-    gethomepage.dev/pod-selector: app=longhorn-ui
+    # The pods live outside this namespace, which homepage's pod-selector cannot reach.
+    gethomepage.dev/siteMonitor: https://longhorn.syslabs.dev
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:

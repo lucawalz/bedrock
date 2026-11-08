@@ -10,6 +10,8 @@ resources:
   - helmrelease.yaml
   - certificate.yaml
   - dashboard-ingress.yaml
+  - flux-operator-route.yaml
+  - longhorn-route.yaml
   - networkpolicies.yaml
   - pdb.yaml
   - security-headers.yaml

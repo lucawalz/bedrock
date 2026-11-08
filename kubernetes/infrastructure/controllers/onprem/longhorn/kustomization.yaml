@@ -1,13 +1,11 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 components:
-- ../../../../components/forward-auth
 - ../../../../components/network-policies/base
 - ../../../../components/network-policies/intra-namespace
 - ../../../../components/network-policies/internet-egress
 resources:
 - helmrelease.yaml
-- ingress.yaml
 - networkpolicies.yaml
 - pdb.yaml
 - storageclass-disposable.yaml
@@ -15,13 +13,6 @@ resources:
 - storageclass-retain.yaml
 patches:
 # the longhorn HelmRelease lives in flux-system, so this kustomization cannot carry a namespace transformer
-- patch: |-
-    - op: add
-      path: /metadata/namespace
-      value: longhorn-system
-  target:
-    kind: Middleware
-    name: forward-auth
 - patch: |-
     - op: add
       path: /metadata/namespace
