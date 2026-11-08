@@ -26,6 +26,7 @@ pv="$(kubectl get pvc "$pvc" -n "$namespace" -o jsonpath='{.spec.volumeName}')"
 
 IFS='|' read -r driver volume key_secret key_namespace < <(kubectl get pv "$pv" -o jsonpath='{.spec.csi.driver}|{.spec.csi.volumeHandle}|{.spec.csi.nodeStageSecretRef.name}|{.spec.csi.nodeStageSecretRef.namespace}{"\n"}')
 [ "$driver" = "$LONGHORN_DRIVER" ] || fail "pv $pv is not a Longhorn volume"
+[[ "${volume:-}" =~ $NAME_PATTERN ]] || fail "pv $pv names an unexpected Longhorn volume '${volume:-}'"
 [ -n "${key_secret:-}" ] && [ -n "${key_namespace:-}" ] || fail "pv $pv has no encryption secret, so it is not LUKS"
 
 IFS='|' read -r encrypted state node < <(kubectl get volumes.longhorn.io "$volume" -n "$LONGHORN_NAMESPACE" -o jsonpath='{.spec.encrypted}|{.status.state}|{.status.currentNodeID}{"\n"}')
