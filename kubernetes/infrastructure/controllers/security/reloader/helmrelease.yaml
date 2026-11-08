@@ -24,7 +24,14 @@ spec:
     mode: warn
   values:
     reloader:
-      watchGlobally: true
+      watchGlobally: false
+      namespaces:
+        - cloudflare-tunnel
+        - homepage
+        - litellm
+        - oauth2-proxy
+        - paperless
+        - pocket-id
       deployment:
         resources:
           requests:
