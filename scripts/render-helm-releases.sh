@@ -53,6 +53,7 @@ while read -r directory; do
     yq -N 'select(.kind == "HelmRelease" and .metadata.name == strenv(RELEASE))' "$rendered" > "$work/hr.yaml"
 
     namespace="$(yq -N '.metadata.namespace' "$work/hr.yaml")"
+    release_namespace="$(yq -N '.spec.targetNamespace // .metadata.namespace' "$work/hr.yaml")"
     chart="$(yq -N '.spec.chart.spec.chart' "$work/hr.yaml")"
     version="$(yq -N '.spec.chart.spec.version' "$work/hr.yaml")"
     source_name="$(yq -N '.spec.chart.spec.sourceRef.name' "$work/hr.yaml")"
@@ -94,7 +95,7 @@ while read -r directory; do
     if ! helm template "$release" "$chart_ref" \
       "${repo_args[@]}" \
       --version "$version" \
-      --namespace "$namespace" \
+      --namespace "$release_namespace" \
       "${crd_args[@]}" \
       "${value_args[@]}" \
       "${helm_args[@]}" > "$work/raw.yaml"; then
@@ -106,7 +107,7 @@ while read -r directory; do
     awk 'seen || /^---$/ { seen = 1; print }' "$work/raw.yaml" > "$work/documents.yaml"
     # Comment-only and hook documents are never applied, and the namespace is stamped at apply time.
     yq '... comments=""' "$work/documents.yaml" \
-      | NAMESPACE="$namespace" yq 'select(. != null) | select(.metadata.annotations["helm.sh/hook"] == null) | .metadata.namespace = (.metadata.namespace // strenv(NAMESPACE))' \
+      | NAMESPACE="$release_namespace" yq 'select(. != null) | select(.metadata.annotations["helm.sh/hook"] == null) | .metadata.namespace = (.metadata.namespace // strenv(NAMESPACE))' \
       > "$work/output.yaml"
 
     [ -z "$output_dir" ] || cp "$work/output.yaml" "$output_dir/$namespace.$release.yaml"
