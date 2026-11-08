@@ -27,7 +27,6 @@ spec:
       type: daemonset
     rbac:
       create: true
-      # Replaces the chart list, which grants Secret read for remote.kubernetes; the config only runs discovery.kubernetes.
       rules:
         - apiGroups: ["", "discovery.k8s.io", "networking.k8s.io"]
           resources: ["endpoints", "endpointslices", "ingresses", "pods", "services"]

@@ -19,7 +19,6 @@ metadata:
     gethomepage.dev/group: Storage
     gethomepage.dev/icon: longhorn.png
     gethomepage.dev/href: https://longhorn.syslabs.dev
-    # The pods live outside this namespace, which homepage's pod-selector cannot reach.
     gethomepage.dev/siteMonitor: https://longhorn.syslabs.dev
     gethomepage.dev/external: "true"
     gethomepage.dev/statusStyle: "dot"

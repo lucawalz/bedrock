@@ -72,7 +72,6 @@ spec:
       namespaced: true
     providers:
       kubernetesCRD:
-        # Routes to flux-system and longhorn-system go through ExternalName Services here, so Traefik never watches their Secrets.
         allowExternalNameServices: true
         namespaces:
           - blog

@@ -10,7 +10,6 @@ kubernetes_version="${KUBECONFORM_KUBERNETES_VERSION:-1.35.0}"
 derived_schemas="${1:-}"
 rendered_releases="${2:-}"
 
-# Each entry's reason is recorded in docs/adr/0009-enforce-workload-policy-with-kyverno.md.
 cluster_secret_readers=(
   cert-manager/cert-manager
   cert-manager/cert-manager-cainjector
@@ -21,7 +20,6 @@ cluster_secret_readers=(
   longhorn-system/longhorn-support-bundle
   monitoring/kube-prometheus-stack-operator
 )
-# Namespaces whose Secrets unlock the rest of the estate, so even a namespaced grant there needs the allowlist.
 protected_secret_namespaces=(flux-system longhorn-system postgres)
 
 work="$(mktemp -d)"
