@@ -49,11 +49,6 @@ else
   require_tools kubectl flux yq
 fi
 
-fail() {
-  echo "FAIL: $*" >&2
-  exit 1
-}
-
 volumes=()
 for entry in "${CLAIMS[@]}"; do
   volumes+=("${entry%%:*}")

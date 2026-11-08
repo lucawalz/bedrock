@@ -3,6 +3,11 @@
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$repo_root" || exit 1
 
+fail() {
+  echo "FAIL: $*" >&2
+  exit 1
+}
+
 require_tools() {
   local tool
   for tool in "$@"; do
