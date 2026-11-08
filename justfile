@@ -130,6 +130,10 @@ restore app file:
 encrypt-volumes app *args="":
     bash scripts/encrypt-volumes.sh {{ quote(app) }} {{ args }}
 
+# Store allow-discards in a LUKS volume's header and trim it, for example: just luks-discards llm/open-webui-encrypted
+luks-discards volume:
+    bash scripts/luks-discards.sh {{ quote(volume) }}
+
 # Run the restore drills, for example: just restore-test --dry-run postgres
 restore-test *args="all":
     bash scripts/restore-test.sh {{ args }}
