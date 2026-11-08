@@ -21,6 +21,8 @@ cluster_secret_readers=(
   longhorn-system/longhorn-support-bundle
   monitoring/kube-prometheus-stack-operator
 )
+# Namespaces whose Secrets unlock the rest of the estate, so even a namespaced grant there needs the allowlist.
+protected_secret_namespaces=(flux-system longhorn-system postgres)
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -97,32 +99,40 @@ cat "$rendered_releases"/*.yaml >> "$work/built.yaml"
 
 # yq treats a bare "*" in == as a glob, so wildcards are matched with test().
 # shellcheck disable=SC2016
-yq ea -N '
+PROTECTED="${protected_secret_namespaces[*]}" yq ea -N '
   [.] as $documents
-  | ($documents | map(select(.kind == "ClusterRole" and (
+  | (strenv(PROTECTED) | split(" ")) as $protected
+  | ($documents | map(select((.kind == "ClusterRole" or .kind == "Role") and (
       .rules // [] | any_c(
         ((.apiGroups // [""]) | any_c(test("^(|\\*)$")))
         and ((.resources // []) | any_c(test("^(secrets|\\*)$")))
         and ((.verbs // []) | any_c(test("^(get|list|watch|\\*)$")))
       )
     )))) as $direct
+  | ($direct | map(select(.kind == "ClusterRole"))) as $directCluster
   | ($documents | map(select(.kind == "ClusterRole" and .aggregationRule) | select(
       .aggregationRule.clusterRoleSelectors // [] | any_c(.matchLabels as $wanted
-        | $direct | any_c(.metadata.labels as $labels
+        | $directCluster | any_c(.metadata.labels as $labels
           | $wanted | to_entries | all_c($labels[.key] == .value)))))) as $aggregated
-  | (($direct + $aggregated | map(.metadata.name)) + ["cluster-admin", "admin", "edit"]) as $readers
-  | $documents[]
-  | select(.kind == "ClusterRoleBinding" and .roleRef.kind == "ClusterRole")
-  | select(.roleRef.name as $role | $readers | any_c(. == $role))
+  | (($directCluster + $aggregated | map(.metadata.name)) + ["cluster-admin", "admin", "edit"]) as $readers
+  | ($direct | map(select(.kind == "Role") | .metadata.namespace + "/" + .metadata.name)) as $roleReaders
+  | $documents[] as $binding
+  | $binding
+  | select(.kind == "ClusterRoleBinding" or (.kind == "RoleBinding" and (.metadata.namespace as $ns | $protected | any_c(. == $ns))))
+  | (if .kind == "ClusterRoleBinding" then "every namespace" else .metadata.namespace end) as $scope
+  | select(
+      (.roleRef.kind == "ClusterRole" and (.roleRef.name as $role | $readers | any_c(. == $role)))
+      or (.roleRef.kind == "Role" and ((.metadata.namespace + "/" + .roleRef.name) as $role | $roleReaders | any_c(. == $role))))
   | .subjects[]?
-  | (.namespace // .kind) + "/" + .name
+  | (.namespace // .kind) + "/" + .name + "\t" + $scope
 ' "$work/built.yaml" | sort -u > "$work/secret-readers"
 printf '%s\n' "${cluster_secret_readers[@]}" | sort -u > "$work/allowed-secret-readers"
 
-unexpected="$(comm -23 "$work/secret-readers" "$work/allowed-secret-readers")"
+unexpected="$(awk -F'\t' 'NR == FNR { allowed[$1] = 1; next } !($1 in allowed) { print "  - " $1 " in " $2 }' \
+  "$work/allowed-secret-readers" "$work/secret-readers")"
 if [ -n "$unexpected" ]; then
-  echo "Subjects outside the allowlist can read Secrets in every namespace:"
-  printf '%s\n' "$unexpected" | sed 's/^/  - /'
+  echo "Subjects outside the allowlist can read Secrets:"
+  printf '%s\n' "$unexpected"
   status=1
 fi
 
