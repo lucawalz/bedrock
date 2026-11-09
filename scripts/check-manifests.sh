@@ -198,17 +198,17 @@ if [ -n "$open_postgres" ]; then
 fi
 
 # shellcheck disable=SC2016
-replicated_storage="$(yq ea -N '
+unsafe_storage="$(yq ea -N '
   [.] as $documents
-  | ($documents | map(select(.kind == "StorageClass" and .parameters.numberOfReplicas != "1") | .metadata.name)) as $replicated
+  | ($documents | map(select(.kind == "StorageClass" and .parameters.numberOfReplicas == "1") | .metadata.name)) as $single
   | $documents[]
   | select(.kind == "Cluster" and .apiVersion == "postgresql.cnpg.io/*")
-  | select(.spec.storage.storageClass as $class | $replicated | any_c(. == $class))
-  | .metadata.namespace + "/" + .metadata.name + " " + .spec.storage.storageClass
+  | select(.spec.storage.storageClass as $class | $single | any_c(. == $class) | not)
+  | .metadata.namespace + "/" + .metadata.name + " (storageClass: " + (.spec.storage.storageClass // "unset") + ")"
 ' "$work/built.yaml")"
-if [ -n "$replicated_storage" ]; then
-  echo "CNPG Clusters on a StorageClass that keeps more than one Longhorn replica:"
-  printf '%s\n' "$replicated_storage" | sed 's/^/  - /'
+if [ -n "$unsafe_storage" ]; then
+  echo "CNPG Clusters whose storageClass is not a declared StorageClass with numberOfReplicas \"1\":"
+  printf '%s\n' "$unsafe_storage" | sed 's/^/  - /'
   status=1
 fi
 
