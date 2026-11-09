@@ -25,7 +25,7 @@ Pocket ID, Paperless, Open WebUI and LiteLLM each need Postgres, and between the
 
 - Adding a database is two small manifests and one Secret, with no change to the cluster definition.
 - One cluster is one failure domain: a fault in Postgres affects every app at once.
-- A lost node takes its instance volume with it. Longhorn does not rebuild it; CloudNativePG clones a new instance from a sibling, and the pod stays Pending on the dead node until that instance is replaced. The volume binds to the node of its first attach, so every node that hosts an instance must accept Longhorn replicas.
+- A lost node takes its instance volume with it. Longhorn does not rebuild it, and CloudNativePG does not delete a PVC pinned to a dead node, so the pod stays Pending until the instance is destroyed by hand (`kubectl cnpg destroy`, see the disaster recovery runbook). CloudNativePG then clones a new instance from a sibling. The volume binds to the node of its first attach, so every node that hosts an instance must accept Longhorn replicas.
 - An app's role reaches only its own database, and a pod outside the client label cannot open a connection at all.
 - Removing an app does not drop its role, and dropping a database needs its reclaim policy set to delete in one reconcile before the resource is removed in the next.
 - The Postgres backups in R2 are not encrypted client-side. That is an accepted risk, scoped to the bucket's credentials.

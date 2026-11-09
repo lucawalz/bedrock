@@ -8,7 +8,7 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 | Scenario | Recoverable | Mechanism |
 | --- | --- | --- |
-| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones and the Postgres instance volumes, workloads reschedule, and a Postgres standby takes over; CloudNativePG rebuilds a lost node's instance from a sibling |
+| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones and the Postgres instance volumes, workloads reschedule, and a Postgres standby takes over; a lost node's Postgres instance needs the manual step in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres) |
 | Anything declared in git | Yes | Flux reconciles it back ([ADR 0001](adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md)) |
 | Any cluster Secret | Yes, given the age key | SOPS ciphertext in the private `bedrock-secrets` repository ([ADR 0005](adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)) |
 | A Postgres logical fault, a bad migration, a dropped table | Yes, to any point in the last 30 days | Continuous WAL archive and daily base backups in R2 ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)) |
@@ -160,6 +160,17 @@ k3s server --cluster-reset --secrets-encryption --token-file=/run/agenix/k3s-tok
 
 `--secrets-encryption` is needed here too, or the API server cannot read what it restored. Then start K3s normally and restart the agents, since `--cluster-reset` drops every peer. Reading `flux-system/sops-age` and getting decodable data proves that the token, the encryption config and the snapshot agree. This restore has never been run. Rehearsing it needs an isolated host with no route to VLAN 20, started with `--disable-agent`, because a restored snapshot carries the live MetalLB pools, Flux sources and issuers. Treat that host as holding production secrets and destroy it afterwards.
 
+## Losing a node that hosts Postgres
+
+The instance volumes use `longhorn-encrypted-local`: one strict-local replica, bound to the node of the first attach. When that node or its disk is lost for good, the instance's PVC stays pinned to it, CloudNativePG does not delete a PVC on its own, and the pod stays Pending. The required anti-affinity across three nodes also leaves no other node for a fourth instance. If the node returns with its disk intact, the pod resumes by itself. Otherwise replacement is manual:
+
+```
+kubectl cnpg destroy postgres <n>
+just luks-discards postgres/postgres-<m>
+```
+
+`kubectl cnpg destroy` removes the instance pod and its PVCs ([CloudNativePG kubectl plugin](https://cloudnative-pg.io/docs/1.30/kubectl-plugin)); the plugin is a krew install, not part of the dev shell. CloudNativePG then creates a new instance with a new number, clones it from a sibling and the new PVC is the one to pass to `just luks-discards` once it is attached. Without the plugin, deleting the instance's pod and PVCs with `kubectl delete` has the same effect (not verified against the CloudNativePG docs). If the lost instance was the primary, a standby has been promoted already. While one instance is missing, the cluster keeps `dataDurability: preferred` and serves writes.
+
 ## Reinstalling a host
 
 The rebuild above keeps the operating systems. A full reinstall has not been rehearsed:
@@ -168,6 +179,7 @@ The rebuild above keeps the operating systems. A full reinstall has not been reh
 2. Nodes: install NixOS (disko lays out the disk) and push the node configuration with `--build-host` set to the target. control-plane-1's `hardware-configuration.nix` and `default.nix` pin filesystem UUIDs that change with a new disk and must be updated.
 3. A new host key cannot decrypt its agenix secrets. Re-key as in [Secret recovery](#secret-recovery) before the switch, and give the host a new single-use Tailscale auth key pre-tagged `tag:cluster`.
 4. Continue with the bootstrap above.
+5. A wiped node comes back with empty disks, so its Postgres instance volume is gone. Replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres); the pod does not recover on its own.
 
 ## Restore drills
 
@@ -237,4 +249,5 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.
 - Draining a node that holds the only replica of a disposable volume (Ollama, zot) blocks until Longhorn has evicted the replica to another node.
+- A Postgres instance volume has one strict-local replica that can never move, so draining its node cannot evict it elsewhere. A server-side dry-run drain of worker-2 timed out on the `postgres-1` eviction (the `postgres-primary` PDB allows no disruption while that instance is primary) and on the Longhorn `instance-manager` eviction (its PDB allows 0 disruptions on all three nodes, with or without a strict-local volume). Run `kubectl cnpg promote postgres <standby>` first when the node holds the primary, then drain: the standby pod is evicted, stays Pending while the node is cordoned and resumes on the same node after `kubectl uncordon`, with no data loss. A real drain has not been run; the instance-manager eviction is expected to complete once the instance pod is gone and its volume detached. If a drain hangs, delete the instance pod first. Rolling rebuilds drain one node at a time, wait for `postgres` to report all instances ready after each uncordon, and never drain a second node while an instance is Pending.
 - The drill cadence relies on the owner; no reminder is automated.
