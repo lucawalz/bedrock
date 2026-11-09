@@ -52,7 +52,16 @@ spec:
                     -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.spec.allowScheduling}{"\n"}{end}')"; then
                     printf '%s\n' "$lhnodes" | while read -r lhnode allow; do
                       [ -n "$lhnode" ] || continue
-                      kubectl get node "$lhnode" >/dev/null 2>&1 && continue
+                      if lookup_error="$(kubectl get node "$lhnode" 2>&1 >/dev/null)"; then
+                        continue
+                      fi
+                      case "$lookup_error" in
+                        *"(NotFound)"*) ;;
+                        *)
+                          echo "node lookup for $lhnode failed, skipping: $lookup_error" >&2
+                          continue
+                          ;;
+                      esac
                       if [ "$allow" = "true" ]; then
                         echo "disabling scheduling on orphaned longhorn node $lhnode"
                         kubectl patch nodes.longhorn.io "$lhnode" -n longhorn-system \
