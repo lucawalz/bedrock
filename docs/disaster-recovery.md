@@ -8,7 +8,7 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 | Scenario | Recoverable | Mechanism |
 | --- | --- | --- |
-| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones, workloads reschedule, and a Postgres standby takes over |
+| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones and the Postgres instance volumes, workloads reschedule, and a Postgres standby takes over; CloudNativePG rebuilds a lost node's instance from a sibling |
 | Anything declared in git | Yes | Flux reconciles it back ([ADR 0001](adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md)) |
 | Any cluster Secret | Yes, given the age key | SOPS ciphertext in the private `bedrock-secrets` repository ([ADR 0005](adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)) |
 | A Postgres logical fault, a bad migration, a dropped table | Yes, to any point in the last 30 days | Continuous WAL archive and daily base backups in R2 ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)) |
@@ -139,7 +139,7 @@ The drills below restore each backup into a scratch object and compare it with p
 
 ### Postgres
 
-`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres`) through the barman-cloud plugin, which is the manifest to copy. To bring the production cluster back after a rebuild, change `bootstrap` in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` from `initdb` to the same `recovery` source before Flux first creates the Cluster, and point its WAL archiver at a new server name so it does not write into the archive it reads from. The Cluster declares `longhorn-encrypted`, so the recovered instances land on LUKS volumes; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
+`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres`) through the barman-cloud plugin, which is the manifest to copy. To bring the production cluster back after a rebuild, change `bootstrap` in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` from `initdb` to the same `recovery` source before Flux first creates the Cluster, and point its WAL archiver at a new server name so it does not write into the archive it reads from. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
 
 ### Longhorn volumes
 

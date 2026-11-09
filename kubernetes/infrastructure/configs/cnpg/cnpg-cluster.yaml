@@ -30,7 +30,7 @@ spec:
       dataDurability: preferred
   storage:
     size: 8Gi
-    storageClass: longhorn-encrypted
+    storageClass: longhorn-encrypted-local
   resources:
     requests:
       cpu: 100m

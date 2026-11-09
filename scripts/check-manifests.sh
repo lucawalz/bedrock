@@ -197,4 +197,19 @@ if [ -n "$open_postgres" ]; then
   status=1
 fi
 
+# shellcheck disable=SC2016
+replicated_storage="$(yq ea -N '
+  [.] as $documents
+  | ($documents | map(select(.kind == "StorageClass" and .parameters.numberOfReplicas != "1") | .metadata.name)) as $replicated
+  | $documents[]
+  | select(.kind == "Cluster" and .apiVersion == "postgresql.cnpg.io/*")
+  | select(.spec.storage.storageClass as $class | $replicated | any_c(. == $class))
+  | .metadata.namespace + "/" + .metadata.name + " " + .spec.storage.storageClass
+' "$work/built.yaml")"
+if [ -n "$replicated_storage" ]; then
+  echo "CNPG Clusters on a StorageClass that keeps more than one Longhorn replica:"
+  printf '%s\n' "$replicated_storage" | sed 's/^/  - /'
+  status=1
+fi
+
 exit "$status"
