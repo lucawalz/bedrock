@@ -26,7 +26,7 @@ spec:
         fsGroup: 101
       containers:
         - name: blog
-          image: ghcr.io/lucawalz/blog:main-20261110212144-efe658c # {"$imagepolicy": "flux-system:blog"}
+          image: ghcr.io/lucawalz/blog:main-20261110213410-7558de7 # {"$imagepolicy": "flux-system:blog"}
           imagePullPolicy: Always
           ports:
             - name: http
