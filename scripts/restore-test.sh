@@ -346,19 +346,25 @@ dumps_cleanup() {
   gpgconf --homedir "$DUMPS_GNUPGHOME" --kill all
 }
 
+dumps_credentials() {
+  local encoded_id encoded_secret
+  read -r encoded_id encoded_secret < <(kubectl get secret "$DUMPS_CREDENTIALS_SECRET" -n "$POSTGRES_NAMESPACE" \
+    -o jsonpath='{.data.ACCESS_KEY_ID} {.data.ACCESS_SECRET_KEY}{"\n"}')
+  AWS_ACCESS_KEY_ID="$(printf '%s' "$encoded_id" | base64 -d)"
+  AWS_SECRET_ACCESS_KEY="$(printf '%s' "$encoded_secret" | base64 -d)"
+  [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] || fail "$POSTGRES_NAMESPACE/$DUMPS_CREDENTIALS_SECRET holds no R2 credential"
+  export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+}
+
 test_dumps() {
-  local account endpoint encoded_id encoded_secret check database table key want got
+  local account endpoint check database table key want got
   [ -d "$DUMPS_GNUPGHOME" ] || fail "$DUMPS_GNUPGHOME is not mounted; plug in the bedrock-keys stick"
   require_tools aws gpg gpgconf
   account="$(kubectl get configmap cluster-settings -n flux-system -o jsonpath='{.data.cloudflare_account_id}')"
   [ -n "$account" ] || fail "flux-system/cluster-settings holds no cloudflare_account_id"
   endpoint="https://$account.r2.cloudflarestorage.com"
-  read -r encoded_id encoded_secret < <(kubectl get secret "$DUMPS_CREDENTIALS_SECRET" -n "$POSTGRES_NAMESPACE" \
-    -o jsonpath='{.data.ACCESS_KEY_ID} {.data.ACCESS_SECRET_KEY}')
-  AWS_ACCESS_KEY_ID="$(printf '%s' "$encoded_id" | base64 -d)"
-  AWS_SECRET_ACCESS_KEY="$(printf '%s' "$encoded_secret" | base64 -d)"
-  [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] || fail "$POSTGRES_NAMESPACE/$DUMPS_CREDENTIALS_SECRET holds no R2 credential"
-  export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=auto
+  dumps_credentials
+  export AWS_DEFAULT_REGION=auto
   export AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
   [ -z "$(dumps_scratch psql -tAc "select 1 from pg_database where datname = '$DUMPS_SCRATCH_DATABASE'")" ] \
     || fail "database $DUMPS_SCRATCH_DATABASE already exists; drop it first"
