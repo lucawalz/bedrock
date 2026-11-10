@@ -68,6 +68,9 @@ jobs:
       - name: Check the Longhorn node finalizer only disables absent nodes
         run: bash scripts/check-longhorn-node-finalizer.sh
 
+      - name: Test the Postgres dump job
+        run: bash scripts/check-postgres-dump.sh
+
   helm-render:
     runs-on: ubuntu-latest
     timeout-minutes: 10
