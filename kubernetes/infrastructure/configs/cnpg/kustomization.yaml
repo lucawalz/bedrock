@@ -4,12 +4,20 @@ namespace: postgres
 components:
   - ../../../components/network-policies/base
   - ../../../components/network-policies/internet-egress
+  - ../../../components/wait-for-dependencies
 resources:
   - objectstore.yaml
   - cnpg-cluster.yaml
   - networkpolicies.yaml
   - podmonitor.yaml
   - scheduledbackup.yaml
+  - dumps/databaserole.yaml
+  - dumps/cronjob.yaml
+configMapGenerator:
+  - name: postgres-dump
+    files:
+      - dumps/dump.py
+      - dumps/recipient.asc
 patches:
   - target:
       kind: NetworkPolicy

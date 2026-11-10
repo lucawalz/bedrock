@@ -1,0 +1,110 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-dump
+  namespace: postgres
+spec:
+  schedule: "30 3 * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 7200
+      template:
+        metadata:
+          annotations:
+            bedrock.io/wait-for: postgres-rw.postgres.svc.cluster.local:5432
+          labels:
+            app.kubernetes.io/name: postgres-dump
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 26
+            runAsGroup: 26
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: dump
+              image: ghcr.io/cloudnative-pg/postgresql:18.4-system-trixie@sha256:42708a75345b7a48fdd9257b071830783a97fd228529196b6313187a7198e185
+              command:
+                - python3
+                - -I
+                - -B
+                - /etc/postgres-dump/dump.py
+              env:
+                - name: PGHOST
+                  value: postgres-rw.postgres.svc.cluster.local
+                - name: PGUSER
+                  value: dumper
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: pg-dumper
+                      key: password
+                - name: PGSSLMODE
+                  value: verify-full
+                - name: PGSSLROOTCERT
+                  value: /etc/postgres-ca/ca.crt
+                - name: GNUPGHOME
+                  value: /tmp/gnupg
+                - name: RECIPIENT_FILE
+                  value: /etc/postgres-dump/recipient.asc
+                - name: RECIPIENT_FINGERPRINT
+                  value: 1EB066F3C8C3F147DABC028DD009DE9C37E1B21D
+                - name: S3_BUCKET
+                  value: bedrock-postgres
+                - name: S3_ENDPOINT
+                  value: https://${cloudflare_account_id}.r2.cloudflarestorage.com
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-backup-s3
+                      key: ACCESS_KEY_ID
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: postgres-backup-s3
+                      key: ACCESS_SECRET_KEY
+                - name: AWS_REQUEST_CHECKSUM_CALCULATION
+                  value: when_required
+                - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+                  value: when_required
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 128Mi
+                limits:
+                  memory: 512Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+                - name: script
+                  mountPath: /etc/postgres-dump
+                  readOnly: true
+                - name: ca
+                  mountPath: /etc/postgres-ca
+                  readOnly: true
+          volumes:
+            - name: tmp
+              emptyDir: {}
+            - name: script
+              configMap:
+                name: postgres-dump
+            - name: ca
+              secret:
+                secretName: postgres-ca
+                items:
+                  - key: ca.crt
+                    path: ca.crt

@@ -1,0 +1,14 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: dumper
+  namespace: postgres
+spec:
+  name: dumper
+  cluster:
+    name: postgres
+  login: true
+  inRoles:
+    - pg_read_all_data
+  passwordSecret:
+    name: pg-dumper

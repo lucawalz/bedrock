@@ -22,6 +22,7 @@ spec:
     parameters:
       max_slot_wal_keep_size: 2GB
     pg_hba:
+      - hostssl all dumper all scram-sha-256
       - hostssl sameuser all all scram-sha-256
       - host all all all reject
     synchronous:

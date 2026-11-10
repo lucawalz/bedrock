@@ -20,6 +20,9 @@ spec:
         - podSelector:
             matchLabels:
               cnpg.io/cluster: postgres
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgres-dump
       ports:
         - protocol: TCP
           port: 5432
@@ -125,3 +128,35 @@ spec:
       ports:
         - protocol: TCP
           port: 6443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-postgres-dump-egress
+  namespace: postgres
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-dump
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.42.0.0/16
+              - 10.43.0.0/16
+              - 10.20.0.0/24
+              - 10.30.0.0/24
+              - 192.168.2.0/24
+      ports:
+        - protocol: TCP
+          port: 443
