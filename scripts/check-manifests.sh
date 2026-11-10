@@ -21,6 +21,9 @@ cluster_secret_readers=(
   monitoring/kube-prometheus-stack-operator
 )
 protected_secret_namespaces=(flux-system longhorn-system postgres)
+pg_hba_dumper="hostssl all dumper all scram-sha-256"
+pg_hba_sameuser="hostssl sameuser all all scram-sha-256"
+pg_hba_reject="host all all all reject"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -186,13 +189,17 @@ if [ -n "$uncovered" ]; then
   status=1
 fi
 
-open_postgres="$(yq -N 'select(.kind == "Cluster" and .apiVersion == "postgresql.cnpg.io/*")
+# shellcheck disable=SC2016
+open_postgres="$(DUMPER="$pg_hba_dumper" SAMEUSER="$pg_hba_sameuser" REJECT="$pg_hba_reject" yq -N '
+  select(.kind == "Cluster" and .apiVersion == "postgresql.cnpg.io/*")
+  | (.spec.postgresql.pg_hba // []) as $hba
+  | (if ($hba[0] // "") == strenv(DUMPER) then 1 else 0 end) as $sameuser_index
   | select(.spec.enableSuperuserAccess != false
-    or (.spec.postgresql.pg_hba[0] // "") != "hostssl sameuser all all scram-sha-256"
-    or (.spec.postgresql.pg_hba[-1] // "") != "host all all all reject")
+    or ($hba[$sameuser_index] // "") != strenv(SAMEUSER)
+    or ($hba[-1] // "") != strenv(REJECT))
   | .metadata.namespace + "/" + .metadata.name' "$work/built.yaml")"
 if [ -n "$open_postgres" ]; then
-  echo "CNPG Clusters that allow superuser access or whose pg_hba does not start with 'hostssl sameuser all all scram-sha-256' and end with 'host all all all reject':"
+  echo "CNPG Clusters that allow superuser access or whose pg_hba does not start with '$pg_hba_sameuser', optionally preceded by '$pg_hba_dumper', and end with '$pg_hba_reject':"
   printf '%s\n' "$open_postgres" | sed 's/^/  - /'
   status=1
 fi
