@@ -141,7 +141,7 @@ The drills below restore each backup into a scratch object and compare it with p
 
 `just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres`) through the barman-cloud plugin, which is the manifest to copy. To bring the production cluster back after a rebuild, change `bootstrap` in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` from `initdb` to the same `recovery` source before Flux first creates the Cluster, and point its WAL archiver at a new server name so it does not write into the archive it reads from. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
 
-If the barman archive is unusable, the nightly logical dumps in `bedrock-postgres/dumps/<database>/` are the fallback. They are encrypted to the OpenPGP key on the offline medium: `gpg --homedir /Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps --decrypt` reads one on stdin and writes the `pg_dump` custom-format archive to stdout, which `kubectl exec -i` into the primary can feed straight to `pg_restore`, so the plaintext never touches the disk.
+If the barman archive is unusable, the nightly logical dumps in `bedrock-postgres/dumps/<database>/<UTC time>.gpg` are the fallback; the newest key sorts last. They are encrypted to the OpenPGP key on the offline medium: `gpg --homedir /Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps --decrypt` reads one on stdin and writes the `pg_dump` custom-format archive to stdout, which `kubectl exec -i` into the primary can feed straight to `pg_restore`, so the plaintext never touches the disk.
 
 ### Longhorn volumes
 
@@ -185,10 +185,10 @@ The rebuild above keeps the operating systems. A full reinstall has not been reh
 
 ## Restore drills
 
-`just restore-test` runs four drills and removes everything it creates:
+`just restore-test` runs four drills and removes everything it creates. `all` runs `dumps` last, because only that drill needs the key stick:
 
 - `postgres`: a clone from R2 replayed to the latest archived WAL, compared with production by row count on `pocket-id.schema_migrations` and `paperless.django_migrations`, which change only on upgrades.
-- `dumps`: the newest encrypted dumps of `pocket-id` and `paperless`, decrypted on the Mac with the key on the offline medium and streamed into a scratch database on the primary, compared the same way. It refuses to run unless `/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps` is mounted.
+- `dumps`: the newest encrypted dumps of `pocket-id` and `paperless`, decrypted on the Mac with the key on the offline medium and streamed into a scratch database on the primary, compared the same way. It needs the `bedrock-keys` stick and refuses to run unless `/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps` is mounted, so checks run by an agent without the owner name the drills explicitly, for example `just restore-test postgres`.
 - `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with `longhorn-crypto`.
 - `etcd`: the newest snapshot in `s3://bedrock-etcd/etcd-snapshots` must be under 13 hours old.
 

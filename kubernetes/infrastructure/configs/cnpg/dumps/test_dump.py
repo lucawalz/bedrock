@@ -1,3 +1,4 @@
+import datetime
 import os
 import subprocess
 import sys
@@ -6,18 +7,21 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from dump import KEEP_PER_DATABASE, SUFFIX, dump_database, encrypt_command, import_recipient, prune  # noqa: E402
+from dump import KEEP_PER_DATABASE, SUFFIX, dump_database, import_recipient, object_key, prune  # noqa: E402
 
 PINNED_FINGERPRINT = "1EB066F3C8C3F147DABC028DD009DE9C37E1B21D"
 BUCKET = "bucket"
-KEY = "dumps/app/2026-11-10.gpg"
+DATABASE = "paperless"
 EXTRA_DUMPS = 3
+MORNING = datetime.datetime(2026, 11, 10, 3, 30, tzinfo=datetime.UTC)
+RERUN = datetime.datetime(2026, 11, 10, 9, 15, 42, tzinfo=datetime.UTC)
 
 
 class FakeS3:
-    def __init__(self, keys=(), fail_upload=False):
+    def __init__(self, keys=(), fail_upload=False, locked=False):
         self.objects = {key: b"" for key in keys}
         self.fail_upload = fail_upload
+        self.locked = locked
 
     def upload_fileobj(self, stream, bucket, key):
         if self.fail_upload:
@@ -26,6 +30,8 @@ class FakeS3:
         self.objects[key] = stream.read()
 
     def delete_object(self, Bucket, Key):
+        if self.locked:
+            raise PermissionError("object is locked")
         self.objects.pop(Key, None)
 
     def list_objects_v2(self, Bucket, Prefix):
@@ -48,6 +54,7 @@ class DumpTest(unittest.TestCase):
         cls.key_file = os.path.join(cls.home.name, "recipient.asc")
         with open(cls.key_file, "wb") as key_file:
             key_file.write(subprocess.run(gpg + ["--armor", "--export"], check=True, capture_output=True).stdout)
+        cls.encrypt = ["gpg", "--batch", "--trust-model", "always", "--recipient", cls.fingerprint, "--encrypt"]
 
     @classmethod
     def tearDownClass(cls):
@@ -70,40 +77,57 @@ class DumpTest(unittest.TestCase):
             capture_output=True,
         ).stdout
 
-    def test_refuses_a_key_other_than_the_pinned_one(self):
+    def test_refuses_a_key_other_than_the_pinned_one_without_importing_it(self):
         os.environ["GNUPGHOME"] = os.path.join(self.public_home.name, "other")
         with self.assertRaises(SystemExit):
             import_recipient(self.key_file, PINNED_FINGERPRINT)
+        listing = subprocess.run(["gpg", "--batch", "--with-colons", "--list-keys"], capture_output=True, text=True)
+        self.assertNotIn("fpr:", listing.stdout)
 
     def test_uploads_a_dump_only_the_recipient_decrypts(self):
         s3 = FakeS3()
-        self.assertTrue(dump_database(s3, BUCKET, KEY, ["printf", "dump bytes"], encrypt_command(self.fingerprint)))
-        self.assertNotIn(b"dump bytes", s3.objects[KEY])
-        self.assertEqual(self.decrypt(s3.objects[KEY]), b"dump bytes")
+        key = object_key(DATABASE, MORNING)
+        self.assertTrue(dump_database(s3, BUCKET, key, ["printf", "dump bytes"], self.encrypt))
+        self.assertNotIn(b"dump bytes", s3.objects[key])
+        self.assertEqual(self.decrypt(s3.objects[key]), b"dump bytes")
 
-    def test_a_failed_dump_fails_and_removes_the_partial_upload(self):
+    def test_a_rerun_on_the_same_day_keeps_both_dumps(self):
         s3 = FakeS3()
-        dump = ["sh", "-c", "printf partial; exit 3"]
-        self.assertFalse(dump_database(s3, BUCKET, KEY, dump, encrypt_command(self.fingerprint)))
-        self.assertNotIn(KEY, s3.objects)
+        for moment in (MORNING, RERUN):
+            self.assertTrue(dump_database(s3, BUCKET, object_key(DATABASE, moment), ["printf", "dump"], self.encrypt))
+        self.assertEqual(
+            sorted(s3.objects),
+            [f"dumps/{DATABASE}/2026-11-10T033000Z{SUFFIX}", f"dumps/{DATABASE}/2026-11-10T091542Z{SUFFIX}"],
+        )
 
-    def test_a_failed_encryption_fails_the_dump(self):
-        s3 = FakeS3()
-        self.assertFalse(dump_database(s3, BUCKET, KEY, ["printf", "dump bytes"], encrypt_command(PINNED_FINGERPRINT)))
-        self.assertNotIn(KEY, s3.objects)
+    def test_a_failed_dump_or_encryption_fails_and_removes_the_partial_upload(self):
+        failing_dump = (["sh", "-c", "printf partial; exit 3"], self.encrypt)
+        failing_encryption = (["printf", "dump"], self.encrypt[:-2] + [PINNED_FINGERPRINT, "--encrypt"])
+        for dump, encrypt in (failing_dump, failing_encryption):
+            with self.subTest(dump=dump, encrypt=encrypt):
+                s3 = FakeS3()
+                key = object_key(DATABASE, MORNING)
+                self.assertFalse(dump_database(s3, BUCKET, key, dump, encrypt))
+                self.assertNotIn(key, s3.objects)
 
     def test_a_failed_upload_stops_the_pipeline(self):
         s3 = FakeS3(fail_upload=True)
-        self.assertFalse(dump_database(s3, BUCKET, KEY, ["yes"], encrypt_command(self.fingerprint)))
-        self.assertNotIn(KEY, s3.objects)
+        key = object_key(DATABASE, MORNING)
+        self.assertFalse(dump_database(s3, BUCKET, key, ["yes"], self.encrypt))
+        self.assertNotIn(key, s3.objects)
+
+    def test_a_locked_partial_upload_fails_the_dump_without_raising(self):
+        s3 = FakeS3(locked=True)
+        self.assertFalse(dump_database(s3, BUCKET, object_key(DATABASE, MORNING), ["false"], self.encrypt))
 
     def test_prune_keeps_the_newest_per_database(self):
-        dumps = [f"dumps/paperless/2026-{month:02d}-{day:02d}{SUFFIX}" for month in (9, 10) for day in range(1, 31)]
-        dumps = dumps[: KEEP_PER_DATABASE + EXTRA_DUMPS]
-        neighbour = f"dumps/paperless-gpt/2026-01-01{SUFFIX}"
-        s3 = FakeS3(dumps + [neighbour])
-        prune(s3, BUCKET, "dumps/paperless/", KEEP_PER_DATABASE)
-        self.assertEqual(sorted(s3.objects), sorted(dumps[EXTRA_DUMPS:] + [neighbour]))
+        legacy = [f"dumps/{DATABASE}/2026-09-{day:02d}{SUFFIX}" for day in range(1, EXTRA_DUMPS + 1)]
+        start = datetime.datetime(2026, 9, EXTRA_DUMPS, 3, 30, tzinfo=datetime.UTC)
+        current = [object_key(DATABASE, start + datetime.timedelta(days=day)) for day in range(KEEP_PER_DATABASE)]
+        neighbour = object_key("paperless-gpt", MORNING)
+        s3 = FakeS3(legacy + current + [neighbour])
+        prune(s3, BUCKET, f"dumps/{DATABASE}/", KEEP_PER_DATABASE)
+        self.assertEqual(sorted(s3.objects), sorted(current + [neighbour]))
 
 
 if __name__ == "__main__":

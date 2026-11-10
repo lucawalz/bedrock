@@ -53,12 +53,8 @@ spec:
                   value: /etc/postgres-ca/ca.crt
                 - name: GNUPGHOME
                   value: /tmp/gnupg
-                - name: RECIPIENT_FILE
-                  value: /etc/postgres-dump/recipient.asc
                 - name: RECIPIENT_FINGERPRINT
                   value: 1EB066F3C8C3F147DABC028DD009DE9C37E1B21D
-                - name: S3_BUCKET
-                  value: bedrock-postgres
                 - name: S3_ENDPOINT
                   value: https://${cloudflare_account_id}.r2.cloudflarestorage.com
                 - name: AWS_ACCESS_KEY_ID

@@ -34,8 +34,6 @@ DUMPS_GNUPGHOME=/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps
 DUMPS_BUCKET=bedrock-postgres
 DUMPS_PREFIX=dumps
 DUMPS_CREDENTIALS_SECRET=postgres-backup-s3
-DUMPS_SETTINGS_NAMESPACE=flux-system
-DUMPS_SETTINGS_CONFIGMAP="cluster-settings"
 DUMPS_SCRATCH_DATABASE=restore_test_dumps
 
 ETCD_S3_BUCKET=bedrock-etcd
@@ -339,10 +337,6 @@ test_postgres() {
   done
 }
 
-dumps_credential() {
-  kubectl get secret "$DUMPS_CREDENTIALS_SECRET" -n "$POSTGRES_NAMESPACE" -o jsonpath="{.data.$1}" | base64 -d
-}
-
 dumps_scratch() {
   kubectl exec -n "$POSTGRES_NAMESPACE" "$(primary_pod "$POSTGRES_SOURCE_CLUSTER")" -c postgres -- "$@"
 }
@@ -353,14 +347,17 @@ dumps_cleanup() {
 }
 
 test_dumps() {
-  local account endpoint check database table key want got
+  local account endpoint encoded_id encoded_secret check database table key want got
   [ -d "$DUMPS_GNUPGHOME" ] || fail "$DUMPS_GNUPGHOME is not mounted; plug in the bedrock-keys stick"
   require_tools aws gpg gpgconf
-  account="$(kubectl get configmap "$DUMPS_SETTINGS_CONFIGMAP" -n "$DUMPS_SETTINGS_NAMESPACE" -o jsonpath='{.data.cloudflare_account_id}')"
-  [ -n "$account" ] || fail "$DUMPS_SETTINGS_NAMESPACE/$DUMPS_SETTINGS_CONFIGMAP holds no cloudflare_account_id"
+  account="$(kubectl get configmap cluster-settings -n flux-system -o jsonpath='{.data.cloudflare_account_id}')"
+  [ -n "$account" ] || fail "flux-system/cluster-settings holds no cloudflare_account_id"
   endpoint="https://$account.r2.cloudflarestorage.com"
-  AWS_ACCESS_KEY_ID="$(dumps_credential ACCESS_KEY_ID)"
-  AWS_SECRET_ACCESS_KEY="$(dumps_credential ACCESS_SECRET_KEY)"
+  read -r encoded_id encoded_secret < <(kubectl get secret "$DUMPS_CREDENTIALS_SECRET" -n "$POSTGRES_NAMESPACE" \
+    -o jsonpath='{.data.ACCESS_KEY_ID} {.data.ACCESS_SECRET_KEY}')
+  AWS_ACCESS_KEY_ID="$(printf '%s' "$encoded_id" | base64 -d)"
+  AWS_SECRET_ACCESS_KEY="$(printf '%s' "$encoded_secret" | base64 -d)"
+  [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ] || fail "$POSTGRES_NAMESPACE/$DUMPS_CREDENTIALS_SECRET holds no R2 credential"
   export AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_DEFAULT_REGION=auto
   export AWS_REQUEST_CHECKSUM_CALCULATION=when_required AWS_RESPONSE_CHECKSUM_VALIDATION=when_required
   [ -z "$(dumps_scratch psql -tAc "select 1 from pg_database where datname = '$DUMPS_SCRATCH_DATABASE'")" ] \
@@ -372,7 +369,6 @@ test_dumps() {
     [ -n "$key" ] || fail "no dump of $database in s3://$DUMPS_BUCKET/$DUMPS_PREFIX/$database/"
     key="$DUMPS_PREFIX/$database/$key"
     echo "dumps: restoring $key into $DUMPS_SCRATCH_DATABASE"
-    dumps_scratch dropdb --if-exists "$DUMPS_SCRATCH_DATABASE"
     dumps_scratch createdb "$DUMPS_SCRATCH_DATABASE"
     aws s3 cp --endpoint-url "$endpoint" "s3://$DUMPS_BUCKET/$key" - \
       | gpg --homedir "$DUMPS_GNUPGHOME" --decrypt \
@@ -382,6 +378,7 @@ test_dumps() {
     got="$(pg_count "$POSTGRES_SOURCE_CLUSTER" "$DUMPS_SCRATCH_DATABASE" "$table")"
     [ "$want" = "$got" ] || fail "$database.$table has $got rows in $key, $want in production"
     echo "dumps: $database.$table has $got rows in both"
+    dumps_scratch dropdb "$DUMPS_SCRATCH_DATABASE"
   done
 }
 
@@ -498,6 +495,6 @@ case "$command" in
   longhorn) test_longhorn ;;
   etcd) test_etcd ;;
   dumps) test_dumps ;;
-  all) test_dumps; test_etcd; test_longhorn; test_postgres ;;
+  all) test_etcd; test_longhorn; test_postgres; test_dumps ;;
 esac
 echo "restore test passed: $command"
