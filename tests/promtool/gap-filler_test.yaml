@@ -880,6 +880,28 @@ tests:
         exp_alerts: []
 
   - interval: 1m
+    name: a rising wal archive failure counter alerts while a flat one stays quiet
+    input_series:
+      - series: 'cnpg_pg_stat_archiver_failed_count{namespace="postgres",pod="postgres-1"}'
+        values: '0+1x60'
+      - series: 'cnpg_pg_stat_archiver_failed_count{namespace="postgres",pod="postgres-2"}'
+        values: '4x60'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CNPGWALArchivingFailing
+        exp_alerts: []
+      - eval_time: 40m
+        alertname: CNPGWALArchivingFailing
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: postgres
+              pod: postgres-1
+            exp_annotations:
+              summary: "CloudNativePG instance postgres/postgres-1 is failing to archive WAL"
+              description: "Instance postgres/postgres-1 has kept recording failed WAL archive attempts for at least 15 minutes. Unarchived WAL stays on the instance volume, so point-in-time recovery from R2 stops advancing and the 8Gi volume fills until PersistentVolumeFillingUp fires at 85 percent, which is otherwise the first visible sign."
+
+  - interval: 1m
     name: a job with failed pods alerts while a job with none stays quiet
     input_series:
       - series: 'kube_job_status_failed{namespace="longhorn-system",job_name="snapshot-29819610"}'
