@@ -101,7 +101,7 @@ spec:
             summary: "CloudNativePG is exporting no backup recovery point at all"
             description: "The metric carrying the newest recoverable backup has disappeared entirely. The barman-cloud plugin sidecar exports it through the instance manager, so the expected causes are the sidecar no longer running in the instances or the exporter or the cluster going away outright; whether removing the plugin configuration alone clears the series is unverified. CNPGBackupStale cannot fire on an absent series, so this is what notices when the signal itself, not just a fresh point on it, is gone."
         - alert: CNPGWALArchivingFailing
-          expr: increase(cnpg_pg_stat_archiver_failed_count{namespace="postgres"}[15m]) > 0
+          expr: increase(cnpg_pg_stat_archiver_failed_count[15m]) > 0
           for: 15m
           labels:
             severity: critical
