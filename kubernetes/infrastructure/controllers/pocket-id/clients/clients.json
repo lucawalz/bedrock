@@ -7,7 +7,8 @@
     "isPublic": false,
     "pkceEnabled": true,
     "skipConsent": true,
-    "isGroupRestricted": false
+    "isGroupRestricted": true,
+    "allowedUserGroups": ["admins"]
   },
   {
     "id": "flux-web",

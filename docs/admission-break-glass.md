@@ -161,13 +161,15 @@ A NetworkPolicy outage in any other namespace needs none of this. NetworkPolicie
 
 ## Signing in without a passkey
 
-Every forward-auth host and the Flux web UI sign in through Pocket ID ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)), and Pocket ID accepts passkeys only. A lost passkey therefore locks out every admin UI at once. Pocket ID's own CLI issues a one-time login link for an existing user without a passkey:
+Every forward-auth host and the Flux web UI sign in through Pocket ID ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)), and Pocket ID accepts passkeys only. A lost passkey, or an `admins` group restriction that excludes the owner, therefore locks out every admin UI at once. Pocket ID's own CLI issues a one-time login link for an existing user without a passkey:
 
 ```
 kubectl -n pocket-id exec deploy/pocket-id -- /app/pocket-id one-time-access-token <owner email>
 ```
 
-The command prints a URL of the form `https://id.syslabs.dev/lc/<token>`, valid once and for one hour. Opening it from the LAN or the tailnet signs in to Pocket ID as that user, where the admin UI can register a new passkey for the owner. The link must be opened on `id.syslabs.dev`: Pocket ID binds its passkeys and session to that origin, so neither a passkey nor a session works through a `localhost` port-forward of Pocket ID itself.
+The command prints a URL of the form `https://id.syslabs.dev/lc/<token>`, valid once and for one hour. Opening it from the LAN or the tailnet signs in to Pocket ID as that user, where the admin UI can register a new passkey or correct the owner's email. The link must be opened on `id.syslabs.dev`: Pocket ID binds its passkeys and session to that origin, so neither a passkey nor a session works through a `localhost` port-forward of Pocket ID itself.
+
+The `pocket-id-clients` Job adds the owner to `admins` on every run, so a lost membership heals on the next run. Two failures last: the owner user was deleted, or the owner's email in Pocket ID no longer matches `owner-email` in `bedrock-secrets`. Either makes the Job exit before it syncs any client ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)). The repair is to recreate the user or align the two addresses, then let the Job run again.
 
 ## Reaching admin UIs without forward-auth
 
