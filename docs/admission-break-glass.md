@@ -179,7 +179,7 @@ A port-forward reaches a Service directly, bypassing Traefik, forward-auth and t
 | Prometheus | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090` | `http://localhost:9090` | none |
 | Alertmanager | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-alertmanager 9093` | `http://localhost:9093` | none |
 | Longhorn | `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80` | `http://localhost:8080` | none |
-| ntfy | `kubectl -n ntfy port-forward svc/ntfy 8081:80` | `http://localhost:8081` | none |
+| ntfy | `kubectl -n ntfy port-forward svc/ntfy 8081:80` | `http://localhost:8081` | read-only user `phone`, `just login ntfy` |
 | Flux | `kubectl -n flux-system port-forward svc/flux-operator 9080` | `http://localhost:9080` | none |
 | paperless-gpt | `kubectl -n paperless port-forward svc/paperless-gpt 8082:8080` | `http://localhost:8082` | none |
 | LiteLLM | `kubectl -n litellm port-forward svc/litellm 4000` | `http://localhost:4000/ui` | LiteLLM master key, `just login litellm` |

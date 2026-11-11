@@ -237,6 +237,12 @@ grafana:
   rbac:
     create: false
 
+  extraSecretMounts:
+    - name: ntfy
+      secretName: ntfy-grafana
+      mountPath: /etc/secrets/ntfy
+      readOnly: true
+
   sidecar:
     resources:
       requests:
@@ -333,6 +339,8 @@ grafana:
               settings:
                 url: "http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.title%7D%7D&message=%7B%7B.message%7D%7D"
                 httpMethod: POST
+                authorization_scheme: Bearer
+                authorization_credentials: $__file{/etc/secrets/ntfy/token}
     policies.yaml:
       apiVersion: 1
       policies:
@@ -397,6 +405,8 @@ alertmanager:
     replicas: 2
     podAntiAffinity: hard
     priorityClassName: system-cluster-critical
+    secrets:
+      - ntfy-alertmanager
     resources:
       requests:
         cpu: "50m"
@@ -433,10 +443,15 @@ alertmanager:
       - name: 'ntfy'
         webhook_configs:
           - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7Bwith%20.commonAnnotations.summary%7D%7D%7B%7B.%7D%7D%7B%7Bend%7D%7D'
+            http_config: &ntfy-auth
+              authorization:
+                type: Bearer
+                credentials_file: /etc/alertmanager/secrets/ntfy-alertmanager/token
             send_resolved: true
       - name: 'ntfy-critical'
         webhook_configs:
           - url: 'http://ntfy.ntfy.svc.cluster.local/alerts?tpl=yes&title=%7B%7B.status%20%7C%20upper%7D%7D%3A%20%7B%7B.commonLabels.alertname%7D%7D%20%28%7B%7Blen%20.alerts%7D%7D%29&message=%7B%7B.commonLabels.severity%7D%7D%20%7C%20%7B%7Bwith%20.commonAnnotations.summary%7D%7D%7B%7B.%7D%7D%7B%7Bend%7D%7D&priority=urgent'
+            http_config: *ntfy-auth
             send_resolved: true
       - name: 'deadman'
         webhook_configs:

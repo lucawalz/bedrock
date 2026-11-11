@@ -6,3 +6,5 @@ metadata:
 spec:
   type: generic
   address: http://ntfy.ntfy.svc.cluster.local/flux
+  secretRef:
+    name: ntfy-flux

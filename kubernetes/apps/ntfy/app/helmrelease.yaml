@@ -28,6 +28,8 @@ spec:
       ntfy:
         strategy: RollingUpdate
         replicas: 1
+        annotations:
+          reloader.stakater.com/auto: "true"
         containers:
           app:
             image:
@@ -38,7 +40,19 @@ spec:
             env:
               NTFY_BASE_URL: https://ntfy.${cluster_domain}
               NTFY_BEHIND_PROXY: "true"
-              NTFY_AUTH_DEFAULT_ACCESS: read-write
+              NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+              NTFY_AUTH_DEFAULT_ACCESS: deny-all
+              NTFY_AUTH_ACCESS: alertmanager:alerts:wo,grafana:alerts:wo,flux:flux:wo,phone:alerts:ro,phone:flux:ro
+              NTFY_AUTH_USERS:
+                valueFrom:
+                  secretKeyRef:
+                    name: ntfy
+                    key: NTFY_AUTH_USERS
+              NTFY_AUTH_TOKENS:
+                valueFrom:
+                  secretKeyRef:
+                    name: ntfy
+                    key: NTFY_AUTH_TOKENS
               NTFY_CACHE_FILE: ""
             probes:
               liveness:
@@ -75,3 +89,8 @@ spec:
         ports:
           http:
             port: 80
+    persistence:
+      auth:
+        type: emptyDir
+        globalMounts:
+          - path: /var/lib/ntfy
