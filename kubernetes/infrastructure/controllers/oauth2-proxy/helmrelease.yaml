@@ -43,11 +43,13 @@ spec:
       provider-display-name: Pocket ID
       oidc-issuer-url: https://id.syslabs.dev
       code-challenge-method: S256
-      scope: openid email profile
+      scope: openid email profile offline_access
       redirect-url: https://auth.syslabs.dev/oauth2/callback
       cookie-domain: .syslabs.dev
       whitelist-domain: .syslabs.dev
       cookie-samesite: lax
+      cookie-expire: 12h
+      cookie-refresh: 1h
       reverse-proxy: true
       trusted-proxy-ip: 10.42.0.0/16
       skip-provider-button: true
