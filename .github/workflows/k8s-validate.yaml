@@ -71,6 +71,9 @@ jobs:
       - name: Test the Postgres dump job
         run: bash scripts/check-postgres-dump.sh
 
+      - name: Test the Pocket ID client sync job
+        run: bash scripts/check-pocket-id-clients.sh
+
   helm-render:
     runs-on: ubuntu-latest
     timeout-minutes: 10
