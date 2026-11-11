@@ -54,6 +54,8 @@ spec:
                     name: ntfy
                     key: NTFY_AUTH_TOKENS
               NTFY_CACHE_FILE: ""
+              NTFY_ENABLE_LOGIN: "true"
+              NTFY_UPSTREAM_BASE_URL: https://ntfy.sh
             probes:
               liveness:
                 enabled: true

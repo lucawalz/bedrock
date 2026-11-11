@@ -22,6 +22,8 @@ The cluster runs unattended most of the time, and the owner should hear about a 
 ## Consequences
 
 - One ntfy instance carries every actionable signal, on two topics: `alerts` for Alertmanager and `flux` for Flux events. Info-level noise stays visible in Grafana without paging.
-- The ntfy host stays behind forward-auth, so the phone reads through the ntfy web app in a browser signed in to Pocket ID; the native app cannot pass forward-auth. Grafana reads its token only when it provisions at startup, so a rotated Grafana token needs a Grafana restart.
+- The ntfy host has no forward-auth: ntfy's own deny-all users and tokens are the gate, so the native app on the LAN or tailnet signs in as `phone`. The host stays internal, off the tunnel.
+- ntfy forwards a poll request for every message to `https://ntfy.sh`, so the iOS app is woken through Apple push instead of polling. The request carries only the message ID and a SHA-256 of the topic URL, never the content, and leaves through the namespace's existing public egress on 443.
+- Grafana reads its token only when it provisions at startup, so a rotated Grafana token needs a Grafana restart.
 - A dead cluster is noticed on the panel within about 25 minutes, even with Alertmanager gone.
 - The live selector check cannot run in CI and is run by hand after rule changes and rebuilds.

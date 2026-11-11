@@ -119,7 +119,7 @@ The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm
 | Grafana | Dashboards, own login | internal (`grafana`) |
 | Prometheus | Metrics and query browser | internal, forward-auth (`prometheus`) |
 | Alertmanager | Alert routing and silences | internal, forward-auth (`alertmanager`) |
-| ntfy | Notifications from Alertmanager and Flux | internal, forward-auth and own login (`ntfy`) |
+| ntfy | Notifications from Alertmanager and Flux | internal, own login (`ntfy`) |
 | Flux | Flux Operator web UI | internal, forward-auth and Pocket ID login (`flux`) |
 | Longhorn | Storage UI | internal, forward-auth (`longhorn`) |
 | Traefik | Router dashboard | internal, forward-auth (`traefik`) |
