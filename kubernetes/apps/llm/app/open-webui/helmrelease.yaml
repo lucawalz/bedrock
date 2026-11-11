@@ -33,6 +33,10 @@ spec:
           secretKeyRef:
             name: open-webui-postgres
             key: DATABASE_URL
+      - name: ENABLE_SIGNUP
+        value: "false"
+      - name: DEFAULT_USER_ROLE
+        value: pending
     resources:
       requests:
         cpu: 100m
