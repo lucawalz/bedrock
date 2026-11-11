@@ -22,3 +22,6 @@ spec:
       name: RetryOnFailure
   driftDetection:
     mode: warn
+  values:
+    web:
+      configSecretName: flux-web-config

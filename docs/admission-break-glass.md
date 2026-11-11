@@ -161,7 +161,7 @@ A NetworkPolicy outage in any other namespace needs none of this. NetworkPolicie
 
 ## Signing in without a passkey
 
-Every forward-auth host signs in through Pocket ID ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)), and Pocket ID accepts passkeys only. A lost passkey therefore locks out every admin UI at once. Pocket ID's own CLI issues a one-time login link for an existing user without a passkey:
+Every forward-auth host and the Flux web UI sign in through Pocket ID ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)), and Pocket ID accepts passkeys only. A lost passkey therefore locks out every admin UI at once. Pocket ID's own CLI issues a one-time login link for an existing user without a passkey:
 
 ```
 kubectl -n pocket-id exec deploy/pocket-id -- /app/pocket-id one-time-access-token <owner email>
@@ -180,11 +180,7 @@ A port-forward reaches a Service directly, bypassing Traefik, forward-auth and t
 | Alertmanager | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-alertmanager 9093` | `http://localhost:9093` | none |
 | Longhorn | `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80` | `http://localhost:8080` | none |
 | ntfy | `kubectl -n ntfy port-forward svc/ntfy 8081:80` | `http://localhost:8081` | read-only user `phone`, `just login ntfy` |
-| Flux | `kubectl -n flux-system port-forward svc/flux-operator 9080` | `http://localhost:9080` | none |
 | paperless-gpt | `kubectl -n paperless port-forward svc/paperless-gpt 8082:8080` | `http://localhost:8082` | none |
 | LiteLLM | `kubectl -n litellm port-forward svc/litellm 4000` | `http://localhost:4000/ui` | LiteLLM master key, `just login litellm` |
 
-Two UIs have no port-forward path:
-
-- The Traefik dashboard is served only through its `api@internal` router. `kubectl get ingressroute -A` shows the routes it would.
-- Homepage accepts only its own host name and the pod address, so a `localhost` request is refused. It carries no admin function.
+The Flux web UI has no port-forward path: it signs in through Pocket ID itself and redirects back to `flux.syslabs.dev`. `flux get all -A` and `flux reconcile` cover the same ground from the terminal.

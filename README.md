@@ -120,7 +120,7 @@ The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm
 | Prometheus | Metrics and query browser | internal, forward-auth (`prometheus`) |
 | Alertmanager | Alert routing and silences | internal, forward-auth (`alertmanager`) |
 | ntfy | Notifications from Alertmanager and Flux | internal, forward-auth (`ntfy`) |
-| Flux | Flux Operator web UI | internal, forward-auth (`flux`) |
+| Flux | Flux Operator web UI | internal, forward-auth and Pocket ID login (`flux`) |
 | Longhorn | Storage UI | internal, forward-auth (`longhorn`) |
 | Traefik | Router dashboard | internal, forward-auth (`traefik`) |
 | Pocket ID | Passkey identity provider | internal (`id`) |

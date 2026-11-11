@@ -8,5 +8,15 @@
     "pkceEnabled": true,
     "skipConsent": true,
     "isGroupRestricted": false
+  },
+  {
+    "id": "flux-web",
+    "name": "flux-web",
+    "callbackURLs": ["https://flux.syslabs.dev/oauth2/callback"],
+    "logoutCallbackURLs": [],
+    "isPublic": false,
+    "pkceEnabled": true,
+    "skipConsent": true,
+    "isGroupRestricted": false
   }
 ]
