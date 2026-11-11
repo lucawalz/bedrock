@@ -45,6 +45,7 @@ spec:
               FILE_BACKEND: database
               UI_CONFIG_DISABLED: "true"
               EMAILS_VERIFIED: "true"
+              ALLOW_OWN_ACCOUNT_EDIT: "false"
               ALLOW_USER_SIGNUPS: disabled
               AUTO_CREATE_OIDC_CLIENT_SECRET: "false"
               ANALYTICS_DISABLED: "true"
