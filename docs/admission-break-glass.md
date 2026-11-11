@@ -1,6 +1,6 @@
 # Admission break-glass
 
-How to recover the cluster when an admission webhook refuses the writes needed to fix it.
+How to recover the cluster when an admission webhook refuses the writes needed to fix it, and how to reach the admin UIs when sign-in through Pocket ID fails.
 
 Kyverno enforces the workload policies in [ADR 0009](adr/0009-enforce-workload-policy-with-kyverno.md), and several platform operators run their own webhooks. A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims. The recovery is always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
 
@@ -158,3 +158,33 @@ A NetworkPolicy outage in any other namespace needs none of this. NetworkPolicie
 ## Known gaps
 
 - `--webhookTimeout=5` reaches only the Kyverno resource and policy webhooks. The exception, CEL exception and global context webhooks, and the `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks served by the cleanup controller, whose binary has no timeout flag, stay at 10 seconds.
+
+## Signing in without a passkey
+
+Every forward-auth host signs in through Pocket ID ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)), and Pocket ID accepts passkeys only. A lost passkey therefore locks out every admin UI at once. Pocket ID's own CLI issues a one-time login link for an existing user without a passkey:
+
+```
+kubectl -n pocket-id exec deploy/pocket-id -- /app/pocket-id one-time-access-token <owner email>
+```
+
+The command prints a URL of the form `https://id.syslabs.dev/lc/<token>`, valid once and for one hour. Opening it from the LAN or the tailnet signs in to Pocket ID as that user, where the admin UI can register a new passkey for the owner. The link must be opened on `id.syslabs.dev`: Pocket ID binds its passkeys and session to that origin, so neither a passkey nor a session works through a `localhost` port-forward of Pocket ID itself.
+
+## Reaching admin UIs without forward-auth
+
+A port-forward reaches a Service directly, bypassing Traefik, forward-auth and the NetworkPolicies in front of it. These work while Pocket ID or oauth2-proxy is down:
+
+| UI | Command | Local URL | Login |
+| --- | --- | --- | --- |
+| Grafana | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80` | `http://localhost:3000` | Grafana admin, `just login grafana` |
+| Prometheus | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090` | `http://localhost:9090` | none |
+| Alertmanager | `kubectl -n monitoring port-forward svc/kube-prometheus-stack-alertmanager 9093` | `http://localhost:9093` | none |
+| Longhorn | `kubectl -n longhorn-system port-forward svc/longhorn-frontend 8080:80` | `http://localhost:8080` | none |
+| ntfy | `kubectl -n ntfy port-forward svc/ntfy 8081:80` | `http://localhost:8081` | none |
+| Flux | `kubectl -n flux-system port-forward svc/flux-operator 9080` | `http://localhost:9080` | none |
+| paperless-gpt | `kubectl -n paperless port-forward svc/paperless-gpt 8082:8080` | `http://localhost:8082` | none |
+| LiteLLM | `kubectl -n litellm port-forward svc/litellm 4000` | `http://localhost:4000/ui` | LiteLLM master key, `just login litellm` |
+
+Two UIs have no port-forward path:
+
+- The Traefik dashboard is served only through its `api@internal` router. `kubectl get ingressroute -A` shows the routes it would.
+- Homepage accepts only its own host name and the pod address, so a `localhost` request is refused. It carries no admin function.
