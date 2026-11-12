@@ -126,7 +126,7 @@ The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm
 | Pocket ID | Passkey identity provider | internal (`id`) |
 | oauth2-proxy | Forward-auth gate for the admin UIs | internal (`auth`) |
 | Zot | Pull-through image cache, no UI | internal (`registry`) |
-| AdGuard Home | DNS filtering and the wildcard rewrite, own login | router loopback, `ssh -L 3000:127.0.0.1:3000 root@10.20.0.1` then `http://127.0.0.1:3000` |
+| AdGuard Home | DNS filtering and the wildcard rewrite, own login | router loopback, `ssh -L 3001:127.0.0.1:3000 root@10.20.0.1` then `http://127.0.0.1:3001` |
 
 Internal names are subdomains of `syslabs.dev`. Ollama serves the local models inside the cluster only. LiteLLM holds the only Anthropic key and gives paperless-gpt a virtual key limited to one model and its own budget.
 
