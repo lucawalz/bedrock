@@ -68,7 +68,9 @@ free=$(( $(df -Pk "$mount" | awk 'NR == 2 { print $4 }') * BYTES_PER_KIBIBYTE ))
 target="$mount/$TARGET_DIRECTORY/$(date -u +%Y-%m-%dT%H%M%SZ)"
 mkdir -p "$mount/$TARGET_DIRECTORY"
 mkdir "$target"
+progress=()
+[ -t 1 ] && progress=(--progress)
 for source in "${SOURCES[@]}"; do
-  rclone copy --no-traverse --files-from-raw "$work/${source%%:*}" "${source#*:}" "$target/${source##*:}"
+  rclone copy --no-traverse --files-from-raw "$work/${source%%:*}" "${source#*:}" "$target/${source##*:}" "${progress[@]}"
 done
 echo "Copied $total bytes to $target"
