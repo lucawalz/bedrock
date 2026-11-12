@@ -43,9 +43,6 @@ spec:
       periodSeconds: 10
       failureThreshold: 30
     mountConfig: true
-    externalSecrets:
-      - secretName: zot-htpasswd
-        mountPath: /secrets/zot-htpasswd
     configFiles:
       config.json: |-
         {
@@ -76,21 +73,9 @@ spec:
           "http": {
             "address": "0.0.0.0",
             "port": "5000",
-            "auth": {
-              "htpasswd": {
-                "path": "/secrets/zot-htpasswd/htpasswd"
-              }
-            },
             "accessControl": {
               "repositories": {
                 "**": {
-                  "policies": [
-                    {
-                      "users": ["zot-push"],
-                      "actions": ["read", "create", "update", "delete"]
-                    }
-                  ],
-                  "defaultPolicy": [],
                   "anonymousPolicy": ["read"]
                 }
               }
