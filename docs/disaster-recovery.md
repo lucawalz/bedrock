@@ -40,6 +40,19 @@ The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`sec
 | Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | All of them are LUKS, so their backups are ciphertext | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
 | etcd | `bedrock-etcd`, under `etcd-snapshots/` | Every 12 hours, 5 kept, also on control-plane-1's disk | None client-side, an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)); Secrets are encrypted by K3s and the bootstrap data needs the server token | `EtcdSnapshotTooOld` |
 
+### Locks and the offline copy
+
+R2 bucket lock rules refuse every delete and overwrite of a recent object, whichever token sends it; a refused single delete returns HTTP 409 `ObjectLockedByBucketPolicy`. They cover only prefixes whose keys are written once ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)):
+
+| Bucket | Prefix | Locked for | Pruned by its consumer after |
+| --- | --- | --- | --- |
+| `bedrock-postgres` | `dumps/` | 14 days | 30 dumps per database, daily, so about 30 days |
+| `bedrock-etcd` | `etcd-snapshots/` | 2 days | 5 snapshots every 12 hours, so 60 hours |
+
+The barman archive under `bedrock-postgres/postgres/` and everything in `bedrock-longhorn` stay unlocked, because barman-cloud and Longhorn rewrite keys they have just written. No restore below deletes or overwrites a key under a locked prefix: the dumps and etcd snapshots are only read, and a recovered Postgres cluster archives under a new server name. Deleting old objects under a locked prefix, for example after a rebuild, waits until the lock has expired. `wrangler r2 bucket lock list <bucket>` shows the rules, and `wrangler r2 bucket lock remove <bucket> --name <rule>` drops one.
+
+Once a month, `just offline-backup <mountpoint>` copies the newest dump of every database, the newest etcd snapshot and the newest backup of every Longhorn volume (its `volume.cfg`, the backup config and the blocks it lists) to `<mountpoint>/bedrock-offline/<UTC time>/<bucket>/`, in the bucket layout. It reads with the Object Read only tokens in `/Volumes/bedrock-keys/bedrock/rclone/offline-backup.conf`, so the key stick must be plugged in, and it refuses to start when the copy plus 10 percent does not fit on the target. To restore from it, upload a bucket folder with `rclone copy` into a new, empty bucket and point the consumer at that bucket; the copied dumps decrypt with the same key, and the Longhorn backups are LUKS ciphertext that needs `longhorn-crypto`.
+
 Ollama models and the zot cache are refetched, never backed up. The Postgres instances carry Longhorn snapshots but no Longhorn backup, since barman-cloud covers them.
 
 ## The measured rebuild
@@ -192,7 +205,7 @@ The rebuild above keeps the operating systems. A full reinstall has not been reh
 - `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with `longhorn-crypto`.
 - `etcd`: the newest snapshot in `s3://bedrock-etcd/etcd-snapshots` must be under 13 hours old.
 
-The cadence is a monthly `just restore-test`, a full rebuild from git every six months, and both before a major upgrade. Nothing schedules them; they are run by hand.
+The cadence is a monthly `just restore-test` and `just offline-backup`, a full rebuild from git every six months, and both before a major upgrade. Nothing schedules them; they are run by hand.
 
 | Mechanism | Last proven | Result |
 | --- | --- | --- |
@@ -250,7 +263,8 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - Postgres backups are plaintext in R2, which is an accepted risk.
 - etcd snapshots in R2 are plaintext apart from Secrets and the bootstrap data, which is an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 - etcd disk latency is not monitored. etcd serves its metrics on loopback only, so the API server's view of etcd request latency (`EtcdRequestsSlow`) is the only etcd signal.
-- Cloudflare R2 is the only off-site copy, and the tunnel DNS records and Access applications are kept only in the Cloudflare dashboard.
+- Cloudflare R2 is the only continuous off-site copy, and the tunnel DNS records and Access applications are kept only in the Cloudflare dashboard. The offline copy is up to a month old.
+- A stolen bucket token can erase the barman archive, every Longhorn backup and any dump or etcd snapshot older than its lock; the offline copy is then the newest Longhorn data that survives.
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.
 - Draining a node that holds the only replica of a disposable volume (Ollama, zot) blocks until Longhorn has evicted the replica to another node.

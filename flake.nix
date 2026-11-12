@@ -54,6 +54,7 @@
           python3
           bashInteractive
           wrangler
+          rclone
         ];
       devShellExtraPackages = {
         x86_64-linux =

@@ -71,6 +71,9 @@ jobs:
       - name: Test the Postgres dump job
         run: bash scripts/check-postgres-dump.sh
 
+      - name: Test the offline backup copy and its refusals
+        run: bash scripts/check-offline-backup.sh
+
       - name: Test the Pocket ID client sync job
         run: bash scripts/check-pocket-id-clients.sh
 

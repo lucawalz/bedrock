@@ -138,6 +138,10 @@ luks-discards volume:
 restore-test *args="all":
     bash scripts/restore-test.sh {{ args }}
 
+# Copy the newest dumps, etcd snapshot and Longhorn backup set from R2 to a mounted disk, for example: just offline-backup /Volumes/offline
+offline-backup mountpoint:
+    bash scripts/offline-backup.sh {{ quote(absolute_path(join(invocation_directory(), mountpoint))) }}
+
 # Refresh the default kubeconfig entry from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh
