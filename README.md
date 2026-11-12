@@ -226,7 +226,7 @@ lib/                   the node inventory and the builder that generates the clu
 hosts/                 shared base, control-plane-1, the router and the router installer image
 modules/
   k3s/                 server and agent roles, plus the dormant cloud node image
-  router/              firewall, DHCP, DNS, wireless, deadman and the bar panel kiosk
+  router/              firewall, DHCP, DNS, deadman and the bar panel kiosk
   tailscale/           the tailnet client
   services/            host prerequisites for Longhorn
 secrets/               agenix-encrypted host secrets, recipients in secrets.nix

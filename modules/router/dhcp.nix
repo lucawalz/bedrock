@@ -11,7 +11,6 @@
         interfaces = [
           "vlan20"
           "vlan30"
-          "wlan0"
         ];
       };
 
@@ -54,23 +53,6 @@
             {
               name = "domain-name-servers";
               data = "10.30.0.1";
-            }
-          ];
-        }
-        {
-          id = 3;
-          subnet = "10.40.0.0/24";
-          pools = [
-            { pool = "10.40.0.100 - 10.40.0.200"; }
-          ];
-          option-data = [
-            {
-              name = "routers";
-              data = "10.40.0.1";
-            }
-            {
-              name = "domain-name-servers";
-              data = "10.40.0.1";
             }
           ];
         }

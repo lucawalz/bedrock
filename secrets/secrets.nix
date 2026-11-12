@@ -45,10 +45,6 @@ in
     router
     luca
   ];
-  "wifi-passphrase.age".publicKeys = [
-    router
-    luca
-  ];
   "grafana-kiosk-url.age".publicKeys = [
     router
     luca
