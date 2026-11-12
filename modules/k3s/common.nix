@@ -1,9 +1,14 @@
 {
+  inventory,
   lib,
   secretsDir,
   ...
 }:
 let
+  podCidr = "10.42.0.0/16";
+
+  clusterSources = [ podCidr ] ++ lib.mapAttrsToList (_: node: node.address) inventory.nodes;
+
   pullThroughCache = "https://registry.syslabs.dev";
 
   upstreamByRegistry = {
@@ -35,20 +40,16 @@ in
   };
 
   networking.firewall = {
-    allowedTCPPorts = [
-      7946
-      9100
-      9120
-      10250
-    ];
-    allowedUDPPorts = [
-      7946
-      8472
-    ];
+    allowedTCPPorts = [ 10250 ];
+    interfaces.tailscale0.allowedUDPPorts = [ 8472 ];
+    extraCommands = lib.concatMapStrings (source: ''
+      iptables -A nixos-fw -s ${source} -p tcp -m multiport --dports 7946,9100,9120 -j nixos-fw-accept
+      iptables -A nixos-fw -s ${source} -p udp --dport 7946 -j nixos-fw-accept
+    '') clusterSources;
   };
 
   environment.etc."k3s/flannel-net-conf.json".text =
-    ''{"Network":"10.42.0.0/16","Backend":{"Type":"vxlan","MTU":1280}}'';
+    ''{"Network":"${podCidr}","Backend":{"Type":"vxlan","MTU":1280}}'';
 
   # k3s folds a trailing endpoint that equals the default one into the server fallback, where rewrites are not applied.
   environment.etc."rancher/k3s/registries.yaml".text =
