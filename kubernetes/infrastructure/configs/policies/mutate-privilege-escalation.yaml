@@ -63,3 +63,17 @@ spec:
               - (name): "?*"
                 securityContext:
                   +(allowPrivilegeEscalation): false
+    - name: pod-seccomp-profile
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              operations:
+                - CREATE
+      mutate:
+        patchStrategicMerge:
+          spec:
+            securityContext:
+              +(seccompProfile):
+                type: RuntimeDefault

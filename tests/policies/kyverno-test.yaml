@@ -27,6 +27,7 @@ resources:
   - resources/paperless-unlabelled.yaml
   - resources/paperless-deployment.yaml
   - resources/paperless-deployment-foreign.yaml
+  - resources/seccomp-set.yaml
   - resources/namespaces.yaml
 results:
   - policy: require-resources
@@ -127,6 +128,20 @@ results:
     kind: Pod
     resources:
       - paperless-ngx-7d9f8c6b4-x2k9p
+    result: skip
+  - policy: default-privilege-escalation
+    rule: pod-seccomp-profile
+    kind: Pod
+    resources:
+      - unset-escalation
+    patchedResources: resources/patched-unset-escalation.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    rule: pod-seccomp-profile
+    kind: Pod
+    resources:
+      - seccomp-set
+    patchedResources: resources/seccomp-set.yaml
     result: skip
   - policy: require-run-as-non-root
     rule: run-as-non-root

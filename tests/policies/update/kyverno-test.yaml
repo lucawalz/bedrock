@@ -1,0 +1,17 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: seccomp-default-skips-update
+policies:
+  - ../../../kubernetes/infrastructure/configs/policies/mutate-privilege-escalation.yaml
+resources:
+  - ../resources/unset-escalation.yaml
+variables: values.yaml
+results:
+  - policy: default-privilege-escalation
+    rule: pod-seccomp-profile
+    kind: Pod
+    resources:
+      - unset-escalation
+    patchedResources: ../resources/unset-escalation.yaml
+    result: skip
