@@ -30,7 +30,6 @@ in
       "--tls-san=${self.tailscale.magicDnsName}"
       "--node-ip=${self.address}"
       "--secrets-encryption"
-      "--etcd-expose-metrics" # binds 2381 beyond loopback so Prometheus can reach it
       "--kubelet-arg=kube-reserved=cpu=800m,memory=4Gi"
       "--kubelet-arg=system-reserved=cpu=200m,memory=512Mi"
       "--etcd-s3"
@@ -78,8 +77,5 @@ in
     '';
   };
 
-  networking.firewall.allowedTCPPorts = [
-    6443
-    2381
-  ];
+  networking.firewall.allowedTCPPorts = [ 6443 ];
 }
