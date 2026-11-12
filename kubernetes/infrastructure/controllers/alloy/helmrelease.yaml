@@ -94,6 +94,13 @@ spec:
             stage.cri {}
             forward_to = [loki.write.default.receiver]
           }
+          local.file_match "kubernetes_audit" {
+            path_targets = [{"__path__" = "/var/log/kubernetes/audit.log", "job" = "kubernetes-audit"}]
+          }
+          loki.source.file "kubernetes_audit" {
+            targets    = local.file_match.kubernetes_audit.targets
+            forward_to = [loki.write.default.receiver]
+          }
           loki.write "default" {
             endpoint {
               url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
