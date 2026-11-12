@@ -2,6 +2,7 @@ import datetime
 import os
 import subprocess
 import sys
+import tempfile
 
 KEEP_PER_DATABASE = 30
 PREFIX = "dumps"
@@ -34,33 +35,21 @@ def object_key(database, moment):
     return f"{PREFIX}/{database}/{moment.strftime(KEY_TIME_FORMAT)}{SUFFIX}"
 
 
-def discard(s3, bucket, key):
-    try:
-        s3.delete_object(Bucket=bucket, Key=key)
-    except Exception as error:
-        print(f"{key}: could not remove the partial upload: {error}", file=sys.stderr)
-
-
 def dump_database(s3, bucket, key, dump_command, encrypt_command):
-    dump = subprocess.Popen(dump_command, stdout=subprocess.PIPE)
-    encryption = subprocess.Popen(encrypt_command, stdin=dump.stdout, stdout=subprocess.PIPE)
-    dump.stdout.close()
-    try:
-        s3.upload_fileobj(encryption.stdout, bucket, key)
-    except Exception as error:
-        for process in (dump, encryption):
-            process.kill()
-            process.wait()
-        print(f"{key}: upload failed: {error}", file=sys.stderr)
-        discard(s3, bucket, key)
-        return False
-    finally:
-        encryption.stdout.close()
-    codes = (dump.wait(), encryption.wait())
-    if codes != (0, 0):
-        print(f"{key}: pg_dump exited {codes[0]} and gpg {codes[1]}, removing the upload", file=sys.stderr)
-        discard(s3, bucket, key)
-        return False
+    with tempfile.TemporaryFile() as staged:
+        dump = subprocess.Popen(dump_command, stdout=subprocess.PIPE)
+        encryption = subprocess.Popen(encrypt_command, stdin=dump.stdout, stdout=staged)
+        dump.stdout.close()
+        codes = (dump.wait(), encryption.wait())
+        if codes != (0, 0):
+            print(f"{key}: pg_dump exited {codes[0]} and gpg {codes[1]}, nothing uploaded", file=sys.stderr)
+            return False
+        staged.seek(0)
+        try:
+            s3.upload_fileobj(staged, bucket, key)
+        except Exception as error:
+            print(f"{key}: upload failed: {error}", file=sys.stderr)
+            return False
     return True
 
 

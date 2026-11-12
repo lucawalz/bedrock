@@ -18,20 +18,19 @@ RERUN = datetime.datetime(2026, 11, 10, 9, 15, 42, tzinfo=datetime.UTC)
 
 
 class FakeS3:
-    def __init__(self, keys=(), fail_upload=False, locked=False):
+    def __init__(self, keys=(), fail_upload=False):
         self.objects = {key: b"" for key in keys}
         self.fail_upload = fail_upload
-        self.locked = locked
+        self.uploads = []
 
     def upload_fileobj(self, stream, bucket, key):
+        self.uploads.append(key)
         if self.fail_upload:
             stream.read(1)
             raise ConnectionError("upload refused")
         self.objects[key] = stream.read()
 
     def delete_object(self, Bucket, Key):
-        if self.locked:
-            raise PermissionError("object is locked")
         self.objects.pop(Key, None)
 
     def list_objects_v2(self, Bucket, Prefix):
@@ -100,7 +99,7 @@ class DumpTest(unittest.TestCase):
             [f"dumps/{DATABASE}/2026-11-10T033000Z{SUFFIX}", f"dumps/{DATABASE}/2026-11-10T091542Z{SUFFIX}"],
         )
 
-    def test_a_failed_dump_or_encryption_fails_and_removes_the_partial_upload(self):
+    def test_a_failed_dump_or_encryption_fails_without_uploading(self):
         failing_dump = (["sh", "-c", "printf partial; exit 3"], self.encrypt)
         failing_encryption = (["printf", "dump"], self.encrypt[:-2] + [PINNED_FINGERPRINT, "--encrypt"])
         for dump, encrypt in (failing_dump, failing_encryption):
@@ -108,17 +107,13 @@ class DumpTest(unittest.TestCase):
                 s3 = FakeS3()
                 key = object_key(DATABASE, MORNING)
                 self.assertFalse(dump_database(s3, BUCKET, key, dump, encrypt))
-                self.assertNotIn(key, s3.objects)
+                self.assertEqual(s3.uploads, [])
 
     def test_a_failed_upload_stops_the_pipeline(self):
         s3 = FakeS3(fail_upload=True)
         key = object_key(DATABASE, MORNING)
-        self.assertFalse(dump_database(s3, BUCKET, key, ["yes"], self.encrypt))
+        self.assertFalse(dump_database(s3, BUCKET, key, ["printf", "dump"], self.encrypt))
         self.assertNotIn(key, s3.objects)
-
-    def test_a_locked_partial_upload_fails_the_dump_without_raising(self):
-        s3 = FakeS3(locked=True)
-        self.assertFalse(dump_database(s3, BUCKET, object_key(DATABASE, MORNING), ["false"], self.encrypt))
 
     def test_prune_keeps_the_newest_per_database(self):
         legacy = [f"dumps/{DATABASE}/2026-09-{day:02d}{SUFFIX}" for day in range(1, EXTRA_DUMPS + 1)]
