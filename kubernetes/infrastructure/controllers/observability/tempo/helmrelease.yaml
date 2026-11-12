@@ -59,6 +59,8 @@ spec:
       accessModes:
         - ReadWriteOnce
       size: 10Gi
+    serviceAccount:
+      automountServiceAccountToken: false
     serviceMonitor:
       enabled: true
       additionalLabels:

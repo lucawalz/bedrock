@@ -185,3 +185,6 @@ spec:
                 value:
                   recurring-job.longhorn.io/source: enabled
                   recurring-job.longhorn.io/filesystem-trim: enabled
+              - op: add
+                path: /spec/template/spec/automountServiceAccountToken
+                value: false

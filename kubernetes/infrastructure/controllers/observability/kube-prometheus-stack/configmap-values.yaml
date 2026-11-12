@@ -405,6 +405,7 @@ alertmanager:
     replicas: 2
     podAntiAffinity: hard
     priorityClassName: system-cluster-critical
+    automountServiceAccountToken: false
     secrets:
       - ntfy-alertmanager
     resources:

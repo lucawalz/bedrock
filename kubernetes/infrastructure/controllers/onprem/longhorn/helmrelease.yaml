@@ -27,6 +27,16 @@ spec:
   driftDetection:
     mode: warn
   interval: 30m0s
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              kind: Deployment
+              name: longhorn-ui
+            patch: |
+              - op: add
+                path: /spec/template/spec/automountServiceAccountToken
+                value: false
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
   values:
