@@ -15,9 +15,11 @@ in
 
   services.openssh = {
     enable = true;
+    authorizedKeysInHomedir = false;
     settings = {
       PasswordAuthentication = false;
       KbdInteractiveAuthentication = false;
+      AllowAgentForwarding = false;
     };
   };
 }
