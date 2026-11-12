@@ -27,7 +27,8 @@ The age key, the K3s root CA and the Longhorn volume encryption key are the thre
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
-| Admin SSH key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost |
+| Admin host key | Secure Enclave key `estate-root` on the Mac, listed in `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
+| Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
 
 The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
@@ -190,7 +191,7 @@ just luks-discards postgres/postgres-<m>
 
 The rebuild above keeps the operating systems. A full reinstall has not been rehearsed:
 
-1. Router first. Flash the `router-installer` SD image, which is a bare Pi with SSH and the admin key and no network services, then push `.#router` with `--build-host` set to the Pi itself. Until that finishes there is no VLAN 20.
+1. Router first. Flash the `router-installer` SD image, which is a bare Pi with SSH and the `estate-root` key and no network services, then push `.#router` with `--build-host` set to the Pi itself. Until that finishes there is no VLAN 20.
    A re-enrolled router needs a fresh single-use auth key tagged `tag:router`, re-encrypted into `secrets/tailscale-authkey.age`; the old key was minted for `tag:cluster`.
 2. Nodes: install NixOS (disko lays out the disk) and push the node configuration with `--build-host` set to the target. control-plane-1's `hardware-configuration.nix` and `default.nix` pin filesystem UUIDs that change with a new disk and must be updated.
 3. A new host key cannot decrypt its agenix secrets. Re-key as in [Secret recovery](#secret-recovery) before the switch, and give the host a new single-use Tailscale auth key pre-tagged `tag:cluster`.
@@ -226,16 +227,26 @@ The cadence is a monthly `just restore-test` and `just offline-backup`, a full r
 
 ## Secret recovery
 
-Host secrets use agenix. Each file under `secrets/` is encrypted to the host keys listed for it in `secrets/secrets.nix` and to the admin key. When a host key changes:
+Host secrets use agenix. Each file under `secrets/` is encrypted to the host keys listed for it in `secrets/secrets.nix` and to the admin agenix key. When a host key changes:
 
 1. Read the new key with `ssh-keyscan -t ed25519 <host>`.
 2. Replace the recipient in `secrets/secrets.nix`.
-3. Re-encrypt with the admin identity: `agenix -r` re-keys every file, `agenix -e secrets/<name>.age` one.
+3. Re-encrypt with the admin agenix identity: `agenix -r` re-keys every file, `agenix -e secrets/<name>.age` one.
 4. Commit and rebuild the host.
 
 K3s does not restart when `/run/agenix/k3s-token` changes in place, so a token rotation on a running cluster needs a manual restart of the agents.
 
 Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `identity/`, `apps/`), each folder with a kustomization listing its files. Edit with `sops <path>`; `just new-secret <app>` creates an app's pair. The one SOPS file in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, holds the read-only deploy key for `bedrock-secrets` and is decrypted by the same age key, which makes that key the root of every cluster secret.
+
+## Admin SSH keys
+
+The admin keys are Secure Enclave keys created with `sc_auth create-ctk-identity -k p-256-ne -t bio` and offered to ssh through `/usr/lib/ssh-keychain.dylib`: `estate-root` for the hosts and `github-push` for GitHub and commit signing. Each use asks for Touch ID. Their CTK certificates expire on 2027-11-12, so `estate-root` is rotated before then:
+
+1. Create a new identity with `sc_auth` and add its public key to `hosts/common/users.nix` and `hosts/router-installer.nix` next to the old one.
+2. Deploy with `just deploy-nodes` and log in to every host with only the new key.
+3. Remove the old key from both files and deploy again.
+
+A lost Mac means creating new keys on the new Mac and deploying them. The hosts no longer accept any key the new Mac holds, so push the new public key through the existing recovery path: the nodes by the reinstall steps in [Reinstalling a host](#reinstalling-a-host), and the router by reflashing the `router-installer` image, which carries the key list from this repository.
 
 ## Tailscale overlay recovery
 
