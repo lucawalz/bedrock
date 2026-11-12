@@ -21,6 +21,12 @@ resources:
   - resources/init-violating.yaml
   - resources/ephemeral-violating.yaml
   - resources/exempt-reloader.yaml
+  - resources/exempt-encrypt-copy.yaml
+  - resources/paperless-foreign-image.yaml
+  - resources/paperless-foreign-sidecar.yaml
+  - resources/paperless-unlabelled.yaml
+  - resources/paperless-deployment.yaml
+  - resources/paperless-deployment-foreign.yaml
   - resources/namespaces.yaml
 results:
   - policy: require-resources
@@ -122,6 +128,40 @@ results:
     resources:
       - paperless-ngx-7d9f8c6b4-x2k9p
     result: skip
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - open-webui-encrypt-copy
+    result: skip
+  - policy: require-run-as-non-root
+    rule: run-as-non-root
+    kind: Pod
+    resources:
+      - paperless-ngx-x
+      - paperless-ngx-y
+      - paperless-ngx-z
+    result: fail
+  - policy: require-drop-all-capabilities
+    rule: drop-all-capabilities
+    kind: Pod
+    resources:
+      - paperless-ngx-x
+      - paperless-ngx-y
+      - paperless-ngx-z
+    result: fail
+  - policy: require-run-as-non-root
+    rule: autogen-run-as-non-root
+    kind: Deployment
+    resources:
+      - paperless-ngx
+    result: skip
+  - policy: require-run-as-non-root
+    rule: autogen-run-as-non-root
+    kind: Deployment
+    resources:
+      - paperless-ngx-foreign
+    result: fail
   - policy: disallow-latest-tag
     rule: validate-image-tag
     kind: Pod

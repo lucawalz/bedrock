@@ -30,7 +30,6 @@ case "$app" in
     NAMESPACE=llm
     WORKLOAD_KIND=statefulset
     WORKLOAD=open-webui
-    POD_SELECTOR=app.kubernetes.io/instance=open-webui,app.kubernetes.io/name=open-webui
     KUSTOMIZATION=llm
     HELMRELEASE=open-webui
     CLAIMS=(data:open-webui:open-webui-encrypted)
@@ -40,8 +39,8 @@ case "$app" in
   *) echo "$usage" >&2; echo "known apps: open-webui" >&2; exit 2 ;;
 esac
 
-# The name keeps the copy pod inside the app's existing Kyverno exceptions, which match <app>-*.
 COPY_POD="$app-encrypt-copy"
+POD_SELECTOR="app.kubernetes.io/instance=$app,app.kubernetes.io/name=$app"
 
 if $dry_run; then
   require_tools kubeconform
@@ -88,6 +87,7 @@ done
 SCRIPT
 }
 
+# The app's labels and image keep the copy pod inside the app's Kyverno exceptions.
 copy_pod() {
   local image="$1" volume
   cat <<MANIFEST
@@ -97,7 +97,8 @@ metadata:
   name: ${COPY_POD}
   namespace: ${NAMESPACE}
   labels:
-    app.kubernetes.io/name: ${COPY_POD}
+    app.kubernetes.io/name: ${app}
+    app.kubernetes.io/instance: ${app}
 spec:
   restartPolicy: Never
   automountServiceAccountToken: false

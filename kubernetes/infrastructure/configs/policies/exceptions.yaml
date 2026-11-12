@@ -2,32 +2,13 @@
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
-  name: paperless-ngx-drop-capabilities
+  name: paperless-ngx
   namespace: kyverno
 spec:
   exceptions:
     - policyName: require-drop-all-capabilities
       ruleNames:
         - "*"
-  match:
-    any:
-      - resources:
-          kinds:
-            - Pod
-            - Deployment
-          namespaces:
-            - paperless
-          names:
-            - paperless-ngx
-            - paperless-ngx-*
----
-apiVersion: kyverno.io/v2
-kind: PolicyException
-metadata:
-  name: paperless-run-as-non-root
-  namespace: kyverno
-spec:
-  exceptions:
     - policyName: require-run-as-non-root
       ruleNames:
         - "*"
@@ -39,9 +20,16 @@ spec:
             - Deployment
           namespaces:
             - paperless
-          names:
-            - paperless-ngx
-            - paperless-ngx-*
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: paperless-ngx
+              app.kubernetes.io/instance: paperless-ngx
+  conditions:
+    all:
+      - key: "{{ (request.object.spec.template.spec || request.object.spec).[containers, initContainers, ephemeralContainers][][].image }}"
+        operator: AllIn
+        value:
+          - "ghcr.io/paperless-ngx/paperless-ngx:*"
 ---
 apiVersion: kyverno.io/v2
 kind: PolicyException
@@ -61,14 +49,21 @@ spec:
             - Deployment
           namespaces:
             - reloader
-          names:
-            - reloader-reloader
-            - reloader-reloader-*
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: reloader
+              app.kubernetes.io/instance: reloader
+  conditions:
+    all:
+      - key: "{{ (request.object.spec.template.spec || request.object.spec).[containers, initContainers, ephemeralContainers][][].image }}"
+        operator: AllIn
+        value:
+          - "ghcr.io/stakater/reloader:*"
 ---
 apiVersion: kyverno.io/v2
 kind: PolicyException
 metadata:
-  name: llm-run-as-non-root
+  name: ollama-run-as-non-root
   namespace: kyverno
 spec:
   exceptions:
@@ -81,14 +76,47 @@ spec:
           kinds:
             - Pod
             - Deployment
+          namespaces:
+            - llm
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: ollama
+              app.kubernetes.io/instance: ollama
+  conditions:
+    all:
+      - key: "{{ (request.object.spec.template.spec || request.object.spec).[containers, initContainers, ephemeralContainers][][].image }}"
+        operator: AllIn
+        value:
+          - "docker.io/ollama/ollama:*"
+---
+apiVersion: kyverno.io/v2
+kind: PolicyException
+metadata:
+  name: open-webui-run-as-non-root
+  namespace: kyverno
+spec:
+  exceptions:
+    - policyName: require-run-as-non-root
+      ruleNames:
+        - "*"
+  match:
+    any:
+      - resources:
+          kinds:
+            - Pod
             - StatefulSet
           namespaces:
             - llm
-          names:
-            - ollama
-            - ollama-*
-            - open-webui
-            - open-webui-*
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: open-webui
+              app.kubernetes.io/instance: open-webui
+  conditions:
+    all:
+      - key: "{{ (request.object.spec.template.spec || request.object.spec).[containers, initContainers, ephemeralContainers][][].image }}"
+        operator: AllIn
+        value:
+          - "ghcr.io/open-webui/open-webui:*"
 ---
 apiVersion: kyverno.io/v2
 kind: PolicyException
@@ -108,6 +136,13 @@ spec:
             - Deployment
           namespaces:
             - ntfy
-          names:
-            - ntfy
-            - ntfy-*
+          selector:
+            matchLabels:
+              app.kubernetes.io/name: ntfy
+              app.kubernetes.io/instance: ntfy
+  conditions:
+    all:
+      - key: "{{ (request.object.spec.template.spec || request.object.spec).[containers, initContainers, ephemeralContainers][][].image }}"
+        operator: AllIn
+        value:
+          - "docker.io/binwiederhier/ntfy:*"

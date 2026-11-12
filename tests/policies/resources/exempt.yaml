@@ -3,6 +3,9 @@ kind: Pod
 metadata:
   name: paperless-ngx-7d9f8c6b4-x2k9p
   namespace: paperless
+  labels:
+    app.kubernetes.io/name: paperless-ngx
+    app.kubernetes.io/instance: paperless-ngx
 spec:
   containers:
     - name: paperless-ngx

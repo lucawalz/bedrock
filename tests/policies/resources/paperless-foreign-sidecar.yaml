@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: paperless-ngx-z
+  namespace: paperless
+  labels:
+    app.kubernetes.io/name: paperless-ngx
+    app.kubernetes.io/instance: paperless-ngx
+spec:
+  containers:
+    - name: paperless-ngx
+      image: ghcr.io/paperless-ngx/paperless-ngx:2.18.4
+  initContainers:
+    - name: setup
+      image: ghcr.io/paperless-ngx/paperless-ngx-evil:1.0.0
