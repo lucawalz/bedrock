@@ -249,6 +249,7 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - control-plane-1 is the only API server. While it is down, running workloads keep serving, but nothing reschedules, and a CNPG instance that restarts cannot start, because its instance manager reads the Cluster from the API first.
 - Postgres backups are plaintext in R2, which is an accepted risk.
 - etcd snapshots in R2 are plaintext apart from Secrets and the bootstrap data, which is an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
+- etcd disk latency is not monitored. etcd serves its metrics on loopback only, so the API server's view of etcd request latency (`EtcdRequestsSlow`) is the only etcd signal.
 - Cloudflare R2 is the only off-site copy, and the tunnel DNS records and Access applications are kept only in the Cloudflare dashboard.
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.

@@ -18,6 +18,8 @@ The cluster runs unattended most of the time, and the owner should hear about a 
 - The Alertmanager Watchdog pings a deadman receiver on the router every five minutes. The router marks the estate stale after four missed pings, which covers the case where the cluster cannot alert at all.
 - The router's bar panel shows the Grafana wall dashboard through a public dashboard share. A Job recreates the share from git with a fixed token kept in `bedrock-secrets`, so the panel survives a rebuild of the Grafana database, and it shows the deadman status beside it.
 - The blog has SLOs with multi-window burn-rate alerts, and Flagger releases it as a canary judged on its Traefik metrics.
+- The API server on control-plane-1 writes an audit log to `/var/log/kubernetes/audit.log`, rotated at 100 MB with 10 files kept for at most 30 days. The policy records Secrets, exec, attach and port-forward at Metadata level for every verb and every other write at Metadata level, and drops reads, leases, events and access reviews. No rule records a request or response body. Alloy reads the file through its existing read-only `/var/log` mount and ships it to Loki as `job="kubernetes-audit"`.
+- etcd metrics are not scraped. K3s serves them on loopback only, and the alternative, a client certificate for the etcd client port, would put a credential for the whole datastore into the monitoring stack.
 
 ## Consequences
 
@@ -27,3 +29,5 @@ The cluster runs unattended most of the time, and the owner should hear about a 
 - Grafana reads its token only when it provisions at startup, so a rotated Grafana token needs a Grafana restart.
 - A dead cluster is noticed on the panel within about 25 minutes, even with Alertmanager gone.
 - The live selector check cannot run in CI and is run by hand after rule changes and rebuilds.
+- etcd disk latency is not watched. `EtcdRequestsSlow` reads the API server's client-side etcd latency instead, which includes but cannot isolate slow WAL fsyncs.
+- An audit policy change takes effect only through the K3s restart that a rebuild of control-plane-1 triggers, which briefly takes down the only API server.
