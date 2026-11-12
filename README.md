@@ -249,6 +249,8 @@ Every pull request and push to `main` runs:
 - `docs`: the ADR index and the generated inventory.
 - `renovate-validate`: the Renovate configuration.
 
+`image-scan` runs weekly and on demand instead: Trivy scans every image the cluster runs for critical vulnerabilities with a fix, and one GitHub issue lists them.
+
 `scripts/check-alert-selectors.sh` needs the live Prometheus and is run by hand after rule changes and rebuilds ([alert selector audit](docs/alert-selector-audit.md)). [Renovate](https://docs.renovatebot.com/) keeps the pins current ([ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md)).
 
 ## Roadmap

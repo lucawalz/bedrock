@@ -37,3 +37,21 @@ compare_sets() {
     status=1
   fi
 }
+
+flux_kustomization_paths() {
+  grep -rl "kustomize.toolkit.fluxcd.io" "$1" --include="*.yaml" \
+    | xargs yq -N 'select(.kind == "Kustomization" and .apiVersion == "kustomize.toolkit.fluxcd.io/v1") | .spec.path' \
+    | grep "^\./$1/" | sort -u
+}
+
+# shellcheck disable=SC2016
+workload_images() {
+  yq -N '
+    (select(.kind == "Deployment" or .kind == "StatefulSet" or .kind == "DaemonSet" or .kind == "Job" or .kind == "CronJob" or .kind == "Pod")
+      | (.spec.jobTemplate.spec.template.spec // .spec.template.spec // .spec) as $pod
+      | (($pod.initContainers // []) + ($pod.containers // []))[]
+      | .image),
+    (select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null) | .spec.image),
+    (select(.apiVersion == "postgresql.cnpg.io/*" and .spec.imageName != null) | .spec.imageName)
+  ' "$@"
+}

@@ -93,6 +93,9 @@ jobs:
       - name: Check every CRD-only chart keeps up with the chart it replaces
         run: bash scripts/check-crd-charts.sh
 
+      - name: Check the image list fails when rendering fails
+        run: bash scripts/check-list-images.sh
+
   kyverno-policy:
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -96,9 +96,7 @@ if [ -z "$rendered_releases" ]; then
   fi
 fi
 
-grep -rl "kustomize.toolkit.fluxcd.io" "$k8s_dir" --include="*.yaml" \
-  | xargs yq -N 'select(.kind == "Kustomization" and .apiVersion == "kustomize.toolkit.fluxcd.io/v1") | .spec.path' \
-  | grep "^\./$k8s_dir/" | sort -u > "$work/flux-paths"
+flux_kustomization_paths "$k8s_dir" > "$work/flux-paths"
 : > "$work/built.yaml"
 while IFS= read -r path; do
   printf -- '---\n' >> "$work/built.yaml"
@@ -236,14 +234,7 @@ if [ -n "$unsafe_storage" ]; then
   status=1
 fi
 
-# shellcheck disable=SC2016
-yq -N '
-  select(.kind == "Deployment" or .kind == "StatefulSet" or .kind == "DaemonSet" or .kind == "Job" or .kind == "CronJob" or .kind == "Pod")
-  | (.spec.jobTemplate.spec.template.spec // .spec.template.spec // .spec) as $pod
-  | (($pod.initContainers // []) + ($pod.containers // []))[]
-  | .image
-' "$work/built.yaml" "$work/hooks.yaml" > "$work/workload-images"
-yq -N 'select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null) | .spec.image' "$work/built.yaml" >> "$work/workload-images"
+workload_images "$work/built.yaml" "$work/hooks.yaml" > "$work/workload-images"
 unpinned="$(grep -v '@sha256:[0-9a-f]\{64\}$' "$work/workload-images" \
   | grep -vE "^($(IFS="|"; echo "${digest_exempt_images[*]//./\\.}")):" \
   | sort -u || true)"

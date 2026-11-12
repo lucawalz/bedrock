@@ -10,21 +10,12 @@ trap 'rm -rf "$work"' EXIT
 
 RENDER_OUTPUT_DIR="$work/rendered" bash scripts/render-helm-releases.sh > /dev/null
 
-mkdir "$work/raw"
-index=0
-while read -r file; do
-  index=$((index + 1))
-  kustomize build "$(dirname "$file")" > "$work/raw/$index.yaml"
-done < <(find kubernetes -name kustomization.yaml)
+flux_kustomization_paths kubernetes > "$work/paths"
+while IFS= read -r path; do
+  printf -- '---\n' >> "$work/built.yaml"
+  kustomize build "$path" >> "$work/built.yaml"
+done < "$work/paths"
 
-# shellcheck disable=SC2016
-yq -N '
-  select(.kind == "Deployment" or .kind == "StatefulSet" or .kind == "DaemonSet" or .kind == "Job" or .kind == "CronJob" or .kind == "Pod")
-  | (.spec.jobTemplate.spec.template.spec // .spec.template.spec // .spec) as $pod
-  | (($pod.initContainers // []) + ($pod.containers // []))[]
-  | .image
-' "$work"/raw/*.yaml "$work"/rendered/*.yaml "$work"/rendered/hooks/*.yaml
-yq -N 'select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null) | .spec.image' \
-  "$work"/raw/*.yaml "$work"/rendered/*.yaml
-yq -N 'select(.apiVersion == "postgresql.cnpg.io/*" and .spec.imageName != null) | .spec.imageName' \
-  "$work"/raw/*.yaml "$work"/rendered/*.yaml
+images="$(workload_images "$work/built.yaml" "$work"/rendered/*.yaml "$work"/rendered/hooks/*.yaml | sort -u)"
+[ -n "$images" ] || fail "no images found"
+printf '%s\n' "$images"

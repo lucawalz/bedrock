@@ -6,10 +6,16 @@ on:
   workflow_dispatch:
 
 permissions:
+  contents: read
   issues: write
 
 env:
   ISSUE_TITLE: Running images with fixed critical vulnerabilities
+  MAX_BODY_CHARS: 60000
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   trivy:
@@ -33,31 +39,31 @@ jobs:
           echo "${TRIVY_SHA256}  $RUNNER_TEMP/trivy.tar.gz" | sha256sum -c -
           tar xzf "$RUNNER_TEMP/trivy.tar.gz" -C /usr/local/bin trivy
 
-      - name: List the images the cluster runs
-        run: bash scripts/list-images.sh 2> /dev/null | sort -u > "$RUNNER_TEMP/images"
-
       - name: Scan every image for fixed critical vulnerabilities
         run: |
-          : > "$RUNNER_TEMP/findings"
-          : > "$RUNNER_TEMP/failed"
+          images="$(bash scripts/list-images.sh)"
           while read -r image; do
             echo "Scanning $image"
-            if ! trivy image --quiet --severity CRITICAL --ignore-unfixed --format json --output "$RUNNER_TEMP/result.json" "$image"; then
-              echo "$image" >> "$RUNNER_TEMP/failed"
+            if ! result="$(trivy image --quiet --severity CRITICAL --ignore-unfixed --format json "$image")"; then
+              echo "::error::cannot scan $image"
+              touch "$RUNNER_TEMP/failed"
               continue
             fi
             IMAGE="$image" jq -r '
               .Results[]?.Vulnerabilities[]?
-              | "| `" + env.IMAGE + "` | " + .PkgName + " | " + .VulnerabilityID + " | " + .InstalledVersion + " | " + .FixedVersion + " |"
-            ' "$RUNNER_TEMP/result.json" >> "$RUNNER_TEMP/findings"
-          done < "$RUNNER_TEMP/images"
-          [ ! -s "$RUNNER_TEMP/failed" ] || { echo "Images that could not be scanned:"; cat "$RUNNER_TEMP/failed"; }
+              | "| `\(env.IMAGE)` | \(.PkgName) | \(.VulnerabilityID) | \(.InstalledVersion) | \(.FixedVersion) |"
+            ' <<< "$result" >> "$RUNNER_TEMP/findings"
+          done <<< "$images"
 
       - name: Open, update or close the issue
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          if [ -e "$RUNNER_TEMP/failed" ]; then
+            echo "::error::some images could not be scanned; the issue is left as it was"
+            exit 1
+          fi
           number="$(gh issue list --state open --limit 200 --json number,title \
             --jq "map(select(.title == \"$ISSUE_TITLE\"))[0].number // empty")"
           if [ -s "$RUNNER_TEMP/findings" ]; then
@@ -67,7 +73,7 @@ jobs:
               echo "| Image | Package | Vulnerability | Installed | Fixed |"
               echo "| --- | --- | --- | --- | --- |"
               sort -u "$RUNNER_TEMP/findings"
-            } > "$RUNNER_TEMP/body.md"
+            } | head -c "$MAX_BODY_CHARS" > "$RUNNER_TEMP/body.md"
             if [ -n "$number" ]; then
               gh issue edit "$number" --body-file "$RUNNER_TEMP/body.md"
             else
@@ -76,4 +82,3 @@ jobs:
           elif [ -n "$number" ]; then
             gh issue close "$number" --comment "No fixed critical vulnerabilities in the scanned images."
           fi
-          [ ! -s "$RUNNER_TEMP/failed" ]
