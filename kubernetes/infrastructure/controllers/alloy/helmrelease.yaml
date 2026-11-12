@@ -94,11 +94,23 @@ spec:
             stage.cri {}
             forward_to = [loki.write.default.receiver]
           }
-          local.file_match "kubernetes_audit" {
-            path_targets = [{"__path__" = "/var/log/kubernetes/audit.log", "job" = "kubernetes-audit"}]
-          }
           loki.source.file "kubernetes_audit" {
-            targets    = local.file_match.kubernetes_audit.targets
+            targets    = [{"__path__" = "/var/log/kubernetes/audit.log", "job" = "kubernetes-audit"}]
+            forward_to = [loki.process.kubernetes_audit.receiver]
+          }
+          loki.process "kubernetes_audit" {
+            stage.json {
+              expressions = { ts = "stageTimestamp" }
+            }
+            stage.timestamp {
+              source = "ts"
+              format = "RFC3339Nano"
+            }
+            stage.limit {
+              rate  = 100
+              burst = 1000
+              drop  = false
+            }
             forward_to = [loki.write.default.receiver]
           }
           loki.write "default" {
