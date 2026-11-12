@@ -37,7 +37,7 @@ spec:
           copy-config:
             image:
               repository: ghcr.io/gethomepage/homepage
-              tag: v2.2.0@sha256:753eeb0cc22ab7baad39ed47cbd1aae14e193dd1b264e965f193a9ea1d1e1bdd
+              tag: v2.8.0@sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18
             command: ["sh", "-c", "cp -L /config-src/* /app/config/"]
             resources:
               requests:
@@ -55,7 +55,7 @@ spec:
           app:
             image:
               repository: ghcr.io/gethomepage/homepage
-              tag: v2.2.0@sha256:753eeb0cc22ab7baad39ed47cbd1aae14e193dd1b264e965f193a9ea1d1e1bdd
+              tag: v2.8.0@sha256:019d8f063a7299e7c1c51ee4a70b692291809af3244894fbec2c2ac7d1f71b18
             env:
               - name: MY_POD_IP
                 valueFrom:
