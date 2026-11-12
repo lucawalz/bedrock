@@ -57,6 +57,10 @@ spec:
       container:
         extraArgs:
           webhookTimeout: 5
+        image:
+          registry: reg.kyverno.io
+          repository: kyverno/kyverno
+          tag: v1.18.2@sha256:0a540e2ddf74d0d2d3d45f9ef248d7dbc96576accdbcc6a2dd7eaff9fea56504
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution: []
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -74,6 +78,11 @@ spec:
         limits:
           cpu: 500m
           memory: 512Mi
+      initContainer:
+        image:
+          registry: reg.kyverno.io
+          repository: kyverno/kyvernopre
+          tag: v1.18.2@sha256:cd8cb4a31d25b3992734fb8f24a90ef691c90ce49338c89bea96792160eacb98
     backgroundController:
       replicas: 1
       resources:
@@ -83,6 +92,10 @@ spec:
         limits:
           cpu: 200m
           memory: 256Mi
+      image:
+        registry: reg.kyverno.io
+        repository: kyverno/background-controller
+        tag: v1.18.2@sha256:d62566ce41bd0d4a32bf2cf44b9ebfc02c36374f821f83070890287f62f68671
     cleanupController:
       replicas: 1
       resources:
@@ -92,6 +105,10 @@ spec:
         limits:
           cpu: 200m
           memory: 256Mi
+      image:
+        registry: reg.kyverno.io
+        repository: kyverno/cleanup-controller
+        tag: v1.18.2@sha256:b0395d29ae332276e6910eb40418be9bc127c068d659f90aa1bcddd6be99ccb4
     reportsController:
       replicas: 1
       resources:
@@ -102,6 +119,10 @@ spec:
           # Report reconciliation is bursty: median 3m, but the p99 minute sits at the limit and is clipped.
           cpu: 1000m
           memory: 256Mi
+      image:
+        registry: reg.kyverno.io
+        repository: kyverno/reports-controller
+        tag: v1.18.2@sha256:f09cf305170014e191b94e1c54f5be73163d8824eefad49349675c4efe43159a
     features:
       policyExceptions:
         enabled: true

@@ -45,3 +45,6 @@ spec:
           capabilities:
             drop:
               - ALL
+    image:
+      repository: ghcr.io/stakater/reloader
+      tag: v1.4.23@sha256:82c80a15fdba22f738642553159f9fb37baf9e4d1edfeb798e8c48d87767f410

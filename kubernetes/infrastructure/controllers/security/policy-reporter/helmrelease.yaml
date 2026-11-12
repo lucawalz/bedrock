@@ -42,6 +42,10 @@ spec:
           limits:
             cpu: 100m
             memory: 128Mi
+        image:
+          registry: ghcr.io
+          repository: kyverno/policy-reporter/kyverno-plugin
+          tag: 0.7.3@sha256:777d2318ff194c666ce1cb1f881c0556d6dc2c1cda6b3990d5c1a42bdb64ae2e
     ui:
       enabled: false
     monitoring:
@@ -55,3 +59,7 @@ spec:
           enabled: true
           label: grafana_dashboard
           value: "1"
+    image:
+      registry: ghcr.io
+      repository: kyverno/policy-reporter
+      tag: 3.11.2@sha256:2b33409d34be3195f16d9ed2c89f8b58001aeec986b254ba6bb45323d6d1e884

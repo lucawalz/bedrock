@@ -50,3 +50,6 @@ spec:
       enabled: false
     prometheus:
       install: false
+    image:
+      repository: ghcr.io/fluxcd/flagger
+      tag: 1.44.0@sha256:d7898869ab003087a33d216219d7d04f3cdf6547d80a6dcdfd37aeb61072a632

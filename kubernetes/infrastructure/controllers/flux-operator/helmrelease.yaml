@@ -25,3 +25,6 @@ spec:
   values:
     web:
       configSecretName: flux-web-config
+    image:
+      repository: ghcr.io/controlplaneio-fluxcd/flux-operator
+      tag: v0.62.0@sha256:061eff8bf782a14f9ea4770f1ec820da0a3bc895532096b8ade3b2e7569c34dc

@@ -41,7 +41,7 @@ spec:
               topologyKey: kubernetes.io/hostname
       containers:
         - name: coredns
-          image: rancher/mirrored-coredns-coredns:1.15.0
+          image: rancher/mirrored-coredns-coredns:1.15.0@sha256:0a9d8c8ddf34347eb59aad9a8784f0710de88d6d112726d11d271f9bc6daca26
           imagePullPolicy: IfNotPresent
           args:
             - -conf

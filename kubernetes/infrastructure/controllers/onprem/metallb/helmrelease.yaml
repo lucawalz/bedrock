@@ -23,6 +23,9 @@ spec:
           memory: 192Mi
         limits:
           memory: 384Mi
+      image:
+        repository: quay.io/metallb/controller
+        tag: v0.16.1@sha256:f51ab515de9ccd20dc3dccb093e48df8adddac019326c456f449e55ba91b6420
     speaker:
       priorityClassName: system-node-critical
       resources:
@@ -31,6 +34,9 @@ spec:
           memory: 64Mi
         limits:
           memory: 128Mi
+      image:
+        repository: quay.io/metallb/speaker
+        tag: v0.16.1@sha256:16561e96531e1852d5c229ad7fae6e994dcfa983ff7f4de6b6208b34a4e2ddbc
     frr-k8s:
       frrk8s:
         priorityClassName: system-node-critical
@@ -47,6 +53,9 @@ spec:
               memory: 128Mi
             limits:
               memory: 256Mi
+          image:
+            repository: quay.io/frrouting/frr
+            tag: 10.4.3@sha256:8745af1f9bbbc26ab11d99ccdf35e07aa3427a199749bef0cd6bb5132bb130df
         reloader:
           resources:
             requests:
@@ -68,6 +77,9 @@ spec:
               memory: 32Mi
             limits:
               memory: 64Mi
+        image:
+          repository: quay.io/metallb/frr-k8s
+          tag: v0.0.25@sha256:1cb06fb2d5538c9f9b20d3adf00da8d1e6cb0166bc15df8add0d9efe578641a4
     prometheus:
       rbacPrometheus: true
       serviceAccount: kube-prometheus-stack-prometheus

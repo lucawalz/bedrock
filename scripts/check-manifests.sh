@@ -24,6 +24,7 @@ protected_secret_namespaces=(flux-system longhorn-system postgres)
 pg_hba_dumper="hostssl all dumper all scram-sha-256"
 pg_hba_sameuser="hostssl sameuser all all scram-sha-256"
 pg_hba_reject="host all all all reject"
+digest_exempt_images=(docker.io/longhornio/longhorn-share-manager)
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -219,6 +220,36 @@ unsafe_storage="$(yq ea -N '
 if [ -n "$unsafe_storage" ]; then
   echo "CNPG Clusters whose storageClass is not a declared StorageClass with numberOfReplicas \"1\":"
   printf '%s\n' "$unsafe_storage" | sed 's/^/  - /'
+  status=1
+fi
+
+# shellcheck disable=SC2016
+yq -N '
+  select(.kind == "Deployment" or .kind == "StatefulSet" or .kind == "DaemonSet" or .kind == "Job" or .kind == "CronJob" or .kind == "Pod")
+  | (.spec.jobTemplate.spec.template.spec // .spec.template.spec // .spec) as $pod
+  | (($pod.initContainers // []) + ($pod.containers // []))[]
+  | .image
+' "$work/built.yaml" > "$work/workload-images"
+yq -N 'select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null) | .spec.image' "$work/built.yaml" >> "$work/workload-images"
+unpinned="$(grep -v '@sha256:[0-9a-f]\{64\}$' "$work/workload-images" \
+  | grep -vE "^($(IFS="|"; echo "${digest_exempt_images[*]//./\\.}")):" \
+  | sort -u || true)"
+if [ -n "$unpinned" ]; then
+  echo "Workload images without an @sha256 digest (pin it in values, or list it in digest_exempt_images and ADR 0014):"
+  printf '%s\n' "$unpinned" | sed 's/^/  - /'
+  status=1
+fi
+
+# shellcheck disable=SC2016
+stale_versions="$(yq -N '
+  select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null and .spec.version != null)
+  | .spec.version as $version
+  | select(.spec.image | sub("@sha256:.*$", "") | sub("^.*:", "") | test("^" + $version) | not)
+  | .kind + " " + .metadata.namespace + "/" + .metadata.name + ": version " + .spec.version + ", image " + .spec.image
+' "$work/built.yaml")"
+if [ -n "$stale_versions" ]; then
+  echo "Prometheus Operator resources whose version does not match their image tag:"
+  printf '%s\n' "$stale_versions" | sed 's/^/  - /'
   status=1
 fi
 

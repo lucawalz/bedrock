@@ -46,3 +46,6 @@ spec:
       context:
         runAsNonRoot: true
         fsGroup: 101
+    image:
+      repository: ghcr.io/fluxcd/flagger-loadtester
+      tag: 0.39.0@sha256:6a8546993cb574cdd9d42a84430eca2b74c30bf91349e36aa60969b46655f059

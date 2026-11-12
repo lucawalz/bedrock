@@ -30,6 +30,41 @@ spec:
   storageNamespace: longhorn-system
   targetNamespace: longhorn-system
   values:
+    image:
+      longhorn:
+        manager:
+          registry: docker.io
+          repository: longhornio/longhorn-manager
+          tag: v1.12.1@sha256:83b79f57043fe1405e68bc0d4c7987accbc6bb512def3e0db12b31966c070801
+        ui:
+          registry: docker.io
+          repository: longhornio/longhorn-ui
+          tag: v1.12.1@sha256:03a3ce6673df6e948c261fe978a695adaa8fb190d68bfe5c358af8ee3d3fbef5
+      csi:
+        attacher:
+          registry: docker.io
+          repository: longhornio/csi-attacher
+          tag: v4.12.0@sha256:a814aa4784197116983ea13e376fc691e000a390de9d0b9fca2bc4a2fb7c4a1f
+        provisioner:
+          registry: docker.io
+          repository: longhornio/csi-provisioner
+          tag: v5.3.0@sha256:1bbb7b11d8087130e722e3249f364d0ab49ee3545e847c2f299e87b7e1ce5c4f
+        nodeDriverRegistrar:
+          registry: docker.io
+          repository: longhornio/csi-node-driver-registrar
+          tag: v2.17.0@sha256:29f7cfd519008fe8f8dff5e79db43f70d65c43a89c08f1bafbb199ca90df79f0
+        resizer:
+          registry: docker.io
+          repository: longhornio/csi-resizer
+          tag: v2.2.1@sha256:63d0aef25114d4a682b25afa6d9623a3cfcc19aca910269124408476bbe2c6fd
+        snapshotter:
+          registry: docker.io
+          repository: longhornio/csi-snapshotter
+          tag: v8.6.0@sha256:2bca9ac55170efa61dc50e5cc8d9550373db2e3e5161d82d3fdaac5c25150360
+        livenessProbe:
+          registry: docker.io
+          repository: longhornio/livenessprobe
+          tag: v2.19.0@sha256:d0cb76b565ba9d36da0dc2b38e2b6a49a0ae4fe067b03086110682f32c600318
     longhornManager:
       nodeSelector:
         bedrock.io/storage: "true"
