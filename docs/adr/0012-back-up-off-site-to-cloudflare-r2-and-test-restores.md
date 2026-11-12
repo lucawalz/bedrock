@@ -32,4 +32,5 @@ Longhorn replicas and Postgres standbys protect against a lost node, not against
 - The R2 bill grows with the data, with a Cloudflare budget alert as the guard.
 - A stolen bucket token can still erase the Postgres base backups and WAL, every Longhorn backup and any dump or etcd snapshot older than its lock. The dumps from the last 14 days, the etcd snapshots from the last 2 days and the latest offline copy survive it.
 - The locks stop only bucket-scoped Object tokens. Any credential with R2 admin rights, such as the `wrangler login` session on the Mac or an Admin Read & Write token, can drop a rule with `wrangler r2 bucket lock remove` and then erase everything in R2; only the offline copy survives that. The wrangler session is therefore logged out with `wrangler logout` once the lock rules are in place.
+- The offline copy shares the key stick, so it is not an independent copy of the keys.
 - Deleting objects under a locked prefix, for example the pre-rebuild objects, waits until each lock has expired.

@@ -138,7 +138,7 @@ luks-discards volume:
 restore-test *args="all":
     bash scripts/restore-test.sh {{ args }}
 
-# Copy the newest dumps, etcd snapshot and Longhorn backup set from R2 to a mounted disk, for example: just offline-backup /Volumes/offline
+# Copy the newest dumps, etcd snapshot and Longhorn backup set from R2 to a mounted disk, for example: just offline-backup /Volumes/bedrock-keys
 offline-backup mountpoint:
     bash scripts/offline-backup.sh {{ quote(join(invocation_directory(), mountpoint)) }}
 
