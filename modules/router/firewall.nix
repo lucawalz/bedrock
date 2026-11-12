@@ -39,7 +39,6 @@ in
         vlan20.allowedTCPPorts = [
           22
           53
-          3000
           config.services.deadman.port
         ];
 

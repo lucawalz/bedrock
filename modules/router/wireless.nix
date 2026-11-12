@@ -23,8 +23,9 @@
         ssid = "bedrock";
         apIsolate = true;
         authentication = {
-          mode = "wpa2-sha1";
+          mode = "wpa3-sae-transition";
           wpaPasswordFile = config.age.secrets.wifi-passphrase.path;
+          saePasswords = [ { passwordFile = config.age.secrets.wifi-passphrase.path; } ];
         };
       };
     };

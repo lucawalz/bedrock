@@ -41,11 +41,13 @@ in
 
   services.adguardhome = {
     enable = true;
-    host = inventory.gateway;
-    port = 3000;
     mutableSettings = false;
 
     settings = {
+      http = {
+        address = "127.0.0.1:3000";
+        session_ttl = "12h";
+      };
       users = [ ];
       dns = {
         bind_hosts = [ "0.0.0.0" ];
