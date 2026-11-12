@@ -7,7 +7,21 @@
 let
   podCidr = "10.42.0.0/16";
 
-  clusterSources = [ podCidr ] ++ lib.mapAttrsToList (_: node: node.address) inventory.nodes;
+  clusterSources = lib.concatStringsSep "," (
+    [ podCidr ] ++ lib.mapAttrsToList (_: node: node.address) inventory.nodes
+  );
+
+  kubeletPort = 10250;
+  flannelVxlanPort = 8472;
+  memberlistPort = 7946;
+  nodeExporterPort = 9100;
+  metallbMetricsPort = 9120;
+
+  clusterTcpPorts = lib.concatMapStringsSep "," toString [
+    memberlistPort
+    nodeExporterPort
+    metallbMetricsPort
+  ];
 
   pullThroughCache = "https://registry.syslabs.dev";
 
@@ -40,12 +54,12 @@ in
   };
 
   networking.firewall = {
-    allowedTCPPorts = [ 10250 ];
-    interfaces.tailscale0.allowedUDPPorts = [ 8472 ];
-    extraCommands = lib.concatMapStrings (source: ''
-      iptables -A nixos-fw -s ${source} -p tcp -m multiport --dports 7946,9100,9120 -j nixos-fw-accept
-      iptables -A nixos-fw -s ${source} -p udp --dport 7946 -j nixos-fw-accept
-    '') clusterSources;
+    allowedTCPPorts = [ kubeletPort ];
+    interfaces.tailscale0.allowedUDPPorts = [ flannelVxlanPort ];
+    extraCommands = ''
+      iptables -A nixos-fw -s ${clusterSources} -p tcp -m multiport --dports ${clusterTcpPorts} -j nixos-fw-accept
+      iptables -A nixos-fw -s ${clusterSources} -p udp --dport ${toString memberlistPort} -j nixos-fw-accept
+    '';
   };
 
   environment.etc."k3s/flannel-net-conf.json".text =
