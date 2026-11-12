@@ -5,11 +5,9 @@ set -euo pipefail
 
 fail=0
 
-blog_image_policy_and_timestamp_markers_path=apps/blog/
-
 # A literal '$' in a substituted file is consumed by Flux postBuild envsubst unless doubled as '$$'.
 # shellcheck disable=SC2016
-if grep -RInE '\$([^${]|$)' kubernetes/apps/*/app 2>/dev/null | grep -vE '\$\$' | grep -v "$blog_image_policy_and_timestamp_markers_path"; then
+if grep -RInE '\$([^${]|$)' kubernetes/apps/*/app 2>/dev/null | grep -vE '\$\$'; then
   echo "unescaped '\$' will be mangled by postBuild substitution; escape as '\$\$'"
   fail=1
 fi

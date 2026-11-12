@@ -81,11 +81,6 @@
   "minimumReleaseAge": "3 days",
   "packageRules": [
     {
-      "description": "Flux image automation owns the blog image tag",
-      "matchFileNames": ["kubernetes/apps/blog/app/deployment.yaml"],
-      "enabled": false
-    },
-    {
       "description": "Group all nixpkgs flake updates together",
       "matchManagers": ["nix"],
       "groupName": "nixpkgs"
@@ -177,6 +172,14 @@
       "groupName": "kube-prometheus-stack and its crds",
       "separateMajorMinor": false,
       "automerge": false
+    },
+    {
+      "description": "Deploy every blog build, ordered by its build timestamp, without review",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["ghcr.io/lucawalz/blog"],
+      "versioning": "regex:^main-(?<major>\\d{14})-[0-9a-f]+$",
+      "minimumReleaseAge": null,
+      "automerge": true
     }
   ]
 }

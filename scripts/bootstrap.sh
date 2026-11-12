@@ -12,6 +12,7 @@ instance=kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml
 instance_crd=fluxinstances.fluxcd.controlplane.io
 age_key_file="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
 deploy_key_file="${BEDROCK_DEPLOY_KEY:-}"
+deploy_key_title=flux-home-cluster
 context=default
 coredns=kubernetes/infrastructure/controllers/coredns
 coredns_timeout=2m
@@ -25,6 +26,7 @@ operator_repository="$(yq -N '.spec.url' "$operator_source")"
 instance_name="$(yq -N '.metadata.name' "$instance")"
 sync_url="$(yq -N '.spec.sync.url' "$instance")"
 sync_secret="$(yq -N '.spec.sync.pullSecret' "$instance")"
+sync_repository="${sync_url#ssh://git@github.com/}"
 recipient="$(yq -N '.creation_rules[0].age' .sops.yaml)"
 
 step() {
@@ -86,8 +88,14 @@ if [ -n "$deploy_key_file" ]; then
   fi
 elif step "Create the sync secret $sync_secret for $sync_url with a new SSH deploy key (set BEDROCK_DEPLOY_KEY to reuse one)"; then
   "${fluxctl[@]}" create secret git "$sync_secret" --namespace "$namespace" --url "$sync_url"
-  echo "Add this public key to the repository as a deploy key with write access (image automation pushes to main):"
-  "${kube[@]}" -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d
+  public_key_file="$(mktemp)"
+  trap 'rm -f "$public_key_file"' EXIT
+  "${kube[@]}" -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d > "$public_key_file"
+  cat "$public_key_file"
+  if step "Register this public key on $sync_repository as the read-only deploy key $deploy_key_title (delete the previous cluster's key by hand)"; then
+    require_tools gh
+    gh repo deploy-key add "$public_key_file" --repo "$sync_repository" --title "$deploy_key_title"
+  fi
 fi
 
 if step "Wait up to $instance_timeout for the FluxInstance $instance_name to become Ready"; then

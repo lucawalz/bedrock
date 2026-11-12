@@ -157,12 +157,12 @@ With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before i
 3. Install the flux-operator chart at the version pinned in its HelmRelease.
 4. Apply the `FluxInstance` from `kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml`.
 5. Create the `sops-age` Secret from `~/.config/sops/age/keys.txt` (or `SOPS_AGE_KEY_FILE`), after checking that it matches the recipient in `.sops.yaml`.
-6. Create the sync Secret with a new SSH deploy key and print its public half, or reuse a key from `BEDROCK_DEPLOY_KEY`.
+6. Create the sync Secret with a new SSH deploy key, print its public half and register it with `gh` as the read-only deploy key `flux-home-cluster`, or reuse a key from `BEDROCK_DEPLOY_KEY`.
 7. Wait for the `FluxInstance` to become Ready.
 
 Three steps stay manual afterwards:
 
-- Add the printed public key to the repository as a deploy key with write access, since image automation pushes to `main`, and delete the previous cluster's key.
+- Delete the previous cluster's deploy key on GitHub. The new key is read-only, since nothing in the cluster writes to git.
 - Open `https://id.syslabs.dev/setup` at once, register the owner passkey, and mark the owner email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login.
 - The public DNS records for the tunnel hostnames are made by hand in the Cloudflare dashboard.
 
@@ -257,7 +257,6 @@ Every pull request and push to `main` runs:
 - Tunnel DNS records managed from git instead of the Cloudflare dashboard.
 - Migration from Traefik IngressRoutes to the Gateway API.
 - A rebuild that reinstalls the operating system with disko, not only the K3s state.
-- A dedicated write-only deploy key for blog image automation.
 
 The roadmap is a direction, not a commitment.
 

@@ -8,7 +8,7 @@ require_tools kustomize yq helm awk
 root_name=flux-system
 root_path=kubernetes/clusters/home
 # k3s ships these CRDs and the Flux bootstrap installs the toolkit ones before any Kustomization runs.
-base_groups="helm.cattle.io k3s.cattle.io source.toolkit.fluxcd.io kustomize.toolkit.fluxcd.io helm.toolkit.fluxcd.io notification.toolkit.fluxcd.io image.toolkit.fluxcd.io"
+base_groups="helm.cattle.io k3s.cattle.io source.toolkit.fluxcd.io kustomize.toolkit.fluxcd.io helm.toolkit.fluxcd.io notification.toolkit.fluxcd.io"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

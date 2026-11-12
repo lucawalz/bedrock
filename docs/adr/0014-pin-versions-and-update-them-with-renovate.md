@@ -16,10 +16,10 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 - Some updates are held for review, with automerge off, and wait as open pull requests: every major, minors and patches of the components whose upgrade can break the cluster or its data (Longhorn, CloudNativePG and its backup plugin, kube-prometheus-stack, cert-manager, Traefik, MetalLB, Kyverno, the Flux Operator, Flux itself, Pocket ID, oauth2-proxy, Loki, Tempo, Alloy, Paperless and Flagger).
 - Stateful components step one minor at a time. A CRD chart ships in the same pull request as the chart whose controller reads it.
 - Versions that no built-in manager can see are tracked by custom managers, and `scripts/check-renovate-managers.sh` fails CI when a custom manager no longer matches any file.
-- The blog image is the one exception: Flux image automation owns its tag, and Renovate ignores it.
+- Renovate also moves the blog image. It orders the `main-<timestamp>-<sha>` tags by timestamp, skips the release age wait and merges every build without review. Nothing in the cluster writes to git: the image reflector and automation controllers are not installed, and the Flux deploy key is read-only.
 
 ## Consequences
 
 - The same commit installs the same versions on every rebuild.
 - Low-risk updates arrive without attention; the risky ones wait as open pull requests and need a deliberate merge.
-- Image automation pushes to `main`, so the Flux deploy key needs write access.
+- A blog build reaches the cluster on the next Renovate run rather than within minutes.

@@ -13,9 +13,6 @@ spec:
     - kind: GitRepository
       name: '*'
       namespace: flux-system
-    - kind: ImageUpdateAutomation
-      name: '*'
-      namespace: flux-system
     - kind: FluxInstance
       name: '*'
       namespace: flux-system
