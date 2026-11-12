@@ -266,6 +266,7 @@ Every pull request and push to `main` runs:
 - Tunnel DNS records managed from git instead of the Cloudflare dashboard.
 - Migration from Traefik IngressRoutes to the Gateway API.
 - A rebuild that reinstalls the operating system with disko, not only the K3s state.
+- An immutable off-site vault for irreplaceable data (documents, passwords, photos) at Hetzner, before photos move onto the cluster.
 
 The roadmap is a direction, not a commitment.
 
