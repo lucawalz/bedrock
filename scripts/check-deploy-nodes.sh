@@ -12,6 +12,7 @@ mkdir "$work/bin"
 cat > "$work/bin/ssh" <<'FAKE'
 #!/bin/sh
 echo "ssh $*" >> "$FAKE_LOG"
+case "$*" in *readlink*) printf 'kernel-a\nkernel-%s\n' "${FAKE_KERNEL:-a}" ;; esac
 FAKE
 cat > "$work/bin/nix" <<'FAKE'
 #!/bin/sh
@@ -57,5 +58,15 @@ if run none "attaching|"; then fail "attaching volume with unknown robustness di
 if grep -q 'flake .#worker-1' "$work/log"; then fail "run continued past unhealthy volumes"; fi
 
 if run none "attached|healthy" empty; then fail "empty DNS answer did not fail the run"; fi
+
+: > "$work/log"
+warnings="$(FAKE_LOG="$work/log" FAKE_FAIL_ON=none FAKE_KERNEL=b FAKE_VOLUME="attached|healthy" PATH="$work/bin:$PATH" \
+  VOLUME_TIMEOUT_SECONDS=1 ROUTER_TIMEOUT_SECONDS=1 POLL_SECONDS=1 SHORT_TMPDIR="$work" bash "$script" 2>&1 >/dev/null)"
+[ "$(printf '%s\n' "$warnings" | grep -c '^WARNING: .* older kernel')" = 4 ] || fail "differing kernels did not warn once per host"
+printf '%s\n' "$warnings" | grep -q '^WARNING: worker-1 ' || fail "kernel warning does not name the host"
+
+warnings="$(FAKE_LOG="$work/log" FAKE_FAIL_ON=none FAKE_VOLUME="attached|healthy" PATH="$work/bin:$PATH" \
+  VOLUME_TIMEOUT_SECONDS=1 ROUTER_TIMEOUT_SECONDS=1 POLL_SECONDS=1 SHORT_TMPDIR="$work" bash "$script" 2>&1 >/dev/null)"
+[ -z "$warnings" ] || fail "matching kernels produced a warning"
 
 echo "ok"

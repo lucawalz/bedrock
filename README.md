@@ -209,7 +209,7 @@ TMPDIR=/tmp/nr nix develop --command env TMPDIR=/tmp/nr nixos-rebuild switch --f
 
 A router rebuild restarts tailscaled, which cuts any session through the Pi's subnet route, so router changes are pushed through control-plane-1's own tailnet address with an SSH config file passed as `NIX_SSHOPTS="-F <config file>"`; the [disaster recovery runbook](docs/disaster-recovery.md#wipe-and-rebuild-the-nodes) has the config and the command.
 
-Deploy hosts with `just deploy-nodes` within a week of a merged flake lock bump.
+Deploy hosts with `just deploy-nodes` within a week of a merged flake lock bump. A kernel change needs a drained reboot of each host, one at a time, after the rebuild.
 
 ### Adding an app
 

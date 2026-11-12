@@ -74,12 +74,26 @@ router_answers() {
   done
 }
 
+warn_if_kernel_pending() {
+  local host="$1" target="$2"; shift 2
+  local kernels booted current
+  kernels="$(ssh "$@" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "$target" \
+    readlink /run/booted-system/kernel /run/current-system/kernel)"
+  booted="$(printf '%s\n' "$kernels" | sed -n 1p)"
+  current="$(printf '%s\n' "$kernels" | sed -n 2p)"
+  if [ "$booted" != "$current" ]; then
+    echo "WARNING: $host runs an older kernel than its current system; drain and reboot it" >&2
+  fi
+}
+
 for entry in "${NODES[@]}"; do
   host="${entry%%:*}"
   step rebuild "$host" "${entry#*:}"
   step kubectl wait --for=condition=Ready "node/$host" --timeout "$NODE_READY_TIMEOUT"
   step volumes_healthy
+  step warn_if_kernel_pending "$host" "root@${entry#*:}"
 done
 
 step rebuild_router
 step router_answers
+step warn_if_kernel_pending router "root@$ROUTER_ADDRESS" -F "$SHORT_TMPDIR/router-ssh-config"
