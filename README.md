@@ -188,6 +188,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just new-secret <app>` | Create the app's encrypted secrets in `bedrock-secrets` with random values |
 | `just paperless-import <dir>` | Copy a local folder of scans into the Paperless consume folder |
 | `just encrypt-volumes <app>` | Copy an app's volumes onto encrypted twins before its claims are swapped; add `--dry-run` to print the copy pod |
+| `just deploy-nodes` | Rebuild worker-2, worker-1, control-plane-1 and the router in order, stopping at the first host that fails to come back Ready and healthy; add `--dry-run` to print the steps |
 | `just luks-discards <namespace>/<pvc>` | Store allow-discards in an attached encrypted volume's LUKS2 header and trim it |
 | `just email-gate-deploy` | Deploy the Cloudflare Worker that gates the Paperless mail address by sender |
 
@@ -207,6 +208,8 @@ TMPDIR=/tmp/nr nix develop --command env TMPDIR=/tmp/nr nixos-rebuild switch --f
 ```
 
 A router rebuild restarts tailscaled, which cuts any session through the Pi's subnet route, so router changes are pushed through control-plane-1's own tailnet address with an SSH config file passed as `NIX_SSHOPTS="-F <config file>"`; the [disaster recovery runbook](docs/disaster-recovery.md#wipe-and-rebuild-the-nodes) has the config and the command.
+
+Deploy hosts with `just deploy-nodes` within a week of a merged flake lock bump.
 
 ### Adding an app
 

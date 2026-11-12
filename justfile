@@ -142,6 +142,10 @@ restore-test *args="all":
 offline-backup mountpoint:
     bash scripts/offline-backup.sh {{ quote(join(invocation_directory(), mountpoint)) }}
 
+# Rebuild worker-2, worker-1, control-plane-1 and the router in order, waiting for Ready nodes and healthy Longhorn volumes; add --dry-run to print the steps
+deploy-nodes *args="":
+    bash scripts/deploy-nodes.sh {{ args }}
+
 # Refresh the default kubeconfig entry from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh

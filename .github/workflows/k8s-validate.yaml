@@ -77,6 +77,9 @@ jobs:
       - name: Test the offline backup copy and its refusals
         run: bash scripts/check-offline-backup.sh
 
+      - name: Test the rolling host deploy order and stop on failure
+        run: bash scripts/check-deploy-nodes.sh
+
       - name: Test the Pocket ID client sync job
         run: bash scripts/check-pocket-id-clients.sh
 
