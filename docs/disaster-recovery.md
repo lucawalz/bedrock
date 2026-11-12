@@ -191,6 +191,7 @@ just luks-discards postgres/postgres-<m>
 The rebuild above keeps the operating systems. A full reinstall has not been rehearsed:
 
 1. Router first. Flash the `router-installer` SD image, which is a bare Pi with SSH and the admin key and no network services, then push `.#router` with `--build-host` set to the Pi itself. Until that finishes there is no VLAN 20.
+   A re-enrolled router needs a fresh single-use auth key tagged `tag:router`, re-encrypted into `secrets/tailscale-authkey.age`; the old key was minted for `tag:cluster`.
 2. Nodes: install NixOS (disko lays out the disk) and push the node configuration with `--build-host` set to the target. control-plane-1's `hardware-configuration.nix` and `default.nix` pin filesystem UUIDs that change with a new disk and must be updated.
 3. A new host key cannot decrypt its agenix secrets. Re-key as in [Secret recovery](#secret-recovery) before the switch, and give the host a new single-use Tailscale auth key pre-tagged `tag:cluster`.
 4. Continue with the bootstrap above.
