@@ -8,7 +8,7 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 | Scenario | Recoverable | Mechanism |
 | --- | --- | --- |
-| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones and the Postgres instance volumes, workloads reschedule, and a Postgres standby takes over; a lost node's Postgres instance needs the manual step in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres) |
+| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones, workloads reschedule, and a Postgres standby takes over. The running Postgres instances are still on unencrypted three-replica `longhorn` volumes; once they are recovered onto the declared `longhorn-encrypted-local`, a lost node's Postgres instance needs the manual step in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres) |
 | Anything declared in git | Yes | Flux reconciles it back ([ADR 0001](adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md)) |
 | Any cluster Secret | Yes, given the age key | SOPS ciphertext in the private `bedrock-secrets` repository ([ADR 0005](adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)) |
 | A Postgres logical fault, a bad migration, a dropped table | Yes, to any point in the last 30 days | Continuous WAL archive and daily base backups in R2 ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)) |
@@ -177,7 +177,7 @@ k3s server --cluster-reset --secrets-encryption --token-file=/run/agenix/k3s-tok
 
 ## Losing a node that hosts Postgres
 
-The instance volumes use `longhorn-encrypted-local`: one strict-local replica, bound to the node of the first attach. When that node or its disk is lost for good, the instance's PVC stays pinned to it, CloudNativePG does not delete a PVC on its own, and the pod stays Pending. The required anti-affinity across three nodes also leaves no other node for a fourth instance. If the node returns with its disk intact, the pod resumes by itself. Otherwise replacement is manual:
+The Cluster declares `longhorn-encrypted-local` for its instance volumes: LUKS with one strict-local replica, bound to the node of the first attach. A storage class change reaches only PVCs that CloudNativePG creates afterwards, so the running instances stay on unencrypted three-replica `longhorn` volumes, which reschedule like any other, until they are recovered onto the new class ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)). On the declared class, when that node or its disk is lost for good, the instance's PVC stays pinned to it, CloudNativePG does not delete a PVC on its own, and the pod stays Pending. The required anti-affinity across three nodes also leaves no other node for a fourth instance. If the node returns with its disk intact, the pod resumes by itself. Otherwise replacement is manual:
 
 ```
 kubectl cnpg destroy postgres <n>
