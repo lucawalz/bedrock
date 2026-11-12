@@ -43,7 +43,6 @@ assert
   subnet = "10.20.0.0/24";
   gateway = "10.20.0.1";
   serviceVip = "10.20.0.50";
-  dhcpPool = "10.20.0.100 - 10.20.0.200";
   inherit
     bootstrapControlPlane
     controlPlanes

@@ -25,9 +25,6 @@
         {
           id = 1;
           inherit (inventory) subnet;
-          pools = [
-            { pool = inventory.dhcpPool; }
-          ];
           reservations = lib.mapAttrsToList (_: node: {
             hw-address = node.mac;
             ip-address = node.address;
