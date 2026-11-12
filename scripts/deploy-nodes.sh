@@ -24,6 +24,9 @@ ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
 POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
+ADMIN_IDENTITY="$HOME/.ssh/id_ecdsa_sk_rk_estate-root"
+SECURITY_KEY_PROVIDER=/usr/lib/ssh-keychain.dylib
+ADMIN_SSH_OPTS=(-i "$ADMIN_IDENTITY" -o "SecurityKeyProvider=$SECURITY_KEY_PROVIDER")
 
 step() {
   echo "+ $*"
@@ -33,7 +36,7 @@ step() {
 rebuild() {
   local host="$1" address="$2"
   mkdir -p "$SHORT_TMPDIR"
-  TMPDIR="$SHORT_TMPDIR" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
+  TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="${ADMIN_SSH_OPTS[*]}" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
     nixos-rebuild switch --flake ".#$host" --target-host "root@$address" --build-host "$BUILD_HOST"
 }
 
@@ -45,8 +48,12 @@ Host cp1-direct
   HostName $CONTROL_PLANE_TAILNET_ADDRESS
   HostKeyAlias $CONTROL_PLANE_ADDRESS
   User root
+  IdentityFile $ADMIN_IDENTITY
+  SecurityKeyProvider $SECURITY_KEY_PROVIDER
 Host $ROUTER_ADDRESS $CONTROL_PLANE_ADDRESS
   ProxyJump cp1-direct
+  IdentityFile $ADMIN_IDENTITY
+  SecurityKeyProvider $SECURITY_KEY_PROVIDER
 CONFIG
   TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="-F $config" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
     nixos-rebuild switch --flake .#router --target-host "root@$ROUTER_ADDRESS" --build-host "$BUILD_HOST"
@@ -67,7 +74,7 @@ volumes_healthy() {
 
 router_answers() {
   local config="$SHORT_TMPDIR/router-ssh-config" deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
-  until ssh -F "$config" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
+  until ssh -F "$config" "${ADMIN_SSH_OPTS[@]}" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
     && [ -n "$(dig +short "@$ROUTER_ADDRESS" "$DNS_PROBE_NAME")" ]; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "Router did not answer ssh and DNS" >&2; return 1; }
     sleep "$POLL_SECONDS"
@@ -77,7 +84,7 @@ router_answers() {
 warn_if_kernel_pending() {
   local host="$1" target="$2"; shift 2
   local kernels booted current
-  kernels="$(ssh "$@" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "$target" \
+  kernels="$(ssh "${ADMIN_SSH_OPTS[@]}" "$@" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "$target" \
     readlink /run/booted-system/kernel /run/current-system/kernel)"
   booted="$(printf '%s\n' "$kernels" | sed -n 1p)"
   current="$(printf '%s\n' "$kernels" | sed -n 2p)"
