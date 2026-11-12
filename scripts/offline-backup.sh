@@ -3,92 +3,72 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-usage="usage: offline-backup.sh <mountpoint>"
-
-RCLONE_CONFIG_FILE="${OFFLINE_BACKUP_RCLONE_CONFIG:-/Volumes/bedrock-keys/bedrock/rclone/offline-backup.conf}"
+: "${RCLONE_CONFIG:=/Volumes/bedrock-keys/bedrock/rclone/offline-backup.conf}"
+export RCLONE_CONFIG
 TARGET_DIRECTORY=bedrock-offline
 FREE_SPACE_HEADROOM_PERCENT=10
 BYTES_PER_KIBIBYTE=1024
 
 DUMPS_SOURCE=postgres:bedrock-postgres
 DUMPS_PREFIX=dumps
-DUMPS_SUFFIX=.gpg
 ETCD_SOURCE=etcd:bedrock-etcd
 ETCD_PREFIX=etcd-snapshots
 LONGHORN_SOURCE=longhorn:bedrock-longhorn
 LONGHORN_VOLUMES_PREFIX=backupstore/volumes
-LONGHORN_VOLUME_DEPTH=3
+SOURCES=("dumps:$DUMPS_SOURCE" "etcd:$ETCD_SOURCE" "longhorn:$LONGHORN_SOURCE")
 
-[ "$#" -eq 1 ] || { echo "$usage" >&2; exit 2; }
-mount="$1"
-
+: "${1:?usage: offline-backup.sh <mountpoint>}"
 require_tools rclone jq df
-[ -d "$mount" ] || fail "$mount is not mounted"
+
+mount_point_of() {
+  df -P "$1" | awk 'NR == 2 { point = $6; for (field = 7; field <= NF; field++) point = point " " $field; print point }'
+}
+
+mount="$(cd "$1" 2>/dev/null && pwd -P)" || fail "$1 is not a mounted volume"
+[ "$(mount_point_of "$mount")" = "$mount" ] && [ "$mount" != "$(mount_point_of /)" ] \
+  || fail "$1 is not a mounted volume"
 [ -w "$mount" ] || fail "$mount is not writable"
-[ -f "$RCLONE_CONFIG_FILE" ] || fail "$RCLONE_CONFIG_FILE is missing; plug in the bedrock-keys stick and create the read-only remotes"
-export RCLONE_CONFIG="$RCLONE_CONFIG_FILE"
+[ -f "$RCLONE_CONFIG" ] || fail "$RCLONE_CONFIG is missing; plug in the bedrock-keys stick and create the read-only remotes"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
-staged="$work/staged"
-
-newest_dumps() {
-  local database newest
-  while IFS= read -r database; do
-    newest="$(rclone lsf --files-only --include "*$DUMPS_SUFFIX" "$DUMPS_SOURCE/$DUMPS_PREFIX/$database" | sort | tail -n 1)"
-    [ -z "$newest" ] || echo "$DUMPS_PREFIX/$database$newest"
-  done < <(rclone lsf --dirs-only "$DUMPS_SOURCE/$DUMPS_PREFIX/")
-}
-
-newest_etcd_snapshot() {
-  rclone lsf --files-only --format tp --separator ';' "$ETCD_SOURCE/$ETCD_PREFIX/" \
-    | sort | tail -n 1 | cut -d ';' -f 2- | sed "s|^|$ETCD_PREFIX/|"
-}
 
 newest_longhorn_backups() {
-  local volume volume_config backup backup_config
+  local volume backup backup_config
   while IFS= read -r volume; do
-    volume="$LONGHORN_VOLUMES_PREFIX/$volume"
-    volume_config="$(rclone cat "$LONGHORN_SOURCE/${volume}volume.cfg")"
-    backup="$(jq -r '.LastBackupName // empty' <<< "$volume_config")"
+    volume="$LONGHORN_VOLUMES_PREFIX/$(dirname "$volume")/"
+    backup="$(rclone cat "$LONGHORN_SOURCE/${volume}volume.cfg" | jq -r '.LastBackupName // empty')"
     if [ -z "$backup" ]; then
       echo "skipping $volume: volume.cfg names no last backup" >&2
       continue
     fi
     backup_config="${volume}backups/backup_$backup.cfg"
-    mkdir -p "$staged/$volume/backups"
-    printf '%s' "$volume_config" > "$staged/${volume}volume.cfg"
-    rclone cat "$LONGHORN_SOURCE/$backup_config" > "$staged/$backup_config"
-    jq -r '(.Blocks // [])[].BlockChecksum' "$staged/$backup_config" | sort -u \
+    printf '%s\n' "${volume}volume.cfg" "$backup_config"
+    rclone cat "$LONGHORN_SOURCE/$backup_config" | jq -r '(.Blocks // [])[].BlockChecksum' | sort -u \
       | awk -v volume="$volume" '{ printf "%sblocks/%s/%s/%s.blk\n", volume, substr($0, 1, 2), substr($0, 3, 2), $0 }'
-  done < <(rclone lsf -R --dirs-only --max-depth "$LONGHORN_VOLUME_DEPTH" "$LONGHORN_SOURCE/$LONGHORN_VOLUMES_PREFIX/" \
-    | awk -F / -v depth="$LONGHORN_VOLUME_DEPTH" 'NF == depth + 1')
+  done < <(rclone lsf -R --files-only --include volume.cfg "$LONGHORN_SOURCE/$LONGHORN_VOLUMES_PREFIX/")
 }
 
-selected_bytes() {
-  rclone size --json --files-from-raw "$2" "$1" | jq -r '.bytes'
-}
-
-newest_dumps > "$work/dumps"
-[ -s "$work/dumps" ] || fail "found no dumps in $DUMPS_SOURCE/$DUMPS_PREFIX/"
-newest_etcd_snapshot > "$work/etcd"
-[ -s "$work/etcd" ] || fail "found no etcd snapshot in $ETCD_SOURCE/$ETCD_PREFIX/"
+rclone lsf -R --files-only --include "*.gpg" "$DUMPS_SOURCE/$DUMPS_PREFIX/" | sort \
+  | awk -F / -v prefix="$DUMPS_PREFIX" '{ newest[$1] = $0 } END { for (database in newest) print prefix "/" newest[database] }' \
+  | sort > "$work/dumps"
+rclone lsf --files-only --format tp --separator ';' "$ETCD_SOURCE/$ETCD_PREFIX/" \
+  | sort | tail -n 1 | sed "s|^[^;]*;|$ETCD_PREFIX/|" > "$work/etcd"
 newest_longhorn_backups > "$work/longhorn"
-[ -s "$work/longhorn" ] || fail "found no Longhorn backup in $LONGHORN_SOURCE/$LONGHORN_VOLUMES_PREFIX/"
 
-total=$(( $(selected_bytes "$DUMPS_SOURCE" "$work/dumps") \
-  + $(selected_bytes "$ETCD_SOURCE" "$work/etcd") \
-  + $(selected_bytes "$LONGHORN_SOURCE" "$work/longhorn") \
-  + $(du -sk "$staged" | cut -f 1) * BYTES_PER_KIBIBYTE ))
+total=0
+for source in "${SOURCES[@]}"; do
+  [ -s "$work/${source%%:*}" ] || fail "found no ${source%%:*} backup in ${source#*:}"
+  total=$(( total + $(rclone size --json --files-from-raw "$work/${source%%:*}" "${source#*:}" | jq -r '.bytes') ))
+done
 needed=$(( total + total * FREE_SPACE_HEADROOM_PERCENT / 100 ))
 free=$(( $(df -Pk "$mount" | awk 'NR == 2 { print $4 }') * BYTES_PER_KIBIBYTE ))
 [ "$needed" -le "$free" ] || fail "the copy needs $needed bytes with headroom and $mount has $free free"
 
 target="$mount/$TARGET_DIRECTORY/$(date -u +%Y-%m-%dT%H%M%SZ)"
-[ ! -e "$target" ] || fail "$target already exists"
-mkdir -p "$target"
-rclone copy --no-traverse --files-from-raw "$work/dumps" "$DUMPS_SOURCE" "$target/${DUMPS_SOURCE#*:}"
-rclone copy --no-traverse --files-from-raw "$work/etcd" "$ETCD_SOURCE" "$target/${ETCD_SOURCE#*:}"
-rclone copy --no-traverse --files-from-raw "$work/longhorn" "$LONGHORN_SOURCE" "$target/${LONGHORN_SOURCE#*:}"
-cp -R "$staged/." "$target/${LONGHORN_SOURCE#*:}/"
+mkdir -p "$mount/$TARGET_DIRECTORY"
+mkdir "$target"
+for source in "${SOURCES[@]}"; do
+  rclone copy --no-traverse --files-from-raw "$work/${source%%:*}" "${source#*:}" "$target/${source##*:}"
+done
 echo "Copied $total bytes to $target"
