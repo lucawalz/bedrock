@@ -92,7 +92,7 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
 
 ### Wipe and rebuild the nodes
 
-1. Rebuild the router first if its configuration changed, through control-plane-1's own tailnet address: a router switch restarts tailscaled and cuts any session through the Pi's subnet route. An SSH config file for the jump:
+1. `just deploy-nodes` is the normal path for routine rebuilds; this runbook keeps its own jump config for cold rebuilds, when the recipe cannot run. Rebuild the router first if its configuration changed, through control-plane-1's own tailnet address: a router switch restarts tailscaled and cuts any session through the Pi's subnet route. An SSH config file for the jump:
 
    ```
    Host cp1-direct

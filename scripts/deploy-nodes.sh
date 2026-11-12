@@ -3,20 +3,19 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-usage="usage: deploy-nodes.sh [--dry-run]"
 dry_run=false
 case "${1:-}" in
   "") ;;
   --dry-run) dry_run=true ;;
-  *) echo "$usage" >&2; exit 2 ;;
+  *) echo "usage: deploy-nodes.sh [--dry-run]" >&2; exit 2 ;;
 esac
 
-require_tools nix kubectl ssh
+require_tools nix kubectl ssh dig
 
 NODES=(worker-2:10.20.0.12 worker-1:10.20.0.11 control-plane-1:10.20.0.10)
 ROUTER_ADDRESS=10.20.0.1
-BUILD_HOST=root@10.20.0.10
 CONTROL_PLANE_ADDRESS=10.20.0.10
+BUILD_HOST="root@$CONTROL_PLANE_ADDRESS"
 CONTROL_PLANE_TAILNET_ADDRESS=100.105.211.67
 SHORT_TMPDIR="${SHORT_TMPDIR:-/tmp/nr}"
 NODE_READY_TIMEOUT=10m
@@ -24,7 +23,7 @@ VOLUME_TIMEOUT_SECONDS="${VOLUME_TIMEOUT_SECONDS:-1800}"
 ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
 POLL_SECONDS="${POLL_SECONDS:-5}"
-DNS_PROBE_NAME=cloudflare.com
+DNS_PROBE_NAME=registry.syslabs.dev
 
 step() {
   echo "+ $*"
@@ -53,13 +52,13 @@ CONFIG
     nixos-rebuild switch --flake .#router --target-host "root@$ROUTER_ADDRESS" --build-host "$BUILD_HOST"
 }
 
-# Detached volumes report robustness unknown and cannot degrade, so only degraded or faulted ones block.
+# A detached volume reports robustness unknown and is skipped; every other state must be healthy.
 volumes_healthy() {
   local deadline=$((SECONDS + VOLUME_TIMEOUT_SECONDS)) unhealthy
   while true; do
     unhealthy="$(kubectl -n longhorn-system get volumes.longhorn.io \
-      -o jsonpath='{range .items[*]}{.metadata.name} {.status.robustness}{"\n"}{end}' \
-      | awk '$2 == "degraded" || $2 == "faulted"')"
+      -o jsonpath='{range .items[*]}{.metadata.name}|{.status.state}|{.status.robustness}{"\n"}{end}' \
+      | awk -F'|' '$2 != "detached" && $3 != "healthy"')"
     [ -z "$unhealthy" ] && return 0
     [ "$SECONDS" -lt "$deadline" ] || { echo "Unhealthy Longhorn volumes:" >&2; echo "$unhealthy" >&2; return 1; }
     sleep "$POLL_SECONDS"
@@ -68,8 +67,8 @@ volumes_healthy() {
 
 router_answers() {
   local config="$SHORT_TMPDIR/router-ssh-config" deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
-  until ssh -F "$config" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
-    && ssh -F "$config" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$CONTROL_PLANE_ADDRESS" getent hosts "$DNS_PROBE_NAME" >/dev/null; do
+  until ssh -F "$config" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
+    && [ -n "$(dig +short "@$ROUTER_ADDRESS" "$DNS_PROBE_NAME")" ]; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "Router did not answer ssh and DNS" >&2; return 1; }
     sleep "$POLL_SECONDS"
   done
