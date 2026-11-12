@@ -7,7 +7,7 @@ date: 2026-11-07
 
 ## Context
 
-K3s generates a fresh CA when its datastore is created. The agent join token in agenix is a secure token that pins the CA, so after the datastore was wiped for the rebuild the new server presented a CA the token did not match and both agents refused to join. Re-pinning the token on every rebuild, or falling back to a short token that pins nothing, would each give up something: a git-only rebuild in the first case, join authentication in the second.
+K3s generates a fresh CA when its datastore is created. The K3s token in agenix, which the server and both agents share, is a secure token that pins the CA, so after the datastore was wiped for the rebuild the new server presented a CA the token did not match and both agents refused to join. Re-pinning the token on every rebuild, or falling back to a short token that pins nothing, would each give up something: a git-only rebuild in the first case, join authentication in the second.
 
 ## Decision
 
@@ -17,6 +17,7 @@ K3s generates a fresh CA when its datastore is created. The agent join token in 
 
 ## Consequences
 
-- A wiped server comes back with the same CA, and the existing agent token keeps working without a change in git.
+- A wiped server comes back with the same CA, and the existing token keeps working without a change in git.
 - Rotating an intermediate needs the root key from offline storage. Losing the root key means minting a new CA and re-pinning the token, which is the cost this decision avoids.
 - K3s does not restart when the token file changes in place, so a token rotation on a running cluster needs a manual restart of the agents.
+- The etcd snapshots in R2 are not encrypted client-side, an accepted risk. K3s encrypts every Secret before it reaches etcd, and the bootstrap data in a snapshot, which holds the CA keys and the encryption key, is encrypted under the server token, so a leaked snapshot yields neither without that token. Everything that is not a Secret, such as ConfigMaps and custom resources, is readable in a leaked snapshot.
