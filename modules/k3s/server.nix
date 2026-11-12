@@ -24,16 +24,6 @@ let
     rules = [
       {
         level = "None";
-        nonResourceURLs = [
-          "/healthz*"
-          "/livez*"
-          "/readyz*"
-          "/version"
-          "/metrics"
-        ];
-      }
-      {
-        level = "None";
         resources = [
           {
             group = "coordination.k8s.io";
