@@ -14,7 +14,7 @@ Three identical mini PCs have to carry the control plane, the workloads and the 
 - control-plane-1 is the only K3s server and runs the embedded etcd datastore. worker-1 and worker-2 are agents. All three schedule workloads and carry Longhorn disks.
 - The server disables the bundled servicelb, Traefik, local-storage, CoreDNS and metrics-server. MetalLB, Traefik, Longhorn, CoreDNS and metrics-server are installed by Flux instead, so every one of them is versioned and reviewed in git. Secrets encryption at rest is on.
 - Flannel uses VXLAN over `tailscale0` with an outer MTU of 1280, so pod traffic between nodes travels inside WireGuard. NetworkPolicy is enforced by the kube-router controller embedded in K3s.
-- The tailnet policy lives in `tailscale/policy.hujson` and is pasted into the admin console, whose tests block runs on save. Nodes reach each other over the tailnet on UDP 8472 only; members reach SSH, the apiserver, the ingress VIP and DNS at the router.
+- The tailnet policy lives in `tailscale/policy.hujson` and is pasted into the admin console; its tests block runs on save. It has no `ssh` section, so Tailscale SSH grants nothing and hosts are reached over OpenSSH with keys.
 - The server takes an etcd snapshot every 12 hours, keeps five, and uploads them to the `bedrock-etcd` bucket in Cloudflare R2 ([0012](0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)).
 - Container images are pulled through the zot cache at `registry.syslabs.dev`, with the upstream registry configured as a fallback endpoint for each mirror.
 - The inventory is parameterised for more servers. Pod CIDR allowlists in network policies span eight node slots, which covers a target of three control planes and three workers.
@@ -24,5 +24,5 @@ Three identical mini PCs have to carry the control plane, the workloads and the 
 - control-plane-1 is a single point of failure for the API. Workloads already running keep serving while it is down, and recovery is a rebuild from the flake and the newest etcd snapshot.
 - The cluster CA must survive a datastore wipe, or agents can no longer join with the pinned token ([0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 - Encrypting pod traffic on a LAN path costs some throughput.
-- Tailscale's `ts-input` chain accepts everything arriving on `tailscale0` before the NixOS firewall, so every node listener, including kubelet, FRR and BFD, is open to any tailnet source the policy admits. The policy is the only filter on that path, which is an accepted risk.
+- Tailscale's `ts-input` chain accepts all `tailscale0` traffic before the NixOS firewall, so the policy is the only filter for every node listener; this is an accepted risk.
 - On an empty cache zot fetches a large image fully before answering, which can outlast the containerd pull deadline. Pods back off and recover once the cache is warm.
