@@ -105,12 +105,18 @@ while read -r directory; do
 
     # An OCI pull prints its digest to stdout ahead of the manifests, which is not YAML.
     awk 'seen || /^---$/ { seen = 1; print }' "$work/raw.yaml" > "$work/documents.yaml"
-    # Comment-only and hook documents are never applied, and the namespace is stamped at apply time.
+    # Hooks are not part of the release manifest, so they go to hooks/; the namespace is stamped at apply time.
     yq '... comments=""' "$work/documents.yaml" \
-      | NAMESPACE="$release_namespace" yq 'select(. != null) | select(.metadata.annotations["helm.sh/hook"] == null) | .metadata.namespace = (.metadata.namespace // strenv(NAMESPACE))' \
-      > "$work/output.yaml"
+      | NAMESPACE="$release_namespace" yq 'select(. != null) | .metadata.namespace = (.metadata.namespace // strenv(NAMESPACE))' \
+      > "$work/stamped.yaml"
+    yq 'select(.metadata.annotations["helm.sh/hook"] == null)' "$work/stamped.yaml" > "$work/output.yaml"
+    yq 'select(.metadata.annotations["helm.sh/hook"] != null)' "$work/stamped.yaml" > "$work/hooks.yaml"
 
-    [ -z "$output_dir" ] || cp "$work/output.yaml" "$output_dir/$namespace.$release.yaml"
+    if [ -n "$output_dir" ]; then
+      mkdir -p "$output_dir/hooks"
+      cp "$work/output.yaml" "$output_dir/$namespace.$release.yaml"
+      cp "$work/hooks.yaml" "$output_dir/hooks/$namespace.$release.yaml"
+    fi
 
     if command -v kubeconform >/dev/null 2>&1; then
       kubeconform -strict -ignore-missing-schemas "${schema_args[@]}" \

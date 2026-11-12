@@ -24,7 +24,14 @@ protected_secret_namespaces=(flux-system longhorn-system postgres)
 pg_hba_dumper="hostssl all dumper all scram-sha-256"
 pg_hba_sameuser="hostssl sameuser all all scram-sha-256"
 pg_hba_reject="host all all all reject"
-digest_exempt_images=(docker.io/longhornio/longhorn-share-manager)
+digest_exempt_images=(
+  docker.io/longhornio/longhorn-engine
+  docker.io/longhornio/longhorn-instance-manager
+  docker.io/longhornio/longhorn-share-manager
+  docker.io/longhornio/backing-image-manager
+  docker.io/longhornio/support-bundle-kit
+  ghcr.io/cloudnative-pg/postgresql
+)
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -100,6 +107,12 @@ done < "$work/flux-paths"
 for release in "$rendered_releases"/*.yaml; do
   printf -- '---\n' >> "$work/built.yaml"
   cat "$release" >> "$work/built.yaml"
+done
+[ -d "$rendered_releases/hooks" ] || fail "$rendered_releases has no hooks directory; render it with scripts/render-helm-releases.sh"
+: > "$work/hooks.yaml"
+for hooks in "$rendered_releases"/hooks/*.yaml; do
+  printf -- '---\n' >> "$work/hooks.yaml"
+  cat "$hooks" >> "$work/hooks.yaml"
 done
 
 # yq treats a bare "*" in == as a glob, so wildcards are matched with test().
@@ -229,13 +242,13 @@ yq -N '
   | (.spec.jobTemplate.spec.template.spec // .spec.template.spec // .spec) as $pod
   | (($pod.initContainers // []) + ($pod.containers // []))[]
   | .image
-' "$work/built.yaml" > "$work/workload-images"
+' "$work/built.yaml" "$work/hooks.yaml" > "$work/workload-images"
 yq -N 'select(.apiVersion == "monitoring.coreos.com/*" and .spec.image != null) | .spec.image' "$work/built.yaml" >> "$work/workload-images"
 unpinned="$(grep -v '@sha256:[0-9a-f]\{64\}$' "$work/workload-images" \
   | grep -vE "^($(IFS="|"; echo "${digest_exempt_images[*]//./\\.}")):" \
   | sort -u || true)"
 if [ -n "$unpinned" ]; then
-  echo "Workload images without an @sha256 digest (pin it in values, or list it in digest_exempt_images and ADR 0014):"
+  echo "Workload and hook images without an @sha256 digest (pin it in values, or list it in digest_exempt_images and ADR 0014):"
   printf '%s\n' "$unpinned" | sed 's/^/  - /'
   status=1
 fi

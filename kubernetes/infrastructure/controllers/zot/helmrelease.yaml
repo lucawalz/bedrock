@@ -24,6 +24,10 @@ spec:
     mode: warn
   values:
     replicaCount: 1
+    test:
+      image:
+        repository: docker.io/library/alpine
+        tag: "3.18@sha256:de0eb0b3f2a47ba1eb89389859a9bd88b28e82f5826b6969ad604979713c2d4f"
     image:
       repository: ghcr.io/project-zot/zot
       tag: v2.1.20@sha256:542e25be4d32e7879c0cfad93492a93c81b1e059cbd2d30d485d4bd567318234

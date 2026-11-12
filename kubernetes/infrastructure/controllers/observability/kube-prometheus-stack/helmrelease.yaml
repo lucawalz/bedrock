@@ -38,6 +38,12 @@ spec:
           registry: quay.io
           repository: prometheus-operator/prometheus-config-reloader
           tag: v0.93.1@sha256:428f088fe6fe07ab138bda92113664b04848a1dc408e4d3680a60ecdb55d1a65
+      admissionWebhooks:
+        patch:
+          image:
+            registry: ghcr.io
+            repository: jkroepke/kube-webhook-certgen
+            tag: 1.8.8@sha256:cd85a621724cd9043a5b46a784578fa159437712f920166389fce830554e1c44
     prometheus:
       prometheusSpec:
         image:

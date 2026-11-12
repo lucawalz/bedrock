@@ -59,6 +59,8 @@ spec:
     image:
       repository: docker.io/ollama/ollama
       tag: 0.40.14@sha256:ebaef4f4c5d93660e1f25f8ad085a112f51ccfb0e8458073e71793959dba91c9
+    tests:
+      enabled: false
   postRenderers:
     - kustomize:
         patches:

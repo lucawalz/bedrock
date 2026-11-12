@@ -135,3 +135,19 @@ spec:
           - PolicyApplied
           - PolicySkipped
           - PolicyViolation
+    test:
+      image:
+        registry: ghcr.io
+        repository: kyverno/readiness-checker
+        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+    webhooksCleanup:
+      image:
+        registry: ghcr.io
+        repository: kyverno/readiness-checker
+        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+    crds:
+      migration:
+        image:
+          registry: reg.kyverno.io
+          repository: kyverno/kyverno-cli
+          tag: v1.18.2@sha256:7224ed05508c24419c3df98114c28ba682ad0a940dcdb7b9fdba0a4b6bf943cf
