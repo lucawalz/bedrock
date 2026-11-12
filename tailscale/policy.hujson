@@ -1,0 +1,81 @@
+// Tailnet policy. Pasted into the admin console under Access controls; the
+// tests block runs on every save and rejects a policy that fails it.
+{
+    "tagOwners": {
+        "tag:cluster": ["autogroup:owner"],
+        "tag:router":  ["autogroup:owner"],
+    },
+
+    // tag:cluster stays an approver until the router carries tag:router,
+    // otherwise the route loses its approval and the cluster drops off the tailnet.
+    "autoApprovers": {
+        "routes": {
+            "10.20.0.0/24": ["tag:router", "tag:cluster"],
+        },
+    },
+
+    // Named only so the tests can use the Mac as a member source.
+    "hosts": {
+        "macbook": "100.71.225.111",
+    },
+
+    "grants": [
+        // SSH, the apiserver, the ingress VIP and split DNS for syslabs.dev at 10.20.0.1.
+        {
+            "src": ["autogroup:member"],
+            "dst": ["10.20.0.0/24", "tag:cluster"],
+            "ip":  ["tcp:22", "tcp:6443", "tcp:80", "tcp:443", "tcp:53", "udp:53"],
+        },
+
+        {
+            "src": ["autogroup:member"],
+            "dst": ["tag:router"],
+            "ip":  ["tcp:22"],
+        },
+
+        // Flannel VXLAN rides tailscale0; every other node port is reached over VLAN 20.
+        {
+            "src": ["tag:cluster"],
+            "dst": ["tag:cluster"],
+            "ip":  ["udp:8472"],
+        },
+    ],
+
+    // No "ssh" section: Tailscale SSH grants nothing anywhere, and hosts are
+    // reached over OpenSSH with keys. A Tailscale SSH grant with port
+    // forwarding is the entry point of the October 2026 Tailworm report.
+
+    "tests": [
+        {
+            "src":    "macbook",
+            "accept": ["10.20.0.10:22", "10.20.0.10:6443", "10.20.0.50:443", "10.20.0.1:53", "tag:cluster:22"],
+            "deny":   ["10.20.0.10:10250", "10.20.0.1:3000", "tag:cluster:10250"],
+        },
+        {
+            "src":    "macbook",
+            "accept": ["tag:router:22"],
+            "deny":   ["tag:router:53", "tag:router:443", "tag:router:3000"],
+        },
+        {
+            "src":    "tag:cluster",
+            "proto":  "udp",
+            "accept": ["tag:cluster:8472"],
+        },
+        {
+            "src":  "tag:cluster",
+            "deny": ["tag:cluster:6443", "tag:cluster:10250", "tag:cluster:2379", "tag:cluster:7946", "10.20.0.10:6443", "macbook:22"],
+        },
+        {
+            "src":  "tag:router",
+            "deny": ["tag:cluster:22", "tag:cluster:6443", "tag:cluster:8472", "10.20.0.10:22", "macbook:22"],
+        },
+    ],
+
+    "sshTests": [
+        {
+            "src":  "tag:cluster",
+            "dst":  ["tag:cluster"],
+            "deny": ["root"],
+        },
+    ],
+}

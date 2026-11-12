@@ -236,6 +236,7 @@ kubernetes/
   components/          shared Kustomize components (network policies, forward-auth, dependency wait)
   apps/                one self-contained folder per app
 cloudflare/            the email gate Worker
+tailscale/             the tailnet access policy, pasted into the admin console
 infra/packer/          the dormant Packer template for a cloud node snapshot
 scripts/               bootstrap, scaffold, restore drills and the CI checks
 tests/                 Kyverno policy tests and promtool alert-rule tests
