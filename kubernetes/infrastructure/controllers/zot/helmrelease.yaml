@@ -40,7 +40,7 @@ spec:
       name: data
       accessModes:
         - ReadWriteOnce
-      storage: 40Gi
+      storage: 80Gi
       storageClassName: longhorn-disposable
     startupProbe:
       initialDelaySeconds: 5
