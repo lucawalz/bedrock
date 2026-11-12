@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from dump import KEEP_PER_DATABASE, SUFFIX, dump_database, import_recipient, object_key, prune  # noqa: E402
+from dump import KEEP_PER_DATABASE, LOCKED_ERROR_CODE, SUFFIX, dump_database, import_recipient, object_key, prune  # noqa: E402
 
 PINNED_FINGERPRINT = "1EB066F3C8C3F147DABC028DD009DE9C37E1B21D"
 BUCKET = "bucket"
@@ -17,24 +17,35 @@ MORNING = datetime.datetime(2026, 11, 10, 3, 30, tzinfo=datetime.UTC)
 RERUN = datetime.datetime(2026, 11, 10, 9, 15, 42, tzinfo=datetime.UTC)
 
 
+class LockedError(Exception):
+    response = {"Error": {"Code": LOCKED_ERROR_CODE}}
+
+
 class FakeS3:
-    def __init__(self, keys=(), fail_upload=False):
+    def __init__(self, keys=(), fail_upload=False, locked=()):
         self.objects = {key: b"" for key in keys}
         self.fail_upload = fail_upload
+        self.locked = set(locked)
         self.uploads = []
 
     def upload_fileobj(self, stream, bucket, key):
         self.uploads.append(key)
         if self.fail_upload:
-            stream.read(1)
             raise ConnectionError("upload refused")
         self.objects[key] = stream.read()
 
     def delete_object(self, Bucket, Key):
+        if Key in self.locked:
+            raise LockedError(Key)
         self.objects.pop(Key, None)
 
     def list_objects_v2(self, Bucket, Prefix):
         return {"Contents": [{"Key": key} for key in sorted(self.objects) if key.startswith(Prefix)]}
+
+
+class RefusingS3(FakeS3):
+    def delete_object(self, Bucket, Key):
+        raise PermissionError(Key)
 
 
 class DumpTest(unittest.TestCase):
@@ -123,6 +134,19 @@ class DumpTest(unittest.TestCase):
         s3 = FakeS3(legacy + current + [neighbour])
         prune(s3, BUCKET, f"dumps/{DATABASE}/", KEEP_PER_DATABASE)
         self.assertEqual(sorted(s3.objects), sorted(current + [neighbour]))
+
+    def test_prune_keeps_a_locked_dump_and_removes_the_rest(self):
+        start = datetime.datetime(2026, 9, 1, 3, 30, tzinfo=datetime.UTC)
+        keys = [object_key(DATABASE, start + datetime.timedelta(days=day)) for day in range(KEEP_PER_DATABASE + EXTRA_DUMPS)]
+        s3 = FakeS3(keys, locked=keys[:1])
+        prune(s3, BUCKET, f"dumps/{DATABASE}/", KEEP_PER_DATABASE)
+        self.assertEqual(sorted(s3.objects), keys[:1] + keys[EXTRA_DUMPS:])
+
+    def test_prune_raises_any_other_delete_error(self):
+        keys = [object_key(DATABASE, MORNING + datetime.timedelta(days=day)) for day in range(KEEP_PER_DATABASE + 1)]
+        s3 = RefusingS3(keys)
+        with self.assertRaises(PermissionError):
+            prune(s3, BUCKET, f"dumps/{DATABASE}/", KEEP_PER_DATABASE)
 
 
 if __name__ == "__main__":

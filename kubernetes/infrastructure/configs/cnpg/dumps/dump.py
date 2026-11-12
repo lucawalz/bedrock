@@ -11,6 +11,7 @@ KEY_TIME_FORMAT = "%Y-%m-%dT%H%M%SZ"
 RECIPIENT_FILE = "/etc/postgres-dump/recipient.asc"
 S3_BUCKET = "bedrock-postgres"
 SKIPPED_DATABASES = ("postgres", "app")
+LOCKED_ERROR_CODE = "ObjectLockedByBucketPolicy"
 LIST_DATABASES = "select datname from pg_database where datallowconn and not datistemplate order by datname"
 
 
@@ -59,7 +60,13 @@ def prune(s3, bucket, prefix, keep):
         raise SystemExit(f"{prefix} holds more objects than one listing returns")
     keys = sorted(item["Key"] for item in listing.get("Contents", []) if item["Key"].endswith(SUFFIX))
     for key in keys[:-keep]:
-        s3.delete_object(Bucket=bucket, Key=key)
+        try:
+            s3.delete_object(Bucket=bucket, Key=key)
+        except Exception as error:
+            if getattr(error, "response", {}).get("Error", {}).get("Code") != LOCKED_ERROR_CODE:
+                raise
+            print(f"{key}: still locked, kept for a later prune", file=sys.stderr)
+            continue
         print(f"pruned {key}")
 
 
