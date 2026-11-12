@@ -4,10 +4,9 @@
         "tag:router":  ["autogroup:owner"],
     },
 
-    // tag:cluster stays an approver until the router carries tag:router, or the route loses approval.
     "autoApprovers": {
         "routes": {
-            "10.20.0.0/24": ["tag:router", "tag:cluster"],
+            "10.20.0.0/24": ["tag:router"],
         },
     },
 
