@@ -244,7 +244,7 @@ Flannel runs over `tailscale0` on all three nodes ([ADR 0003](adr/0003-run-k3s-a
 - A reinstalled host can carry a stale `/var/lib/tailscale/tailscaled.state` that points at another control server; `tailscaled-autoconnect` then times out. Move the state file aside before the switch.
 - A NixOS activation that restarts tailscaled takes `tailscale0` down and can leave `flannel.1` bound to the old interface. After a Tailscale bump, compare each node's `flannel.alpha.coreos.com/public-ip` annotation and delete `flannel.1` where it drifted.
 - An auth key is read only at first enrolment. A reinstalled host needs a new key encrypted into its secret before the switch.
-- If tailscaled wedges on the Pi, the Pi needs a console or a power cycle. The nodes stay reachable over their own tailnet addresses throughout.
+- If tailscaled wedges on the Pi, restart it through the control-plane-1 jump (the `cp1-direct` config above), which reaches the Pi over VLAN 20 without its tailscaled. A power cycle is the fallback only when the Pi is unreachable on VLAN 20 too. The console does not help: the router configuration sets no password for root or any account, so no one can log in there. The nodes stay reachable over their own tailnet addresses throughout.
 
 ## Longhorn storage reserve
 
