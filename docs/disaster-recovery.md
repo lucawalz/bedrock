@@ -49,7 +49,7 @@ R2 bucket lock rules refuse every delete and overwrite of a recent object sent w
 | `bedrock-postgres` | `dumps/` | 14 days | 30 dumps per database, daily, so about 30 days |
 | `bedrock-etcd` | `etcd-snapshots/` | 2 days | 5 snapshots every 12 hours, so 60 hours |
 
-The barman archive under `bedrock-postgres/postgres/` and everything in `bedrock-longhorn` stay unlocked, because barman-cloud and Longhorn rewrite keys they have just written. No restore below deletes or overwrites a key under a locked prefix: the dumps and etcd snapshots are only read, and a recovered Postgres cluster archives under a new server name. Deleting old objects under a locked prefix, for example after a rebuild, waits until the lock has expired. `wrangler r2 bucket lock list <bucket>` shows the rules, and `wrangler r2 bucket lock remove <bucket> --name <rule>` drops one.
+The barman archive under `bedrock-postgres/postgres/` and everything in `bedrock-longhorn` stay unlocked, because barman-cloud and Longhorn rewrite keys they have just written. No restore below deletes or overwrites a key under a locked prefix: the dumps and etcd snapshots are only read, and a recovered Postgres cluster archives under a new server name. Deleting old objects under a locked prefix, for example after a rebuild, waits until the lock has expired. `wrangler r2 object delete` prints `Delete complete` even when R2 refuses the delete of a locked object, so a delete is confirmed by reading the object back with `wrangler r2 object get` or through the S3 API, which returns the refusal. `wrangler r2 bucket lock list <bucket>` shows the rules, and `wrangler r2 bucket lock remove <bucket> --name <rule>` drops one.
 
 Once a month, `just offline-backup <mountpoint>` copies the newest dumps, etcd snapshot and Longhorn backups to `<mountpoint>/bedrock-offline/<UTC time>/<bucket>/`, in the bucket layout ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)). The etcd snapshot is plaintext apart from Secrets, so the target is an encrypted volume. With one offline medium (owner decision 2026-11-09), the copy goes onto the `bedrock-keys` stick next to the keys: `just offline-backup /Volumes/bedrock-keys`. Losing the stick loses the keys and the copy together, and whoever opens it holds both. Older copies are deleted when the next one no longer fits. To restore from it, upload a bucket folder with `rclone copy` into a new, empty bucket and point the consumer at that bucket; the copied dumps decrypt with the same key, and the Longhorn backups are LUKS ciphertext that needs `longhorn-crypto`. A copied `volume.cfg` may name a newer backup than the one copied when a backup finished during the copy, so the restore names the backup explicitly, from the copied `backups/backup_<name>.cfg`.
 
@@ -214,6 +214,9 @@ The cadence is a monthly `just restore-test` and `just offline-backup`, a full r
 | Postgres clone from R2, replayed to the latest WAL | 2026-11-07 | Passed: 1 and 242 rows in both |
 | Encrypted Longhorn restore, wrong key refused | 2026-11-07 | Passed |
 | etcd snapshot in R2 under 13 hours old | 2026-11-07 | Passed |
+| Encrypted dumps decrypted from the key stick into a scratch database | 2026-11-10 | Passed: 1 and 242 rows in both |
+| Delete of a locked object with a bucket token refused | 2026-11-12 | Passed: `ObjectLockedByBucketPolicy` under `dumps/` and `etcd-snapshots/` |
+| Offline copy to the key stick | 2026-11-12 | Passed: 1.3 GB copied, all four dumps decrypt |
 | Host configurations build | Every pull request | `nix-check` in CI |
 | etcd restore from a snapshot | Never | Untested |
 | Postgres or a volume restored into production | Never | Untested |
