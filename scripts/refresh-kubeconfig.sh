@@ -32,7 +32,6 @@ extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-certificate-d
 extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-key-data"' "$work/client.key"
 
 mkdir -p "$(dirname "$kubeconfig")"
-
 kubectl --kubeconfig "$kubeconfig" config set-cluster "$entry" \
   --server "$server_url" \
   --certificate-authority "$work/ca.crt" \
