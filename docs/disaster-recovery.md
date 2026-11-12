@@ -28,6 +28,7 @@ The age key, the K3s root CA and the Longhorn volume encryption key are the thre
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin host key | Secure Enclave key `estate-root` on the Mac, listed in `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
+| Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable |
 | Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
 
@@ -247,6 +248,12 @@ The admin keys are Secure Enclave keys created with `sc_auth create-ctk-identity
 3. Remove the old key from both files and deploy again.
 
 A lost Mac means creating new keys on the new Mac and deploying them. The hosts no longer accept any key the new Mac holds, so push the new public key through the existing recovery path: the nodes by the reinstall steps in [Reinstalling a host](#reinstalling-a-host), and the router by reflashing the `router-installer` image, which carries the key list from this repository.
+
+The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac, or an expired CTK certificate. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
+
+```
+ssh -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass root@100.105.211.67
+```
 
 ## Tailscale overlay recovery
 
