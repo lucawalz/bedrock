@@ -2,7 +2,8 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    ":dependencyDashboard"
+    ":dependencyDashboard",
+    "docker:pinDigests"
   ],
   "nix": {
     "description": "Keep the beta nix manager opted in, since Renovate ships it disabled",
@@ -112,11 +113,6 @@
       "groupName": "{{{packageFileDir}}}"
     },
     {
-      "description": "Pin every container image to its digest",
-      "matchDatasources": ["docker"],
-      "pinDigests": true
-    },
-    {
       "description": "Keep OCI chart references on their version, since a HelmRelease chart takes no digest",
       "matchDepTypes": ["HelmChart"],
       "pinDigests": false
@@ -125,11 +121,6 @@
       "description": "Auto-merge minor, patch, and digest updates",
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "automerge": true
-    },
-    {
-      "description": "Hold major updates for manual review",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
     },
     {
       "description": "Hold critical infrastructure minors and patches for manual review",
@@ -150,6 +141,7 @@
         "/^reg\\.kyverno\\.io/kyverno//",
         "/^docker\\.io/grafana/(loki|tempo|alloy)$/",
         "/^ghcr\\.io/fluxcd/flagger$/",
+        "/^fluxcd/flux2$/",
         "/^cloudnative-pg$/",
         "/^plugin-barman-cloud$/",
         "/^kube-prometheus-stack$/",
@@ -175,12 +167,6 @@
         "/(^|/)zot$/",
         "/^flagger$/"
       ],
-      "matchUpdateTypes": ["minor", "patch"],
-      "automerge": false
-    },
-    {
-      "description": "Hold Flux distribution minors for manual review",
-      "matchDepNames": ["fluxcd/flux2"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": false
     },
