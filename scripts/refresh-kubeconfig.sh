@@ -32,11 +32,6 @@ extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-certificate-d
 extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-key-data"' "$work/client.key"
 
 mkdir -p "$(dirname "$kubeconfig")"
-if [ -f "$kubeconfig" ]; then
-  backup="$kubeconfig.bak-$(date +%Y%m%d%H%M%S)"
-  cp -p "$kubeconfig" "$backup"
-  echo "Backed up $kubeconfig to $backup"
-fi
 
 kubectl --kubeconfig "$kubeconfig" config set-cluster "$entry" \
   --server "$server_url" \
