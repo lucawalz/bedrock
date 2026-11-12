@@ -45,15 +45,7 @@ kubeControllerManager:
 kubeProxy:
   enabled: false
 kubeEtcd:
-  enabled: true
-  endpoints:
-    - 10.20.0.10
-  serviceMonitor:
-    metricRelabelings:
-      - action: drop
-        regex: kubelet_.*
-        sourceLabels:
-          - __name__
+  enabled: false
 
 kubeApiServer:
   serviceMonitor:
@@ -191,13 +183,10 @@ defaultRules:
     KubeletServerCertificateExpiration: true
     KubeletClientCertificateRenewalErrors: true
     KubeletServerCertificateRenewalErrors: true
-    etcdHighNumberOfFailedGRPCRequests: true
-    etcdMemberCommunicationSlow: true
     NodeSystemdServiceCrashlooping: true
     # Selectors the estate does export, under a different metric name or job label.
     # Each is replaced by a repo-owned rule in alert-rules/prometheusrule.yaml.
     KubeJobFailed: true
-    etcdGRPCRequestsSlow: true
     NodeSystemdServiceFailed: true
 
 grafana:

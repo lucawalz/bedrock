@@ -251,14 +251,6 @@ spec:
           annotations:
             summary: "k3s has recorded no recent scheduled etcd snapshot"
             description: "No usable k3s etcd snapshot from the schedule has been recorded in the last 26 hours, which is two missed runs of the twelve hourly snapshot schedule, so the restore point for the whole cluster is frozen at the last successful run. Only snapshots the schedule named etcd-snapshot-* are counted, because an on-demand snapshot taken by hand would otherwise hide a schedule that has stopped running."
-        - alert: EtcdWalFsyncSlow
-          expr: histogram_quantile(0.99, sum by (le) (rate(etcd_disk_wal_fsync_duration_seconds_bucket{job="kube-etcd"}[5m]))) > 0.1
-          for: 15m
-          labels:
-            severity: warning
-          annotations:
-            summary: "etcd WAL fsync p99 is above 100ms"
-            description: "The p99 etcd WAL fsync duration has exceeded 100 milliseconds for 15 minutes, against a 10 millisecond target for healthy etcd. etcd shares one NVMe with the Longhorn replica data on control-plane-1, so sustained slow fsync usually means storage contention rather than an etcd fault. The upstream etcdHighFsyncDurations alert only fires at 500 milliseconds, which is far above the range this estate operates in and would miss this entirely."
         - alert: EtcdRequestsSlow
           expr: histogram_quantile(0.99, sum by (le, operation) (rate(etcd_request_duration_seconds_bucket{job="apiserver"}[5m]))) > 0.1
           for: 15m
