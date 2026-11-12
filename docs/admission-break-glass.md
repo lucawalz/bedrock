@@ -110,7 +110,7 @@ kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations \
   | select(.failurePolicy=="Ignore") | "\($i.metadata.name) \(.name)"'
 ```
 
-Six entries are `Ignore` by design and are expected in that output at rest. Anything beyond this set still needs restoring.
+Seven entries are `Ignore` by design and are expected in that output at rest. Anything beyond this set still needs restoring.
 
 | Configuration | Webhook |
 | --- | --- |
@@ -118,6 +118,7 @@ Six entries are `Ignore` by design and are expected in that output at rest. Anyt
 | `kube-prometheus-stack-admission` | `prometheusrulemutate.monitoring.coreos.com` |
 | `kube-prometheus-stack-admission` | `prometheusrulevalidate.monitoring.coreos.com` |
 | `kyverno-resource-mutating-webhook-cfg` | `mutate.kyverno.svc-ignore` |
+| `kyverno-resource-validating-webhook-cfg` | `validate.kyverno.svc-ignore` |
 | `kyverno-ttl-validating-webhook-cfg` | `kyverno-cleanup-controller.kyverno.svc` |
 | `kyverno-verify-mutating-webhook-cfg` | `monitor-webhooks.kyverno.svc` |
 
