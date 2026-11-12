@@ -88,13 +88,11 @@ if [ -n "$deploy_key_file" ]; then
   fi
 elif step "Create the sync secret $sync_secret for $sync_url with a new SSH deploy key (set BEDROCK_DEPLOY_KEY to reuse one)"; then
   "${fluxctl[@]}" create secret git "$sync_secret" --namespace "$namespace" --url "$sync_url"
-  public_key_file="$(mktemp)"
-  trap 'rm -f "$public_key_file"' EXIT
-  "${kube[@]}" -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d > "$public_key_file"
-  cat "$public_key_file"
+  public_key="$("${kube[@]}" -n "$namespace" get secret "$sync_secret" -o jsonpath='{.data.identity\.pub}' | base64 -d)"
+  echo "$public_key"
   if step "Register this public key on $sync_repository as the read-only deploy key $deploy_key_title (delete the previous cluster's key by hand)"; then
     require_tools gh
-    gh repo deploy-key add "$public_key_file" --repo "$sync_repository" --title "$deploy_key_title"
+    gh repo deploy-key add - --repo "$sync_repository" --title "$deploy_key_title" <<< "$public_key"
   fi
 fi
 
