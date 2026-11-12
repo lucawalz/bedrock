@@ -28,6 +28,9 @@ jobs:
       - name: Validate Kubernetes manifests
         run: bash scripts/check-manifests.sh "$RUNNER_TEMP/crd-schemas" "$RUNNER_TEMP/rendered"
 
+      - name: Check Reloader and Traefik watch every namespace that needs them
+        run: bash scripts/check-namespace-lists.sh "$RUNNER_TEMP/rendered"
+
   kustomize-build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
