@@ -113,6 +113,11 @@
       "groupName": "{{{packageFileDir}}}"
     },
     {
+      "description": "Let images from registries that publish no release timestamp pass the release age wait",
+      "matchDatasources": ["docker"],
+      "minimumReleaseAgeBehaviour": "timestamp-optional"
+    },
+    {
       "description": "Keep OCI chart references on their version, since a HelmRelease chart takes no digest",
       "matchDepTypes": ["HelmChart"],
       "pinDigests": false
@@ -142,6 +147,8 @@
         "/^docker\\.io/grafana/(loki|tempo|alloy)$/",
         "/^ghcr\\.io/fluxcd/flagger$/",
         "/^fluxcd/flux2$/",
+        "/^ghcr\\.io/kyverno/readiness-checker$/",
+        "/^ghcr\\.io/jkroepke/kube-webhook-certgen$/",
         "/^cloudnative-pg$/",
         "/^plugin-barman-cloud$/",
         "/^kube-prometheus-stack$/",
@@ -204,7 +211,8 @@
         "/^registry\\.k8s\\.io/kube-state-metrics/kube-state-metrics$/",
         "/^quay\\.io/kiwigrid/k8s-sidecar$/",
         "/^docker\\.io/library/busybox$/",
-        "/^docker\\.io/curlimages/curl$/"
+        "/^docker\\.io/curlimages/curl$/",
+        "/^ghcr\\.io/jkroepke/kube-webhook-certgen$/"
       ],
       "groupName": "kube-prometheus-stack and its crds",
       "separateMajorMinor": false,
