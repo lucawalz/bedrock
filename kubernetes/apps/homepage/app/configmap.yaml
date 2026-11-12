@@ -63,7 +63,7 @@ data:
     - Network:
         - AdGuard Home:
             icon: adguard-home.png
-            href: http://10.20.0.1:3000
+            href: https://github.com/lucawalz/bedrock#services
 
   widgets.yaml: |
     - datetime:
