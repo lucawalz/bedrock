@@ -9,8 +9,8 @@ require_tools openssl age nix-instantiate jq tar
 [ "$#" -eq 0 ] || { echo "usage: generate-cluster-ca.sh" >&2; exit 1; }
 
 product=k3s
-stick_root_ca_dir=/Volumes/bedrock-keys/bedrock/k3s-root-ca
-root_ca_dir="${BEDROCK_ROOT_CA_DIR:-$stick_root_ca_dir}"
+root_ca_dir="${BEDROCK_ROOT_CA_DIR:-/Volumes/bedrock-keys/bedrock/k3s-root-ca}"
+create_root="${BEDROCK_CREATE_ROOT_CA:-0}"
 root_cert="$root_ca_dir/root-ca.pem"
 root_key="$root_ca_dir/root-ca.key"
 identity="${BEDROCK_AGENIX_IDENTITY:-$HOME/.ssh/id_ed25519}"
@@ -43,6 +43,10 @@ openssl version | grep -q '^OpenSSL 3' || { echo "openssl must be OpenSSL 3, got
 [ -f "secrets/$token_secret" ] || { echo "secrets/$token_secret is missing" >&2; exit 1; }
 if { [ -e "$root_cert" ] && [ ! -e "$root_key" ]; } || { [ ! -e "$root_cert" ] && [ -e "$root_key" ]; }; then
   echo "$root_ca_dir holds only one of root-ca.pem and root-ca.key" >&2
+  exit 1
+fi
+if [ ! -e "$root_cert" ] && [ "$create_root" != 1 ]; then
+  echo "$root_cert is missing; check the path, or set BEDROCK_CREATE_ROOT_CA=1 to mint a new root" >&2
   exit 1
 fi
 
@@ -78,9 +82,9 @@ else
   openssl genrsa -traditional -out "$root_key" "$root_rsa_bits" 2>/dev/null
   openssl req -x509 -new -sha256 -days "$root_days" -key "$root_key" \
     -subj "/CN=$product-root-ca@$timestamp" -config "$work/openssl.cnf" -extensions v3_ca -out "$root_cert"
+  chmod 700 "$root_ca_dir"
+  chmod 600 "$root_key"
 fi
-chmod 700 "$root_ca_dir"
-chmod 600 "$root_key"
 openssl x509 -in "$root_cert" -noout -checkend "$((intermediate_days * seconds_per_day))" >/dev/null ||
   { echo "the root CA expires within the intermediate lifetime; rotate the root" >&2; exit 1; }
 
