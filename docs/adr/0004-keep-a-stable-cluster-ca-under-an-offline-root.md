@@ -12,7 +12,7 @@ K3s generates a fresh CA when its datastore is created. The K3s token in agenix,
 ## Decision
 
 - The cluster CA is created once by `scripts/generate-cluster-ca.sh` and stays the same across rebuilds. A root CA signs intermediate CAs for the server, client, request-header and etcd roles, and the token pins the root.
-- The root key never reaches a host. It lives on the admin Mac and on an encrypted offline medium, together with the SOPS age key and the Longhorn volume encryption key, which are the three keys a rebuild from git cannot recreate.
+- The root key never reaches a host. The root lives only offline, on the encrypted `bedrock-keys` medium, with no copy on the admin Mac. The SOPS age key and the Longhorn volume encryption key are kept on the same medium; with the root they are the three keys a rebuild from git cannot recreate. `scripts/generate-cluster-ca.sh` reads the root from the medium and refuses to run when it is not mounted.
 - The intermediates, their keys and the service account key are age-encrypted to control-plane-1 and the admin as `secrets/k3s-ca.age`. The `k3s-ca` unit unpacks them into the K3s TLS directory before the first K3s start, and only when no `server-ca.crt` exists, so it can never replace the CA of a running cluster.
 
 ## Consequences

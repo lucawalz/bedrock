@@ -9,10 +9,11 @@ require_tools openssl age nix-instantiate jq tar
 [ "$#" -eq 0 ] || { echo "usage: generate-cluster-ca.sh" >&2; exit 1; }
 
 product=k3s
-root_ca_dir="$HOME/.config/bedrock/k3s-root-ca"
+stick_root_ca_dir=/Volumes/bedrock-keys/bedrock/k3s-root-ca
+root_ca_dir="${BEDROCK_ROOT_CA_DIR:-$stick_root_ca_dir}"
 root_cert="$root_ca_dir/root-ca.pem"
 root_key="$root_ca_dir/root-ca.key"
-identity="$HOME/.ssh/id_ed25519"
+identity="${BEDROCK_AGENIX_IDENTITY:-$HOME/.ssh/id_ed25519}"
 ca_secret=k3s-ca.age
 token_secret=k3s-token.age
 token_user=server
@@ -36,6 +37,8 @@ tarball_members=(
 )
 
 openssl version | grep -q '^OpenSSL 3' || { echo "openssl must be OpenSSL 3, got: $(openssl version)" >&2; exit 1; }
+[ -d "$(dirname "$root_ca_dir")" ] ||
+  { echo "$(dirname "$root_ca_dir") is not mounted; plug in the bedrock-keys stick or set BEDROCK_ROOT_CA_DIR" >&2; exit 1; }
 [ -f "$identity" ] || { echo "$identity is missing; it decrypts $token_secret" >&2; exit 1; }
 [ -f "secrets/$token_secret" ] || { echo "secrets/$token_secret is missing" >&2; exit 1; }
 if { [ -e "$root_cert" ] && [ ! -e "$root_key" ]; } || { [ ! -e "$root_cert" ] && [ -e "$root_key" ]; }; then

@@ -137,7 +137,7 @@ Internal names are subdomains of `syslabs.dev`. Ollama serves the local models i
 - [Nix](https://nixos.org/download.html) with flakes. `nix develop` pins the toolchain (kubectl, helm, flux, sops, age, just, yq, kubeconform, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs.
 - A GitHub account holding this repository and the private `bedrock-secrets` repository.
 - A Tailscale tailnet, a Cloudflare account with the `syslabs.dev` zone, and three R2 buckets (`bedrock-postgres`, `bedrock-longhorn`, `bedrock-etcd`) with one bucket-scoped token each.
-- The three recovery keys: the SOPS age key, the K3s root CA in `~/.config/bedrock/k3s-root-ca/`, and the Longhorn volume encryption key. They are kept together on an encrypted offline medium ([ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
+- The three recovery keys: the SOPS age key, the K3s root CA (offline only, in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/`), and the Longhorn volume encryption key. They are kept together on an encrypted offline medium ([ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 
 ### Hosts
 
