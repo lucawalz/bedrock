@@ -7,7 +7,7 @@ date: 2026-11-07
 
 ## Context
 
-Several admin UIs (Flux, Homepage, Longhorn, Prometheus, Alertmanager, ntfy, paperless-gpt, the Traefik dashboard) ship with weak or no authentication of their own. One person administers the cluster. The previous identity provider was a large stack whose configuration lived mostly in its database rather than in git.
+Several admin UIs (Flux, Homepage, Longhorn, Prometheus, Alertmanager, paperless-gpt, the Traefik dashboard) ship with weak or no authentication of their own. One person administers the cluster. The previous identity provider was a large stack whose configuration lived mostly in its database rather than in git.
 
 ## Decision
 
