@@ -178,14 +178,6 @@ let
       <core>
         <gap>0</gap>
       </core>
-      <keyboard>
-        <keybind key="W-Return">
-          <action name="Execute" command="${lib.getExe pkgs.foot}" />
-        </keybind>
-        <keybind key="W-d">
-          <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
-        </keybind>
-      </keyboard>
     </labwc_config>
   '';
 
@@ -193,12 +185,6 @@ let
     <?xml version="1.0"?>
     <openbox_menu>
       <menu id="root-menu" label="labwc">
-        <item label="Terminal">
-          <action name="Execute" command="${lib.getExe pkgs.foot}" />
-        </item>
-        <item label="Launcher">
-          <action name="Execute" command="${lib.getExe pkgs.fuzzel}" />
-        </item>
         <item label="Reload dashboard">
           <action name="Execute" command="${launchBrowser}" />
         </item>
@@ -335,8 +321,6 @@ in
       systemPackages = [
         compositor
         transparentCursor
-        pkgs.foot
-        pkgs.fuzzel
         pkgs.chromium
         pkgs.wlr-randr
         pkgs.libdrm
