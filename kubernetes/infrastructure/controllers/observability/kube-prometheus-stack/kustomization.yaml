@@ -18,6 +18,34 @@ configMapGenerator:
   - name: prometheus-values
     files:
       - values.yaml=configmap-values.yaml
+  - name: grafana-dashboard-cert-manager
+    files:
+      - dashboards/cert-manager.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-loki-logs
+    files:
+      - dashboards/loki-logs.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-node-exporter-full
+    files:
+      - dashboards/node-exporter-full.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
+  - name: grafana-dashboard-traefik
+    files:
+      - dashboards/traefik.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
 
 configurations:
   - kustomizeconfig.yaml
