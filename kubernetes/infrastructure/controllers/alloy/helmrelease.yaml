@@ -94,8 +94,11 @@ spec:
             stage.cri {}
             forward_to = [loki.write.default.receiver]
           }
+          local.file_match "kubernetes_audit" {
+            path_targets = [{"__path__" = "/var/log/kubernetes/audit.log", "job" = "kubernetes-audit"}]
+          }
           loki.source.file "kubernetes_audit" {
-            targets    = [{"__path__" = "/var/log/kubernetes/audit.log", "job" = "kubernetes-audit"}]
+            targets    = local.file_match.kubernetes_audit.targets
             forward_to = [loki.process.kubernetes_audit.receiver]
           }
           loki.process "kubernetes_audit" {
