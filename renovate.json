@@ -31,9 +31,18 @@
       "customType": "regex",
       "description": "Update the Grafana image pinned in a Helm values ConfigMap, which the flux manager cannot see",
       "managerFilePatterns": ["/^kubernetes/infrastructure/controllers/.+/configmap-values\\.ya?ml$/"],
-      "matchStrings": ["grafana:[\\s\\S]*?\\n\\s+image:\\s*\\n\\s+tag:\\s*\"(?<currentValue>[^\"]+)\""],
+      "matchStrings": ["grafana:[\\s\\S]*?\\n\\s+image:\\s*\\n\\s+tag:\\s*\"(?<currentValue>[^\"@]+)(?:@(?<currentDigest>sha256:[0-9a-f]{64}))?\""],
       "depNameTemplate": "grafana/grafana",
       "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Update an annotated image tag and digest in HelmRelease values that the flux manager cannot read",
+      "managerFilePatterns": ["/^kubernetes/.+/helmrelease\\.yaml$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)\\s+tag:\\s*\"?(?<currentValue>[^\"@\\s]+)@(?<currentDigest>sha256:[0-9a-f]{64})\"?",
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)\\s+tag:\\s*\"?(?<currentValue>[^\"@\\s]+)\"?\\s+digest:\\s*\"?(?<currentDigest>sha256:[0-9a-f]{64})\"?"
+      ]
     },
     {
       "customType": "regex",
@@ -86,9 +95,8 @@
       "groupName": "nixpkgs"
     },
     {
-      "description": "Group infrastructure Helm charts together",
+      "description": "Update the infrastructure charts and their images on Sundays",
       "matchManagers": ["flux"],
-      "groupName": "infrastructure charts",
       "schedule": ["on sunday"],
       "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
@@ -97,6 +105,21 @@
         "/longhorn/",
         "/kube-prometheus-stack/"
       ]
+    },
+    {
+      "description": "Ship a chart and the images pinned in its HelmRelease values in one pull request",
+      "matchFileNames": ["kubernetes/**/helmrelease.yaml"],
+      "groupName": "{{{packageFileDir}}}"
+    },
+    {
+      "description": "Pin every container image to its digest",
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    },
+    {
+      "description": "Keep OCI chart references on their version, since a HelmRelease chart takes no digest",
+      "matchDepTypes": ["HelmChart"],
+      "pinDigests": false
     },
     {
       "description": "Auto-merge minor, patch, and digest updates",
@@ -110,9 +133,23 @@
     },
     {
       "description": "Hold critical infrastructure minors and patches for manual review",
-      "matchManagers": ["flux", "kubernetes"],
+      "matchManagers": ["flux", "kubernetes", "custom.regex"],
       "matchPackageNames": [
         "/^longhorn$/",
+        "/^docker\\.io/longhornio//",
+        "/^ghcr\\.io/cloudnative-pg/(cloudnative-pg|plugin-barman-cloud|plugin-barman-cloud-sidecar)$/",
+        "/^quay\\.io/prometheus(-operator)?//",
+        "/^registry\\.k8s\\.io/kube-state-metrics/kube-state-metrics$/",
+        "/^quay\\.io/kiwigrid/k8s-sidecar$/",
+        "/^quay\\.io/jetstack/cert-manager-/",
+        "/^docker\\.io/traefik$/",
+        "/^quay\\.io/oauth2-proxy/oauth2-proxy$/",
+        "/^quay\\.io/metallb//",
+        "/^quay\\.io/frrouting/frr$/",
+        "/^ghcr\\.io/controlplaneio-fluxcd/flux-operator$/",
+        "/^reg\\.kyverno\\.io/kyverno//",
+        "/^docker\\.io/grafana/(loki|tempo|alloy)$/",
+        "/^ghcr\\.io/fluxcd/flagger$/",
         "/^cloudnative-pg$/",
         "/^plugin-barman-cloud$/",
         "/^kube-prometheus-stack$/",
@@ -166,7 +203,7 @@
     {
       "description": "Ship traefik-crds in the same PR as traefik, held for review",
       "matchManagers": ["flux"],
-      "matchPackageNames": ["/^traefik$/", "/^traefik-crds$/"],
+      "matchPackageNames": ["/^traefik$/", "/^traefik-crds$/", "/^docker\\.io/traefik$/"],
       "groupName": "traefik and its crds",
       "separateMajorMinor": false,
       "automerge": false
@@ -174,7 +211,15 @@
     {
       "description": "Ship prometheus-operator-crds with kube-prometheus-stack, whose operator minor is the crds major",
       "matchManagers": ["flux"],
-      "matchPackageNames": ["/^kube-prometheus-stack$/", "/^prometheus-operator-crds$/"],
+      "matchPackageNames": [
+        "/^kube-prometheus-stack$/",
+        "/^prometheus-operator-crds$/",
+        "/^quay\\.io/prometheus(-operator)?//",
+        "/^registry\\.k8s\\.io/kube-state-metrics/kube-state-metrics$/",
+        "/^quay\\.io/kiwigrid/k8s-sidecar$/",
+        "/^docker\\.io/library/busybox$/",
+        "/^docker\\.io/curlimages/curl$/"
+      ],
       "groupName": "kube-prometheus-stack and its crds",
       "separateMajorMinor": false,
       "automerge": false
