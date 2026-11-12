@@ -71,11 +71,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-fail() {
-  echo "FAIL: $*" >&2
-  exit 1
-}
-
 restore_network_policy() {
   local cidr
   cat <<MANIFEST
