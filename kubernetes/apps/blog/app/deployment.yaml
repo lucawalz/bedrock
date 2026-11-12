@@ -24,6 +24,8 @@ spec:
         runAsUser: 101
         runAsGroup: 101
         fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: blog
           image: ghcr.io/lucawalz/blog:main-20261111215921-d14b65a@sha256:ab6e9d1e47de37b4c0d2aaa8864f559d6a17825b3ef572ff5bc15598800c0b7d
