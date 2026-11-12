@@ -18,7 +18,7 @@
     enable = true;
     hostname = "router";
     authKeyFile = config.age.secrets.tailscale-authkey.path;
-    tag = "tag:cluster";
+    tag = "tag:router";
     advertiseSubnet = inventory.subnet;
     acceptRoutes = true;
   };
