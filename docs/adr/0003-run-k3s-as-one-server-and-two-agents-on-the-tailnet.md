@@ -25,5 +25,5 @@ Three identical mini PCs have to carry the control plane, the workloads and the 
 - The cluster CA must survive a datastore wipe, or agents can no longer join with the pinned token ([0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 - Encrypting pod traffic on a LAN path costs some throughput.
 - Tailscale's `ts-input` chain accepts all `tailscale0` traffic before the NixOS firewall, so the policy is the only filter for every node listener; this is an accepted risk.
-- MetalLB announces in L2 mode, but its frr-k8s backend still runs FRR on every node, with `mgmtd` on TCP 2623 and `bfdd` on UDP 3784 and 4784 on all addresses. No BGP peer or BFD profile exists. The NixOS firewall does not open these ports on VLAN 20 and the tailnet policy allows only UDP 8472 between nodes, so no other host reaches them; this is accepted.
+- frr-k8s runs FRR (`mgmtd`, `bfdd`) on every node with no BGP or BFD peers, and no other host reaches it; this is accepted.
 - On an empty cache zot fetches a large image fully before answering, which can outlast the containerd pull deadline. Pods back off and recover once the cache is warm.
