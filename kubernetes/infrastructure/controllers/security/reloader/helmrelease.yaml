@@ -29,6 +29,7 @@ spec:
         - cloudflare-tunnel
         - homepage
         - litellm
+        - ntfy
         - oauth2-proxy
         - paperless
         - pocket-id
