@@ -9,37 +9,47 @@ runs:
       env:
         # renovate: datasource=github-releases depName=mikefarah/yq
         YQ_VERSION: v4.54.3
+        YQ_SHA256: 129534601871538efe0ba4c5e62a34fb1d5f469bcb975c4fddeb467d82974973
       run: |
-        curl -sSL -o /usr/local/bin/yq \
+        curl -sSfL -o "$RUNNER_TEMP/yq" \
           "https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64"
-        chmod +x /usr/local/bin/yq
+        echo "${YQ_SHA256}  $RUNNER_TEMP/yq" | sha256sum -c -
+        install -m 0755 "$RUNNER_TEMP/yq" /usr/local/bin/yq
 
     - name: Install kustomize
       shell: bash
       env:
         # renovate: datasource=github-releases depName=kubernetes-sigs/kustomize extractVersion=^kustomize/(?<version>.+)$
         KUSTOMIZE_VERSION: v5.8.3
+        KUSTOMIZE_SHA256: cb9e31198d3f63b44848bd0afc4c8efc56e6cfef9c93a4a39a211940e6decd61
       run: |
-        curl -sSL "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz" \
-          | tar xz -C /usr/local/bin kustomize
+        curl -sSfL -o "$RUNNER_TEMP/kustomize.tar.gz" \
+          "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64.tar.gz"
+        echo "${KUSTOMIZE_SHA256}  $RUNNER_TEMP/kustomize.tar.gz" | sha256sum -c -
+        tar xzf "$RUNNER_TEMP/kustomize.tar.gz" -C /usr/local/bin kustomize
 
     - name: Install helm
       shell: bash
       env:
         # renovate: datasource=github-releases depName=helm/helm
         HELM_VERSION: v4.3.1
+        HELM_SHA256: 0403a88ae20913d11b10a2467b50087721fea7581736da6b9d3992f5357fe54b
       run: |
-        curl -sSL "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz" \
-          | tar xz --strip-components=1 -C /usr/local/bin linux-amd64/helm
+        curl -sSfL -o "$RUNNER_TEMP/helm.tar.gz" "https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz"
+        echo "${HELM_SHA256}  $RUNNER_TEMP/helm.tar.gz" | sha256sum -c -
+        tar xzf "$RUNNER_TEMP/helm.tar.gz" --strip-components=1 -C /usr/local/bin linux-amd64/helm
 
     - name: Install kubeconform
       shell: bash
       env:
         # renovate: datasource=github-releases depName=yannh/kubeconform
         KUBECONFORM_VERSION: v0.8.0
+        KUBECONFORM_SHA256: 9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883
       run: |
-        curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
-          | tar xz -C /usr/local/bin kubeconform
+        curl -sSfL -o "$RUNNER_TEMP/kubeconform.tar.gz" \
+          "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+        echo "${KUBECONFORM_SHA256}  $RUNNER_TEMP/kubeconform.tar.gz" | sha256sum -c -
+        tar xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C /usr/local/bin kubeconform
 
     - name: Fetch the CRD schema catalog
       shell: bash
