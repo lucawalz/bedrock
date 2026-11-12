@@ -96,7 +96,10 @@ while IFS= read -r path; do
   printf -- '---\n' >> "$work/built.yaml"
   kustomize build "$path" >> "$work/built.yaml"
 done < "$work/flux-paths"
-cat "$rendered_releases"/*.yaml >> "$work/built.yaml"
+for release in "$rendered_releases"/*.yaml; do
+  printf -- '---\n' >> "$work/built.yaml"
+  cat "$release" >> "$work/built.yaml"
+done
 
 # yq treats a bare "*" in == as a glob, so wildcards are matched with test().
 # shellcheck disable=SC2016
