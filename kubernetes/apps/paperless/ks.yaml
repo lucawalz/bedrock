@@ -71,6 +71,23 @@ spec:
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
+  name: paperless-taxonomy-config
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  path: ./paperless
+  prune: true
+  wait: true
+  timeout: 5m
+  serviceAccountName: paperless-taxonomy-config
+  sourceRef:
+    kind: GitRepository
+    name: bedrock-secrets
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
   name: paperless-taxonomy
   namespace: flux-system
 spec:

@@ -22,7 +22,7 @@ from documents.models import Correspondent, Document  # noqa: E402
 from dedup import document_counts, find_pairs, installation_token, open_pr  # noqa: E402
 
 REPOSITORY = "https://api.github.com/repos/lucawalz/bedrock-secrets"
-TAXONOMY_FILE = "clusters/home/apps/paperless-taxonomy.yaml"
+TAXONOMY_FILE = "paperless/paperless-taxonomy.yaml"
 CONFIG_MAP = """apiVersion: v1
 kind: ConfigMap
 metadata:
