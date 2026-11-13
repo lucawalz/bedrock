@@ -104,3 +104,23 @@ node_address() {
     'inventory: builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs (name: node: name + " " + node.address) inventory.nodes))' \
     | awk -v node="$1" '$1 == node { print $2 }'
 }
+
+secret_rules() {
+  nix eval --json --file "$repo_root/secrets/secrets.nix"
+}
+
+secret_recipients() {
+  jq -r --arg file "$2" '.[$file].publicKeys[]' <<< "$1"
+}
+
+age_stanza_count() {
+  awk '/^---/ { exit } /^-> / { count++ } END { print count + 0 }' "$1"
+}
+
+stick_host_key() {
+  printf '%s/hosts/%s/etc/ssh/ssh_host_ed25519_key\n' "$(rebuild_keys_dir)" "$1"
+}
+
+stick_hosts() {
+  find "$(rebuild_keys_dir)/hosts" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
+}

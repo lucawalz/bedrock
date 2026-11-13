@@ -150,6 +150,14 @@ deploy-nodes *args="":
 generate-rebuild-keys:
     bash scripts/generate-rebuild-keys.sh
 
+# Re-key secrets/ to the stick host keys, write the stick k3s tokens and re-issue the cluster CA, all on a RAM disk
+rekey-secrets:
+    bash scripts/rekey-secrets.sh
+
+# Prompt for each host's single-use Tailscale auth key and encrypt it to that host's stick key
+tailscale-authkeys:
+    bash scripts/tailscale-authkeys.sh
+
 # Wipe and reinstall a node from the local main with its stick keys, enrol Secure Boot and reboot, for example: just install-node worker-1 phases=disko,install
 install-node node phases="":
     bash scripts/install-node.sh {{ quote(node) }} {{ quote(phases) }}

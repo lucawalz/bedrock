@@ -89,6 +89,17 @@ jobs:
       - name: Test the rebuild key generator and its refusal to overwrite
         run: bash scripts/check-generate-rebuild-keys.sh
 
+      - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
+
+      - name: Install age for the secrets re-key tests
+        run: sudo apt-get install -y age
+
+      - name: Test the secrets re-key, token writes and their refusals
+        run: bash scripts/check-rekey-secrets.sh
+
+      - name: Test the Tailscale auth key writes and their refusals
+        run: bash scripts/check-tailscale-authkeys.sh
+
       - name: Test the restore drill age limit
         run: bash scripts/check-restore-test.sh
 
