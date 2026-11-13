@@ -8,6 +8,7 @@ require_tools scp kubectl yq base64
 mode="${1:-oidc}"
 control_plane=root@control-plane-1
 remote_kubeconfig=/etc/rancher/k3s/k3s.yaml
+remote_ca=/var/lib/rancher/k3s/server/tls/server-ca.crt
 remote_entry=default
 server_url=https://10.20.0.10:6443
 oidc_kubeconfig="$HOME/.kube/config"
@@ -15,7 +16,6 @@ oidc_entry=bedrock
 oidc_user=bedrock-oidc
 oidc_issuer_url=https://id.syslabs.dev
 oidc_client_id=kubernetes
-oidc_scopes=(email groups)
 exec_api_version=client.authentication.k8s.io/v1
 token_cache_storage=keyring
 
@@ -37,8 +37,6 @@ umask 077
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
-scp -q "$control_plane:$remote_kubeconfig" "$work/k3s.yaml"
-
 extract() {
   local query="$1" out="$2" encoded
   if ! encoded="$(ENTRY="$remote_entry" yq -N -e "$query" "$work/k3s.yaml" 2>/dev/null)" \
@@ -49,7 +47,15 @@ extract() {
   fi
 }
 
-extract '.clusters[] | select(.name == strenv(ENTRY)) | .cluster."certificate-authority-data"' "$work/ca.crt"
+if [ "$mode" = admin ]; then
+  scp -q "$control_plane:$remote_kubeconfig" "$work/k3s.yaml"
+  extract '.clusters[] | select(.name == strenv(ENTRY)) | .cluster."certificate-authority-data"' "$work/ca.crt"
+  extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-certificate-data"' "$work/client.crt"
+  extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-key-data"' "$work/client.key"
+else
+  scp -q "$control_plane:$remote_ca" "$work/ca.crt"
+  [ -s "$work/ca.crt" ] || fail "$remote_ca on $control_plane is empty"
+fi
 
 kube=(kubectl --kubeconfig "$kubeconfig")
 "${kube[@]}" config set-cluster "$entry" \
@@ -58,32 +64,25 @@ kube=(kubectl --kubeconfig "$kubeconfig")
   --embed-certs=true >/dev/null
 
 if [ "$mode" = admin ]; then
-  extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-certificate-data"' "$work/client.crt"
-  extract '.users[] | select(.name == strenv(ENTRY)) | .user."client-key-data"' "$work/client.key"
-  user="$entry"
-  "${kube[@]}" config set-credentials "$user" \
+  "${kube[@]}" config set-credentials "$entry" \
     --client-certificate "$work/client.crt" \
     --client-key "$work/client.key" \
     --embed-certs=true >/dev/null
-  "${kube[@]}" config set-context "$entry" --cluster "$entry" --user "$user" >/dev/null
+  "${kube[@]}" config set-context "$entry" --cluster "$entry" --user "$entry" >/dev/null
   "${kube[@]}" config use-context "$entry" >/dev/null
+  chmod 600 "$kubeconfig"
 else
-  user="$oidc_user"
-  scope_args=()
-  for scope in "${oidc_scopes[@]}"; do
-    scope_args+=(--exec-arg="--oidc-extra-scope=$scope")
-  done
-  "${kube[@]}" config set-credentials "$user" \
+  "${kube[@]}" config set-credentials "$oidc_user" \
     --exec-api-version="$exec_api_version" \
     --exec-interactive-mode=Never \
-    --exec-command=kubectl \
-    --exec-arg=oidc-login \
+    --exec-command=kubectl-oidc_login \
     --exec-arg=get-token \
     --exec-arg="--oidc-issuer-url=$oidc_issuer_url" \
     --exec-arg="--oidc-client-id=$oidc_client_id" \
-    "${scope_args[@]}" \
+    --exec-arg=--oidc-extra-scope=email \
+    --exec-arg=--oidc-extra-scope=groups \
     --exec-arg="--token-cache-storage=$token_cache_storage" >/dev/null
-  "${kube[@]}" config set-context "$entry" --cluster "$entry" --user "$user" >/dev/null
+  "${kube[@]}" config set-context "$entry" --cluster "$entry" --user "$oidc_user" >/dev/null
 fi
 
 "${kube[@]}" --context "$entry" get nodes
