@@ -19,3 +19,4 @@ The decision log from before the rebuild is kept in the [archive](archive/README
 - [0013. Keep each app self-contained and scaffold new ones](0013-keep-each-app-self-contained-and-scaffold-new-ones.md) (accepted)
 - [0014. Pin versions and update them with Renovate](0014-pin-versions-and-update-them-with-renovate.md) (accepted)
 - [0015. Observe with Prometheus, Loki and Tempo](0015-observe-with-prometheus-loki-and-tempo.md) (accepted)
+- [0016. Boot nodes through Secure Boot and unlock LUKS with the TPM](0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md) (accepted)
