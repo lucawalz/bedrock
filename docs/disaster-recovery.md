@@ -86,6 +86,33 @@ End to end the rebuild took about 2 h 20 min. Bootstrap to full convergence took
 
 A fifth defect appeared after convergence: the first forced OCR OOMKilled paperless-ngx, because the pod sees six cores under a two-CPU limit and started about six OCR threads. `PAPERLESS_THREADS_PER_WORKER` now caps it.
 
+### 2026-11-13 rebuild with disk encryption
+
+All four hosts were reinstalled from the flake (the nodes onto LUKS2 with TPM2 unlock and Secure Boot, the router reflashed), and Postgres and the Longhorn volumes were restored from R2 into the new cluster. Times are CET (UTC+1), to the minute.
+
+| Phase | Start | End | Duration |
+| --- | --- | --- | --- |
+| Pre-wipe backups | 11:13 | 11:35 | 22 min |
+| Switch reset and setup | 11:50 | 12:04 | 14 min |
+| Router reflash | 12:07 | 12:50 | 43 min |
+| control-plane-1 | 12:58 | 13:32 | 34 min |
+| worker-1 | 13:34 | 13:49 | 15 min |
+| worker-2 | 13:50 | 14:03 | 13 min |
+| Bootstrap to all 47 Kustomizations Ready | 14:26 | 16:54 | up to 2 h 28 min |
+| Postgres recovery | 15:20 | 15:47 | 27 min |
+| Longhorn volume restores | 15:48 | 16:04 | 16 min |
+| Final verification | 16:54 | 16:54 | 3 nodes Ready, 47 of 47 Kustomizations, data checks passed; rechecked at 20:38 |
+
+The pre-wipe backups end with the offline copy (1.2 GB); each node's end is its second unattended TPM reboot; the bootstrap ended with all Kustomizations confirmed Ready at 16:54, so its true end is earlier; Postgres recovery starts when flannel was fixed and the Cluster could be created. The node, bootstrap and restore phases overlap the interruptions below, which are included in their durations.
+
+Hands-on interruptions:
+
+- control-plane-1: a missed Secretive approval at 13:17 and the `systemd-pcrlock` failure (the m920q TPM lacks `PolicyAuthorizeNV`, so TPM unlock binds to PCRs 0 and 7, [ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) held the install from 13:17 until it finished at 13:24, 7 min.
+- worker-2: a missed Secretive approval at 13:53 cut the installer connection; the install was restarted from the disk step and was running again by 13:55, about 2 min.
+- Flannel kept the temporary tailnet addresses as its public addresses, which broke traffic between nodes. Flux was stalled from about 15:11 until K3s was restarted on every node at 15:19, about 8 min.
+- The Postgres recovery job could not reach R2 because `allow-internet-egress` did not select the job pod. It was seen at 15:36 and Postgres was recovered at 15:47, 11 min, including the policy fix, a push and a recreated job.
+- zot rejected the Docker schema 2 gotenberg manifest until `http.compat` allowed `docker2s2`. The stuck pull was noticed at 16:22 and the fix was verified at 16:54, 32 min; the verified pull through the mirror took 269 s.
+
 ## Rebuilding the cluster from git
 
 This is the procedure as run on 2026-11-06, with the fixes in place. It wipes the K3s state and keeps the operating systems. A reinstall of the operating systems is covered in [Full rebuild from git with disk encryption](#full-rebuild-from-git-with-disk-encryption).
@@ -188,7 +215,7 @@ k3s server --cluster-reset --secrets-encryption --secrets-encryption-provider=se
 
 ## Losing a node that hosts Postgres
 
-The Cluster declares `longhorn-encrypted-local` for its instance volumes: LUKS with one strict-local replica, bound to the node of the first attach. A storage class change reaches only PVCs that CloudNativePG creates afterwards, so the running instances stay on unencrypted three-replica `longhorn` volumes, which reschedule like any other, until they are recovered onto the new class ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)). On the declared class, when that node or its disk is lost for good, the instance's PVC stays pinned to it, CloudNativePG does not delete a PVC on its own, and the pod stays Pending. The required anti-affinity across three nodes also leaves no other node for a fourth instance. If the node returns with its disk intact, the pod resumes by itself. Otherwise replacement is manual:
+The Cluster declares `longhorn-encrypted-local` for its instance volumes: LUKS with one strict-local replica, bound to the node of the first attach. A storage class change reaches only PVCs that CloudNativePG creates afterwards, so a Cluster that predates the class keeps unencrypted three-replica `longhorn` volumes until it is recovered onto the new class ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)); since the 2026-11-13 rebuild all three instances are on `longhorn-encrypted-local`. On that class, when that node or its disk is lost for good, the instance's PVC stays pinned to it, CloudNativePG does not delete a PVC on its own, and the pod stays Pending. The required anti-affinity across three nodes also leaves no other node for a fourth instance. If the node returns with its disk intact, the pod resumes by itself. Otherwise replacement is manual:
 
 ```
 kubectl cnpg destroy postgres <n>
@@ -199,7 +226,7 @@ just luks-discards postgres/postgres-<m>
 
 ## Full rebuild from git with disk encryption
 
-This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. No step below has run on this hardware yet; steps marked (not proven) also have no earlier run to rely on. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
+This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran on this hardware once, on 2026-11-13 ([timeline](#2026-11-13-rebuild-with-disk-encryption)); this text predates that run and still shows the original TPM binding and the steps marked (not proven). Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
 
 ### Contents of the stick
 
@@ -468,7 +495,7 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 
 ## Known gaps
 
-- Restores into production, the etcd restore and an operating system reinstall have never been run.
+- The etcd restore has never been run. Postgres and Longhorn restores into production and an operating system reinstall have run only once, in the 2026-11-13 rebuild.
 - control-plane-1 is the only API server. While it is down, running workloads keep serving, but nothing reschedules, and a CNPG instance that restarts cannot start, because its instance manager reads the Cluster from the API first.
 - Postgres backups are plaintext in R2, which is an accepted risk.
 - etcd snapshots in R2 are plaintext apart from Secrets and the bootstrap data, which is an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
@@ -478,5 +505,5 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.
 - Draining a node that holds the only replica of a disposable volume (Ollama, zot) blocks until Longhorn has evicted the replica to another node.
-- A Postgres instance volume has one strict-local replica that can never move, so draining its node cannot evict it elsewhere. A server-side dry-run drain of worker-2 timed out on the `postgres-1` eviction (the `postgres-primary` PDB allows no disruption while that instance is primary) and on the Longhorn `instance-manager` eviction. Every `instance-manager` PDB allows 0 disruptions at baseline, so any drain of any node waits on it, not only a drain of a Postgres node; that was seen with and without a strict-local volume present. Under `nodeDrainPolicy: block-for-eviction-if-contains-last-replica` a strict-local last replica may block a drain indefinitely. This is unverified, because no real drain has been run. When the node holds the primary, `kubectl cnpg promote postgres <standby>` first moves the primary off it. The standby pod is then expected to be evicted, stay Pending while the node is cordoned and resume on the same node after `kubectl uncordon`, with no data loss; this is also unverified. The rolling-rebuild recipe must establish real drain behaviour, one node at a time with every instance ready between nodes, before relying on any of this.
+- A Postgres instance volume has one strict-local replica that can never move, so draining its node cannot evict the instance elsewhere, and every Longhorn `instance-manager` PodDisruptionBudget allows 0 disruptions, so any drain of any node blocks on it. A real drain of worker-2, which held the primary, on 2026-11-13 (times UTC): `kubectl cnpg promote postgres postgres-3` moved the primary in 27 s with 3 instances ready. `kubectl drain worker-2 --ignore-daemonsets --delete-emptydir-data --timeout=300s` then evicted the now-standby `postgres-1` at once, which went Pending, but never completed: it blocked for the full 300 s on the `instance-manager` PDB and left the node cordoned. After `systemctl reboot` the kernel was up in about 1 min 48 s (TPM unlock unattended, Secure Boot enabled), and once the node was uncordoned `postgres-1` came back on its strict-local volume, which attached healthy, and the cluster had 3 ready instances 7 min 14 s after the reboot command. How long the standby stays Pending while the node is cordoned after the reboot was not measured, because the uncordon came before the node went NotReady. The procedure is to promote a standby off the node, drain with a timeout and accept the `instance-manager` block, reboot, uncordon and wait for 3 ready instances, one node at a time.
 - The drill cadence relies on the owner; no reminder is automated.
