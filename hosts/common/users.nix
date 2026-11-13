@@ -1,7 +1,7 @@
 { meta, ... }:
 let
   lucaKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoKFFTFmJR1CSAq55TwXHbUPTxSK847qZL0W6r/ZUV9 luca@macbook";
-  estateRootKey = "sk-ecdsa-sha2-nistp256@openssh.com AAAAInNrLWVjZHNhLXNoYTItbmlzdHAyNTZAb3BlbnNzaC5jb20AAAAIbmlzdHAyNTYAAABBBDg/tm+t8N9fNwMvAVCKJGfGq/H+FADwbi68xYrVH4bmWrjTpUjd81+FbP8tUKrO2piZQQeDyLQvavJdjdNb3hAAAAAEc3NoOg== estate-root";
+  estateRootKey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJ6Jg18p6w/1hBEjhG7zNDdL30R8ihHZcaU/arZ346cAGIewmSqMYXyKnfOoP4tFjZtejafeESD3IQxrybmx74A= estate-root";
   breakglassKey = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfTCbT6YlvmxEvMaTq+W4TMpOtPo+cRAnknC5T0ItWE estate-breakglass";
 in
 {
