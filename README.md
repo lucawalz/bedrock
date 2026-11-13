@@ -199,7 +199,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 nixos-rebuild switch --flake .#worker-1 --target-host root@10.20.0.11 --build-host root@10.20.0.10
 ```
 
-`--build-host` is required. An arm64 Mac can produce neither the x86_64-linux closure the nodes need nor the aarch64-linux closure the router needs, so the build runs on control-plane-1, which also emulates aarch64 for the router. During a cold rebuild, before control-plane-1 exists, point `--build-host` at the target itself. Do not prefix the command with `sudo`: nothing is built or activated locally, and sudo moves `$HOME` to `/var/root`, which holds no SSH key for the cluster.
+`--build-host` is required. An arm64 Mac can produce neither the x86_64-linux closure the nodes need nor the aarch64-linux closure the router needs, so the build runs on control-plane-1, which also emulates aarch64 for the router. During a cold rebuild, before control-plane-1 exists, point `--build-host` at the target itself. A node whose root is not on `/dev/mapper/cryptroot` does not boot the encrypted layout this flake describes, so rebuilding it is unsafe until it is reinstalled with that layout ([ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)). Do not prefix the command with `sudo`: nothing is built or activated locally, and sudo moves `$HOME` to `/var/root`, which holds no SSH key for the cluster.
 
 On macOS the `TMPDIR` inside `nix develop` is long enough that the SSH control socket nixos-rebuild creates there exceeds the Unix socket path limit and the connection fails with `unix_listener: ... too long for Unix domain socket`. Run the command with a short `TMPDIR` instead:
 
