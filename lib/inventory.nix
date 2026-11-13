@@ -4,10 +4,7 @@ let
       role = "server";
       address = "10.20.0.10";
       mac = "98:fa:9b:a0:67:b7";
-      tailscale = {
-        address = "100.105.211.67";
-        magicDnsName = "control-plane-1.tail26ab10.ts.net";
-      };
+      tailscale.magicDnsName = "control-plane-1.tail26ab10.ts.net";
     };
     worker-1 = {
       role = "agent";
