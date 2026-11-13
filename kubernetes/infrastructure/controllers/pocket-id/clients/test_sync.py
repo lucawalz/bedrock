@@ -190,6 +190,7 @@ class SyncTest(unittest.TestCase):
             declared = {client["id"]: client for client in json.load(handle)}
         self.assertTrue(declared["kubernetes"]["isPublic"])
         self.assertEqual(declared["kubernetes"]["allowedUserGroups"], [sync.ADMINS_GROUP])
+        self.assertTrue(declared["kubernetes"]["callbackURLs"])
         for url in declared["kubernetes"]["callbackURLs"]:
             self.assertIn(urllib.parse.urlsplit(url).hostname, LOOPBACK_HOSTS)
 
