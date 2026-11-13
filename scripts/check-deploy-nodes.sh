@@ -79,7 +79,7 @@ if grep -q -e estate-root -e Secretive "$work/router-ssh-config" "$work/log"; th
 grep 'readlink' "$work/log" | grep -v -- "-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes .*-o BatchMode=no" \
   && fail "a break-glass kernel probe lacks the break-glass key or prompts disabled"
 if BEDROCK_SSH_IDENTITY="$work/missing" run none "attached|healthy"; then fail "an unreadable break-glass key did not fail the run"; fi
-grep -q 'HostName 100.105.211.67' "$work/router-ssh-config" || fail "router ssh config lacks the cp1-direct tailnet address"
+grep -qx '  HostName control-plane-1.tail26ab10.ts.net' "$work/router-ssh-config" || fail "router ssh config lacks the cp1-direct MagicDNS name"
 
 if run '.#worker-1' "attached|healthy"; then fail "failed rebuild did not fail the run"; fi
 grep -q 'flake .#worker-2' "$work/log" || fail "worker-2 was not rebuilt first"
