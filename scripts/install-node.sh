@@ -66,7 +66,10 @@ elif ! has_phase kexec; then
   fail "$address runs $node, not the installer; phases without kexec would partition its disk in use"
 fi
 
-read -r -p "This wipes the disk of $node at $address. Type the node name to continue: " answer
+action="runs phases $phases on"
+if has_phase disko; then action="wipes the disk of"; fi
+printf 'This %s %s at %s. Type the node name to continue: ' "$action" "$node" "$address" >&2
+read -r answer
 [ "$answer" = "$node" ] || fail "aborted"
 
 if has_phase disko; then

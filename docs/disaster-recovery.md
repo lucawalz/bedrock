@@ -351,7 +351,7 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    just enrol-node-tpm control-plane-1
    ```
 
-   The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7, writes a recovery key straight to that file without printing it, and wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
+   The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place, keeping the partial file if anything fails after a key was printed, and wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
 5. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
 
 Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig signed by the re-issued CA onto the stick.

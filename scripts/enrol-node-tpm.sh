@@ -28,22 +28,23 @@ for file in "$passphrase_file" "$host_public_key"; do
 done
 [ ! -e "$recovery_file" ] || fail "$recovery_file already exists; $node was enrolled before, so move it aside only if that enrolment is gone"
 
-mkdir -p "$recovery_dir"
-(umask 077; set -o noclobber; : > "$partial_file") || fail "$partial_file exists from an earlier run; check it for a recovery key before removing it"
-partial_owned=true
-
 open_ssh_session enrol-node "$CONTROL_PERSIST"
 known_hosts="$ssh_session_dir/known_hosts"
 printf '%s %s\n' "$address" "$(cut -d' ' -f1,2 "$host_public_key")" > "$known_hosts"
 ssh_args=()
 for option in "${ssh_session_options[@]}"; do ssh_args+=(-o "$option"); done
 ssh_args+=(-o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
+partial_owned=false
 
 cleanup() {
   if $partial_owned; then rm -f "$partial_file"; fi
   close_ssh_session "root@$address"
 }
 trap cleanup EXIT
+
+mkdir -p "$recovery_dir"
+(umask 077; set -o noclobber; : > "$partial_file") || fail "$partial_file exists from an earlier run; check it for a recovery key before removing it"
+partial_owned=true
 
 node_run=(ssh "${ssh_args[@]}" "root@$address")
 has_token() { grep -Eq "^[[:space:]]+[0-9]+: $1\$" <<< "$2"; }
@@ -58,14 +59,18 @@ else
   "${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --tpm2-device=auto --tpm2-pcrs="$TPM2_PCRS" "$ROOT_DEVICE" < "$passphrase_file"
 fi
 
-"${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --recovery-key "$ROOT_DEVICE" < "$passphrase_file" >> "$partial_file" \
-  || fail "the recovery key enrolment failed; the password slot stays"
+if ! "${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --recovery-key "$ROOT_DEVICE" < "$passphrase_file" >> "$partial_file"; then
+  [ -s "$partial_file" ] || fail "the recovery key enrolment failed; the password slot stays"
+  partial_owned=false
+  fail "the recovery key enrolment failed after printing a key, kept in $partial_file; the password slot stays"
+fi
 [ -s "$partial_file" ] || fail "the recovery key came back empty; the password slot stays"
 mv -n "$partial_file" "$recovery_file"
 if [ -e "$partial_file" ]; then
   partial_owned=false
   fail "$recovery_file appeared during the run; the new recovery key stays in $partial_file and the password slot stays"
 fi
+partial_owned=false
 
 tokens="$("${node_run[@]}" cryptsetup luksDump "$ROOT_DEVICE")"
 for token in "${REQUIRED_TOKENS[@]}"; do

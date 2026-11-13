@@ -40,7 +40,7 @@ case "$*" in
   *"systemctl reboot"*) exit "${FAKE_REBOOT_EXIT:-255}" ;;
   *"bootctl status"*) echo "  Secure Boot: ${FAKE_SECURE_BOOT:-enabled (user)}" ;;
   *--tpm2-device*) [ "$FAKE_LOST_TOKEN" = systemd-tpm2 ] || echo systemd-tpm2 >> "$FAKE_TOKENS" ;;
-  *--recovery-key*) echo test-recovery-key; [ "$FAKE_LOST_TOKEN" = systemd-recovery ] || echo systemd-recovery >> "$FAKE_TOKENS" ;;
+  *--recovery-key*) echo test-recovery-key; [ "$FAKE_LOST_TOKEN" = systemd-recovery ] || echo systemd-recovery >> "$FAKE_TOKENS"; exit "${FAKE_RECOVERY_EXIT:-0}" ;;
   *luksDump*) printf 'Tokens:\n'; n=0; while read -r token; do printf '  %s: %s\n' "$n" "$token"; n=$((n + 1)); done < "$FAKE_TOKENS" ;;
 esac
 FAKE
@@ -102,7 +102,9 @@ grep 'sbctl\|systemctl reboot' "$work/log" | grep -v "ControlPath=/tmp/install-n
 
 FAKE_HOSTNAME=nixos run "$install" "$node" phases=disko,install || fail "a resumed install failed"
 grep -q -- '--phases disko,install ' "$work/log" || fail "the phases argument did not reach nixos-anywhere"
+grep -q "This wipes the disk of $node" "$work/output" || fail "the confirmation for a disko run does not mention the wipe"
 FAKE_HOSTNAME=nixos run "$install" "$node" install || fail "a target already in the installer was refused"
+if grep -q "wipes the disk" "$work/output"; then fail "the confirmation claims a wipe without the disko phase"; fi
 FAKE_HOSTNAME=nixos run "$install" "$node" "" || fail "an empty phases argument did not fall back to the default"
 grep -q -- '--phases kexec,disko,install ' "$work/log" || fail "an empty phases argument did not use the default phases"
 
@@ -146,6 +148,14 @@ rm "$recovery"
 FAKE_SECURE_BOOT="disabled (setup)" refused "Secure Boot in setup mode" "$enrol" "$node"
 refused "an unknown node" "$enrol" worker-9
 FAKE_UNREACHABLE=1 refused "an unreachable node" "$enrol" "$node"
+[ -z "$(find "$stick/luks-recovery" -type f)" ] || fail "an enrolment refused early left a file in luks-recovery"
+
+if FAKE_RECOVERY_EXIT=255 run "$enrol" "$node"; then fail "a recovery enrolment whose ssh exited 255 succeeded"; fi
+[ "$(cat "$stick/luks-recovery/.$node.partial" 2>/dev/null)" = "$recovery_key" ] \
+  || fail "a recovery key printed before ssh failed was not kept in the partial file"
+grep -qF "luks-recovery/.$node.partial" "$work/output" || fail "the failure does not say where the recovery key was kept"
+if grep -q -- '--wipe-slot' "$work/log"; then fail "the password slot was wiped after a failed recovery enrolment"; fi
+rm "$stick/luks-recovery/.$node.partial"
 
 FAKE_INITIAL_TOKENS=systemd-tpm2 run "$enrol" "$node" || { cat "$work/output" >&2; fail "a re-run after the TPM enrolment failed"; }
 if grep -q -- '--tpm2-device' "$work/log"; then fail "a re-run added a second TPM slot"; fi
