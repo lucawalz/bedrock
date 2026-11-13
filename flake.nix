@@ -36,6 +36,7 @@
       devShellPackages =
         pkgs: with pkgs; [
           kubectl
+          kubelogin-oidc
           kubernetes-helm
           kubeconform
           kustomize
