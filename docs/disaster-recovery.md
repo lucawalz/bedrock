@@ -258,6 +258,25 @@ The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure E
 
 The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
 
+Every other host command (the README host commands, `scripts/refresh-kubeconfig.sh`, `scripts/luks-discards.sh`) runs plain `ssh`, `scp` or `nixos-rebuild --target-host root@<host>` and relies on two blocks in the Mac's `~/.ssh/config`. `~/.ssh/estate-root.pub` and `~/.ssh/github-push.pub` are the public halves exported from Secretive on that Mac:
+
+```
+Host control-plane-1 worker-1 worker-2 router 10.20.0.* 100.105.211.67 100.116.129.108 100.95.149.60 100.75.168.14
+  User root
+  IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
+  IdentityFile ~/.ssh/estate-root.pub
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%C
+  ControlPersist 10m
+
+Host github.com
+  IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
+  IdentityFile ~/.ssh/github-push.pub
+  IdentitiesOnly yes
+```
+
+A master connection stays open for 10 minutes and keeps the key it authenticated with, so after a key change `ssh -O exit <host>` closes it before the next login proves anything.
+
 The keys carry no certificate and do not expire. They are rotated when the Mac is replaced:
 
 1. Create a new key in Secretive and add its public key to `hosts/common/estate-root.pub`, which both Nix files read, as a second line next to the old one.
