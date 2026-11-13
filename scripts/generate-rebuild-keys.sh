@@ -4,7 +4,7 @@ umask 077
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-require_tools openssl ssh-keygen python3
+require_tools openssl ssh-keygen uuidgen
 
 [ "$#" -eq 0 ] || { echo "usage: generate-rebuild-keys.sh" >&2; exit 1; }
 
@@ -22,20 +22,16 @@ luks_passphrase_bytes=16
 private_mode=600
 system_dir_mode=755
 
-openssl version | grep -q '^OpenSSL 3' || { echo "openssl must be OpenSSL 3, got: $(openssl version)" >&2; exit 1; }
+openssl version | grep -q '^OpenSSL [3-9]' || { echo "openssl must be OpenSSL 3 or later, got: $(openssl version)" >&2; exit 1; }
 [ -d "$stick_root" ] || { echo "$stick_root is not mounted; plug in the bedrock-keys stick or set BEDROCK_STICK_ROOT" >&2; exit 1; }
 [ -f "$root_cert" ] || { echo "$root_cert is missing; the tokens pin its hash" >&2; exit 1; }
 mkdir "$out" || { echo "$out already exists; keys are generated once per rebuild, so move it aside first" >&2; exit 1; }
 
-secret() {
-  openssl rand -hex "$1"
-}
-
 ca_hash="$(k3s_ca_hash "$root_cert")"
-server_secret="$(secret "$token_secret_bytes")"
-agent_secret="$(secret "$token_secret_bytes")"
-longhorn_key="$(secret "$longhorn_key_bytes")"
-luks_passphrase="$(secret "$luks_passphrase_bytes")"
+server_secret="$(openssl rand -hex "$token_secret_bytes")"
+agent_secret="$(openssl rand -hex "$token_secret_bytes")"
+longhorn_key="$(openssl rand -hex "$longhorn_key_bytes")"
+luks_passphrase="$(openssl rand -hex "$luks_passphrase_bytes")"
 printf 'K10%s::server:%s\n' "$ca_hash" "$server_secret" > "$out/k3s-token"
 printf 'K10%s::node:%s\n' "$ca_hash" "$agent_secret" > "$out/k3s-agent-token"
 printf '%s' "$longhorn_key" > "$out/longhorn-crypto.key"
@@ -54,7 +50,7 @@ for node in "${nodes[@]}"; do
   bundle="$tree/var/lib/sbctl"
   mkdir -p "$bundle/keys"
   chmod "$system_dir_mode" "$tree/var" "$tree/var/lib"
-  python3 -I -c 'import uuid; print(uuid.uuid4(), end="")' > "$bundle/GUID"
+  uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '\n' > "$bundle/GUID"
   for entry in "${secure_boot_keys[@]}"; do
     key="${entry%%:*}"
     mkdir "$bundle/keys/$key"

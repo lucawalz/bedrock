@@ -87,7 +87,7 @@ for node in "${nodes[@]}"; do
       || fail "$node $key.key does not match $key.pem"
   done
 done
-[ "$(cat "$out/hosts/control-plane-1/var/lib/sbctl/GUID")" != "$(cat "$out/hosts/worker-1/var/lib/sbctl/GUID")" ] \
+[ "$(for node in "${nodes[@]}"; do cat "$out/hosts/$node/var/lib/sbctl/GUID"; echo; done | sort -u | wc -l)" -eq "${#nodes[@]}" ] \
   || fail "two nodes share a GUID"
 
 {
