@@ -222,7 +222,7 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
 ### Prepare
 
 1. Generate the keys once: `just generate-rebuild-keys`. It refuses to run while `rebuild-keys/` exists, writes every file mode 600, and prints only the paths, the CA hash the tokens pin and the four host public keys.
-2. Prepare the commits on a local branch in each repository, never on `main`, because a push before the old nodes are wiped would hand the running cluster a Longhorn key that opens none of its volumes. In `bedrock`, on `feat/rebuild-install`: the new host public keys from `rebuild-keys/hosts/<host>/etc/ssh/ssh_host_ed25519_key.pub` in `secrets/secrets.nix`, every file re-keyed from `secrets/` as in [Secret recovery](#secret-recovery), the new tokens and new single-use Tailscale auth keys (`tag:cluster` for the nodes, `tag:router` for the router) encrypted to the new host keys, the cluster CA re-issued with `scripts/generate-cluster-ca.sh`, and the Postgres `bootstrap.recovery` with a new archive server name as in [Postgres](#postgres). In `bedrock-secrets`, on the same branch name: `longhorn-crypto` with the new key and `longhorn-crypto-legacy` with the current one.
+2. Prepare the commits on a local branch in each repository, never on `main`, because a push before the old nodes are wiped would hand the running cluster a Longhorn key that opens none of its volumes. In `bedrock`, on `feat/rebuild-install`: the new host public keys from `rebuild-keys/hosts/<host>/etc/ssh/ssh_host_ed25519_key.pub` in `secrets/secrets.nix`, every file re-keyed from `secrets/` as in [Secret recovery](#secret-recovery), the new tokens with the agent token wired separately (a new `k3s-agent-token` agenix secret encrypted to all three nodes and the admins, `services.k3s.agentTokenFile` on control-plane-1 and `services.k3s.tokenFile` on the agents pointing at it, and `k3s-token.age` limited to control-plane-1 and the admins), new single-use Tailscale auth keys (`tag:cluster` for the nodes, `tag:router` for the router) encrypted to the new host keys, the cluster CA re-issued with `scripts/generate-cluster-ca.sh`, and the Postgres `bootstrap.recovery` with a new archive server name as in [Postgres](#postgres). In `bedrock-secrets`, on the same branch name: `longhorn-crypto` with the new key and `longhorn-crypto-legacy` with the current one.
 3. Stop the writes and take the final backups. Suspend and scale every app with a database or a volume to zero as `just restore` does (`flux suspend kustomization <app>`, then `kubectl -n <app> scale deploy,statefulset --all --replicas 0`), then:
 
    ```
@@ -235,6 +235,13 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
    set -a; . /run/agenix/etcd-s3-credentials; set +a
    k3s etcd-snapshot save --etcd-s3 --etcd-s3-bucket=bedrock-etcd --etcd-s3-folder=etcd-snapshots \
      --etcd-s3-endpoint=<account id>.r2.cloudflarestorage.com --etcd-s3-region=auto
+   ```
+
+   `just backup` takes a base backup only, and the logical dumps run daily at 03:30, so run one dump now and wait for it (not proven):
+
+   ```
+   kubectl -n postgres create job --from=cronjob/postgres-dump postgres-dump-rebuild
+   kubectl -n postgres wait --for=condition=complete job/postgres-dump-rebuild --timeout=2h
    ```
 
    Then prove the backups are fresh and readable, and copy them to the stick:
@@ -289,7 +296,7 @@ The router is reflashed, not installed with nixos-anywhere (not proven):
 control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the owner (not proven):
 
 1. In the firmware settings, put Secure Boot into setup mode.
-2. Install from the local `main`, authenticating the first login with `estate-root` through the Secretive agent. nixos-anywhere then installs its own temporary key for the rest of the run. `ControlPath=none` keeps an old multiplexed session from carrying the connection across the kexec. disko asks for the LUKS passphrase twice; `pbcopy < /Volumes/bedrock-keys/bedrock/rebuild-keys/luks-install-passphrase` puts it on the clipboard.
+2. Install from the local `main`, authenticating the first login with `estate-root` through the Secretive agent. nixos-anywhere then installs its own temporary key for the rest of the run. `ControlPath=none` keeps an old multiplexed session from carrying the connection across the kexec. disko asks for the LUKS passphrase twice; `pbcopy < /Volumes/bedrock-keys/bedrock/rebuild-keys/luks-install-passphrase` puts it on the clipboard, and `pbcopy < /dev/null` clears it right after the second prompt, since Universal Clipboard can carry it to other devices. disko reads the passphrase from the terminal only, so there is no stdin path for it.
 
    ```
    nixos-anywhere --flake .#control-plane-1 --build-on remote \
