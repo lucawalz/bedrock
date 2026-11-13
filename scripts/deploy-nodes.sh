@@ -24,9 +24,9 @@ ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
 POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
-ADMIN_IDENTITY="$HOME/.ssh/id_ecdsa_sk_rk_estate-root"
-SECURITY_KEY_PROVIDER=/usr/lib/ssh-keychain.dylib
-ADMIN_SSH_OPTS=(-i "$ADMIN_IDENTITY" -o "SecurityKeyProvider=$SECURITY_KEY_PROVIDER")
+ADMIN_IDENTITY="$repo_root/hosts/common/estate-root.pub"
+ADMIN_AGENT_SOCKET="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+ADMIN_SSH_OPTS=(-i "$ADMIN_IDENTITY" -o "IdentityAgent=$ADMIN_AGENT_SOCKET")
 
 step() {
   echo "+ $*"
@@ -49,11 +49,11 @@ Host cp1-direct
   HostKeyAlias $CONTROL_PLANE_ADDRESS
   User root
   IdentityFile $ADMIN_IDENTITY
-  SecurityKeyProvider $SECURITY_KEY_PROVIDER
+  IdentityAgent $ADMIN_AGENT_SOCKET
 Host $ROUTER_ADDRESS $CONTROL_PLANE_ADDRESS
   ProxyJump cp1-direct
   IdentityFile $ADMIN_IDENTITY
-  SecurityKeyProvider $SECURITY_KEY_PROVIDER
+  IdentityAgent $ADMIN_AGENT_SOCKET
 CONFIG
   TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="-F $config" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
     nixos-rebuild switch --flake .#router --target-host "root@$ROUTER_ADDRESS" --build-host "$BUILD_HOST"

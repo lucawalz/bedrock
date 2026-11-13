@@ -47,9 +47,9 @@ run() {
 run none "attached|healthy" || fail "healthy run failed"
 grep -q 'flake .#router' "$work/log" || fail "healthy run skipped the router"
 grep -q "^NIX_SSHOPTS=-F $work/router-ssh-config\$" "$work/log" || fail "router rebuild lacks the cp1-direct NIX_SSHOPTS"
-grep -q "^NIX_SSHOPTS=-i $HOME/.ssh/id_ecdsa_sk_rk_estate-root -o SecurityKeyProvider=/usr/lib/ssh-keychain.dylib\$" "$work/log" || fail "node rebuild lacks the estate-root identity and provider"
-[ "$(grep -c "^  IdentityFile $HOME/.ssh/id_ecdsa_sk_rk_estate-root\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the estate-root identity"
-[ "$(grep -c '^  SecurityKeyProvider /usr/lib/ssh-keychain.dylib$' "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the security key provider"
+grep -q "^NIX_SSHOPTS=-i $PWD/hosts/common/estate-root.pub -o IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh\$" "$work/log" || fail "node rebuild lacks the estate-root key and Secretive agent"
+[ "$(grep -c "^  IdentityFile $PWD/hosts/common/estate-root.pub\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the estate-root identity"
+[ "$(grep -c "^  IdentityAgent $HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the Secretive agent"
 grep -q 'HostName 100.105.211.67' "$work/router-ssh-config" || fail "router ssh config lacks the cp1-direct tailnet address"
 
 if run '.#worker-1' "attached|healthy"; then fail "failed rebuild did not fail the run"; fi
