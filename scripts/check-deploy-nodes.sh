@@ -15,7 +15,10 @@ mkdir "$work/bin"
 cat > "$work/bin/ssh" <<'FAKE'
 #!/bin/sh
 echo "ssh $*" >> "$FAKE_LOG"
-case "$*" in *readlink*) printf 'kernel-a\nkernel-%s\n' "${FAKE_KERNEL:-a}" ;; esac
+case "$*" in
+  *readlink*) printf 'kernel-a\nkernel-%s\n' "${FAKE_KERNEL:-a}" ;;
+  *findmnt*) case "$*" in *"${FAKE_PLAIN_ROOT_ON:-no-host}"*) echo /dev/nvme0n1p2 ;; *) echo /dev/mapper/cryptroot ;; esac ;;
+esac
 FAKE
 cat > "$work/bin/nix" <<'FAKE'
 #!/bin/sh
@@ -85,6 +88,10 @@ if grep -qE 'control-plane-1|router' "$work/log"; then fail "run continued past 
 if run none "attached|degraded"; then fail "degraded volume did not fail the run"; fi
 if run none "attaching|"; then fail "attaching volume with unknown robustness did not fail the run"; fi
 if grep -q 'flake .#worker-1' "$work/log"; then fail "run continued past unhealthy volumes"; fi
+
+if FAKE_PLAIN_ROOT_ON=10.20.0.10 run none "attached|healthy"; then fail "an unencrypted root did not fail the run"; fi
+grep -q 'findmnt' "$work/log" || fail "the run did not probe the root device"
+if grep -q '^nix ' "$work/log"; then fail "a node was rebuilt before every root device was checked"; fi
 
 if run none "attached|healthy" empty; then fail "empty DNS answer did not fail the run"; fi
 

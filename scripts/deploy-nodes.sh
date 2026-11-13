@@ -24,6 +24,7 @@ ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
 POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
+ENCRYPTED_ROOT_DEVICE=/dev/mapper/cryptroot
 ADMIN_KEY_DIR="$repo_root/hosts/common"
 ADMIN_AGENT_SOCKET="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
 NO_AGENT=none
@@ -115,6 +116,18 @@ warn_if_kernel_pending() {
     echo "WARNING: $host runs an older kernel than its current system; drain and reboot it" >&2
   fi
 }
+
+require_encrypted_root() {
+  local host="$1" address="$2" root_device
+  root_device="$(ssh "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$address" \
+    findmnt --noheadings --output SOURCE /)"
+  [ "$root_device" = "$ENCRYPTED_ROOT_DEVICE" ] \
+    || fail "$host boots from $root_device, not $ENCRYPTED_ROOT_DEVICE; reinstall it with nixos-anywhere instead of deploying"
+}
+
+for entry in "${NODES[@]}"; do
+  step require_encrypted_root "${entry%%:*}" "${entry#*:}"
+done
 
 for entry in "${NODES[@]}"; do
   host="${entry%%:*}"
