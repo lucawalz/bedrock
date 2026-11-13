@@ -19,13 +19,13 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 ## Recovery seeds
 
-The age keys, the K3s root CA and the Longhorn volume encryption key are the three keys a rebuild cannot recreate. They are kept together on an encrypted offline medium (the APFS-encrypted `bedrock-keys` USB stick). The K3s root CA key and the cluster age keys live only there; the Mac decrypts SOPS files with its Secure Enclave identity instead, and the Longhorn key also has a copy on the admin Mac ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
+The age keys, the K3s root CA and the Longhorn volume encryption key are the three keys a rebuild cannot recreate. They are kept together on an encrypted offline medium (the APFS-encrypted `bedrock-keys` USB stick). The K3s root CA key lives only there; the cluster age key also sits in the `sops-age` Secret, and the Longhorn key also has a copy on the admin Mac ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 
 | Seed | Where it lives | Why it matters |
 | --- | --- | --- |
 | SOPS age key (2026-11) | `age-cluster-2026-11.txt` on the offline medium and the `sops-age` Secret in `flux-system` | Decrypts every file in `bedrock-secrets`, including the deploy key for that repository. `just bootstrap` reads it from `/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt` unless `SOPS_AGE_KEY_FILE` says otherwise |
-| SOPS age key (retired) | `age-keys.txt` on the offline medium | No longer a recipient: on 2026-11-13 every SOPS file was rotated to a new data key without it. It still decrypts the pre-rebuild git history, so it stays on the offline medium through the rollback window and is wiped together with the offline copy of the pre-rebuild backups. The Mac copy `~/.config/sops/age/keys.txt` is deleted once the rotation is merged |
-| SOPS age identity (Secure Enclave) | Secure Enclave of the Mac, created with `age-plugin-se`, referenced by `~/.config/sops/age/se-identity.txt`; only the public recipient is in git | A recipient on every SOPS file and the Mac's day-to-day decryption identity, so the Mac edits secrets with `SOPS_AGE_KEY_FILE=~/.config/sops/age/se-identity.txt` and no key file. It cannot be copied off the Mac |
+| SOPS age key (retired) | `age-keys.txt` on the offline medium | No longer a recipient: on 2026-11-13 every SOPS file was rotated to a new data key without it. It still decrypts the pre-rebuild git history, so it stays on the offline medium through the rollback window and is wiped together with the offline copy of the pre-rebuild backups, 30 days after the pre-rebuild objects are deleted from R2. The Mac copy `~/.config/sops/age/keys.txt` is deleted once the rotation is merged |
+| SOPS age identity (Secure Enclave) | Secure Enclave of the Mac, created with `age-plugin-se`, referenced by `~/.config/sops/age/se-identity.txt`; only the public recipient is in git | A recipient on every SOPS file and the Mac's day-to-day decryption identity. It cannot be copied off the Mac |
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and `rebuild-keys/longhorn-crypto.key` on the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | Legacy Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto-legacy` Secret, from `clusters/home/platform/longhorn-crypto-legacy.sops.yaml` in `bedrock-secrets`, and `longhorn-crypto.key` on the offline medium | The key before the 2026-11 rebuild. Opens the backups taken before it through the temporary `longhorn-encrypted-legacy` class |
@@ -332,10 +332,11 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
 
 ### Bootstrap and restore
 
-1. Bootstrap with the stick kubeconfig; the default key file is the cluster age key on the stick:
+1. Bootstrap with the cluster age key and the stick kubeconfig, naming the key file because the Mac's own `SOPS_AGE_KEY_FILE` would override the default:
 
    ```
-   BEDROCK_ADMIN_KUBECONFIG=/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml just bootstrap
+   SOPS_AGE_KEY_FILE=/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt \
+     BEDROCK_ADMIN_KUBECONFIG=/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml just bootstrap
    ```
 
    Then continue with steps 3 to 6 of [Bootstrap and converge](#bootstrap-and-converge). `just kubeconfig` is re-run, because the Mac's context embeds the old server CA.
@@ -383,7 +384,7 @@ Host secrets use agenix. Each file under `secrets/` is encrypted to the host key
 
 K3s does not restart when `/run/agenix/k3s-token` or `/run/agenix/k3s-agent-token` changes in place, so a token rotation on a running cluster needs a manual restart of K3s on every node that reads the changed file.
 
-Every SOPS file is encrypted to two age recipients, listed in both `.sops.yaml` files: the Secure Enclave identity and the cluster key `age-cluster-2026-11.txt`. Run `sops` with `/opt/homebrew/bin` on `PATH` so it finds `age-plugin-se`, and with `SOPS_AGE_KEY_FILE=~/.config/sops/age/se-identity.txt` to decrypt on the Mac. After adding a recipient, run `sops updatekeys -y <file>` on every SOPS file in both repositories. After removing one, run `sops rotate -i --rm-age <recipient> <file>` instead, so every file gets a new data key: the removed key and the git history reveal the old data key, and values written later under it would stay readable to that key. The previous cluster key was removed this way on 2026-11-13; its copy `age-keys.txt` stays on the offline medium until the pre-rebuild backups are retired, because it still decrypts the pre-rebuild git history.
+Every SOPS file is encrypted to two age recipients, listed in both `.sops.yaml` files: the Secure Enclave identity and the cluster key `age-cluster-2026-11.txt`. Run `sops` with `/opt/homebrew/bin` on `PATH` so it finds `age-plugin-se`, and with `SOPS_AGE_KEY_FILE=~/.config/sops/age/se-identity.txt` to decrypt on the Mac. After adding a recipient, run `sops updatekeys -y <file>` on every SOPS file in both repositories. After removing one, run `sops rotate -i --rm-age <recipient> <file>` so every file gets a new data key.
 
 Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `identity/`, `apps/`), each folder with a kustomization listing its files. Edit with `sops <path>`; `just new-secret <app>` creates an app's pair. The one SOPS file in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, holds the read-only deploy key for `bedrock-secrets` and is decrypted by the same age key, which makes that key the root of every cluster secret.
 

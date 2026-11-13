@@ -15,7 +15,7 @@ Hosts and the cluster consume secrets at different times. A host needs its join 
 - Cluster secrets are SOPS files encrypted to two age recipients and kept in the private `bedrock-secrets` repository. Flux pulls it as its own GitRepository, and the `cluster-secrets` Kustomization decrypts it with the `sops-age` Secret that `just bootstrap` creates.
 - `just new-secret <app>` creates an app's SOPS files in `bedrock-secrets` from the same layout the scaffold expects ([0013](0013-keep-each-app-self-contained-and-scaffold-new-ones.md)).
 - Machine secrets such as client secrets, cookie secrets and database passwords are generated straight into SOPS files and never printed.
-- The recipients are an `age-plugin-se` identity in the Secure Enclave of the admin Mac, which the Mac decrypts with day to day, and the cluster key, held only on the encrypted offline medium described in [0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md) and in the `sops-age` Secret. A recipient is removed with `sops rotate`, not `sops updatekeys`, so no file keeps a data key the removed key can recover from the git history. The previous cluster key was removed this way after the 2026-11 rebuild.
+- The recipients are an `age-plugin-se` identity in the Secure Enclave of the admin Mac and the cluster key, held on the encrypted offline medium described in [0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md) and in the `sops-age` Secret. A recipient is removed with `sops rotate`, not `sops updatekeys`.
 
 ## Consequences
 
