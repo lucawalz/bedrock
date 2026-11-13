@@ -146,6 +146,10 @@ offline-backup mountpoint:
 deploy-nodes *args="":
     bash scripts/deploy-nodes.sh {{ args }}
 
+# Write new host, Secure Boot, k3s token, Longhorn and LUKS install keys for a full reinstall to the key stick
+generate-rebuild-keys:
+    bash scripts/generate-rebuild-keys.sh
+
 # Write the Pocket ID kubeconfig context bedrock into ~/.kube/config from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh

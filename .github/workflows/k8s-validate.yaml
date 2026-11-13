@@ -80,6 +80,9 @@ jobs:
       - name: Test the rolling host deploy order and stop on failure
         run: bash scripts/check-deploy-nodes.sh
 
+      - name: Test the rebuild key generator and its refusal to overwrite
+        run: bash scripts/check-generate-rebuild-keys.sh
+
       - name: Test the Pocket ID client sync job
         run: bash scripts/check-pocket-id-clients.sh
 

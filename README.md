@@ -190,6 +190,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just paperless-import <dir>` | Copy a local folder of scans into the Paperless consume folder |
 | `just encrypt-volumes <app>` | Copy an app's volumes onto encrypted twins before its claims are swapped; add `--dry-run` to print the copy pod |
 | `just deploy-nodes` | Rebuild worker-2, worker-1, control-plane-1 and the router in order, stopping at the first host that fails to come back Ready and healthy; add `--dry-run` to print the steps |
+| `just generate-rebuild-keys` | Write new host, Secure Boot, k3s token, Longhorn and LUKS install keys for a full reinstall to the key stick, once per rebuild |
 | `just luks-discards <namespace>/<pvc>` | Store allow-discards in an attached encrypted volume's LUKS2 header and trim it |
 | `just email-gate-deploy` | Deploy the Cloudflare Worker that gates the Paperless mail address by sender |
 
