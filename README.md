@@ -156,7 +156,7 @@ With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before i
 2. Apply CoreDNS from `kubernetes/infrastructure/controllers/coredns`. K3s runs with `--disable=coredns`, and without cluster DNS Flux cannot fetch the repository that installs it.
 3. Install the flux-operator chart at the version pinned in its HelmRelease.
 4. Apply the `FluxInstance` from `kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml`.
-5. Create the `sops-age` Secret from `~/.config/sops/age/keys.txt` (or `SOPS_AGE_KEY_FILE`), after checking that it matches the recipient in `.sops.yaml`.
+5. Create the `sops-age` Secret from the cluster age key on the offline stick (`/Volumes/bedrock-keys/bedrock/age-keys.txt` by default, or `SOPS_AGE_KEY_FILE`), after checking that it matches one of the recipients in `.sops.yaml`.
 6. Create the sync Secret with a new SSH deploy key, print its public half and register it with `gh` as the read-only deploy key `flux-home-cluster`, or reuse a key from `BEDROCK_DEPLOY_KEY`.
 7. Wait for the `FluxInstance` to become Ready.
 
