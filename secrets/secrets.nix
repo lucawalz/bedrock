@@ -9,6 +9,7 @@ let
   router = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMzOdJNsyGrrg4D2G4TQ9OpE3NB12ITZzdoWnG3gwUvK root@router";
 
   luca = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHoKFFTFmJR1CSAq55TwXHbUPTxSK847qZL0W6r/ZUV9 luca@macbook";
+  estate-breakglass = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMfTCbT6YlvmxEvMaTq+W4TMpOtPo+cRAnknC5T0ItWE estate-breakglass";
 in
 {
   "k3s-token.age".publicKeys = [
@@ -16,37 +17,46 @@ in
     worker-1
     worker-2
     luca
+    estate-breakglass
   ];
   "k3s-ca.age".publicKeys = [
     control-plane-1
     luca
+    estate-breakglass
   ];
   "etcd-s3-credentials.age".publicKeys = [
     control-plane-1
     luca
+    estate-breakglass
   ];
   "tailscale-authkey.age".publicKeys = [
     router
     luca
+    estate-breakglass
   ];
   "tailscale-authkey-control-plane-1.age".publicKeys = [
     control-plane-1
     luca
+    estate-breakglass
   ];
   "tailscale-authkey-worker-1.age".publicKeys = [
     worker-1
     luca
+    estate-breakglass
   ];
   "tailscale-authkey-worker-2.age".publicKeys = [
     worker-2
     luca
+    estate-breakglass
   ];
   "adguard-admin.age".publicKeys = [
     router
     luca
+    estate-breakglass
   ];
   "grafana-kiosk-url.age".publicKeys = [
     router
     luca
+    estate-breakglass
   ];
 }

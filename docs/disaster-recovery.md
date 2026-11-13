@@ -30,9 +30,9 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
-| Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable |
+| Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable. Also an admin recipient on every agenix secret, so `agenix -d` and `agenix -r` work with it when the Mac is lost |
 | Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
-| Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. It no longer logs in to any host. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
+| Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret beside the break-glass key; needed to re-key host secrets when a host key is lost. It no longer logs in to any host |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
 
 The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
@@ -235,11 +235,11 @@ The cadence is a monthly `just restore-test` and `just offline-backup`, a full r
 
 ## Secret recovery
 
-Host secrets use agenix. Each file under `secrets/` is encrypted to the host keys listed for it in `secrets/secrets.nix` and to the admin agenix key. When a host key changes:
+Host secrets use agenix. Each file under `secrets/` is encrypted to the host keys listed for it in `secrets/secrets.nix` and to two admin recipients: the admin agenix key and the break-glass key. When a host key changes:
 
 1. Read the new key with `ssh-keyscan -t ed25519 <host>`.
 2. Replace the recipient in `secrets/secrets.nix`.
-3. Re-encrypt with the admin agenix identity: `agenix -r` re-keys every file, `agenix -e secrets/<name>.age` one.
+3. Re-encrypt from the `secrets/` directory, where `agenix` finds `secrets.nix`: `agenix -r -i ~/.ssh/id_ed25519` re-keys every file, `agenix -e <name>.age -i ~/.ssh/id_ed25519` one. Without the Mac, `-i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` decrypts instead.
 4. Commit and rebuild the host.
 
 K3s does not restart when `/run/agenix/k3s-token` changes in place, so a token rotation on a running cluster needs a manual restart of the agents.
@@ -293,6 +293,7 @@ A lost Mac is recovered from the stick. On the new Mac, with the stick mounted a
 2. Replace `hosts/common/estate-root.pub` with the new `estate-root` public key and commit it.
 3. Deploy with the break-glass key: `BEDROCK_SSH_IDENTITY=/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass just deploy-nodes`. With that variable set, the generated ssh config, `NIX_SSHOPTS` and the probes offer only that key, with `IdentitiesOnly yes` and no agent, so ssh asks for the key's passphrase, possibly more than once. The deploy removes the lost Mac's `estate-root` from every host.
 4. Prove login with the new key, then remove the lost Mac's keys from GitHub.
+5. Re-key agenix without the Mac's agenix key: replace the `luca` recipient in `secrets/secrets.nix` with a new admin recipient, then run `agenix -r -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` from `secrets/`.
 
 Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
 
