@@ -343,7 +343,7 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    just install-node control-plane-1
    ```
 
-   The recipe refuses unless the repository is on a clean `main`, the node's keys are on the stick and the node's address from `lib/inventory.nix` answers as that node or as the installer. nixos-anywhere logs in with `estate-root` through the Secretive agent over one multiplexed session and copies `rebuild-keys/hosts/<node>` into the new system with `--extra-files`, keeping its modes, so lanzaboote signs the first generation with the keys under `/var/lib/sbctl`. disko asks for the LUKS passphrase twice and reads it from the terminal only; the recipe puts it on the clipboard and clears the clipboard on exit, since Universal Clipboard can carry it to other devices. Still in the installer, the recipe enrols the Secure Boot keys from that bundle with the Microsoft keys included, as the lanzaboote documentation does, checks the owner GUID against the stick and reboots. After a failed login, `just install-node <node> phases=disko,install` resumes in the running installer without a new kexec.
+   It needs the firmware in setup mode from step 1, asks for the node name before the wipe, and puts the LUKS passphrase on the clipboard for the two disko prompts. After a failed run, `just install-node <node> phases=disko,install` resumes in the running installer without a new kexec.
 3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
 4. Bind the root to the TPM as ADR 0016 states:
 
