@@ -89,8 +89,9 @@ def sync(clients, read_secret):
 
     for client in clients:
         client_id = client["id"]
-        secret = read_secret(client_id)
-        if not secret:
+        public = client.get("isPublic", False)
+        secret = None if public else read_secret(client_id)
+        if not public and not secret:
             raise SystemExit(f"secret for {client_id} is empty")
         body = {k: v for k, v in client.items() if k not in LOCAL_FIELDS}
 
@@ -103,11 +104,12 @@ def sync(clients, read_secret):
                 raise SystemExit(f"{client_id} does not list the {ADMINS_GROUP} group after assigning it")
         call("PUT", f"/api/oidc/clients/{client_id}", body)
 
-        # Pocket ID stores only a hash, so converge by adding the declared secret and dropping every other one.
-        created = call("POST", f"/api/oidc/clients/{client_id}/secrets", {"secret": secret})
-        for existing in call("GET", f"/api/oidc/clients/{client_id}/secrets") or []:
-            if existing["id"] != created["id"]:
-                call("DELETE", f"/api/oidc/clients/{client_id}/secrets/{existing['id']}")
+        if not public:
+            # Pocket ID stores only a hash, so converge by adding the declared secret and dropping every other one.
+            created = call("POST", f"/api/oidc/clients/{client_id}/secrets", {"secret": secret})
+            for existing in call("GET", f"/api/oidc/clients/{client_id}/secrets") or []:
+                if existing["id"] != created["id"]:
+                    call("DELETE", f"/api/oidc/clients/{client_id}/secrets/{existing['id']}")
         print(f"synced {client_id}")
 
 

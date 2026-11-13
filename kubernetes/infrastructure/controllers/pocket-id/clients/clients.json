@@ -11,6 +11,17 @@
     "allowedUserGroups": ["admins"]
   },
   {
+    "id": "kubernetes",
+    "name": "kubernetes",
+    "callbackURLs": ["http://localhost:8000", "http://localhost:18000"],
+    "logoutCallbackURLs": [],
+    "isPublic": true,
+    "pkceEnabled": true,
+    "skipConsent": true,
+    "isGroupRestricted": true,
+    "allowedUserGroups": ["admins"]
+  },
+  {
     "id": "flux-web",
     "name": "flux-web",
     "callbackURLs": ["https://flux.syslabs.dev/oauth2/callback"],

@@ -22,6 +22,7 @@ RESTRICTED = {
     "allowedUserGroups": [sync.ADMINS_GROUP],
 }
 OPEN = {"id": "open", "name": "open", "callbackURLs": [], "isGroupRestricted": False}
+PUBLIC = {**RESTRICTED, "id": "public", "isPublic": True}
 
 
 def http_error(path):
@@ -171,6 +172,22 @@ class SyncTest(unittest.TestCase):
         sync.sync(declared, lambda name: SECRETS["owner-email"] if name == "owner-email" else name + "-secret")
         self.assertTrue(fake.clients["oauth2-proxy"]["isGroupRestricted"])
         self.assertIn(("PUT", "/api/oidc/clients/oauth2-proxy/allowed-user-groups"), [call[:2] for call in fake.calls])
+
+    def test_a_public_client_reads_and_writes_no_secret(self):
+        fake = FakePocketId(clients=["public"])
+        read = []
+        sync.call = fake
+        sync.sync([PUBLIC], lambda name: read.append(name) or SECRETS.get(name))
+        self.assertEqual(read, ["owner-email"])
+        self.assertFalse(any(path.endswith("/secrets") for _, path, _ in fake.calls))
+        self.assertTrue(fake.clients["public"]["isPublic"])
+        self.assertTrue(fake.clients["public"]["isGroupRestricted"])
+
+    def test_the_declared_kubernetes_client_is_public_and_restricted_to_admins(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "clients.json")) as handle:
+            declared = {client["id"]: client for client in json.load(handle)}
+        self.assertTrue(declared["kubernetes"]["isPublic"])
+        self.assertEqual(declared["kubernetes"]["allowedUserGroups"], [sync.ADMINS_GROUP])
 
     def test_unrestricted_clients_need_no_owner(self):
         fake = FakePocketId(users=[], clients=["open"])
