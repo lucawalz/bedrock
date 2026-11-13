@@ -24,9 +24,26 @@ ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
 POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
-ADMIN_IDENTITY="$repo_root/hosts/common/estate-root.pub"
+ADMIN_KEY_DIR="$repo_root/hosts/common"
 ADMIN_AGENT_SOCKET="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
-ADMIN_SSH_OPTS=(-i "$ADMIN_IDENTITY" -o "IdentityAgent=$ADMIN_AGENT_SOCKET")
+NO_AGENT=none
+
+if [ -n "${BEDROCK_SSH_IDENTITY:-}" ]; then
+  [ -r "$BEDROCK_SSH_IDENTITY" ] || fail "BEDROCK_SSH_IDENTITY=$BEDROCK_SSH_IDENTITY is not readable; mount the key stick"
+  ADMIN_IDENTITIES=("$BEDROCK_SSH_IDENTITY")
+  ADMIN_AGENT="$NO_AGENT"
+  ADMIN_IDENTITIES_ONLY=yes
+  PROBE_BATCH_MODE=no
+else
+  ADMIN_IDENTITIES=("$ADMIN_KEY_DIR/estate-root.pub")
+  ADMIN_AGENT="$ADMIN_AGENT_SOCKET"
+  ADMIN_IDENTITIES_ONLY=no
+  PROBE_BATCH_MODE=yes
+fi
+
+ADMIN_SSH_OPTS=()
+for identity in "${ADMIN_IDENTITIES[@]}"; do ADMIN_SSH_OPTS+=(-i "$identity"); done
+ADMIN_SSH_OPTS+=(-o "IdentityAgent=$ADMIN_AGENT" -o "IdentitiesOnly=$ADMIN_IDENTITIES_ONLY")
 
 step() {
   echo "+ $*"
@@ -40,6 +57,13 @@ rebuild() {
     nixos-rebuild switch --flake ".#$host" --target-host "root@$address" --build-host "$BUILD_HOST"
 }
 
+identity_config() {
+  local identity
+  for identity in "${ADMIN_IDENTITIES[@]}"; do echo "  IdentityFile $identity"; done
+  echo "  IdentityAgent $ADMIN_AGENT"
+  echo "  IdentitiesOnly $ADMIN_IDENTITIES_ONLY"
+}
+
 rebuild_router() {
   local config="$SHORT_TMPDIR/router-ssh-config"
   mkdir -p "$SHORT_TMPDIR"
@@ -48,12 +72,10 @@ Host cp1-direct
   HostName $CONTROL_PLANE_TAILNET_ADDRESS
   HostKeyAlias $CONTROL_PLANE_ADDRESS
   User root
-  IdentityFile $ADMIN_IDENTITY
-  IdentityAgent $ADMIN_AGENT_SOCKET
+$(identity_config)
 Host $ROUTER_ADDRESS $CONTROL_PLANE_ADDRESS
   ProxyJump cp1-direct
-  IdentityFile $ADMIN_IDENTITY
-  IdentityAgent $ADMIN_AGENT_SOCKET
+$(identity_config)
 CONFIG
   TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="-F $config" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
     nixos-rebuild switch --flake .#router --target-host "root@$ROUTER_ADDRESS" --build-host "$BUILD_HOST"
@@ -74,7 +96,7 @@ volumes_healthy() {
 
 router_answers() {
   local config="$SHORT_TMPDIR/router-ssh-config" deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
-  until ssh -F "$config" "${ADMIN_SSH_OPTS[@]}" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
+  until ssh -F "$config" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
     && [ -n "$(dig +short "@$ROUTER_ADDRESS" "$DNS_PROBE_NAME")" ]; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "Router did not answer ssh and DNS" >&2; return 1; }
     sleep "$POLL_SECONDS"
@@ -84,7 +106,7 @@ router_answers() {
 warn_if_kernel_pending() {
   local host="$1" target="$2"; shift 2
   local kernels booted current
-  kernels="$(ssh "${ADMIN_SSH_OPTS[@]}" "$@" -o BatchMode=yes -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "$target" \
+  kernels="$(ssh "${ADMIN_SSH_OPTS[@]}" "$@" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "$target" \
     readlink /run/booted-system/kernel /run/current-system/kernel)"
   booted="$(printf '%s\n' "$kernels" | sed -n 1p)"
   current="$(printf '%s\n' "$kernels" | sed -n 2p)"

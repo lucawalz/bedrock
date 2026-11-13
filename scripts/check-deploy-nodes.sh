@@ -4,6 +4,8 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 script=scripts/deploy-nodes.sh
+estate_root="$PWD/hosts/common/estate-root.pub"
+secretive_socket="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -47,9 +49,23 @@ run() {
 run none "attached|healthy" || fail "healthy run failed"
 grep -q 'flake .#router' "$work/log" || fail "healthy run skipped the router"
 grep -q "^NIX_SSHOPTS=-F $work/router-ssh-config\$" "$work/log" || fail "router rebuild lacks the cp1-direct NIX_SSHOPTS"
-grep -q "^NIX_SSHOPTS=-i $PWD/hosts/common/estate-root.pub -o IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh\$" "$work/log" || fail "node rebuild lacks the estate-root key and Secretive agent"
-[ "$(grep -c "^  IdentityFile $PWD/hosts/common/estate-root.pub\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the estate-root identity"
-[ "$(grep -c "^  IdentityAgent $HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the Secretive agent"
+grep -q "^NIX_SSHOPTS=-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no\$" "$work/log" || fail "node rebuild lacks the estate-root key and Secretive agent"
+[ "$(grep -c "^  IdentityFile $estate_root\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the estate-root identity"
+[ "$(grep -c "^  IdentityAgent $secretive_socket\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the Secretive agent"
+grep 'readlink' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no .*-o BatchMode=yes" \
+  && fail "a kernel probe lacks the estate-root key, Secretive agent or BatchMode"
+
+breakglass="$work/estate-breakglass"
+: > "$breakglass"
+BEDROCK_SSH_IDENTITY="$breakglass" run none "attached|healthy" || fail "break-glass run failed"
+grep -q "^NIX_SSHOPTS=-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes\$" "$work/log" || fail "break-glass node rebuild does not use only the break-glass key"
+[ "$(grep -c "^  IdentityFile $breakglass\$" "$work/router-ssh-config")" = 2 ] || fail "break-glass router ssh config lacks the break-glass key"
+[ "$(grep -c "^  IdentityAgent none\$" "$work/router-ssh-config")" = 2 ] || fail "break-glass router ssh config keeps an agent"
+[ "$(grep -c "^  IdentitiesOnly yes\$" "$work/router-ssh-config")" = 2 ] || fail "break-glass router ssh config lacks IdentitiesOnly"
+if grep -q -e estate-root -e Secretive "$work/router-ssh-config" "$work/log"; then fail "break-glass run still names estate-root or Secretive"; fi
+grep 'readlink' "$work/log" | grep -v -- "-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes .*-o BatchMode=no" \
+  && fail "a break-glass kernel probe lacks the break-glass key or prompts disabled"
+if BEDROCK_SSH_IDENTITY="$work/missing" run none "attached|healthy"; then fail "an unreadable break-glass key did not fail the run"; fi
 grep -q 'HostName 100.105.211.67' "$work/router-ssh-config" || fail "router ssh config lacks the cp1-direct tailnet address"
 
 if run '.#worker-1' "attached|healthy"; then fail "failed rebuild did not fail the run"; fi
