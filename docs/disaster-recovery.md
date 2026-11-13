@@ -250,7 +250,13 @@ Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `
 
 ## Admin SSH keys
 
-The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys, served to ssh by its agent at `~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh`: `estate-root` for the hosts and `github-push` for GitHub and commit signing. Each use requires Touch ID. The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
+The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys, served to ssh by its agent at `~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh`:
+
+- `estate-root` logs in to the hosts. Each use requires Touch ID.
+- `github-push` authenticates to GitHub for pushes and fetches only. Each use requires Touch ID.
+- `git-signing` signs every commit. It has Notify protection: Secretive shows a notification on each use and asks for nothing while the Mac is unlocked. It is registered on GitHub as a signing key and listed in `~/.ssh/allowed_signers`. Git uses it through `gpg.format ssh`, `user.signingkey ~/.ssh/git-signing.pub` and `gpg.ssh.program ~/.local/bin/git-ssh-sign`, a wrapper that runs `ssh-keygen` with `SSH_AUTH_SOCK` set to the Secretive agent. The repository rulesets require signed commits, so a Mac without this key cannot push.
+
+The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
 
 The keys carry no certificate and do not expire. They are rotated when the Mac is replaced:
 
