@@ -60,7 +60,7 @@ spec:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyverno
-          tag: v1.18.2@sha256:0a540e2ddf74d0d2d3d45f9ef248d7dbc96576accdbcc6a2dd7eaff9fea56504
+          tag: v1.20.0@sha256:9de49c5416ea536f00a205527197ac048abdf32c5a75d633cd9afff8928f359d
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution: []
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -82,7 +82,7 @@ spec:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyvernopre
-          tag: v1.18.2@sha256:cd8cb4a31d25b3992734fb8f24a90ef691c90ce49338c89bea96792160eacb98
+          tag: v1.20.0@sha256:339067e083430e0c97007541bef9cfdbac89bee13f7228772c77ae8aead14b8b
     backgroundController:
       replicas: 1
       resources:
@@ -95,7 +95,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/background-controller
-        tag: v1.18.2@sha256:d62566ce41bd0d4a32bf2cf44b9ebfc02c36374f821f83070890287f62f68671
+        tag: v1.20.0@sha256:c72df38320a48fc9de10f9d23d087a117853bb08207b7f60f6d1e8457fb3ddb7
     cleanupController:
       replicas: 1
       resources:
@@ -108,7 +108,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/cleanup-controller
-        tag: v1.18.2@sha256:b0395d29ae332276e6910eb40418be9bc127c068d659f90aa1bcddd6be99ccb4
+        tag: v1.20.0@sha256:0f9ce0c203561c52499e871a987ff987371f57385fcafe7af1a01dfd6db1feee
     reportsController:
       replicas: 1
       resources:
@@ -122,7 +122,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/reports-controller
-        tag: v1.18.2@sha256:f09cf305170014e191b94e1c54f5be73163d8824eefad49349675c4efe43159a
+        tag: v1.20.0@sha256:f54e3cc106fadb1a615d0ec11c42f741f51d3580a5f70dfbe7bd7ec58864ef03
     features:
       policyExceptions:
         enabled: true
@@ -139,15 +139,15 @@ spec:
       image:
         registry: ghcr.io
         repository: kyverno/readiness-checker
-        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+        tag: v1.20.0@sha256:6079a30d75fe7ba868a5a7e5dfa71ee92a3a8bae97adcea1c8cfb1009280ee6c
     webhooksCleanup:
       image:
         registry: ghcr.io
         repository: kyverno/readiness-checker
-        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+        tag: v1.20.0@sha256:6079a30d75fe7ba868a5a7e5dfa71ee92a3a8bae97adcea1c8cfb1009280ee6c
     crds:
       migration:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyverno-cli
-          tag: v1.18.2@sha256:7224ed05508c24419c3df98114c28ba682ad0a940dcdb7b9fdba0a4b6bf943cf
+          tag: v1.20.0@sha256:bd2b8b7c9d550ecf04e0bacaf351adce2f82ce67fd3f291075edcee7f8ab4ab4
