@@ -12,7 +12,7 @@ ca_hash_bytes=32
 ram_device=/dev/disk99
 
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
+trap 'chmod -R u+w "$work"; rm -rf "$work"' EXIT
 repo="$work/repo"
 stick="$work/stick"
 keys="$stick/rebuild-keys"
@@ -56,6 +56,11 @@ cat > "$work/bin/agenix" <<'FAKE'
 #!/usr/bin/env bash
 set -euo pipefail
 echo "agenix $* TMPDIR=$TMPDIR" >> "$FAKE_LOG"
+if [ -n "${FAKE_LOCK_RAMDISK:-}" ]; then
+  mkdir "$TMPDIR/locked"
+  : > "$TMPDIR/locked/file"
+  chmod 500 "$TMPDIR/locked"
+fi
 [ "$1" = -r ] && [ "$2" = -i ] || exit 1
 rules="$(nix eval --json --file secrets.nix)"
 for file in $(jq -r 'keys[]' <<< "$rules"); do
@@ -102,6 +107,7 @@ git -C "$repo" add secrets
 git -C "$repo" ls-files -s > "$work/index"
 
 reset() {
+  [ ! -d "$ramdisk" ] || chmod -R u+w "$ramdisk"
   rm -rf "$repo/secrets" "$ramdisk"
   cp -R "$work/pristine" "$repo/secrets"
   bind_rules "$stick/rebuild-keys"
@@ -176,6 +182,11 @@ reset
 if FAKE_DETACH_EXIT=1 run; then fail "a failed RAM disk detach did not fail the run"; fi
 grep -q "$ram_device.*by hand" "$work/output" || fail "a failed detach does not name $ram_device for a manual detach"
 ramdisk_emptied || fail "a failed detach left the RAM disk contents in place"
+
+reset
+if FAKE_LOCK_RAMDISK=1 run; then fail "a RAM disk that could not be cleared did not fail the run"; fi
+grep -q "^hdiutil detach.* $ram_device" "$work/log" || fail "a failed clear skipped the RAM disk detach"
+grep -q "$ram_device.*by hand" "$work/output" || fail "a failed clear does not name $ram_device for a manual check"
 
 reset
 if FAKE_CA_RECIPIENTS=2 run; then fail "a k3s-ca.age missing a recipient was accepted"; fi

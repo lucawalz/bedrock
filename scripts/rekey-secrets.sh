@@ -45,9 +45,14 @@ done
 ram_device=""
 ram=""
 release_ram_disk() {
-  local status=$?
-  if [ -n "$ram" ] && [ -d "$ram" ]; then rm -rf "${ram:?}"/*; fi
-  if [ -n "$ram_device" ] && ! hdiutil detach -force "$ram_device" > /dev/null; then
+  local status=$? cleared=true detached=true
+  if [ -n "$ram" ] && [ -d "$ram" ]; then rm -rf "${ram:?}"/* || cleared=false; fi
+  if [ -n "$ram_device" ]; then hdiutil detach -force "$ram_device" > /dev/null || detached=false; fi
+  if ! $cleared; then
+    echo "FAIL: clearing the RAM disk $ram_device at $ram failed; check by hand that it is detached: hdiutil detach -force $ram_device" >&2
+    status=1
+  fi
+  if ! $detached; then
     echo "FAIL: detaching the RAM disk $ram_device failed; detach it by hand with: hdiutil detach -force $ram_device" >&2
     status=1
   fi
