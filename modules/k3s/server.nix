@@ -17,6 +17,9 @@ let
   auditLogMaxAgeDays = 30;
   auditLogMaxBackups = 10;
   auditLogMaxSizeMegabytes = 100;
+  oidcIssuerUrl = "https://id.syslabs.dev";
+  oidcClientId = "kubernetes";
+  oidcIdentityPrefix = "oidc:";
   auditPolicy = {
     apiVersion = "audit.k8s.io/v1";
     kind = "Policy";
@@ -103,6 +106,12 @@ in
       "--kube-apiserver-arg=audit-log-maxage=${toString auditLogMaxAgeDays}"
       "--kube-apiserver-arg=audit-log-maxbackup=${toString auditLogMaxBackups}"
       "--kube-apiserver-arg=audit-log-maxsize=${toString auditLogMaxSizeMegabytes}"
+      "--kube-apiserver-arg=oidc-issuer-url=${oidcIssuerUrl}"
+      "--kube-apiserver-arg=oidc-client-id=${oidcClientId}"
+      "--kube-apiserver-arg=oidc-username-claim=email"
+      "--kube-apiserver-arg=oidc-username-prefix=${oidcIdentityPrefix}"
+      "--kube-apiserver-arg=oidc-groups-claim=groups"
+      "--kube-apiserver-arg=oidc-groups-prefix=${oidcIdentityPrefix}"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
     environmentFile = config.age.secrets.etcd-s3-credentials.path;
