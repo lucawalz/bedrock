@@ -4,6 +4,15 @@ How to recover the cluster when an admission webhook refuses the writes needed t
 
 Kyverno enforces the workload policies in [ADR 0009](adr/0009-enforce-workload-policy-with-kyverno.md), and several platform operators run their own webhooks. A webhook whose `failurePolicy` is `Fail` turns its own unavailability into a write outage for every resource it claims. The recovery is always the same: stop the API server consulting the broken webhook, repair the workload behind it, then restore enforcement.
 
+`kubectl` on the Mac signs in through Pocket ID, so an outage that takes Pocket ID or its database down also takes the Mac's `bedrock` context with it. Every command here then runs with the break-glass kubeconfig from the key stick:
+
+```
+export KUBECONFIG=/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml
+kubectl get nodes
+```
+
+The stick kubeconfig is a `system:masters` certificate that works without Pocket ID and that no RBAC change can lock out. Use it only while the Pocket ID login fails, and unset `KUBECONFIG` afterwards.
+
 Blast radius is set by two fields on the configuration object: `failurePolicy`, and the `namespaceSelector` deciding where the webhook is consulted. A `Fail` webhook with an empty selector reaches everywhere.
 
 ## Recognising the failure

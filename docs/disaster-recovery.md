@@ -31,6 +31,7 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable |
+| Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
 | Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. It no longer logs in to any host. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
 
@@ -126,14 +127,14 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
    ```
 
    NixOS recreates the files it manages under `/etc/rancher/k3s` on boot.
-5. control-plane-1 starts with `clusterInit`. The `k3s-ca` unit unpacks `secrets/k3s-ca.age` into `/var/lib/rancher/k3s/server/tls` because no `server-ca.crt` exists, so the server comes back with the same CA and the agents join with the unchanged token. `kubectl get nodes` shows three Ready nodes once `just kubeconfig` has refreshed the Mac.
+5. control-plane-1 starts with `clusterInit`. The `k3s-ca` unit unpacks `secrets/k3s-ca.age` into `/var/lib/rancher/k3s/server/tls` because no `server-ca.crt` exists, so the server comes back with the same CA and the agents join with the unchanged token. `KUBECONFIG=/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml kubectl get nodes` shows three Ready nodes once `just kubeconfig-admin` has written the new admin certificate.
 
 ### Bootstrap and converge
 
 1. After the wipe and before `just bootstrap`, check the R2 targets with each bucket's own credentials. Flux creates the `postgres` Cluster with `initdb`, and its archive check fails if `s3://bedrock-postgres/postgres/` already holds WAL from an earlier cluster; a BackupVolume left in `bedrock-longhorn` re-syncs into the new cluster. For a rebuild that discards data, delete what is there once the owner confirms. For a rebuild that keeps data, leave both and restore as in [Restoring data from R2](#restoring-data-from-r2).
-2. Run `just bootstrap` ([README](../README.md#flux)). It refreshes the kubeconfig, applies CoreDNS, installs the flux-operator chart, applies the `FluxInstance`, creates `sops-age` and the sync deploy key, and waits for the `FluxInstance`.
+2. Run `just bootstrap` ([README](../README.md#flux)). It writes the break-glass kubeconfig to the stick and runs every step with it, applies CoreDNS, installs the flux-operator chart, applies the `FluxInstance`, creates `sops-age` and the sync deploy key, and waits for the `FluxInstance`.
 3. Let `just bootstrap` register the printed public key as the read-only deploy key `flux-home-cluster` (or add it by hand with Allow write access unchecked), and delete the previous cluster's key. Nothing in the cluster writes to git.
-4. Open `https://id.syslabs.dev/setup` as soon as Pocket ID runs and register the owner passkey; the claim page is open to the home LAN until then. In the Pocket ID admin UI, mark the owner email as verified. oauth2-proxy rejects an unverified email, and every forward-auth login answers 500 until this is done ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)).
+4. Open `https://id.syslabs.dev/setup` as soon as Pocket ID runs and register the owner passkey; the claim page is open to the home LAN until then. In the Pocket ID admin UI, mark the owner email as verified. oauth2-proxy rejects an unverified email, and every forward-auth login answers 500 until this is done ([ADR 0010](adr/0010-sign-in-through-pocket-id-and-oauth2-proxy.md)). Then run `just kubeconfig` and `kubectl --context bedrock get nodes`; the passkey login proves the Pocket ID path before the stick goes back in the drawer.
 5. Check that the public DNS records for `chat.syslabs.dev` and `lucawalz.dev` still point at the tunnel. They are made by hand in the Cloudflare dashboard.
 6. Watch `flux get kustomizations -A` and `flux get helmreleases -A` until everything is Ready. Any stall gets a root-cause fix in git, never a live patch.
 

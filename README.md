@@ -134,7 +134,7 @@ Internal names are subdomains of `syslabs.dev`. Ollama serves the local models i
 
 ### Requirements
 
-- [Nix](https://nixos.org/download.html) with flakes. `nix develop` pins the toolchain (kubectl, helm, flux, sops, age, just, yq, kubeconform, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs.
+- [Nix](https://nixos.org/download.html) with flakes. `nix develop` pins the toolchain (kubectl, kubelogin, helm, flux, sops, age, just, yq, kubeconform, nixos-rebuild), and the macOS shell adds nixos-anywhere for first installs.
 - A GitHub account holding this repository and the private `bedrock-secrets` repository.
 - A Tailscale tailnet, a Cloudflare account with the `syslabs.dev` zone, and three R2 buckets (`bedrock-postgres`, `bedrock-longhorn`, `bedrock-etcd`) with one bucket-scoped token each.
 - The three recovery keys: the SOPS age key, the K3s root CA (offline only), and the Longhorn volume encryption key. They are kept on an encrypted offline medium ([ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md), [disaster recovery](docs/disaster-recovery.md#recovery-seeds)).
@@ -152,7 +152,7 @@ nixos-rebuild switch --flake .#control-plane-1 --target-host root@10.20.0.10 --b
 
 With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before it runs:
 
-1. Refresh the default kubeconfig entry from control-plane-1 (`just kubeconfig`).
+1. Write the break-glass admin kubeconfig from control-plane-1 to the key stick (`/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` by default, or `BEDROCK_ADMIN_KUBECONFIG`). Every later step runs with `KUBECONFIG` pointing at it, because the Pocket ID login does not exist until Flux has deployed Pocket ID.
 2. Apply CoreDNS from `kubernetes/infrastructure/controllers/coredns`. K3s runs with `--disable=coredns`, and without cluster DNS Flux cannot fetch the repository that installs it.
 3. Install the flux-operator chart at the version pinned in its HelmRelease.
 4. Apply the `FluxInstance` from `kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml`.
@@ -163,7 +163,7 @@ With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before i
 Three steps stay manual afterwards:
 
 - Delete the previous cluster's deploy key on GitHub. The new key is read-only, since nothing in the cluster writes to git.
-- Open `https://id.syslabs.dev/setup` at once, register the owner passkey, and mark the owner email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login.
+- Open `https://id.syslabs.dev/setup` at once, register the owner passkey, and mark the owner email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login. The API server rejects an unverified email too, so `just kubeconfig` and the passkey login of `kubectl get nodes` come after this.
 - The public DNS records for the tunnel hostnames are made by hand in the Cloudflare dashboard.
 
 Flux then works through `kubernetes/clusters/home/config/` in `dependsOn` order. `flux get kustomizations -A` and `flux get helmreleases -A` show the progress. A cold start takes over an hour, most of it image pulls through the empty zot cache.
@@ -175,7 +175,8 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | Recipe | What it does |
 | --- | --- |
 | `just bootstrap` | Bring Flux up on a fresh cluster, confirming each step |
-| `just kubeconfig` | Refresh the default kubeconfig entry from control-plane-1 |
+| `just kubeconfig` | Write the `bedrock` context into `~/.kube/config`, which signs in through Pocket ID with `kubectl oidc-login` and a passkey |
+| `just kubeconfig-admin [path]` | Write the break-glass `system:masters` kubeconfig, to the key stick by default |
 | `just reconcile <app>` | Fetch the repository and reconcile the app's Flux Kustomization |
 | `just logs <app>` | Follow the logs of every labelled pod in the app's namespace |
 | `just login <app> [show=true]` | Show an app's admin login and copy its password, or print it |
