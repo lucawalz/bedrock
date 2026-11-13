@@ -71,6 +71,34 @@ age_key_matches_recipients() {
   tr -d ' \n' <<< "$recipients" | tr ',' '\n' | grep -qxF "$public_key"
 }
 
+rebuild_keys_dir() {
+  printf '%s/rebuild-keys\n' "$(stick_root)"
+}
+
+stick_root() {
+  printf '%s\n' "${BEDROCK_STICK_ROOT:-/Volumes/bedrock-keys/bedrock}"
+}
+
+open_ssh_session() {
+  local name="$1" persist="$2"
+  ssh_session_dir="$(mktemp -d "/tmp/$name.XXXXXX")"
+  ssh_session_options=(
+    "IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+    "IdentityFile=$repo_root/hosts/common/estate-root.pub"
+    IdentitiesOnly=yes
+    ControlMaster=auto
+    "ControlPath=$ssh_session_dir/%C"
+    "ControlPersist=$persist"
+  )
+}
+
+close_ssh_session() {
+  local target="$1" option args=()
+  for option in "${ssh_session_options[@]}"; do args+=(-o "$option"); done
+  ssh "${args[@]}" -O exit "$target" 2>/dev/null || true
+  rm -rf "$ssh_session_dir"
+}
+
 node_address() {
   nix eval --raw --file "$repo_root/lib/inventory.nix" --apply \
     'inventory: builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs (name: node: name + " " + node.address) inventory.nodes))' \

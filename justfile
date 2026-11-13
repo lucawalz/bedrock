@@ -151,7 +151,7 @@ generate-rebuild-keys:
     bash scripts/generate-rebuild-keys.sh
 
 # Wipe and reinstall a node from the local main with its stick keys, enrol Secure Boot and reboot, for example: just install-node worker-1 phases=disko,install
-install-node node phases="kexec,disko,install":
+install-node node phases="":
     bash scripts/install-node.sh {{ quote(node) }} {{ quote(phases) }}
 
 # After the first boot, bind a node's LUKS root to the TPM, write its recovery key to the stick and wipe the install passphrase
