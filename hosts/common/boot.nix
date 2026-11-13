@@ -1,10 +1,18 @@
 _: {
-  boot.loader = {
-    systemd-boot = {
+  boot = {
+    loader.efi.canTouchEfiVariables = true;
+    lanzaboote = {
       enable = true;
-      configurationLimit = 10;
-      editor = false;
+      pkiBundle = "/var/lib/sbctl";
+      configurationLimit = 4;
+      measuredBoot = {
+        enable = true;
+        pcrs = [
+          0
+          4
+          7
+        ];
+      };
     };
-    efi.canTouchEfiVariables = true;
   };
 }

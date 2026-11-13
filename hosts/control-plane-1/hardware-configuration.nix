@@ -24,20 +24,6 @@
     extraModulePackages = [ ];
   };
 
-  fileSystems."/" = {
-    device = "/dev/disk/by-uuid/6fbd4057-aa2d-4134-9a7d-c4d1e109eb7b";
-    fsType = "ext4";
-  };
-
-  fileSystems."/boot" = {
-    device = "/dev/disk/by-uuid/1A21-BED9";
-    fsType = "vfat";
-    options = [
-      "fmask=0022"
-      "dmask=0022"
-    ];
-  };
-
   swapDevices = [ ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";

@@ -2,6 +2,7 @@
   nixpkgs,
   disko,
   agenix,
+  lanzaboote,
   ...
 }:
 let
@@ -28,6 +29,7 @@ let
       modules = [
         disko.nixosModules.disko
         agenix.nixosModules.default
+        lanzaboote.nixosModules.lanzaboote
         ../hosts/common
       ]
       ++ nixpkgs.lib.optional (isServer || builtins.pathExists hostDir) hostDir
@@ -104,9 +106,17 @@ let
           root = {
             size = "100%";
             content = {
-              type = "filesystem";
-              format = "ext4";
-              mountpoint = "/";
+              type = "luks";
+              name = "cryptroot";
+              settings = {
+                allowDiscards = true;
+                crypttabExtraOpts = [ "tpm2-device=auto" ];
+              };
+              content = {
+                type = "filesystem";
+                format = "ext4";
+                mountpoint = "/";
+              };
             };
           };
         };

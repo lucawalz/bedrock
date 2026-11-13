@@ -11,6 +11,10 @@
       url = "github:ryantm/agenix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    lanzaboote = {
+      url = "github:nix-community/lanzaboote/v1.2.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       nixpkgs,
       disko,
       agenix,
+      lanzaboote,
       ...
     }:
     let
@@ -26,6 +31,7 @@
           nixpkgs
           disko
           agenix
+          lanzaboote
           ;
       };
       formatterSystems = [
