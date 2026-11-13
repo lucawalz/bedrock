@@ -277,13 +277,24 @@ Host github.com
 
 A master connection stays open for 10 minutes and keeps the key it authenticated with, so after a key change `ssh -O exit <host>` closes it before the next login proves anything.
 
-The keys carry no certificate and do not expire. They are rotated when the Mac is replaced:
+The keys carry no certificate and do not expire. They are rotated when the Mac is replaced and the old Mac still works:
 
-1. Create a new key in Secretive and add its public key to `hosts/common/estate-root.pub`, which both Nix files read, as a second line next to the old one.
-2. Deploy with `just deploy-nodes` and log in to every host with only the new key.
-3. Remove the old key from that file and deploy again. The break-glass key is not rotated and stays in `hosts/common/estate-breakglass.pub`.
+1. On the new Mac, create `estate-root`, `github-push` and `git-signing` in Secretive and export their public keys to `~/.ssh/`. Register `github-push` on GitHub as an authentication key and `git-signing` as a signing key, and add `git-signing` to `~/.ssh/allowed_signers`.
+2. On the new Mac, copy the new `estate-root` public key to `hosts/common/estate-root-next.pub`, commit and push it. While that file is tracked, both Nix files install it as a root key next to `estate-root.pub`, and `scripts/deploy-nodes.sh` offers it as a second identity.
+3. On the old Mac, pull and run `just deploy-nodes`. It logs in with the old key and installs the new one on every host.
+4. On the new Mac, log in to every host with the new key, then `git mv hosts/common/estate-root-next.pub hosts/common/estate-root.pub`, commit and run `just deploy-nodes`. That deploy logs in with the new key and removes the old one.
+5. Remove the old Mac's `github-push` and `git-signing` keys from GitHub.
 
-A lost Mac is recovered with the break-glass key below: log in with it from the new Mac, create new Secretive keys there, deploy their public keys, prove login with them, then remove the lost Mac's keys and deploy again. Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
+The break-glass key is not rotated and stays in `hosts/common/estate-breakglass.pub`.
+
+A lost Mac is recovered from the stick. On the new Mac, with the stick mounted and the Mac joined to the tailnet:
+
+1. Create the three keys and register them as in step 1 above.
+2. Replace `hosts/common/estate-root.pub` with the new `estate-root` public key and commit it.
+3. Deploy with the break-glass key: `BEDROCK_SSH_IDENTITY=/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass just deploy-nodes`. With that variable set, the generated ssh config, `NIX_SSHOPTS` and the probes offer only that key, with `IdentitiesOnly yes` and no agent, so ssh asks for the key's passphrase, possibly more than once. The deploy removes the lost Mac's `estate-root` from every host.
+4. Prove login with the new key, then remove the lost Mac's keys from GitHub.
+
+Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
 
 The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac or a Secretive agent that is not running. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
 
