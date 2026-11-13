@@ -55,3 +55,9 @@ workload_images() {
     (select(.apiVersion == "postgresql.cnpg.io/*" and .spec.imageName != null) | .spec.imageName)
   ' "$@"
 }
+
+age_key_matches_recipients() {
+  local key_file="$1" recipients="$2" public_key
+  public_key="$(age-keygen -y "$key_file")" || return 1
+  tr -d ' \n' <<< "$recipients" | tr ',' '\n' | grep -qxF "$public_key"
+}

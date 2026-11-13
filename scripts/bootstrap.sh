@@ -10,7 +10,7 @@ operator_release=kubernetes/infrastructure/controllers/flux-operator/helmrelease
 operator_source=kubernetes/clusters/home/sources/helm/controlplane.yaml
 instance=kubernetes/clusters/home/flux-operator/instance/fluxinstance.yaml
 instance_crd=fluxinstances.fluxcd.controlplane.io
-age_key_file="${SOPS_AGE_KEY_FILE:-$HOME/.config/sops/age/keys.txt}"
+age_key_file="${SOPS_AGE_KEY_FILE:-/Volumes/bedrock-keys/bedrock/age-keys.txt}"
 deploy_key_file="${BEDROCK_DEPLOY_KEY:-}"
 deploy_key_title=flux-home-cluster
 context=default
@@ -27,7 +27,7 @@ instance_name="$(yq -N '.metadata.name' "$instance")"
 sync_url="$(yq -N '.spec.sync.url' "$instance")"
 sync_secret="$(yq -N '.spec.sync.pullSecret' "$instance")"
 sync_repository="${sync_url#ssh://git@github.com/}"
-recipient="$(yq -N '.creation_rules[0].age' .sops.yaml)"
+recipients="$(yq -N '.creation_rules[0].age' .sops.yaml)"
 
 step() {
   local answer
@@ -72,8 +72,8 @@ if step "Apply the FluxInstance $instance_name from $instance"; then
 fi
 
 if step "Create the sops-age secret in $namespace from $age_key_file"; then
-  if ! age-keygen -y "$age_key_file" | grep -qxF "$recipient"; then
-    echo "$age_key_file holds no identity for the .sops.yaml recipient $recipient" >&2
+  if ! age_key_matches_recipients "$age_key_file" "$recipients"; then
+    echo "$age_key_file holds no identity for any .sops.yaml recipient: $recipients" >&2
     exit 1
   fi
   "${kube[@]}" -n "$namespace" create secret generic sops-age \
