@@ -109,8 +109,7 @@ tar --format ustar -cf "$work/ca.tar" -C "$tls" "${tarball_members[@]}"
 age -R <(recipients "$ca_secret") -o "$work/$ca_secret" "$work/ca.tar"
 mv "$work/$ca_secret" "secrets/$ca_secret"
 
-# k3s hashes the DER of the root certificate when the served CA bundle holds a chain.
-ca_hash="$(openssl x509 -in "$root_cert" -outform DER | openssl dgst -sha256 -r | cut -d' ' -f1)"
+ca_hash="$(k3s_ca_hash "$root_cert")"
 token="$(age -d -i "$identity" "secrets/$token_secret")"
 [[ "$token" =~ ^K10[0-9a-f]{64}::$token_user:([^[:space:]]+)$ ]] ||
   { echo "secrets/$token_secret is not a K10 secure token for user $token_user" >&2; exit 1; }

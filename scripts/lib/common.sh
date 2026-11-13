@@ -56,6 +56,11 @@ workload_images() {
   ' "$@"
 }
 
+# k3s hashes the DER of the root certificate when the served CA bundle holds a chain.
+k3s_ca_hash() {
+  openssl x509 -in "$1" -outform DER | openssl dgst -sha256 -r | cut -d' ' -f1
+}
+
 admin_kubeconfig_path() {
   printf '%s\n' "${BEDROCK_ADMIN_KUBECONFIG:-/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml}"
 }
