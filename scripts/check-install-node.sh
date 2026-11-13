@@ -157,6 +157,15 @@ grep -qF "luks-recovery/.$node.partial" "$work/output" || fail "the failure does
 if grep -q -- '--wipe-slot' "$work/log"; then fail "the password slot was wiped after a failed recovery enrolment"; fi
 rm "$stick/luks-recovery/.$node.partial"
 
+mkdir "$work/failing-mv"
+printf '#!/bin/sh\nexit 1\n' > "$work/failing-mv/mv"
+chmod +x "$work/failing-mv/mv"
+if PATH="$work/failing-mv:$PATH" run "$enrol" "$node"; then fail "an enrolment whose move into place failed succeeded"; fi
+[ "$(cat "$stick/luks-recovery/.$node.partial" 2>/dev/null)" = "$recovery_key" ] \
+  || fail "a failed move into place deleted the partial file holding the recovery key"
+if grep -q -- '--wipe-slot' "$work/log"; then fail "the password slot was wiped after a failed move into place"; fi
+rm "$stick/luks-recovery/.$node.partial"
+
 FAKE_INITIAL_TOKENS=systemd-tpm2 run "$enrol" "$node" || { cat "$work/output" >&2; fail "a re-run after the TPM enrolment failed"; }
 if grep -q -- '--tpm2-device' "$work/log"; then fail "a re-run added a second TPM slot"; fi
 grep -q -- '--wipe-slot=password' "$work/log" || fail "a re-run after the TPM enrolment did not finish"

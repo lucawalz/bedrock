@@ -37,7 +37,7 @@ ssh_args+=(-o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
 partial_owned=false
 
 cleanup() {
-  if $partial_owned; then rm -f "$partial_file"; fi
+  if $partial_owned && [ ! -s "$partial_file" ]; then rm -f "$partial_file"; fi
   close_ssh_session "root@$address"
 }
 trap cleanup EXIT
@@ -61,13 +61,11 @@ fi
 
 if ! "${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --recovery-key "$ROOT_DEVICE" < "$passphrase_file" >> "$partial_file"; then
   [ -s "$partial_file" ] || fail "the recovery key enrolment failed; the password slot stays"
-  partial_owned=false
   fail "the recovery key enrolment failed after printing a key, kept in $partial_file; the password slot stays"
 fi
 [ -s "$partial_file" ] || fail "the recovery key came back empty; the password slot stays"
-mv -n "$partial_file" "$recovery_file"
+mv -n "$partial_file" "$recovery_file" || fail "moving $partial_file to $recovery_file failed; the key stays in $partial_file and the password slot stays"
 if [ -e "$partial_file" ]; then
-  partial_owned=false
   fail "$recovery_file appeared during the run; the new recovery key stays in $partial_file and the password slot stays"
 fi
 partial_owned=false
