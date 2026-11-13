@@ -88,7 +88,7 @@ in
       "--disable=metrics-server"
       "--tls-san=${meta.hostname}"
       "--tls-san=${self.address}"
-      "--tls-san=${self.tailscale.magicDnsName}"
+      "--tls-san=${self.magicDnsName}"
       "--node-ip=${self.address}"
       "--secrets-encryption"
       "--secrets-encryption-provider=secretbox"
