@@ -96,7 +96,7 @@ set -euo pipefail
 echo "generate-cluster-ca identity=$BEDROCK_AGENIX_IDENTITY TMPDIR=$TMPDIR" >> "$FAKE_LOG"
 rules="$(nix eval --json --file secrets/secrets.nix)"
 recipients() { jq -r --arg file "$1" '.[$file].publicKeys[]' <<< "$rules"; }
-echo ca | age -R <(recipients k3s-ca.age | head -n "${FAKE_CA_RECIPIENTS:-99}") -o secrets/k3s-ca.age
+echo ca | age -R <(recipients k3s-ca.age | sed "${FAKE_CA_RECIPIENTS:+${FAKE_CA_RECIPIENTS}q}") -o secrets/k3s-ca.age
 if [ -n "${FAKE_CORRUPT_TOKEN:-}" ]; then
   echo corrupt | age -R <(recipients k3s-token.age) -o secrets/k3s-token.age
 fi
