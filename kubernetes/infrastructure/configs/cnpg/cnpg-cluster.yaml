@@ -39,11 +39,18 @@ spec:
     limits:
       memory: 768Mi
   bootstrap:
-    initdb:
-      database: app
-      owner: app
+    recovery:
+      source: archive
+  externalClusters:
+    - name: archive
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: postgres-backup
+          serverName: postgres
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
         barmanObjectName: postgres-backup
+        serverName: postgres-2026-11

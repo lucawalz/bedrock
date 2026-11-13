@@ -7,6 +7,7 @@ usage="usage: restore-test.sh [--dry-run] [--max-age <n>s|m|h|d] postgres|longho
 
 POSTGRES_NAMESPACE=postgres
 POSTGRES_SOURCE_CLUSTER=postgres
+POSTGRES_ARCHIVE_SERVER=postgres-2026-11
 POSTGRES_RESTORE_CLUSTER=postgres-restore-test
 POSTGRES_OBJECT_STORE=postgres-backup
 POSTGRES_RESTORE_TIMEOUT=30m
@@ -162,7 +163,7 @@ spec:
         name: barman-cloud.cloudnative-pg.io
         parameters:
           barmanObjectName: ${POSTGRES_OBJECT_STORE}
-          serverName: ${POSTGRES_SOURCE_CLUSTER}
+          serverName: ${POSTGRES_ARCHIVE_SERVER}
 MANIFEST
 }
 
