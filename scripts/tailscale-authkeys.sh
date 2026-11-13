@@ -24,7 +24,8 @@ owners=()
 while IFS= read -r file; do
   owner=""
   for host in "${hosts[@]}"; do
-    if secret_recipients "$rules" "$file" | cut -d' ' -f1,2 | grep -qxF "$(cut -d' ' -f1,2 "$(stick_host_key "$host").pub")"; then
+    if stick_host_is_recipient "$rules" "$file" "$host"; then
+      [ -z "$owner" ] || fail "secrets/$file lists both $owner and $host; each auth key belongs to one host"
       owner="$host"
     fi
   done
@@ -36,7 +37,6 @@ done < <(jq -r --arg pattern "$SECRET_PATTERN" 'keys[] | select(test($pattern))'
 
 work="$(mktemp -d)"
 cleanup() {
-  unset key
   rm -rf "$work"
   pbcopy < /dev/null
   echo "Clipboard cleared."

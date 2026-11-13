@@ -121,6 +121,10 @@ stick_host_key() {
   printf '%s/hosts/%s/etc/ssh/ssh_host_ed25519_key\n' "$(rebuild_keys_dir)" "$1"
 }
 
+stick_host_is_recipient() {
+  secret_recipients "$1" "$2" | cut -d' ' -f1,2 | grep -qxF "$(cut -d' ' -f1,2 "$(stick_host_key "$3").pub")"
+}
+
 stick_hosts() {
   find "$(rebuild_keys_dir)/hosts" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
 }

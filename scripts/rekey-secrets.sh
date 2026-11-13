@@ -7,11 +7,13 @@ umask 077
 [ "$#" -eq 0 ] || { echo "usage: rekey-secrets.sh" >&2; exit 2; }
 
 PATH="$PATH:/opt/homebrew/bin"
-require_tools nix jq age agenix ssh-keygen hdiutil diskutil git cmp age-plugin-se
+require_tools nix jq age agenix ssh-keygen hdiutil diskutil mdutil git cmp age-plugin-se
 
 RAM_DISK_SECTORS=524288
 RAM_DISK_NAME="bedrock-rekey-$$"
 TOKENS=(k3s-token k3s-agent-token)
+SERVER_FILES=(k3s-token.age k3s-ca.age)
+AGENT_FILE=k3s-agent-token.age
 
 stick="$(stick_root)"
 keys="$(rebuild_keys_dir)"
@@ -33,12 +35,31 @@ for host in "${hosts[@]}"; do
     || fail "secrets/secrets.nix does not list exactly the stick host key for $host; copy it from $(stick_host_key "$host").pub"
 done
 
+control_plane="$(nix eval --raw --file lib/inventory.nix bootstrapControlPlane)"
+nodes=()
+while IFS= read -r node; do nodes+=("$node"); done < <(nix eval --json --file lib/inventory.nix nodes | jq -r 'keys[]')
+for host in "$control_plane" "${nodes[@]}"; do
+  [ -r "$(stick_host_key "$host")" ] || fail "$(stick_host_key "$host") is missing; run just generate-rebuild-keys"
+done
+
+ram_device=""
+ram=""
+release_ram_disk() {
+  local status=$?
+  if [ -n "$ram" ] && [ -d "$ram" ]; then rm -rf "${ram:?}"/*; fi
+  if [ -n "$ram_device" ] && ! hdiutil detach -force "$ram_device" > /dev/null; then
+    echo "FAIL: detaching the RAM disk $ram_device failed; detach it by hand with: hdiutil detach -force $ram_device" >&2
+    status=1
+  fi
+  exit "$status"
+}
+trap release_ram_disk EXIT
 ram_device="$(hdiutil attach -nomount "ram://$RAM_DISK_SECTORS" | awk 'NR == 1 { print $1 }')"
 [ -n "$ram_device" ] || fail "attaching a RAM disk failed"
-trap 'hdiutil detach -force "$ram_device" > /dev/null' EXIT
 diskutil erasevolume APFS "$RAM_DISK_NAME" "$ram_device" > /dev/null
 ram="$(diskutil info "$RAM_DISK_NAME" | awk -F': *' '/Mount Point/ { print $2 }')"
 [ -d "$ram" ] || fail "the RAM disk $RAM_DISK_NAME is not mounted"
+mdutil -i off "$ram" > /dev/null
 export TMPDIR="$ram/tmp"
 mkdir -m 700 "$TMPDIR"
 
@@ -74,11 +95,18 @@ while IFS= read -r file; do
   if [[ " ${TOKENS[*]} " == *" ${file%.age} "* ]]; then plaintext="$keys/${file%.age}"; fi
   check_decrypt "$file" "$identity" break-glass "$plaintext"
   for host in "${hosts[@]}"; do
-    if secret_recipients "$rules" "$file" | cut -d' ' -f1,2 | grep -qxF "$(cut -d' ' -f1,2 "$(stick_host_key "$host").pub")"; then
+    if stick_host_is_recipient "$rules" "$file" "$host"; then
       check_decrypt "$file" "$(stick_host_key "$host")" "$host" "$plaintext"
     fi
   done
 done < <(jq -r 'keys[]' <<< "$rules")
+
+for file in "${SERVER_FILES[@]}"; do
+  check_decrypt "$file" "$(stick_host_key "$control_plane")" "$control_plane" ""
+done
+for node in "${nodes[@]}"; do
+  check_decrypt "$AGENT_FILE" "$(stick_host_key "$node")" "$node" ""
+done
 
 echo "Re-keyed and verified every file in secrets/. Changed, not staged:"
 git status --short -- secrets
