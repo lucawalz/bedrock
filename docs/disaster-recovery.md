@@ -317,10 +317,10 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    systemctl reboot
    ```
 
-5. `bootctl status` must report `Secure Boot: enabled (user)` and `/run/current-system/systemd/lib/systemd/systemd-pcrlock is-supported` must print `yes`. Then enrol the TPM and a recovery key and wipe the passphrase, exactly as ADR 0016 states:
+5. `bootctl status` must report `Secure Boot: enabled (user)`. Then enrol the TPM and a recovery key and wipe the passphrase, exactly as ADR 0016 states:
 
    ```
-   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrlock=/var/lib/systemd/pcrlock.json /dev/disk/by-partlabel/disk-main-root
+   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=0+7 /dev/disk/by-partlabel/disk-main-root
    systemd-cryptenroll --recovery-key /dev/disk/by-partlabel/disk-main-root
    systemd-cryptenroll --wipe-slot=password /dev/disk/by-partlabel/disk-main-root
    ```
