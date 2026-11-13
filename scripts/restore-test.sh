@@ -315,12 +315,18 @@ seconds_since() {
   T="$1" yq -n '(now | to_unix) - (strenv(T) | to_unix)'
 }
 
+within_max_age() {
+  local what="$1" age="$2"
+  [ -n "$max_age_seconds" ] || return 0
+  [ "$age" -le "$max_age_seconds" ] || fail "$what is ${age}s old, older than --max-age $max_age"
+  echo "$what is ${age}s old, within --max-age $max_age"
+}
+
 require_fresh() {
   local what="$1" timestamp="$2" age
   [ -n "$max_age_seconds" ] || return 0
   age="$(seconds_since "$timestamp")" || fail "$what has no readable time: $timestamp"
-  [ "$age" -le "$max_age_seconds" ] || fail "$what is ${age}s old, older than --max-age $max_age"
-  echo "$what is ${age}s old, within --max-age $max_age"
+  within_max_age "$what" "$age"
 }
 
 primary_pod() {
@@ -533,7 +539,7 @@ test_etcd() {
   age="$(seconds_since "$created")" || fail "etcd snapshot $name has no readable creation time"
   [ "$age" -le "$ETCD_MAX_AGE_SECONDS" ] || fail "newest etcd snapshot $name is ${age}s old, limit ${ETCD_MAX_AGE_SECONDS}s"
   echo "etcd: newest snapshot $name is ${age}s old"
-  require_fresh "etcd: snapshot $name" "$created"
+  within_max_age "etcd: snapshot $name" "$age"
 }
 
 if $dry_run; then
