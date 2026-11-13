@@ -27,7 +27,7 @@ patches:
         path: /spec/podSelector
         value:
           matchLabels:
-            cnpg.io/podRole: instance
+            cnpg.io/cluster: postgres
       - op: test
         path: /spec/egress/0/ports/0/port
         value: 80
