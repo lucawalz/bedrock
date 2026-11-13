@@ -13,10 +13,10 @@ root_ca_dir="${BEDROCK_ROOT_CA_DIR:-/Volumes/bedrock-keys/bedrock/k3s-root-ca}"
 create_root="${BEDROCK_CREATE_ROOT_CA:-0}"
 root_cert="$root_ca_dir/root-ca.pem"
 root_key="$root_ca_dir/root-ca.key"
-identity="${BEDROCK_AGENIX_IDENTITY:-$HOME/.ssh/id_ed25519}"
+identity="${BEDROCK_AGENIX_IDENTITY:-$HOME/.config/sops/age/se-identity.txt}"
 ca_secret=k3s-ca.age
-token_secret=k3s-token.age
-token_user=server
+server_token_secret=k3s-token.age
+agent_token_secret=k3s-agent-token.age
 root_rsa_bits=4096
 intermediate_rsa_bits=4096
 service_rsa_bits=2048
@@ -39,8 +39,12 @@ tarball_members=(
 openssl version | grep -q '^OpenSSL 3' || { echo "openssl must be OpenSSL 3, got: $(openssl version)" >&2; exit 1; }
 [ -d "$(dirname "$root_ca_dir")" ] ||
   { echo "$(dirname "$root_ca_dir") is not mounted; plug in the bedrock-keys stick or set BEDROCK_ROOT_CA_DIR" >&2; exit 1; }
-[ -f "$identity" ] || { echo "$identity is missing; it decrypts $token_secret" >&2; exit 1; }
-[ -f "secrets/$token_secret" ] || { echo "secrets/$token_secret is missing" >&2; exit 1; }
+command -v age-plugin-se >/dev/null 2>&1 ||
+  { echo "age-plugin-se is not on PATH; append /opt/homebrew/bin to PATH" >&2; exit 1; }
+[ -f "$identity" ] || { echo "$identity is missing; it decrypts the k3s tokens" >&2; exit 1; }
+for token_secret in "$server_token_secret" "$agent_token_secret"; do
+  [ -f "secrets/$token_secret" ] || { echo "secrets/$token_secret is missing" >&2; exit 1; }
+done
 if { [ -e "$root_cert" ] && [ ! -e "$root_key" ]; } || { [ ! -e "$root_cert" ] && [ -e "$root_key" ]; }; then
   echo "$root_ca_dir holds only one of root-ca.pem and root-ca.key" >&2
   exit 1
@@ -110,14 +114,21 @@ age -R <(recipients "$ca_secret") -o "$work/$ca_secret" "$work/ca.tar"
 mv "$work/$ca_secret" "secrets/$ca_secret"
 
 ca_hash="$(k3s_ca_hash "$root_cert")"
-token="$(age -d -i "$identity" "secrets/$token_secret")"
-[[ "$token" =~ ^K10[0-9a-f]{64}::$token_user:([^[:space:]]+)$ ]] ||
-  { echo "secrets/$token_secret is not a K10 secure token for user $token_user" >&2; exit 1; }
-password="${BASH_REMATCH[1]}"
-unset token
-printf 'K10%s::%s:%s\n' "$ca_hash" "$token_user" "$password" |
-  age -R <(recipients "$token_secret") -o "$work/$token_secret"
-unset password
-mv "$work/$token_secret" "secrets/$token_secret"
 
-echo "Wrote secrets/$ca_secret and secrets/$token_secret; the token pins CA hash $ca_hash"
+repin_token() {
+  local token_secret="$1" token_user="$2" token password
+  token="$(age -d -i "$identity" "secrets/$token_secret")"
+  [[ "$token" =~ ^K10[0-9a-f]{64}::$token_user:([^[:space:]]+)$ ]] ||
+    { echo "secrets/$token_secret is not a K10 secure token for user $token_user" >&2; exit 1; }
+  password="${BASH_REMATCH[1]}"
+  unset token
+  printf 'K10%s::%s:%s\n' "$ca_hash" "$token_user" "$password" |
+    age -R <(recipients "$token_secret") -o "$work/$token_secret"
+  unset password
+  mv "$work/$token_secret" "secrets/$token_secret"
+}
+
+repin_token "$server_token_secret" server
+repin_token "$agent_token_secret" node
+
+echo "Wrote secrets/$ca_secret, secrets/$server_token_secret and secrets/$agent_token_secret; the tokens pin CA hash $ca_hash"
