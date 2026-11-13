@@ -337,36 +337,22 @@ The router is reflashed, not installed with nixos-anywhere (not proven):
 control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the owner (not proven):
 
 1. In the firmware settings, put Secure Boot into setup mode. In the Tailscale admin console, delete the node's old device before the first boot, when the reinstalled node joins with its auth key. With the old device gone it joins under its plain hostname; otherwise it joins as `<hostname>-1`, and a rename in the console fixes the name without changing the address. The new device keeps whatever address it gets: old addresses are not restored, and K3s needs no restart.
-2. Install from the local `main`, authenticating the first login with `estate-root` through the Secretive agent. nixos-anywhere then installs its own temporary key for the rest of the run. `ControlPath=none` keeps an old multiplexed session from carrying the connection across the kexec. disko asks for the LUKS passphrase twice; `pbcopy < /Volumes/bedrock-keys/bedrock/rebuild-keys/luks-install-passphrase` puts it on the clipboard, and `pbcopy < /dev/null` clears it right after the second prompt, since Universal Clipboard can carry it to other devices. disko reads the passphrase from the terminal only, so there is no stdin path for it.
+2. Install from the local `main`:
 
    ```
-   nixos-anywhere --flake .#control-plane-1 --build-on remote \
-     --extra-files /Volumes/bedrock-keys/bedrock/rebuild-keys/hosts/control-plane-1 \
-     --ssh-option IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh \
-     --ssh-option IdentityFile=$PWD/hosts/common/estate-root.pub \
-     --ssh-option ControlPath=none \
-     root@10.20.0.10
+   just install-node control-plane-1
    ```
 
-   `--extra-files` copies the tree with its modes, so `etc`, `etc/ssh`, `var` and `var/lib` in it are mode 755 and `var/lib/sbctl` is 700. lanzaboote signs the first generation with the keys under `/var/lib/sbctl` during the install.
-3. At the console, type the install passphrase at the first boot. Then `ssh-keygen -R 10.20.0.10` and log in, checking the offered host key against `rebuild-keys/hosts/control-plane-1/etc/ssh/ssh_host_ed25519_key.pub`.
-4. Enrol the Secure Boot keys with the Microsoft keys included, as the lanzaboote documentation does, and reboot, typing the passphrase once more:
+   The recipe refuses unless the repository is on a clean `main`, the node's keys are on the stick and the node's address from `lib/inventory.nix` answers as that node or as the installer. nixos-anywhere logs in with `estate-root` through the Secretive agent over one multiplexed session and copies `rebuild-keys/hosts/<node>` into the new system with `--extra-files`, keeping its modes, so lanzaboote signs the first generation with the keys under `/var/lib/sbctl`. disko asks for the LUKS passphrase twice and reads it from the terminal only; the recipe puts it on the clipboard and clears the clipboard on exit, since Universal Clipboard can carry it to other devices. Still in the installer, the recipe enrols the Secure Boot keys from that bundle with the Microsoft keys included, as the lanzaboote documentation does, checks the owner GUID against the stick and reboots. After a failed login, `just install-node <node> phases=disko,install` resumes in the running installer without a new kexec.
+3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
+4. Bind the root to the TPM as ADR 0016 states:
 
    ```
-   nix shell nixpkgs#sbctl --command sbctl enroll-keys --microsoft
-   systemctl reboot
+   just enrol-node-tpm control-plane-1
    ```
 
-5. `bootctl status` must report `Secure Boot: enabled (user)`. Then enrol the TPM and a recovery key and wipe the passphrase, exactly as ADR 0016 states:
-
-   ```
-   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrs=0+7 /dev/disk/by-partlabel/disk-main-root
-   systemd-cryptenroll --recovery-key /dev/disk/by-partlabel/disk-main-root
-   systemd-cryptenroll --wipe-slot=password /dev/disk/by-partlabel/disk-main-root
-   ```
-
-   Type the printed recovery key into `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` before the wipe. `cryptsetup luksDump /dev/disk/by-partlabel/disk-main-root` then shows only the tpm2 and recovery slots.
-6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
+   The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7, writes a recovery key straight to that file without printing it, and wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
+5. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
 
 Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig signed by the re-issued CA onto the stick.
 
