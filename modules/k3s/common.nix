@@ -46,8 +46,8 @@ in
 {
   imports = [ ./estate.nix ];
 
-  age.secrets.k3s-token = {
-    file = "${secretsDir}/k3s-token.age";
+  age.secrets.k3s-agent-token = {
+    file = "${secretsDir}/k3s-agent-token.age";
     mode = "0400";
     owner = "root";
     group = "root";

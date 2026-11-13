@@ -36,7 +36,7 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host; for a full rebuild, generated ahead in `rebuild-keys/` on the offline medium | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed, unless it is installed with the keys generated ahead |
 | Secure Boot keys and LUKS recovery keys | `/var/lib/sbctl` on each node, and `rebuild-keys/` and `luks-recovery/` on the offline medium | Sign every boot of a node, and open its root when the TPM refuses ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) |
 
-The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
+The K3s server token (`secrets/k3s-token.age`), the agent join token (`secrets/k3s-agent-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
 
 ## Off-site backups
 
@@ -177,13 +177,13 @@ A snapshot restores the whole Kubernetes API state. It is the right tool only wh
 ```
 systemctl stop k3s
 set -a; . /run/agenix/etcd-s3-credentials; set +a
-k3s server --cluster-reset --secrets-encryption --token-file=/run/agenix/k3s-token \
+k3s server --cluster-reset --secrets-encryption --secrets-encryption-provider=secretbox --token-file=/run/agenix/k3s-token \
   --etcd-s3 --etcd-s3-bucket=bedrock-etcd --etcd-s3-folder=etcd-snapshots \
   --etcd-s3-endpoint=<account id>.r2.cloudflarestorage.com --etcd-s3-region=auto \
   --cluster-reset-restore-path=<snapshot name>
 ```
 
-`--secrets-encryption` is needed here too, or the API server cannot read what it restored. Then start K3s normally and restart the agents, since `--cluster-reset` drops every peer. Reading `flux-system/sops-age` and getting decodable data proves that the token, the encryption config and the snapshot agree. This restore has never been run. Rehearsing it needs an isolated host with no route to VLAN 20, started with `--disable-agent`, because a restored snapshot carries the live MetalLB pools, Flux sources and issuers. Treat that host as holding production secrets and destroy it afterwards.
+`--secrets-encryption` and its `secretbox` provider are needed here too, or the API server cannot read what it restored. Then start K3s normally and restart the agents, since `--cluster-reset` drops every peer. Reading `flux-system/sops-age` and getting decodable data proves that the token, the encryption config and the snapshot agree. This restore has never been run. Rehearsing it needs an isolated host with no route to VLAN 20, started with `--disable-agent`, because a restored snapshot carries the live MetalLB pools, Flux sources and issuers. Treat that host as holding production secrets and destroy it afterwards.
 
 ## Losing a node that hosts Postgres
 
@@ -381,7 +381,7 @@ Host secrets use agenix. Each file under `secrets/` is encrypted to the host key
 3. Re-encrypt from the `secrets/` directory, where `agenix` finds `secrets.nix`, with `/opt/homebrew/bin` on `PATH` so `age` finds `age-plugin-se`: `agenix -r -i ~/.config/sops/age/se-identity.txt` re-keys every file, `agenix -e <name>.age -i ~/.config/sops/age/se-identity.txt` one. Without the Mac, `-i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` decrypts instead.
 4. Commit and rebuild the host.
 
-K3s does not restart when `/run/agenix/k3s-token` changes in place, so a token rotation on a running cluster needs a manual restart of the agents.
+K3s does not restart when `/run/agenix/k3s-token` or `/run/agenix/k3s-agent-token` changes in place, so a token rotation on a running cluster needs a manual restart of K3s on every node that reads the changed file.
 
 Every SOPS file is encrypted to three age recipients, listed in both `.sops.yaml` files: the Secure Enclave identity, the new cluster key and the current cluster key. Run `sops` with `/opt/homebrew/bin` on `PATH` so it finds `age-plugin-se`. After any change to the recipient list, run `sops updatekeys -y <file>` on every SOPS file in both repositories. To switch bootstrap to the new key, set `SOPS_AGE_KEY_FILE=/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt`; the current key is removed from both `.sops.yaml` files and the Mac once the rebuilt cluster decrypts with the new one.
 

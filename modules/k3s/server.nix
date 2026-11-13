@@ -92,6 +92,7 @@ in
       "--tls-san=${self.tailscale.magicDnsName}"
       "--node-ip=${self.address}"
       "--secrets-encryption"
+      "--secrets-encryption-provider=secretbox"
       "--kubelet-arg=kube-reserved=cpu=800m,memory=4Gi"
       "--kubelet-arg=system-reserved=cpu=200m,memory=512Mi"
       "--etcd-s3"
@@ -114,23 +115,33 @@ in
       "--kube-apiserver-arg=oidc-groups-prefix=${oidcIdentityPrefix}"
     ];
     tokenFile = config.age.secrets.k3s-token.path;
+    agentTokenFile = config.age.secrets.k3s-agent-token.path;
     environmentFile = config.age.secrets.etcd-s3-credentials.path;
     clusterInit = isBootstrap;
     serverAddr = if isBootstrap then "" else "https://${bootstrap.address}:6443";
   };
 
-  age.secrets.etcd-s3-credentials = {
-    file = "${secretsDir}/etcd-s3-credentials.age";
-    mode = "0400";
-    owner = "root";
-    group = "root";
-  };
+  age.secrets = {
+    k3s-token = {
+      file = "${secretsDir}/k3s-token.age";
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
 
-  age.secrets.k3s-ca = lib.mkIf isBootstrap {
-    file = "${secretsDir}/k3s-ca.age";
-    mode = "0400";
-    owner = "root";
-    group = "root";
+    etcd-s3-credentials = {
+      file = "${secretsDir}/etcd-s3-credentials.age";
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
+
+    k3s-ca = lib.mkIf isBootstrap {
+      file = "${secretsDir}/k3s-ca.age";
+      mode = "0400";
+      owner = "root";
+      group = "root";
+    };
   };
 
   environment.etc.${auditPolicyEtcPath}.text = builtins.toJSON auditPolicy;
