@@ -316,7 +316,7 @@ Reset the TL-SG108PE while everything is down (not proven). A factory reset powe
 
 The router is reflashed, not installed with nixos-anywhere (not proven):
 
-1. Flash `router-installer.img` to the SD card and boot the Pi. The installer accepts root logins with `estate-root` and the break-glass key on its home LAN address `192.168.2.211`.
+1. In the Tailscale admin console, delete the router's old device before the Pi first joins with its auth key, and do not restore its old address. Flash `router-installer.img` to the SD card and boot the Pi. The installer accepts root logins with `estate-root` and the break-glass key on its home LAN address `192.168.2.211`.
 2. Place the pre-generated host key before the first switch, so the router decrypts its agenix secrets:
 
    ```
@@ -441,7 +441,7 @@ The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `sc
 Every other host command (the README host commands, `scripts/refresh-kubeconfig.sh`, `scripts/luks-discards.sh`) runs plain `ssh`, `scp` or `nixos-rebuild --target-host root@<host>` and relies on two blocks in the Mac's `~/.ssh/config`. `~/.ssh/estate-root.pub` and `~/.ssh/github-push.pub` are the public halves exported from Secretive on that Mac:
 
 ```
-Host control-plane-1 worker-1 worker-2 router 10.20.0.* *.tail26ab10.ts.net
+Host control-plane-1 worker-1 worker-2 router 10.20.0.* control-plane-1.tail26ab10.ts.net worker-1.tail26ab10.ts.net worker-2.tail26ab10.ts.net router.tail26ab10.ts.net
   User root
   IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
   IdentityFile ~/.ssh/estate-root.pub
