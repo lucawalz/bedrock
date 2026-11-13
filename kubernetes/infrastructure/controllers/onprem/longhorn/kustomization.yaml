@@ -11,6 +11,7 @@ resources:
 - pdb.yaml
 - storageclass-disposable.yaml
 - storageclass-encrypted.yaml
+- storageclass-encrypted-legacy.yaml
 - storageclass-encrypted-local.yaml
 - storageclass-retain.yaml
 patches:

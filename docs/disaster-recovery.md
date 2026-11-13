@@ -27,7 +27,8 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | SOPS age key (new, 2026-11) | `age-cluster-2026-11.txt` on the offline medium only | A recipient on every SOPS file next to the current key. It replaces the current key as the `sops-age` Secret at the next full rebuild |
 | SOPS age identity (Secure Enclave) | Secure Enclave of the Mac, created with `age-plugin-se`; only the public recipient is in git | A recipient on every SOPS file, so the Mac edits secrets without a key file. It cannot be copied off the Mac |
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
-| Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
+| Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and `rebuild-keys/longhorn-crypto.key` on the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
+| Legacy Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto-legacy` Secret, from `clusters/home/platform/longhorn-crypto-legacy.sops.yaml` in `bedrock-secrets`, and `longhorn-crypto.key` on the offline medium | The key before the 2026-11 rebuild. Opens the backups taken before it through the temporary `longhorn-encrypted-legacy` class |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable. Also an admin recipient on every agenix secret, so `agenix -d` and `agenix -r` work with it when the Mac is lost |
@@ -168,7 +169,7 @@ If the barman archive is unusable, the nightly logical dumps in `bedrock-postgre
 
 ### Longhorn volumes
 
-Longhorn lists the backups in `bedrock-longhorn` once its BackupTarget polls the bucket. A volume restored from a backup must exist before the app's claim binds to a fresh empty volume, so the app's Kustomization is suspended, the restored volume is bound to the claim name the app expects, and the Kustomization is resumed. `just restore-test longhorn` shows the restore and the binding as a static PersistentVolume. Encrypted volumes need the `longhorn-crypto` Secret in place first; `bedrock-secrets` provides it, or the offline copy if the repository is gone.
+Longhorn lists the backups in `bedrock-longhorn` once its BackupTarget polls the bucket. A volume restored from a backup must exist before the app's claim binds to a fresh empty volume, so the app's Kustomization is suspended, the restored volume is bound to the claim name the app expects, and the Kustomization is resumed. `just restore-test longhorn` shows the restore and the binding as a static PersistentVolume. Encrypted volumes need the `longhorn-crypto` Secret in place first; `bedrock-secrets` provides it, or the offline copy if the repository is gone. A static PersistentVolume never reads a StorageClass, so a volume backed up before the 2026-11 rebuild names `longhorn-crypto-legacy` in its `csi.nodeStageSecretRef` instead.
 
 ### etcd
 
@@ -339,7 +340,7 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
    ```
 
    Then continue with steps 3 to 6 of [Bootstrap and converge](#bootstrap-and-converge). `just kubeconfig` is re-run, because the Mac's context embeds the old server CA.
-2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. The Longhorn volumes are restored as in [Longhorn volumes](#longhorn-volumes), opened with `longhorn-crypto-legacy`.
+2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. The Longhorn volumes are restored as in [Longhorn volumes](#longhorn-volumes), each static PersistentVolume naming `longhorn-crypto-legacy` in its `csi.nodeStageSecretRef`.
 3. Verify as in [Verify](#verify), and `just restore-test all` once the first backups of the new cluster exist.
 4. A wiped node comes back with empty disks, so a Postgres instance volume on the declared class is gone with it; replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres).
 
