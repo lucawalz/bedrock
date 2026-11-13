@@ -279,7 +279,7 @@ The roadmap is a direction, not a commitment.
 
 This is a personal home lab, not a product, but issues and forks are welcome. Anyone reusing the layout will need to adapt it to their own hardware, domain and accounts.
 
-To work on it, enter the dev shell with `nix develop` and run `nix flake check` and `scripts/check-*.sh` before opening a pull request. Report security issues as described in [SECURITY.md](SECURITY.md).
+To work on it, enter the dev shell with `nix develop` and run `nix flake check` and `scripts/check-*.sh` before opening a pull request. Commits are SSH-signed, and the repository rulesets require signed commits. Report security issues as described in [SECURITY.md](SECURITY.md).
 
 ## Support
 

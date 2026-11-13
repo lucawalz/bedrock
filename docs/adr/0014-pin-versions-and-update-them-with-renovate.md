@@ -59,3 +59,5 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 - A blog build reaches the cluster on the next Renovate run rather than within minutes.
 - An image that a chart defaults no longer follows the chart by itself: its tag moves through Renovate in the chart's pull request.
 - A digest change of an unchanged tag restarts the workload, so rebuilt upstream images arrive as digest updates.
+- Renovate commits through the GitHub API (`platformCommit`), so GitHub signs them and the repository rulesets can require signed commits.
+- Flux does not verify commit signatures. `FluxInstance.spec.sync` has no `verify`, and a second `GitRepository` with `spec.verify` would trust GitHub's own key for Renovate and web-UI merges anyway. The protection is the GitHub ruleset that requires signed commits, together with the maintainer's SSH signing key.
