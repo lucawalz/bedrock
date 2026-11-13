@@ -132,7 +132,7 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
 
    ```
    Host cp1-direct
-     HostName 100.105.211.67
+     HostName control-plane-1.tail26ab10.ts.net
      HostKeyAlias 10.20.0.10
      User root
      IdentityFile <repository>/hosts/common/estate-root.pub
@@ -148,7 +148,7 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
    NIX_SSHOPTS="-F <config file>" nixos-rebuild switch --flake .#router --target-host root@10.20.0.1 --build-host root@10.20.0.10
    ```
 
-   `100.105.211.67` is control-plane-1's tailnet address from `lib/inventory.nix`. `NIX_SSHOPTS` is split on spaces, so the jump goes in a config file rather than an inline `ProxyCommand`.
+   `control-plane-1.tail26ab10.ts.net` is control-plane-1's MagicDNS name from `lib/inventory.nix`. `NIX_SSHOPTS` is split on spaces, so the jump goes in a config file rather than an inline `ProxyCommand`.
 2. Build and stage the new generation on every node with `nixos-rebuild boot` (see [Changing a host](../README.md#changing-a-host) for `--build-host`), so each node comes up once, fresh, on the new generation.
 3. On worker-2, then worker-1, then control-plane-1: `systemctl stop k3s` and `k3s-killall.sh`, then confirm that `findmnt` lists nothing under `/var/lib/kubelet` or `/var/lib/longhorn`. A Longhorn CSI mount whose engine lived on an already stopped node can hang the forced unmount; `umount -l` clears it.
 4. Remove the state and purge the iSCSI node records in the same command as the reboot, since stale records break the next attach in either direction. Reboot control-plane-1 first:
@@ -336,7 +336,7 @@ The router is reflashed, not installed with nixos-anywhere (not proven):
 
 control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the owner (not proven):
 
-1. In the firmware settings, put Secure Boot into setup mode.
+1. In the firmware settings, put Secure Boot into setup mode. In the Tailscale admin console, delete the node's old device before the first boot, when the reinstalled node joins with its auth key. With the old device gone it joins under its plain hostname; otherwise it joins as `<hostname>-1`, and a rename in the console fixes the name without changing the address. The new device keeps whatever address it gets: old addresses are not restored, and K3s needs no restart.
 2. Install from the local `main`, authenticating the first login with `estate-root` through the Secretive agent. nixos-anywhere then installs its own temporary key for the rest of the run. `ControlPath=none` keeps an old multiplexed session from carrying the connection across the kexec. disko asks for the LUKS passphrase twice; `pbcopy < /Volumes/bedrock-keys/bedrock/rebuild-keys/luks-install-passphrase` puts it on the clipboard, and `pbcopy < /dev/null` clears it right after the second prompt, since Universal Clipboard can carry it to other devices. disko reads the passphrase from the terminal only, so there is no stdin path for it.
 
    ```
@@ -441,7 +441,7 @@ The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `sc
 Every other host command (the README host commands, `scripts/refresh-kubeconfig.sh`, `scripts/luks-discards.sh`) runs plain `ssh`, `scp` or `nixos-rebuild --target-host root@<host>` and relies on two blocks in the Mac's `~/.ssh/config`. `~/.ssh/estate-root.pub` and `~/.ssh/github-push.pub` are the public halves exported from Secretive on that Mac:
 
 ```
-Host control-plane-1 worker-1 worker-2 router 10.20.0.* 100.105.211.67 100.116.129.108 100.95.149.60 100.75.168.14
+Host control-plane-1 worker-1 worker-2 router 10.20.0.* *.tail26ab10.ts.net
   User root
   IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
   IdentityFile ~/.ssh/estate-root.pub
@@ -477,10 +477,10 @@ A lost Mac is recovered from the stick. On the new Mac, with the stick mounted a
 
 Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Full rebuild from git with disk encryption](#full-rebuild-from-git-with-disk-encryption)).
 
-The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac or a Secretive agent that is not running. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
+The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac or a Secretive agent that is not running. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet device, by its MagicDNS name, and VLAN 20 hosts follow from there:
 
 ```
-ssh -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass root@100.105.211.67
+ssh -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass root@control-plane-1.tail26ab10.ts.net
 ```
 
 ## Tailscale overlay recovery
