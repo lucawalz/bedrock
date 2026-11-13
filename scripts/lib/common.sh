@@ -56,6 +56,10 @@ workload_images() {
   ' "$@"
 }
 
+admin_kubeconfig_path() {
+  printf '%s\n' "${BEDROCK_ADMIN_KUBECONFIG:-/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml}"
+}
+
 age_key_matches_recipients() {
   local key_file="$1" recipients="$2" public_key
   public_key="$(age-keygen -y "$key_file")" || return 1

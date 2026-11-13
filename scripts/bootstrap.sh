@@ -14,6 +14,7 @@ age_key_file="${SOPS_AGE_KEY_FILE:-/Volumes/bedrock-keys/bedrock/age-keys.txt}"
 deploy_key_file="${BEDROCK_DEPLOY_KEY:-}"
 deploy_key_title=flux-home-cluster
 context=default
+admin_kubeconfig="$(admin_kubeconfig_path)"
 coredns=kubernetes/infrastructure/controllers/coredns
 coredns_timeout=2m
 crd_timeout=2m
@@ -41,11 +42,12 @@ step() {
   esac
 }
 
-if step "Refresh the default kubeconfig entry from control-plane-1 (the cluster CA changes on a rebuild)"; then
-  bash scripts/refresh-kubeconfig.sh
+if step "Write the break-glass admin kubeconfig $admin_kubeconfig from control-plane-1 (the admin certificate changes on a rebuild)"; then
+  bash scripts/refresh-kubeconfig.sh admin "$admin_kubeconfig"
 fi
 
-kubectl config get-contexts "$context" >/dev/null 2>&1 || { echo "kubeconfig has no context $context" >&2; exit 1; }
+export KUBECONFIG="$admin_kubeconfig"
+kubectl config get-contexts "$context" >/dev/null 2>&1 || { echo "$admin_kubeconfig has no context $context" >&2; exit 1; }
 kube=(kubectl --context "$context")
 fluxctl=(flux --context "$context")
 echo
@@ -101,4 +103,4 @@ if step "Wait up to $instance_timeout for the FluxInstance $instance_name to bec
 fi
 
 echo
-echo "Follow the reconcile with: flux --context $context get kustomizations --watch"
+echo "Follow the reconcile with: KUBECONFIG=$admin_kubeconfig flux --context $context get kustomizations --watch"

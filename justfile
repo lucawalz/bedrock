@@ -146,9 +146,13 @@ offline-backup mountpoint:
 deploy-nodes *args="":
     bash scripts/deploy-nodes.sh {{ args }}
 
-# Refresh the default kubeconfig entry from control-plane-1
+# Write the Pocket ID kubeconfig context bedrock into ~/.kube/config from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh
+
+# Write the break-glass admin kubeconfig, by default to the key stick, for example: just kubeconfig-admin /Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml
+kubeconfig-admin path="":
+    bash scripts/refresh-kubeconfig.sh admin {{ quote(path) }}
 
 # Bring Flux up on a fresh cluster, confirming each step
 bootstrap:
