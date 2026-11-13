@@ -128,3 +128,43 @@ stick_host_is_recipient() {
 stick_hosts() {
   find "$(rebuild_keys_dir)/hosts" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sort
 }
+
+LONGHORN_NAMESPACE=longhorn-system
+
+longhorn_volume_manifest() {
+  local name="$1" backup_url="$2" size="$3" replicas="$4" access_mode="$5"
+  cat <<MANIFEST
+apiVersion: longhorn.io/v1beta2
+kind: Volume
+metadata:
+  name: ${name}
+  namespace: ${LONGHORN_NAMESPACE}
+spec:
+  fromBackup: "${backup_url}"
+  size: "${size}"
+  numberOfReplicas: ${replicas}
+  dataEngine: v1
+  frontend: blockdev
+  accessMode: ${access_mode}
+  encrypted: true
+MANIFEST
+}
+
+longhorn_volume_status() {
+  kubectl get volumes.longhorn.io "$1" -n "$LONGHORN_NAMESPACE" -o jsonpath="{.status.$2}"
+}
+
+longhorn_restore_finished() {
+  [ "$(longhorn_volume_status "$1" restoreInitiated)" = true ] && [ "$(longhorn_volume_status "$1" restoreRequired)" = false ] \
+    && [ "$(longhorn_volume_status "$1" state)" = detached ]
+}
+
+wait_until() {
+  local timeout="$1" poll="$2" description="$3" waited=0
+  shift 3
+  until "$@"; do
+    [ "$waited" -lt "$timeout" ] || fail "$description did not happen within ${timeout}s"
+    sleep "$poll"
+    waited=$((waited + poll))
+  done
+}

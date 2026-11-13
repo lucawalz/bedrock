@@ -134,6 +134,10 @@ encrypt-volumes app *args="":
 luks-discards volume:
     bash scripts/luks-discards.sh {{ quote(volume) }}
 
+# Restore an encrypted Longhorn backup into a static PersistentVolume for a claim once its Kustomization is suspended, for example: just restore-volume paperless/paperless-ngx-data-encrypted backup-0123456789abcdef longhorn-crypto-legacy
+restore-volume target backup key="longhorn-crypto" kustomization="":
+    bash scripts/restore-volume.sh {{ quote(target) }} {{ quote(backup) }} {{ quote(key) }} {{ quote(kustomization) }}
+
 # Run the restore drills, for example: just restore-test --dry-run postgres, or just restore-test all --max-age 2h
 restore-test *args="all":
     bash scripts/restore-test.sh {{ args }}

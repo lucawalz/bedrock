@@ -198,7 +198,16 @@ If the barman archive is unusable, the nightly logical dumps in `bedrock-postgre
 
 ### Longhorn volumes
 
-Longhorn lists the backups in `bedrock-longhorn` once its BackupTarget polls the bucket. A volume restored from a backup must exist before the app's claim binds to a fresh empty volume, so the app's Kustomization is suspended, the restored volume is bound to the claim name the app expects, and the Kustomization is resumed. `just restore-test longhorn` shows the restore and the binding as a static PersistentVolume. Encrypted volumes need the `longhorn-crypto` Secret in place first; `bedrock-secrets` provides it, or the offline copy if the repository is gone. A static PersistentVolume never reads a StorageClass, so a volume backed up before the 2026-11 rebuild names `longhorn-crypto-legacy` in its `csi.nodeStageSecretRef` instead.
+Longhorn lists the backups in `bedrock-longhorn` once its BackupTarget polls the bucket. A volume restored from a backup must exist before the app's claim binds to a fresh empty volume, so each claim is restored with its app's Kustomization suspended:
+
+```
+flux suspend kustomization paperless -n flux-system
+just restore-volume paperless/paperless-ngx-data-encrypted <backup> longhorn-crypto-legacy
+flux resume kustomization paperless -n flux-system
+just luks-discards paperless/paperless-ngx-data-encrypted
+```
+
+`just restore-volume` refuses unless the backup is complete and from an encrypted volume, the key Secret exists, nothing of the claim's name exists yet and the Kustomization whose inventory lists the claim is suspended; `kustomization=<name>` names the owner of a claim never applied. It restores into a Longhorn Volume named after the claim, leaves that Volume for inspection if the restore does not finish within 30 minutes, then creates a `Retain` PersistentVolume of class `longhorn-encrypted` bound by `claimRef` to the claim. Encrypted volumes need the `longhorn-crypto` Secret in place first; `bedrock-secrets` provides it, or the offline copy if the repository is gone. A static PersistentVolume never reads a StorageClass, so a volume backed up before the 2026-11 rebuild is restored with the key `longhorn-crypto-legacy`.
 
 ### etcd
 
@@ -372,7 +381,7 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
    ```
 
    Then continue with steps 3 to 6 of [Bootstrap and converge](#bootstrap-and-converge). `just kubeconfig` is re-run, because the Mac's context embeds the old server CA.
-2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. The Longhorn volumes are restored as in [Longhorn volumes](#longhorn-volumes), each static PersistentVolume naming `longhorn-crypto-legacy` in its `csi.nodeStageSecretRef`.
+2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. Each Longhorn volume is restored as in [Longhorn volumes](#longhorn-volumes): suspend the app's Kustomization, `just restore-volume <namespace>/<claim> <backup> longhorn-crypto-legacy`, resume it, and `just luks-discards <namespace>/<claim>` once attached.
 3. Verify as in [Verify](#verify), and `just restore-test all` once the first backups of the new cluster exist.
 4. A wiped node comes back with empty disks, so a Postgres instance volume on the declared class is gone with it; replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres).
 

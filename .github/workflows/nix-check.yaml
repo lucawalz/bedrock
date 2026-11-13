@@ -64,6 +64,9 @@ jobs:
       - name: Test the secrets re-key, token writes and their refusals
         run: bash scripts/check-rekey-secrets.sh
 
+      - name: Test the Longhorn volume restore and its refusals
+        run: bash scripts/check-restore-volume.sh
+
       - name: Test the Tailscale auth key writes and their refusals
         run: bash scripts/check-tailscale-authkeys.sh
 
