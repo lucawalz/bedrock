@@ -101,13 +101,13 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
      HostName 100.105.211.67
      HostKeyAlias 10.20.0.10
      User root
-     IdentityFile ~/.ssh/id_ecdsa_sk_rk_estate-root
-     SecurityKeyProvider /usr/lib/ssh-keychain.dylib
+     IdentityFile <repository>/hosts/common/estate-root.pub
+     IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
 
    Host 10.20.0.1 10.20.0.10
      ProxyJump cp1-direct
-     IdentityFile ~/.ssh/id_ecdsa_sk_rk_estate-root
-     SecurityKeyProvider /usr/lib/ssh-keychain.dylib
+     IdentityFile <repository>/hosts/common/estate-root.pub
+     IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
    ```
 
    ```
@@ -245,15 +245,17 @@ Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `
 
 ## Admin SSH keys
 
-The admin keys are Secure Enclave keys created with `sc_auth create-ctk-identity -k p-256-ne -t bio` and offered to ssh through `/usr/lib/ssh-keychain.dylib`: `estate-root` for the hosts and `github-push` for GitHub and commit signing. Each use is expected to ask for Touch ID (unverified until the first deploy). Their CTK certificates expire on 2027-11-12, so `estate-root` is rotated before then; what an expired certificate does to the key in ssh is unverified, and the break-glass key is the fallback:
+The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys, served to ssh by its agent at `~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh`: `estate-root` for the hosts and `github-push` for GitHub and commit signing. Each use requires Touch ID. The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
 
-1. Create a new identity with `sc_auth` and add its public key to `hosts/common/users.nix` and `hosts/router-installer.nix` next to the old one.
+The keys carry no certificate and do not expire. They are rotated when the Mac is replaced:
+
+1. Create a new key in Secretive and add its public key to `hosts/common/users.nix`, `hosts/router-installer.nix` and `hosts/common/estate-root.pub` next to the old one.
 2. Deploy with `just deploy-nodes` and log in to every host with only the new key.
-3. Remove the old key from both files and deploy again. The break-glass key is not rotated and stays in both files.
+3. Remove the old key from those files and deploy again. The break-glass key is not rotated and stays in both Nix files.
 
-A lost Mac is recovered with the break-glass key below: log in with it from the new Mac, create new Secure Enclave keys there with `sc_auth`, deploy their public keys, prove login with them, then remove the lost Mac's keys and deploy again. Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
+A lost Mac is recovered with the break-glass key below: log in with it from the new Mac, create new Secretive keys there, deploy their public keys, prove login with them, then remove the lost Mac's keys and deploy again. Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
 
-The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac, or an expired CTK certificate. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
+The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac or a Secretive agent that is not running. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
 
 ```
 ssh -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass root@100.105.211.67
