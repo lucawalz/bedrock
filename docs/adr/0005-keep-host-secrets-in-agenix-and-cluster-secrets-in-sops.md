@@ -12,10 +12,10 @@ Hosts and the cluster consume secrets at different times. A host needs its join 
 ## Decision
 
 - Host secrets are agenix files in `secrets/`, encrypted to the SSH host key of each machine that needs them and to the admin key, as listed in `secrets/secrets.nix`. They are decrypted at activation into `/run/agenix`.
-- Cluster secrets are SOPS files encrypted with one age key and kept in the private `bedrock-secrets` repository. Flux pulls it as its own GitRepository, and the `cluster-secrets` Kustomization decrypts it with the `sops-age` Secret that `just bootstrap` creates.
+- Cluster secrets are SOPS files encrypted to three age recipients and kept in the private `bedrock-secrets` repository. Flux pulls it as its own GitRepository, and the `cluster-secrets` Kustomization decrypts it with the `sops-age` Secret that `just bootstrap` creates.
 - `just new-secret <app>` creates an app's SOPS files in `bedrock-secrets` from the same layout the scaffold expects ([0013](0013-keep-each-app-self-contained-and-scaffold-new-ones.md)).
 - Machine secrets such as client secrets, cookie secrets and database passwords are generated straight into SOPS files and never printed.
-- The age key is kept on the admin Mac and on the encrypted offline medium described in [0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md).
+- The recipients are an `age-plugin-se` identity in the Secure Enclave of the admin Mac, a new cluster key held only on the encrypted offline medium described in [0004](0004-keep-a-stable-cluster-ca-under-an-offline-root.md), and the current cluster key. The current key stays a recipient because the running cluster's `sops-age` Secret still holds it; it is dropped once the rebuilt cluster decrypts with the new key.
 
 ## Consequences
 

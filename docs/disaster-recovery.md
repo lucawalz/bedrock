@@ -19,11 +19,13 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 ## Recovery seeds
 
-The age key, the K3s root CA and the Longhorn volume encryption key are the three keys a rebuild cannot recreate. They are kept together on an encrypted offline medium (the APFS-encrypted `bedrock-keys` USB stick). The K3s root CA key lives only there; the other two also have a copy on the admin Mac ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
+The age keys, the K3s root CA and the Longhorn volume encryption key are the three keys a rebuild cannot recreate. They are kept together on an encrypted offline medium (the APFS-encrypted `bedrock-keys` USB stick). The K3s root CA key lives only there; the other two also have a copy on the admin Mac ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
 
 | Seed | Where it lives | Why it matters |
 | --- | --- | --- |
-| SOPS age key | `~/.config/sops/age/keys.txt` on the Mac, the offline medium, and the `sops-age` Secret in `flux-system` | Decrypts every file in `bedrock-secrets`, including the deploy key for that repository |
+| SOPS age key (current) | `~/.config/sops/age/keys.txt` on the Mac, `age-keys.txt` on the offline medium, and the `sops-age` Secret in `flux-system` | Decrypts every file in `bedrock-secrets`, including the deploy key for that repository. `just bootstrap` reads it from `/Volumes/bedrock-keys/bedrock/age-keys.txt` unless `SOPS_AGE_KEY_FILE` says otherwise |
+| SOPS age key (new, 2026-11) | `age-cluster-2026-11.txt` on the offline medium only | A recipient on every SOPS file next to the current key. It replaces the current key as the `sops-age` Secret at the Phase 4 rebuild |
+| SOPS age identity (Secure Enclave) | Secure Enclave of the Mac, created with `age-plugin-se`; only the public recipient is in git | A recipient on every SOPS file, so the Mac edits secrets without a key file. It cannot be copied off the Mac |
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
@@ -240,6 +242,8 @@ Host secrets use agenix. Each file under `secrets/` is encrypted to the host key
 4. Commit and rebuild the host.
 
 K3s does not restart when `/run/agenix/k3s-token` changes in place, so a token rotation on a running cluster needs a manual restart of the agents.
+
+Every SOPS file is encrypted to three age recipients, listed in both `.sops.yaml` files: the Secure Enclave identity, the new cluster key and the current cluster key. Run `sops` with `/opt/homebrew/bin` on `PATH` so it finds `age-plugin-se`. After any change to the recipient list, run `sops updatekeys -y <file>` on every SOPS file in both repositories. To switch bootstrap to the new key, set `SOPS_AGE_KEY_FILE=/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt`; the current key is removed from both `.sops.yaml` files and the Mac once the rebuilt cluster decrypts with the new one.
 
 Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `identity/`, `apps/`), each folder with a kustomization listing its files. Edit with `sops <path>`; `just new-secret <app>` creates an app's pair. The one SOPS file in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, holds the read-only deploy key for `bedrock-secrets` and is decrypted by the same age key, which makes that key the root of every cluster secret.
 
