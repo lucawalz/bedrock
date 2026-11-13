@@ -33,7 +33,8 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable. Also an admin recipient on every agenix secret, so `agenix -d` and `agenix -r` work with it when the Mac is lost |
 | Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
 | Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret beside the break-glass key; needed to re-key host secrets when a host key is lost. It no longer logs in to any host |
-| Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
+| Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host; for a full rebuild, generated ahead in `rebuild-keys/` on the offline medium | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed, unless it is installed with the keys generated ahead |
+| Secure Boot keys and LUKS recovery keys | `/var/lib/sbctl` on each node, and `rebuild-keys/` and `luks-recovery/` on the offline medium | Sign every boot of a node, and open its root when the TPM refuses ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) |
 
 The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
 
@@ -86,7 +87,7 @@ A fifth defect appeared after convergence: the first forced OCR OOMKilled paperl
 
 ## Rebuilding the cluster from git
 
-This is the procedure as run on 2026-11-06, with the fixes in place. It wipes the K3s state and keeps the operating systems. A reinstall of the operating system is covered in [Reinstalling a host](#reinstalling-a-host).
+This is the procedure as run on 2026-11-06, with the fixes in place. It wipes the K3s state and keeps the operating systems. A reinstall of the operating systems is covered in [Full rebuild from git with disk encryption](#full-rebuild-from-git-with-disk-encryption).
 
 ### Before the wipe
 
@@ -195,16 +196,145 @@ just luks-discards postgres/postgres-<m>
 
 `kubectl cnpg destroy` removes the instance pod and its PVCs ([CloudNativePG kubectl plugin](https://cloudnative-pg.io/docs/1.30/kubectl-plugin)); the plugin is a krew install, not part of the dev shell. CloudNativePG then creates a new instance with a new number, clones it from a sibling and the new PVC is the one to pass to `just luks-discards` once it is attached. Without the plugin, deleting the instance's pod and PVCs with `kubectl delete` has the same effect (not verified against the CloudNativePG docs). If the lost instance was the primary, a standby has been promoted already. While one instance is missing, the cluster keeps `dataDurability: preferred` and serves writes.
 
-## Reinstalling a host
+## Full rebuild from git with disk encryption
 
-The rebuild above keeps the operating systems. A full reinstall has not been rehearsed:
+This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. No step below has run on this hardware yet; steps marked (not proven) also have no earlier run to rely on. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
 
-1. Router first. Flash the `router-installer` SD image, which is a bare Pi with SSH and the `estate-root` key and no network services, then push `.#router` with `--build-host` set to the Pi itself. Until that finishes there is no VLAN 20.
-   A re-enrolled router needs a fresh single-use auth key tagged `tag:router`, re-encrypted into `secrets/tailscale-authkey.age`; the old key was minted for `tag:cluster`.
-2. Nodes: install NixOS with nixos-anywhere (disko lays out the LUKS2 root), placing the Secure Boot keys from the `bedrock-keys` stick at `/var/lib/sbctl`, then enrol the TPM and a recovery key as in [ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md). `just deploy-nodes` refuses to run while any node boots from an unencrypted root.
-3. A new host key cannot decrypt its agenix secrets. Re-key as in [Secret recovery](#secret-recovery) before the switch, and give the host a new single-use Tailscale auth key pre-tagged `tag:cluster`.
-4. Continue with the bootstrap above.
-5. A wiped node comes back with empty disks, so its Postgres instance volume is gone. Replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres); the pod does not recover on its own.
+### Contents of the stick
+
+Before anything is wiped, `/Volumes/bedrock-keys/bedrock/` holds:
+
+- [ ] `age-cluster-2026-11.txt`, the cluster age key the rebuilt cluster uses, and `age-keys.txt`, the current one
+- [ ] `k3s-root-ca/root-ca.pem` and `k3s-root-ca/root-ca.key`
+- [ ] `longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key
+- [ ] `ssh/estate-breakglass` and its passphrase
+- [ ] `gnupg-postgres-dumps/`, which decrypts the logical dumps
+- [ ] `rclone/offline-backup.conf`, and `/Volumes/bedrock-keys/bedrock-offline/` with a copy taken after the final backups below
+- [ ] `rebuild-keys/`, written by `just generate-rebuild-keys`:
+  - `k3s-token` and `k3s-agent-token`, the new server and agent tokens, both pinning the hash of the root CA
+  - `longhorn-crypto.key`, the new Longhorn key
+  - `luks-install-passphrase`, used once by disko and wiped after the TPM enrolment
+  - `hosts/<host>/etc/ssh/ssh_host_ed25519_key` and `.pub` for control-plane-1, worker-1, worker-2 and router
+  - `hosts/<node>/var/lib/sbctl/GUID` and `keys/{PK,KEK,db}/{PK,KEK,db}.{key,pem}` for each node
+
+During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is re-issued, and `luks-recovery/<node>`, one recovery key per node.
+
+### Prepare
+
+1. Generate the keys once: `just generate-rebuild-keys`. It refuses to run while `rebuild-keys/` exists, writes every file mode 600, and prints only the paths, the CA hash the tokens pin and the four host public keys.
+2. Prepare the commits on a local branch in each repository, never on `main`, because a push before the old nodes are wiped would hand the running cluster a Longhorn key that opens none of its volumes. In `bedrock`, on `feat/rebuild-install`: the new host public keys from `rebuild-keys/hosts/<host>/etc/ssh/ssh_host_ed25519_key.pub` in `secrets/secrets.nix`, every file re-keyed from `secrets/` as in [Secret recovery](#secret-recovery), the new tokens and new single-use Tailscale auth keys (`tag:cluster` for the nodes, `tag:router` for the router) encrypted to the new host keys, the cluster CA re-issued with `scripts/generate-cluster-ca.sh`, and the Postgres `bootstrap.recovery` with a new archive server name as in [Postgres](#postgres). In `bedrock-secrets`, on the same branch name: `longhorn-crypto` with the new key and `longhorn-crypto-legacy` with the current one.
+3. Stop the writes and take the final backups. Suspend and scale every app with a database or a volume to zero as `just restore` does (`flux suspend kustomization <app>`, then `kubectl -n <app> scale deploy,statefulset --all --replicas 0`), then:
+
+   ```
+   just backup
+   ```
+
+   Back up each volume labelled `offsite-backup` on demand from the Longhorn UI (not proven), and take an etcd snapshot on control-plane-1 (not proven):
+
+   ```
+   set -a; . /run/agenix/etcd-s3-credentials; set +a
+   k3s etcd-snapshot save --etcd-s3 --etcd-s3-bucket=bedrock-etcd --etcd-s3-folder=etcd-snapshots \
+     --etcd-s3-endpoint=<account id>.r2.cloudflarestorage.com --etcd-s3-region=auto
+   ```
+
+   Then prove the backups are fresh and readable, and copy them to the stick:
+
+   ```
+   just restore-test all --max-age 2h
+   just offline-backup /Volumes/bedrock-keys
+   ```
+
+4. Build the router SD image while control-plane-1 still builds aarch64 (not proven):
+
+   ```
+   nix build --eval-store auto --store ssh-ng://root@10.20.0.10 --print-out-paths .#nixosConfigurations.router-installer.config.system.build.sdImage
+   nix copy --no-check-sigs --from ssh-ng://root@10.20.0.10 <store path>
+   zstd -d <store path>/sd-image/<image>.img.zst -o router-installer.img
+   ```
+
+5. Cherry-pick the prepared commits onto the local `main` of each repository, oldest first, and delete the branch. Nothing is pushed yet.
+
+   ```
+   git switch main
+   git cherry-pick main..feat/rebuild-install
+   git branch -D feat/rebuild-install
+   ```
+
+### Switch
+
+Reset the TL-SG108PE while everything is down (not proven). A factory reset power-cycles the Pi, which draws PoE from port 2. Reach the switch at its factory default address with the Mac on a spare port (3 to 5) and a static address in that range, set a new admin password and keep it in the Passwords app, re-enter the static address `192.168.2.212`, gateway `192.168.2.1`, and the port map from [archived ADR 0050](adr/archive/0050-poe-switch-powers-the-router.md), and update the firmware. The switch is done when the Mac reaches `192.168.2.212` and the Pi trunk carries VLAN 20 and 30.
+
+### Router
+
+The router is reflashed, not installed with nixos-anywhere (not proven):
+
+1. Flash `router-installer.img` to the SD card and boot the Pi. The installer accepts root logins with `estate-root` and the break-glass key on its home LAN address `192.168.2.211`.
+2. Place the pre-generated host key before the first switch, so the router decrypts its agenix secrets:
+
+   ```
+   ssh-keygen -R 192.168.2.211
+   tar -C /Volumes/bedrock-keys/bedrock/rebuild-keys/hosts/router -cf - etc | ssh root@192.168.2.211 'tar -C / -xf - --no-same-owner && systemctl restart sshd'
+   ```
+
+3. Push the configuration, built on the Pi itself:
+
+   ```
+   nixos-rebuild switch --flake .#router --target-host root@192.168.2.211 --build-host root@192.168.2.211
+   ```
+
+4. Confirm that the Mac reaches `10.20.0.1` through the subnet route before touching the nodes.
+
+### Nodes
+
+control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the owner (not proven):
+
+1. In the firmware settings, put Secure Boot into setup mode.
+2. Install from the local `main`, authenticating the first login with `estate-root` through the Secretive agent. nixos-anywhere then installs its own temporary key for the rest of the run. `ControlPath=none` keeps an old multiplexed session from carrying the connection across the kexec. disko asks for the LUKS passphrase twice; `pbcopy < /Volumes/bedrock-keys/bedrock/rebuild-keys/luks-install-passphrase` puts it on the clipboard.
+
+   ```
+   nixos-anywhere --flake .#control-plane-1 --build-on remote \
+     --extra-files /Volumes/bedrock-keys/bedrock/rebuild-keys/hosts/control-plane-1 \
+     --ssh-option IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh \
+     --ssh-option IdentityFile=$PWD/hosts/common/estate-root.pub \
+     --ssh-option ControlPath=none \
+     root@10.20.0.10
+   ```
+
+   `--extra-files` copies the tree with its modes, so `etc`, `etc/ssh`, `var` and `var/lib` in it are mode 755 and `var/lib/sbctl` is 700. lanzaboote signs the first generation with the keys under `/var/lib/sbctl` during the install.
+3. At the console, type the install passphrase at the first boot. Then `ssh-keygen -R 10.20.0.10` and log in, checking the offered host key against `rebuild-keys/hosts/control-plane-1/etc/ssh/ssh_host_ed25519_key.pub`.
+4. Enrol the Secure Boot keys with the Microsoft keys included, as the lanzaboote documentation does, and reboot, typing the passphrase once more:
+
+   ```
+   nix shell nixpkgs#sbctl --command sbctl enroll-keys --microsoft
+   systemctl reboot
+   ```
+
+5. `bootctl status` must report `Secure Boot: enabled (user)` and `/run/current-system/systemd/lib/systemd/systemd-pcrlock is-supported` must print `yes`. Then enrol the TPM and a recovery key and wipe the passphrase, exactly as ADR 0016 states:
+
+   ```
+   systemd-cryptenroll --tpm2-device=auto --tpm2-pcrlock=/var/lib/systemd/pcrlock.json /dev/disk/by-partlabel/disk-main-root
+   systemd-cryptenroll --recovery-key /dev/disk/by-partlabel/disk-main-root
+   systemd-cryptenroll --wipe-slot=password /dev/disk/by-partlabel/disk-main-root
+   ```
+
+   Type the printed recovery key into `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` before the wipe. `cryptsetup luksDump /dev/disk/by-partlabel/disk-main-root` then shows only the tpm2 and recovery slots.
+6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
+
+Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig signed by the re-issued CA onto the stick.
+
+### Bootstrap and restore
+
+1. Bootstrap with the new age key and the stick kubeconfig, since the default key file is the current one:
+
+   ```
+   SOPS_AGE_KEY_FILE=/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt \
+     BEDROCK_ADMIN_KUBECONFIG=/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml just bootstrap
+   ```
+
+   Then continue with steps 3 to 6 of [Bootstrap and converge](#bootstrap-and-converge). `just kubeconfig` is re-run, because the Mac's context embeds the old server CA.
+2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. The Longhorn volumes are restored as in [Longhorn volumes](#longhorn-volumes), opened with `longhorn-crypto-legacy`.
+3. Verify as in [Verify](#verify), and `just restore-test all` once the first backups of the new cluster exist.
+4. A wiped node comes back with empty disks, so a Postgres instance volume on the declared class is gone with it; replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres).
 
 ## Restore drills
 
@@ -214,6 +344,8 @@ The rebuild above keeps the operating systems. A full reinstall has not been reh
 - `dumps`: the newest encrypted dumps of `pocket-id` and `paperless`, decrypted on the Mac with the key on the offline medium and streamed into a scratch database on the primary, compared the same way. It needs the `bedrock-keys` stick and refuses to run unless `/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps` is mounted, so checks run by an agent without the owner name the drills explicitly, for example `just restore-test postgres`.
 - `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with `longhorn-crypto`.
 - `etcd`: the newest snapshot in `s3://bedrock-etcd/etcd-snapshots` must be under 13 hours old.
+
+`--max-age <n>s|m|h|d`, for example `just restore-test all --max-age 2h`, also fails each drill whose newest backup is older: the newest completed base backup for `postgres`, the newest dump of each database for `dumps`, the restored backup for `longhorn`, and the snapshot for `etcd`.
 
 The cadence is a monthly `just restore-test` and `just offline-backup`, a full rebuild from git every six months, and both before a major upgrade. Nothing schedules them; they are run by hand.
 
@@ -295,7 +427,7 @@ A lost Mac is recovered from the stick. On the new Mac, with the stick mounted a
 4. Prove login with the new key, then remove the lost Mac's keys from GitHub.
 5. Re-key agenix without the Mac's agenix key: replace the `luca` recipient in `secrets/secrets.nix` with a new admin recipient, then run `agenix -r -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` from `secrets/`.
 
-Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
+Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Full rebuild from git with disk encryption](#full-rebuild-from-git-with-disk-encryption)).
 
 The break-glass key is a passphrase-protected ed25519 key that lives only on `bedrock-keys` at `bedrock/ssh/estate-breakglass`. Its public key is a root key on every host beside `estate-root`. It is used when the Mac's Secure Enclave keys are unavailable: a lost Mac or a Secretive agent that is not running. From a Mac with the stick mounted and joined to the tailnet, the first hop is control-plane-1 over its own tailnet address, and VLAN 20 hosts follow from there:
 
