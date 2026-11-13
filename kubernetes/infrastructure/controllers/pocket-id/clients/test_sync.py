@@ -3,6 +3,7 @@ import os
 import sys
 import unittest
 import urllib.error
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,6 +14,7 @@ OWNER_ID = "user-owner"
 OTHER_ID = "user-other"
 GROUP_ID = "group-admins"
 SERVER_ERROR = 500
+LOOPBACK_HOSTS = ("localhost", "127.0.0.1")
 SECRETS = {"restricted": "restricted-client-secret", "open": "open-client-secret", "owner-email": OWNER_EMAIL + "\n"}
 RESTRICTED = {
     "id": "restricted",
@@ -188,6 +190,8 @@ class SyncTest(unittest.TestCase):
             declared = {client["id"]: client for client in json.load(handle)}
         self.assertTrue(declared["kubernetes"]["isPublic"])
         self.assertEqual(declared["kubernetes"]["allowedUserGroups"], [sync.ADMINS_GROUP])
+        for url in declared["kubernetes"]["callbackURLs"]:
+            self.assertIn(urllib.parse.urlsplit(url).hostname, LOOPBACK_HOSTS)
 
     def test_unrestricted_clients_need_no_owner(self):
         fake = FakePocketId(users=[], clients=["open"])
