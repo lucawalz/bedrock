@@ -7,9 +7,10 @@ require_tools sops pbcopy
 
 secrets_repo="${BEDROCK_SECRETS:-$repo_root/../bedrock-secrets}"
 apps_secrets=clusters/home/apps
+devices_secrets=clusters/home/devices
 litellm_ui_user="admin"
 
-known_apps="paperless grafana litellm ntfy"
+known_apps="paperless grafana litellm ntfy switch"
 
 usage() {
   echo "usage: login.sh <app> [show]; known apps: $known_apps" >&2
@@ -21,17 +22,21 @@ app="$1"
 show="${2:-false}"
 [ "$show" = true ] || [ "$show" = false ] || { echo "show must be true or false, got '$show'" >&2; exit 1; }
 
+secrets_dir="$apps_secrets"
 user_key=""
 user=""
+url_key=""
+host=""
 case "$app" in
   paperless) host=paperless.syslabs.dev file=paperless.sops.yaml user_key=PAPERLESS_ADMIN_USER password_key=PAPERLESS_ADMIN_PASSWORD ;;
   grafana) host=grafana.syslabs.dev file=grafana.sops.yaml user_key=admin-user password_key=admin-password ;;
   litellm) host=litellm.syslabs.dev file=litellm.sops.yaml user="$litellm_ui_user" password_key=LITELLM_MASTER_KEY ;;
   ntfy) host=ntfy.syslabs.dev file=ntfy.sops.yaml user=phone password_key=phone-password ;;
+  switch) secrets_dir="$devices_secrets" file=switch.sops.yaml url_key=url user_key=username password_key=password ;;
   *) echo "unknown app '$app'; known apps: $known_apps" >&2; exit 1 ;;
 esac
 
-secret_file="$secrets_repo/$apps_secrets/$file"
+secret_file="$secrets_repo/$secrets_dir/$file"
 [ -f "$secret_file" ] || { echo "$secret_file does not exist; set BEDROCK_SECRETS" >&2; exit 1; }
 
 read_key() {
@@ -41,11 +46,16 @@ read_key() {
 if [ -n "$user_key" ]; then
   user="$(read_key "$user_key")"
 fi
+if [ -n "$url_key" ]; then
+  url="$(read_key "$url_key")"
+else
+  url="https://$host"
+fi
 password="$(read_key "$password_key")"
 [ -n "$user" ] && [ -n "$password" ] || { echo "$file holds an empty user or password for $app" >&2; exit 1; }
 
 printf '%s' "$password" | pbcopy
-echo "url:  https://$host"
+echo "url:  $url"
 echo "user: $user"
 if [ "$show" = true ]; then
   echo "password: $password"
