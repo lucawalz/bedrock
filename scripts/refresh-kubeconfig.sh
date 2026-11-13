@@ -34,7 +34,7 @@ case "$mode" in
 esac
 
 umask 077
-work="$(mktemp -d)"
+work="$(mktemp -d "$(dirname "$kubeconfig")/.kubeconfig.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 
 extract() {
