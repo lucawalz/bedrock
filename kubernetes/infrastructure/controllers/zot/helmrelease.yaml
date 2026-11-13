@@ -77,6 +77,7 @@ spec:
           "http": {
             "address": "0.0.0.0",
             "port": "5000",
+            "compat": ["docker2s2"],
             "accessControl": {
               "repositories": {
                 "**": {
