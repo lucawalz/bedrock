@@ -150,6 +150,14 @@ deploy-nodes *args="":
 generate-rebuild-keys:
     bash scripts/generate-rebuild-keys.sh
 
+# Wipe and reinstall a node from the local main with its stick keys, enrol Secure Boot and reboot, for example: just install-node worker-1 phases=disko,install
+install-node node phases="kexec,disko,install":
+    bash scripts/install-node.sh {{ quote(node) }} {{ quote(phases) }}
+
+# After the first boot, bind a node's LUKS root to the TPM, write its recovery key to the stick and wipe the install passphrase
+enrol-node-tpm node:
+    bash scripts/enrol-node-tpm.sh {{ quote(node) }}
+
 # Write the Pocket ID kubeconfig context bedrock into ~/.kube/config from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh

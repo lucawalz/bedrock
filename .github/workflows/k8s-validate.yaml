@@ -80,6 +80,9 @@ jobs:
       - name: Test the rolling host deploy order and stop on failure
         run: bash scripts/check-deploy-nodes.sh
 
+      - name: Test the node install and TPM enrolment refusals
+        run: bash scripts/check-install-node.sh
+
       - name: Install uuidgen for the rebuild key generator
         run: sudo apt-get update && sudo apt-get install -y uuid-runtime
 

@@ -70,3 +70,9 @@ age_key_matches_recipients() {
   public_key="$(age-keygen -y "$key_file")" || return 1
   tr -d ' \n' <<< "$recipients" | tr ',' '\n' | grep -qxF "$public_key"
 }
+
+node_address() {
+  nix eval --raw --file "$repo_root/lib/inventory.nix" --apply \
+    'inventory: builtins.concatStringsSep "\n" (builtins.attrValues (builtins.mapAttrs (name: node: name + " " + node.address) inventory.nodes))' \
+    | awk -v node="$1" '$1 == node { print $2 }'
+}
