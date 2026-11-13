@@ -27,9 +27,9 @@ The age key, the K3s root CA and the Longhorn volume encryption key are the thre
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
-| Admin host key | Secure Enclave key `estate-root` on the Mac, listed in `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
+| Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable |
-| Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
+| Admin agenix key | `~/.ssh/id_ed25519` on the Mac | A recipient on every agenix secret; needed to re-key host secrets when a host key is lost. It no longer logs in to any host. Security keys cannot decrypt age files, so this key stays until agenix gets another recipient |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed |
 
 The K3s server token (`secrets/k3s-token.age`) and the etcd R2 credentials (`secrets/etcd-s3-credentials.age`) are in git as agenix files. The R2 credentials for Postgres and Longhorn, the Cloudflare tokens and every app secret are in `bedrock-secrets`. The accounts behind them (GitHub, Cloudflare, Tailscale, Anthropic) live outside both repositories.
@@ -249,9 +249,9 @@ The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure E
 
 The keys carry no certificate and do not expire. They are rotated when the Mac is replaced:
 
-1. Create a new key in Secretive and add its public key to `hosts/common/users.nix`, `hosts/router-installer.nix` and `hosts/common/estate-root.pub` next to the old one.
+1. Create a new key in Secretive and add its public key to `hosts/common/estate-root.pub`, which both Nix files read, as a second line next to the old one.
 2. Deploy with `just deploy-nodes` and log in to every host with only the new key.
-3. Remove the old key from those files and deploy again. The break-glass key is not rotated and stays in both Nix files.
+3. Remove the old key from that file and deploy again. The break-glass key is not rotated and stays in `hosts/common/estate-breakglass.pub`.
 
 A lost Mac is recovered with the break-glass key below: log in with it from the new Mac, create new Secretive keys there, deploy their public keys, prove login with them, then remove the lost Mac's keys and deploy again. Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Reinstalling a host](#reinstalling-a-host)).
 
