@@ -3,7 +3,7 @@ set -euo pipefail
 
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
-usage="usage: restore-test.sh [--dry-run] postgres|longhorn|etcd|dumps|all"
+usage="usage: restore-test.sh [--dry-run] [--max-age <n>s|m|h|d] postgres|longhorn|etcd|dumps|all"
 
 POSTGRES_NAMESPACE=postgres
 POSTGRES_SOURCE_CLUSTER=postgres
@@ -38,19 +38,37 @@ DUMPS_SCRATCH_DATABASE=restore_test_dumps
 
 ETCD_S3_BUCKET=bedrock-etcd
 ETCD_S3_PREFIX=etcd-snapshots
-ETCD_MAX_AGE_SECONDS=$((13 * 3600))
+SECONDS_PER_MINUTE=60
+SECONDS_PER_HOUR=3600
+SECONDS_PER_DAY=86400
+ETCD_MAX_AGE_SECONDS=$((13 * SECONDS_PER_HOUR))
 
 API_SERVER_CIDRS=(10.20.0.10/32 10.20.0.11/32 10.20.0.12/32)
 PRIVATE_CIDRS=(10.42.0.0/16 10.43.0.0/16 10.20.0.0/24 10.30.0.0/24 192.168.2.0/24)
 
 dry_run=false
 command=""
-for arg in "$@"; do
-  case "$arg" in
+max_age=""
+max_age_seconds=""
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --dry-run) dry_run=true ;;
-    postgres | longhorn | etcd | dumps | all) command="$arg" ;;
+    --max-age)
+      [ "$#" -ge 2 ] && [[ "$2" =~ ^([0-9]+)([smhd])$ ]] || { echo "$usage" >&2; exit 2; }
+      max_age="$2"
+      case "${BASH_REMATCH[2]}" in
+        s) unit=1 ;;
+        m) unit="$SECONDS_PER_MINUTE" ;;
+        h) unit="$SECONDS_PER_HOUR" ;;
+        d) unit="$SECONDS_PER_DAY" ;;
+      esac
+      max_age_seconds=$((10#${BASH_REMATCH[1]} * unit))
+      shift
+      ;;
+    postgres | longhorn | etcd | dumps | all) command="$1" ;;
     *) echo "$usage" >&2; exit 2 ;;
   esac
+  shift
 done
 [ -n "$command" ] || { echo "$usage" >&2; exit 2; }
 
@@ -293,6 +311,18 @@ dry_run_manifests() {
   done
 }
 
+seconds_since() {
+  T="$1" yq -n '(now | to_unix) - (strenv(T) | to_unix)'
+}
+
+require_fresh() {
+  local what="$1" timestamp="$2" age
+  [ -n "$max_age_seconds" ] || return 0
+  age="$(seconds_since "$timestamp")" || fail "$what has no readable time: $timestamp"
+  [ "$age" -le "$max_age_seconds" ] || fail "$what is ${age}s old, older than --max-age $max_age"
+  echo "$what is ${age}s old, within --max-age $max_age"
+}
+
 primary_pod() {
   local pod
   pod="$(kubectl get cluster.postgresql.cnpg.io "$1" -n "$POSTGRES_NAMESPACE" -o jsonpath='{.status.currentPrimary}')"
@@ -312,8 +342,18 @@ postgres_cleanup() {
   kubectl delete networkpolicy "allow-${POSTGRES_RESTORE_CLUSTER}-egress" -n "$POSTGRES_NAMESPACE" --ignore-not-found
 }
 
+newest_base_backup_time() {
+  kubectl get backups.postgresql.cnpg.io -n "$POSTGRES_NAMESPACE" -o json | C="$POSTGRES_SOURCE_CLUSTER" yq -p=json -r '
+    .items[] | select(.spec.cluster.name == strenv(C) and .status.phase == "completed") | .status.stoppedAt' | sort | tail -n 1
+}
+
 test_postgres() {
-  local check database table want got
+  local check database table want got stopped
+  if [ -n "$max_age_seconds" ]; then
+    stopped="$(newest_base_backup_time)"
+    [ -n "$stopped" ] || fail "cluster $POSTGRES_SOURCE_CLUSTER has no completed base backup"
+    require_fresh "postgres: the newest base backup" "$stopped"
+  fi
   echo "postgres: recovering $POSTGRES_RESTORE_CLUSTER from $POSTGRES_OBJECT_STORE"
   kubectl get cluster.postgresql.cnpg.io "$POSTGRES_RESTORE_CLUSTER" -n "$POSTGRES_NAMESPACE" >/dev/null 2>&1 \
     && fail "$POSTGRES_RESTORE_CLUSTER already exists; delete it first"
@@ -330,6 +370,11 @@ test_postgres() {
     [ "$want" = "$got" ] || fail "$database.$table has $got rows in the restore, $want in production"
     echo "postgres: $database.$table has $got rows in both"
   done
+}
+
+dump_key_time() {
+  [[ "$1" =~ ^([0-9]{4}-[0-9]{2}-[0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})Z\.gpg$ ]] || fail "dump key $1 holds no time"
+  echo "${BASH_REMATCH[1]}T${BASH_REMATCH[2]}:${BASH_REMATCH[3]}:${BASH_REMATCH[4]}Z"
 }
 
 dumps_scratch() {
@@ -368,6 +413,7 @@ test_dumps() {
     read -r database table <<< "$check"
     key="$(aws s3 ls --endpoint-url "$endpoint" "s3://$DUMPS_BUCKET/$DUMPS_PREFIX/$database/" | awk '{ print $4 }' | sort | tail -n 1)"
     [ -n "$key" ] || fail "no dump of $database in s3://$DUMPS_BUCKET/$DUMPS_PREFIX/$database/"
+    require_fresh "dumps: $key" "$(dump_key_time "$key")"
     key="$DUMPS_PREFIX/$database/$key"
     echo "dumps: restoring $key into $DUMPS_SCRATCH_DATABASE"
     dumps_scratch createdb "$DUMPS_SCRATCH_DATABASE"
@@ -441,18 +487,19 @@ longhorn_cleanup() {
 }
 
 test_longhorn() {
-  local claim volume backup_url size encrypted image
+  local claim volume backup_url size encrypted created image
   claim="$(kubectl get deploy "$LONGHORN_DEPLOYMENT" -n "$LONGHORN_PVC_NAMESPACE" \
     -o jsonpath="{.spec.template.spec.volumes[?(@.name==\"$LONGHORN_DEPLOYMENT_VOLUME\")].persistentVolumeClaim.claimName}")"
   [ -n "$claim" ] || fail "deployment $LONGHORN_DEPLOYMENT mounts no claim as $LONGHORN_DEPLOYMENT_VOLUME"
   volume="$(kubectl get pvc "$claim" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.volumeName}')"
   [ -n "$volume" ] || fail "pvc $LONGHORN_PVC_NAMESPACE/$claim is not bound"
-  read -r backup_url size encrypted < <(kubectl get backups.longhorn.io -n "$LONGHORN_NAMESPACE" -o json \
+  read -r backup_url size encrypted created < <(kubectl get backups.longhorn.io -n "$LONGHORN_NAMESPACE" -o json \
     | VOLUME="$volume" yq -p=json -r '
         [.items[] | select(.status.volumeName == strenv(VOLUME) and .status.state == "Completed")]
-        | sort_by(.status.backupCreatedAt) | (.[-1].status | .url + " " + .volumeSize + " " + (.labels["volume-encrypted"] // "disabled"))')
+        | sort_by(.status.backupCreatedAt) | (.[-1].status | .url + " " + .volumeSize + " " + (.labels["volume-encrypted"] // "disabled") + " " + .backupCreatedAt)')
   case "$backup_url" in null | "") fail "no completed backup of volume $volume" ;; esac
   [ "$encrypted" = enabled ] || fail "the newest backup of $claim ($volume) is not from an encrypted volume"
+  require_fresh "longhorn: the newest backup of $claim" "$created"
   kubectl get volumes.longhorn.io "$LONGHORN_RESTORE_VOLUME" -n "$LONGHORN_NAMESPACE" >/dev/null 2>&1 \
     && fail "volume $LONGHORN_RESTORE_VOLUME already exists; delete it first"
   image="$(kubectl get deploy "$LONGHORN_DEPLOYMENT" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.template.spec.containers[0].image}')"
@@ -476,14 +523,17 @@ test_longhorn() {
 }
 
 test_etcd() {
-  local newest age
+  local newest name created age
   newest="$(kubectl get etcdsnapshotfiles.k3s.cattle.io -o json | B="$ETCD_S3_BUCKET" P="$ETCD_S3_PREFIX" yq -p=json -r '
     [.items[] | select(.spec.s3.bucket == strenv(B) and .spec.s3.prefix == strenv(P) and .status.readyToUse == true)]
-    | sort_by(.status.creationTime) | .[-1] | .metadata.name + " " + (((now | to_unix) - (.status.creationTime | to_unix)) | tostring)')" || newest=""
+    | sort_by(.status.creationTime) | .[-1] | .metadata.name + " " + .status.creationTime')" || newest=""
   case "$newest" in null* | "") fail "no ready snapshot in s3://$ETCD_S3_BUCKET/$ETCD_S3_PREFIX" ;; esac
-  age="${newest#* }"
-  [ "$age" -le "$ETCD_MAX_AGE_SECONDS" ] || fail "newest etcd snapshot ${newest% *} is ${age}s old, limit ${ETCD_MAX_AGE_SECONDS}s"
-  echo "etcd: newest snapshot ${newest% *} is ${age}s old"
+  name="${newest% *}"
+  created="${newest#* }"
+  age="$(seconds_since "$created")" || fail "etcd snapshot $name has no readable creation time"
+  [ "$age" -le "$ETCD_MAX_AGE_SECONDS" ] || fail "newest etcd snapshot $name is ${age}s old, limit ${ETCD_MAX_AGE_SECONDS}s"
+  echo "etcd: newest snapshot $name is ${age}s old"
+  require_fresh "etcd: snapshot $name" "$created"
 }
 
 if $dry_run; then

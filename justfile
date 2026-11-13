@@ -134,7 +134,7 @@ encrypt-volumes app *args="":
 luks-discards volume:
     bash scripts/luks-discards.sh {{ quote(volume) }}
 
-# Run the restore drills, for example: just restore-test --dry-run postgres
+# Run the restore drills, for example: just restore-test --dry-run postgres, or just restore-test all --max-age 2h
 restore-test *args="all":
     bash scripts/restore-test.sh {{ args }}
 
