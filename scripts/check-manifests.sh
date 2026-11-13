@@ -11,6 +11,7 @@ derived_schemas="${1:-}"
 rendered_releases="${2:-}"
 
 cluster_secret_readers=(
+  Group/oidc:admins
   cert-manager/cert-manager
   cert-manager/cert-manager-cainjector
   cnpg-system/cloudnative-pg

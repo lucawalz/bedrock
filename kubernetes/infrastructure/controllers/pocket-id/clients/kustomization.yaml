@@ -6,6 +6,7 @@ components:
 resources:
   - job.yaml
   - networkpolicies.yaml
+  - rbac.yaml
 configMapGenerator:
   - name: pocket-id-clients
     files:
