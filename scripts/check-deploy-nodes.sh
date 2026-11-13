@@ -5,6 +5,7 @@ set -euo pipefail
 
 script=scripts/deploy-nodes.sh
 estate_root="$PWD/hosts/common/estate-root.pub"
+estate_root_next="$PWD/hosts/common/estate-root-next.pub"
 secretive_socket="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
 
 work="$(mktemp -d)"
@@ -54,6 +55,15 @@ grep -q "^NIX_SSHOPTS=-i $estate_root -o IdentityAgent=$secretive_socket -o Iden
 [ "$(grep -c "^  IdentityAgent $secretive_socket\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the Secretive agent"
 grep 'readlink' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no .*-o BatchMode=yes" \
   && fail "a kernel probe lacks the estate-root key, Secretive agent or BatchMode"
+
+[ ! -e "$estate_root_next" ] || fail "$estate_root_next exists; finish the rotation before running this check"
+trap 'rm -rf "$work" "$estate_root_next"' EXIT
+: > "$estate_root_next"
+run none "attached|healthy" || fail "rotation run failed"
+rm -f "$estate_root_next"
+grep -q "^NIX_SSHOPTS=-i $estate_root -i $estate_root_next -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no\$" "$work/log" \
+  || fail "node rebuild does not offer estate-root-next.pub during a rotation"
+[ "$(grep -c "^  IdentityFile $estate_root_next\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config does not offer estate-root-next.pub"
 
 breakglass="$work/estate-breakglass"
 : > "$breakglass"

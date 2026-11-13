@@ -1,19 +1,21 @@
 { lib, meta, ... }:
 let
-  estateRootKey = lib.fileContents ./estate-root.pub;
+  estateRootKeys = [
+    (lib.fileContents ./estate-root.pub)
+  ]
+  ++ lib.optional (builtins.pathExists ./estate-root-next.pub) (
+    lib.fileContents ./estate-root-next.pub
+  );
   breakglassKey = lib.fileContents ./estate-breakglass.pub;
 in
 {
   users.users.${meta.hostname} = {
     isNormalUser = true;
     extraGroups = [ "wheel" ];
-    openssh.authorizedKeys.keys = [ estateRootKey ];
+    openssh.authorizedKeys.keys = estateRootKeys;
   };
 
-  users.users.root.openssh.authorizedKeys.keys = [
-    estateRootKey
-    breakglassKey
-  ];
+  users.users.root.openssh.authorizedKeys.keys = estateRootKeys ++ [ breakglassKey ];
 
   security.sudo.wheelNeedsPassword = false;
 

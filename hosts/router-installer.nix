@@ -19,7 +19,10 @@
   users.users.root.openssh.authorizedKeys.keys = [
     (lib.fileContents ./common/estate-root.pub)
     (lib.fileContents ./common/estate-breakglass.pub)
-  ];
+  ]
+  ++ lib.optional (builtins.pathExists ./common/estate-root-next.pub) (
+    lib.fileContents ./common/estate-root-next.pub
+  );
 
   system.stateVersion = "25.05";
 }

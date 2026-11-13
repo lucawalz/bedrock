@@ -36,6 +36,7 @@ if [ -n "${BEDROCK_SSH_IDENTITY:-}" ]; then
   PROBE_BATCH_MODE=no
 else
   ADMIN_IDENTITIES=("$ADMIN_KEY_DIR/estate-root.pub")
+  [ ! -f "$ADMIN_KEY_DIR/estate-root-next.pub" ] || ADMIN_IDENTITIES+=("$ADMIN_KEY_DIR/estate-root-next.pub")
   ADMIN_AGENT="$ADMIN_AGENT_SOCKET"
   ADMIN_IDENTITIES_ONLY=no
   PROBE_BATCH_MODE=yes
