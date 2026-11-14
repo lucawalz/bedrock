@@ -33,7 +33,7 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable. Also an admin recipient on every agenix secret, so `agenix -d` and `agenix -r` work with it when the Mac is lost |
 | Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
-| Switch admin password | `clusters/home/devices/switch.sops.yaml` in `bedrock-secrets`, decrypted with the SOPS age identities; the file is in no kustomization, so it is never applied to the cluster | Admin login of the TL-SG108PE. `just login switch` prints the URL and user and copies the password to the clipboard. Losing it is recovered by a factory reset and a new password, as in [Switch](#switch) |
+| Switch admin password | `clusters/home/devices/switch.sops.yaml` in `bedrock-secrets`, decrypted with the SOPS age identities; the file is in no kustomization, so it is never applied to the cluster | Admin login of the TL-SG108PE, used through `just login switch`. Losing it is recovered by a factory reset and a new password, as in [Switch](#switch) |
 | Admin agenix identity (Secure Enclave) | The SOPS Secure Enclave identity, referenced by `~/.config/sops/age/se-identity.txt` on the Mac | A recipient on every agenix secret beside the break-glass key; needed to re-key host secrets when a host key is lost. It cannot be copied off the Mac |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host; for a full rebuild, generated ahead in `rebuild-keys/` on the offline medium | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed, unless it is installed with the keys generated ahead |
 | Secure Boot keys and LUKS recovery keys | `/var/lib/sbctl` on each node, and `rebuild-keys/` and `luks-recovery/` on the offline medium | Sign every boot of a node, and open its root when the TPM refuses ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) |
@@ -288,7 +288,7 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
    just backup
    ```
 
-   The `offsite-backup` job skips detached volumes, so the apps scaled to zero get no backup from it. The run made the backups of each labelled volume by hand, as a Longhorn Snapshot and then a Backup custom resource. `just backup-volumes` replaces those hand-made resources and has not been run against the live cluster (not proven):
+   The `offsite-backup` job skips detached volumes, so the apps scaled to zero get no backup from it. Hand-made Longhorn Snapshot and Backup resources made these backups in the run; `just backup-volumes` replaces them (not proven):
 
    ```
    just backup-volumes name=pre-rebuild
@@ -334,10 +334,10 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
 
 ### Switch
 
-The TL-SG108PE is reset and set up while everything is down, before the router, because the temporary Pi address below is lost at the router reflash. A factory reset power-cycles the Pi, which draws PoE from port 2. The Mac needs no Ethernet adapter: the Pi's `end0` reaches the factory default address `192.168.0.1` and an ssh tunnel carries the web interface to the Mac.
+Reset and set up the TL-SG108PE while everything is down, before the router: the temporary Pi address is lost at the reflash. A factory reset power-cycles the Pi, which draws PoE from port 2. The Mac needs no Ethernet adapter.
 
-1. Factory-reset the switch and wait for the Pi to boot again.
-2. Give the Pi a temporary address in the default range, through the router's tailnet name:
+1. Factory-reset the switch.
+2. Give the Pi a temporary address in the default range:
 
    ```
    ssh root@router.tail26ab10.ts.net ip addr add 192.168.0.10/24 dev end0
@@ -362,17 +362,17 @@ The TL-SG108PE is reset and set up while everything is down, before the router, 
 6. Generate the admin password, 16 alphanumeric characters, straight into the SOPS file without printing it, from the `bedrock-secrets` checkout:
 
    ```
-   sops set clusters/home/devices/switch.sops.yaml '["stringData"]["password"]' "\"$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)\""
+   LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16 | sed 's/.*/"&"/' | sops set --value-stdin clusters/home/devices/switch.sops.yaml '["stringData"]["password"]'
    ```
 
-   Then run `just login switch`, which prints the URL and user and copies the password to the clipboard, and paste it as the switch's new admin password. The file is in no kustomization and is never applied to the cluster.
+   Then run `just login switch` and paste the clipboard password as the new admin password.
 7. Stop the tunnel with Ctrl-C and remove the temporary address:
 
    ```
    ssh root@router.tail26ab10.ts.net ip addr del 192.168.0.10/24 dev end0
    ```
 
-The switch is done when the Mac reaches `192.168.2.212`, `just login switch` signs in and the factory password is refused, and the Pi trunk carries VLAN 20 and 30. The firmware update is still open.
+The switch is done when the Mac reaches `192.168.2.212` and the Pi trunk carries VLAN 20 and 30. The firmware update is still open.
 
 ### Router
 
@@ -398,14 +398,16 @@ The router is reflashed, not installed with nixos-anywhere:
 
 control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the owner:
 
-1. In the firmware settings, put Secure Boot into setup mode. In the Tailscale admin console, delete the node's old device before the first boot, when the reinstalled node joins with its auth key. With the old device gone it joins under its plain hostname; otherwise it joins as `<hostname>-1`, and a rename in the console fixes the name without changing the address. The new device keeps whatever address it gets. Old addresses are never restored, because flannel keeps the address its node started with and stalls inter-node traffic when it is changed afterwards; the nodes are reached by MagicDNS name, so a new address needs no change elsewhere.
+1. In the firmware settings, put Secure Boot into setup mode. In the Tailscale admin console, delete the node's old device before the first boot, when the reinstalled node joins with its auth key. With the old device gone it joins under its plain hostname; otherwise it joins as `<hostname>-1`, and a rename in the console fixes the name without changing the address. The new device keeps whatever address it gets; old addresses are never restored, because flannel keeps the address its node started with and the nodes are reached by MagicDNS name.
 2. Install from the local `main`:
 
    ```
    just install-node control-plane-1
    ```
 
-   It needs the firmware in setup mode from step 1, asks for the node name before the wipe, and puts the LUKS passphrase on the clipboard for the two disko prompts. 3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
+   It needs the firmware in setup mode from step 1, asks for the node name before the wipe, and puts the LUKS passphrase on the clipboard for the two disko prompts.
+
+3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
 4. Bind the root to the TPM as ADR 0016 states:
 
    ```
@@ -415,7 +417,7 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place; a partial file holding a key is never deleted. It wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
 5. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
 
-When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, for example `just install-node <node> phases=disko,install`. A host already in the installer is not kexeced again. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
+When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
 
 Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig signed by the re-issued CA onto the stick.
 
@@ -429,7 +431,7 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
    ```
 
    Then continue with steps 3 to 6 of [Bootstrap and converge](#bootstrap-and-converge). `just kubeconfig` is re-run, because the Mac's context embeds the old server CA.
-2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. Each Longhorn volume is restored as in [Longhorn volumes](#longhorn-volumes): suspend the app's Kustomization first, so no empty claim binds and the recipe does not refuse, then `just restore-volume <namespace>/<claim> <backup> longhorn-crypto-legacy`, resume it, and `just luks-discards <namespace>/<claim>` once attached.
+2. Postgres recovers from R2 on its first reconcile through the prepared `bootstrap.recovery`; run `just luks-discards postgres/postgres-<n>` on each instance volume once attached. Each Longhorn volume is restored as in [Longhorn volumes](#longhorn-volumes): suspend the app's Kustomization, `just restore-volume <namespace>/<claim> <backup> longhorn-crypto-legacy`, resume it, and `just luks-discards <namespace>/<claim>` once attached.
 3. Verify as in [Verify](#verify), and `just restore-test all` once the first backups of the new cluster exist.
 4. A wiped node comes back with empty disks, so a Postgres instance volume on the declared class is gone with it; replace that instance as in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres).
 
