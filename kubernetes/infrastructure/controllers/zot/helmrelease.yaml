@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: zot
-      version: "0.1.132"
+      version: "0.1.133"
       sourceRef:
         kind: HelmRepository
         name: zot
@@ -27,10 +27,10 @@ spec:
     test:
       image:
         repository: docker.io/library/alpine
-        tag: "3.18@sha256:de0eb0b3f2a47ba1eb89389859a9bd88b28e82f5826b6969ad604979713c2d4f"
+        tag: "3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf"
     image:
       repository: ghcr.io/project-zot/zot
-      tag: v2.1.20@sha256:542e25be4d32e7879c0cfad93492a93c81b1e059cbd2d30d485d4bd567318234
+      tag: v2.1.23@sha256:9d3de83ac2099e6f4843045b4c9b65b7e8baf40f92d28f54906dee9d4d390fd7
     service:
       type: ClusterIP
       port: 5000
