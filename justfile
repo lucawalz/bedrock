@@ -134,6 +134,10 @@ encrypt-volumes app *args="":
 luks-discards volume:
     bash scripts/luks-discards.sh {{ quote(volume) }}
 
+# Back up every Longhorn volume labelled for offsite-backup, or one claim, detached ones included, for example: just backup-volumes name=pre-rebuild
+backup-volumes target="" name="":
+    bash scripts/backup-volumes.sh {{ quote(target) }} {{ quote(name) }}
+
 # Restore an encrypted Longhorn backup into a static PersistentVolume for a claim once its Kustomization is suspended, for example: just restore-volume paperless/paperless-ngx-data-encrypted backup-0123456789abcdef longhorn-crypto-legacy
 restore-volume target backup key="longhorn-crypto" kustomization="":
     bash scripts/restore-volume.sh {{ quote(target) }} {{ quote(backup) }} {{ quote(key) }} {{ quote(kustomization) }}

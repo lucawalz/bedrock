@@ -184,6 +184,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just dump <app>` | Write a `pg_dump` custom-format dump of the app's database |
 | `just restore <app> <file>` | Replace the app's database with a dump, with the app suspended and scaled to zero |
 | `just backup` | Take an on-demand CNPG backup to R2 and wait for it |
+| `just backup-volumes [<namespace>/<claim>] [name=<prefix>]` | Back up every Longhorn volume with the `offsite-backup` label, or one claim, and wait for each |
 | `just restore-volume <namespace>/<claim> <backup> [key] [kustomization=<name>]` | Restore an encrypted Longhorn backup into a static PersistentVolume bound to the claim |
 | `just restore-test [postgres\|longhorn\|etcd\|dumps\|all]` | Run the restore drills; `--dry-run` prints and validates the manifests, `--max-age 2h` fails when the newest backup a drill uses is older |
 | `just new-app ...` | Scaffold an app, see below |

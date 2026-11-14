@@ -47,6 +47,8 @@ The K3s server token (`secrets/k3s-token.age`), the agent join token (`secrets/k
 | Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | All of them are LUKS, so their backups are ciphertext | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
 | etcd | `bedrock-etcd`, under `etcd-snapshots/` | Every 12 hours, 5 kept, also on control-plane-1's disk | None client-side, an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)); Secrets are encrypted by K3s and the bootstrap data needs the server token | `EtcdSnapshotTooOld` |
 
+`just backup-volumes` takes an on-demand backup of every claim with the `offsite-backup` label, or of one `<namespace>/<claim>`, detached volumes included. It creates a Longhorn Snapshot and then a Backup per volume, waits for each, and prints one line per claim with the backup name `just restore-volume` takes. `name=<prefix>` names each backup `<prefix>-<first 8 characters of the volume UID>`; it refuses a name that exists, a claim without the label and a claim not on a Longhorn volume. The Snapshots it creates stay until deleted.
+
 ### Locks and the offline copy
 
 R2 bucket lock rules refuse every delete and overwrite of a recent object sent with a bucket-scoped Object token; a refused single delete returns HTTP 409 `ObjectLockedByBucketPolicy`. They do not stop a credential with R2 admin rights, such as a `wrangler login` session or an Admin Read & Write token, which can drop the rule with `wrangler r2 bucket lock remove` and then delete anything, so the wrangler session stays logged out (`wrangler logout`) outside lock maintenance. They cover only prefixes whose keys are written once ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)):
@@ -285,7 +287,13 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
    just backup
    ```
 
-   Back up each volume labelled `offsite-backup` on demand from the Longhorn UI (not proven), and take an etcd snapshot on control-plane-1 (not proven):
+   Back up each volume labelled `offsite-backup` (not proven). The `offsite-backup` job skips detached volumes, so the apps scaled to zero get no backup from it:
+
+   ```
+   just backup-volumes name=pre-rebuild
+   ```
+
+   Then take an etcd snapshot on control-plane-1 (not proven):
 
    ```
    set -a; . /run/agenix/etcd-s3-credentials; set +a
