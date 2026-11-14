@@ -25,23 +25,21 @@ case "$*" in
     printf '%s\n' "$manifest" >> "$FAKE_APPLIED"
     case "$manifest" in *"kind: PersistentVolume"*) echo applied-pv >> "$FAKE_LOG" ;; esac ;;
   "get backups.longhorn.io "*)
-    [ -n "$FAKE_BACKUP_MISSING" ] || printf '{"status":{"state":"Completed","url":"%s","volumeSize":"%s","labels":{"volume-encrypted":"%s","longhorn.io/volume-access-mode":"rwo"}}}\n' \
-      "$FAKE_BACKUP_URL" "$FAKE_SIZE" "${FAKE_ENCRYPTED:-enabled}" ;;
-  "get secret "*) [ -n "$FAKE_SECRET_MISSING" ] || echo "secret/$3" ;;
+    [ -n "$FAKE_BACKUP_MISSING" ] || printf '{"status":{"state":"%s","url":"%s","volumeSize":"%s","labels":{"volume-encrypted":"%s","longhorn.io/volume-access-mode":"%s"}}}\n' \
+      "${FAKE_STATE:-Completed}" "$FAKE_BACKUP_URL" "$FAKE_SIZE" "${FAKE_ENCRYPTED:-enabled}" "${FAKE_ACCESS_MODE:-rwo}" ;;
+  "get secret "*) [ -z "$FAKE_SECRET_MISSING" ] || exit 1; echo "secret/$3" ;;
   "get pvc "*) [ "$FAKE_EXISTING" != pvc ] || echo "persistentvolumeclaim/$3" ;;
   "get pv "*) [ "$FAKE_EXISTING" != pv ] || echo "persistentvolume/$3" ;;
   "get volumes.longhorn.io "*"-o name"*) [ "$FAKE_EXISTING" != volume ] || echo "volume.longhorn.io/$3" ;;
   "get volumes.longhorn.io "*"-o jsonpath"*)
     case "$*" in
-      *restoreInitiated*) echo true ;;
-      *restoreRequired*) if [ -n "$FAKE_STUCK" ]; then echo true; else echo false; fi ;;
-      *state*) if [ -n "$FAKE_STUCK" ]; then echo attached; else echo detached; fi ;;
-      *robustness*) echo unknown ;;
+      *restoreInitiated*) if [ -n "$FAKE_STUCK" ]; then echo "true true attached"; else echo "true false detached"; fi ;;
+      *robustness*) if [ -n "$FAKE_FAULTED" ]; then echo faulted; else echo unknown; fi ;;
     esac ;;
   "get kustomizations.kustomize.toolkit.fluxcd.io "*)
     inventory='{"id":"paperless_paperless-ngx-data-encrypted__PersistentVolumeClaim"}'
-    printf '{"items":[{"metadata":{"name":"paperless"},"spec":{"suspend":%s},"status":{"inventory":{"entries":[%s]}}},{"metadata":{"name":"llm"},"spec":{},"status":{}}]}\n' \
-      "${FAKE_SUSPENDED:-true}" "${FAKE_INVENTORY-$inventory}" ;;
+    printf '{"items":[{"metadata":{"name":"paperless"},"spec":{"suspend":%s},"status":{"inventory":{"entries":[%s]}}},{"metadata":{"name":"llm"},"spec":{"suspend":true},"status":{"inventory":{"entries":[%s]}}}]}\n' \
+      "${FAKE_SUSPENDED:-true}" "${FAKE_INVENTORY-$inventory}" "${FAKE_SECOND_OWNER:+$inventory}" ;;
   *) echo "unexpected kubectl $*" >&2; exit 1 ;;
 esac
 FAKE
@@ -119,9 +117,16 @@ refused "a named Kustomization other than the owner" "$target" "$backup" longhor
 FAKE_EXISTING=pvc refused "an existing PVC" "$target" "$backup"
 FAKE_EXISTING=pv refused "an existing PV" "$target" "$backup"
 FAKE_EXISTING=volume refused "an existing Longhorn Volume" "$target" "$backup"
+FAKE_SECOND_OWNER=1 refused "a claim two Kustomizations list" "$target" "$backup"
+FAKE_STATE=InProgress refused "a backup that is not Completed" "$target" "$backup"
+FAKE_ACCESS_MODE=rwz refused "a backup with an unknown access mode" "$target" "$backup"
 FAKE_ENCRYPTED=disabled refused "a backup of an unencrypted volume" "$target" "$backup"
 FAKE_BACKUP_MISSING=1 refused "a missing backup" "$target" "$backup"
 FAKE_SECRET_MISSING=1 refused "a missing key Secret" "$target" "$backup"
+
+if FAKE_FAULTED=1 run "$target" "$backup"; then fail "a faulted restore succeeded"; fi
+grep -q '^applied-pv' "$work/log" && fail "the faulted restore created the PV"
+grep -q 'left for inspection' "$work/output" || fail "the faulted restore does not say the Volume was left for inspection"
 
 if FAKE_STUCK=1 run "$target" "$backup"; then fail "a restore that never finished succeeded"; fi
 grep -q 'kind: Volume' "$work/applied" || fail "the stuck restore did not create the Volume"

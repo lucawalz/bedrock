@@ -155,8 +155,8 @@ longhorn_volume_status() {
 }
 
 longhorn_restore_finished() {
-  [ "$(longhorn_volume_status "$1" restoreInitiated)" = true ] && [ "$(longhorn_volume_status "$1" restoreRequired)" = false ] \
-    && [ "$(longhorn_volume_status "$1" state)" = detached ]
+  [ "$(kubectl get volumes.longhorn.io "$1" -n "$LONGHORN_NAMESPACE" \
+    -o jsonpath='{.status.restoreInitiated} {.status.restoreRequired} {.status.state}')" = "true false detached" ]
 }
 
 wait_until() {

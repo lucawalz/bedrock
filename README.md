@@ -184,7 +184,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just dump <app>` | Write a `pg_dump` custom-format dump of the app's database |
 | `just restore <app> <file>` | Replace the app's database with a dump, with the app suspended and scaled to zero |
 | `just backup` | Take an on-demand CNPG backup to R2 and wait for it |
-| `just restore-volume <namespace>/<claim> <backup> [key]` | Restore an encrypted Longhorn backup into a static PersistentVolume bound to the claim once the owning Kustomization is suspended; `key` is `longhorn-crypto` or `longhorn-crypto-legacy`, and `kustomization=<name>` names the owner of a claim never applied |
+| `just restore-volume <namespace>/<claim> <backup> [key] [kustomization=<name>]` | Restore an encrypted Longhorn backup into a static PersistentVolume bound to the claim |
 | `just restore-test [postgres\|longhorn\|etcd\|dumps\|all]` | Run the restore drills; `--dry-run` prints and validates the manifests, `--max-age 2h` fails when the newest backup a drill uses is older |
 | `just new-app ...` | Scaffold an app, see below |
 | `just new-secret <app>` | Create the app's encrypted secrets in `bedrock-secrets` with random values |

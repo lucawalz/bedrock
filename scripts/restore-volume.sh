@@ -32,7 +32,6 @@ if [[ "$key" == kustomization=* && -z "$kustomization" ]]; then
   kustomization="$key"
   key="$DEFAULT_KEY_SECRET"
 fi
-key="${key#key=}"
 kustomization="${kustomization#kustomization=}"
 
 [[ "$target" == */* ]] || usage_error
@@ -50,16 +49,14 @@ IFS='|' read -r state url size encrypted access_mode < <(jq -r '.status | [.stat
   .labels["volume-encrypted"], .labels["longhorn.io/volume-access-mode"]] | map(. // "") | join("|")' <<< "$backup_json")
 [ "$state" = "$BACKUP_COMPLETED" ] || fail "backup $backup is '$state', not $BACKUP_COMPLETED"
 [ "$encrypted" = "$BACKUP_ENCRYPTED" ] || fail "backup $backup is not from an encrypted volume"
-[ -n "$url" ] || fail "backup $backup has no URL"
-[[ "$size" =~ $SIZE_PATTERN ]] || fail "backup $backup has no volume size"
+[ -n "$url" ] && [[ "$size" =~ $SIZE_PATTERN ]] || fail "backup $backup has no URL or volume size"
 case "$access_mode" in
   rwo) pv_access_mode=ReadWriteOnce ;;
   rwx) pv_access_mode=ReadWriteMany ;;
   *) fail "backup $backup records an unknown access mode '$access_mode'" ;;
 esac
 
-found="$(kubectl get secret "$key" -n "$LONGHORN_NAMESPACE" -o name --ignore-not-found)"
-[ -n "$found" ] || fail "Secret $LONGHORN_NAMESPACE/$key does not exist"
+kubectl get secret "$key" -n "$LONGHORN_NAMESPACE" -o name >/dev/null || fail "Secret $LONGHORN_NAMESPACE/$key does not exist"
 
 refuse_existing() {
   local found
@@ -70,19 +67,18 @@ refuse_existing pvc "$claim" -n "$namespace"
 refuse_existing pv "$claim"
 refuse_existing volumes.longhorn.io "$claim" -n "$LONGHORN_NAMESPACE"
 
-kustomizations="$(kubectl get kustomizations.kustomize.toolkit.fluxcd.io -n "$FLUX_NAMESPACE" -o json)"
-owners="$(jq -r --arg id "${namespace}_${claim}__PersistentVolumeClaim" \
-  '.items[] | select(any(.status.inventory.entries[]?; .id == $id)) | .metadata.name' <<< "$kustomizations")"
-[[ "$owners" != *$'\n'* ]] || fail "several Kustomizations list $target: $(tr '\n' ' ' <<< "$owners")"
-if [ -z "$owners" ]; then
+candidates="$(kubectl get kustomizations.kustomize.toolkit.fluxcd.io -n "$FLUX_NAMESPACE" -o json \
+  | jq -r --arg id "${namespace}_${claim}__PersistentVolumeClaim" --arg name "$kustomization" '
+      [.items[] | select(any(.status.inventory.entries[]?; .id == $id))] as $owners
+      | (if ($owners | length) > 0 then $owners else [.items[] | select(.metadata.name == $name)] end)[]
+      | "\(.metadata.name) \(.spec.suspend // false)"')"
+[[ "$candidates" != *$'\n'* ]] || fail "several Kustomizations list $target: $(cut -d' ' -f1 <<< "$candidates" | tr '\n' ' ')"
+if [ -z "$candidates" ]; then
   [ -n "$kustomization" ] || fail "no Kustomization inventory lists $target; name the one that creates it with kustomization=<name>"
-  owner="$kustomization"
-else
-  [ -z "$kustomization" ] || [ "$kustomization" = "$owners" ] || fail "$target belongs to Kustomization $owners, not $kustomization"
-  owner="$owners"
+  fail "Kustomization $FLUX_NAMESPACE/$kustomization does not exist"
 fi
-suspended="$(jq -r --arg name "$owner" '.items[] | select(.metadata.name == $name) | .spec.suspend // false' <<< "$kustomizations")"
-[ -n "$suspended" ] || fail "Kustomization $FLUX_NAMESPACE/$owner does not exist"
+read -r owner suspended <<< "$candidates"
+[ -z "$kustomization" ] || [ "$kustomization" = "$owner" ] || fail "$target belongs to Kustomization $owner, not $kustomization"
 [ "$suspended" = true ] || fail "Kustomization $owner is not suspended; run flux suspend kustomization $owner -n $FLUX_NAMESPACE first"
 
 echo "restoring $backup into Longhorn Volume $claim"
