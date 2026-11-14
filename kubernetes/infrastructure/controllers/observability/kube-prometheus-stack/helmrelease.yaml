@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: kube-prometheus-stack
-      version: "88.6.5"
+      version: "93.2.0"
       sourceRef:
         kind: HelmRepository
         name: prometheus-community
@@ -32,31 +32,31 @@ spec:
       image:
         registry: quay.io
         repository: prometheus-operator/prometheus-operator
-        tag: v0.93.1@sha256:e52bb28fd41c98dd407c7a8cba8bdcfe7eabd7447e250afaf1fe7bb816dedbff
+        tag: v0.95.2@sha256:7986c2afa118c9dea07d01c5e1a29555824582e92f6ee8607591d1a7178acf29
       prometheusConfigReloader:
         image:
           registry: quay.io
           repository: prometheus-operator/prometheus-config-reloader
-          tag: v0.93.1@sha256:428f088fe6fe07ab138bda92113664b04848a1dc408e4d3680a60ecdb55d1a65
+          tag: v0.95.2@sha256:cc74ddedad4ab1c49446971f6d51302ad4303d8660a2018af925c7f62c114304
       admissionWebhooks:
         patch:
           image:
             registry: ghcr.io
             repository: jkroepke/kube-webhook-certgen
-            tag: 1.8.8@sha256:cd85a621724cd9043a5b46a784578fa159437712f920166389fce830554e1c44
+            tag: 1.11.1@sha256:8009b04f9873f7279b5adee37fdd03b6a9aa7b6751d4f69fde2683010e41cd1f
     prometheus:
       prometheusSpec:
         image:
           registry: quay.io
           repository: prometheus/prometheus
-          tag: v3.14.0-distroless@sha256:50c707e96da5ade383cb1707790576480485e93de06aa60ad8802cb5f744bd0a
+          tag: v3.16.0-distroless@sha256:9764044e09eb2c9e1abdb12d0f0188d4efb7384b0262d3c080f0fc59045c89ba
         version: v3.14.0-distroless
     alertmanager:
       alertmanagerSpec:
         image:
           registry: quay.io
           repository: prometheus/alertmanager
-          tag: v0.34.0@sha256:690c7b525f4367aa91f73e2f91c632206d32e97c6384bdbf2fb7a861b420340d
+          tag: v0.35.0@sha256:5f6e66c01bd610aef6dd671642a52eee775fd3a89bd8788ebada33efaf373d10
         version: v0.34.0
     kube-state-metrics:
       image:
@@ -75,7 +75,7 @@ spec:
         image:
           registry: quay.io
           repository: kiwigrid/k8s-sidecar
-          tag: 2.10.1@sha256:7eac5c4fed714a18d038fc9fea57d8744d113367935dac0ea4eb6a87cef704a3
+          tag: 2.14.3@sha256:52d311dcedd587421a236c4d6c621f05614c40a51386e955e0699dca97ec0880
       initChownData:
         image:
           registry: docker.io
