@@ -17,13 +17,15 @@ BACKUP_ENCRYPTED=enabled
 FAULTED=faulted
 RESTORE_TIMEOUT_SECONDS=1800
 POLL_SECONDS=10
+MIN_ARGUMENTS=2
+MAX_ARGUMENTS=4
 
 usage_error() {
   echo "$usage" >&2
   exit 2
 }
 
-[ "$#" -ge 2 ] && [ "$#" -le 4 ] || usage_error
+[ "$#" -ge "$MIN_ARGUMENTS" ] && [ "$#" -le "$MAX_ARGUMENTS" ] || usage_error
 target="$1"
 backup="$2"
 key="${3:-$DEFAULT_KEY_SECRET}"
