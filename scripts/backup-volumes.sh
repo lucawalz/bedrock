@@ -41,7 +41,7 @@ fi
 
 require_tools kubectl jq
 
-claim_query='"\(.metadata.namespace)/\(.metadata.name) \(.spec.volumeName // "") \(.metadata.labels[$label] // "")"'
+claim_query='["\(.metadata.namespace)/\(.metadata.name)", .spec.volumeName // "", .metadata.labels[$label] // ""] | join("|")'
 if [ -n "$target" ]; then
   claims="$(kubectl get pvc "${target#*/}" -n "${target%%/*}" -o json | jq -r --arg label "$OFFSITE_LABEL" "$claim_query")"
 else
@@ -50,7 +50,7 @@ fi
 [ -n "$claims" ] || fail "no claim carries $OFFSITE_LABEL=$OFFSITE_ENABLED"
 
 plan=()
-while read -r claim pv offsite; do
+while IFS='|' read -r claim pv offsite; do
   [ "$offsite" = "$OFFSITE_ENABLED" ] || fail "$claim lacks $OFFSITE_LABEL=$OFFSITE_ENABLED, so it is not backed up off-site"
   [ -n "$pv" ] || fail "$claim is not bound to a PersistentVolume"
   read -r driver volume < <(kubectl get pv "$pv" -o json | jq -r '"\(.spec.csi.driver // "") \(.spec.csi.volumeHandle // "")"')
@@ -59,8 +59,10 @@ while read -r claim pv offsite; do
   if [ -n "$name" ]; then
     id="${volume#"$VOLUME_PREFIX"}"
     backup="$name-${id:0:$VOLUME_ID_LENGTH}"
-    found="$(kubectl get backups.longhorn.io "$backup" -n "$LONGHORN_NAMESPACE" -o name --ignore-not-found)"
-    [ -z "$found" ] || fail "$found already exists"
+    for kind in backups.longhorn.io snapshots.longhorn.io; do
+      found="$(kubectl get "$kind" "$backup" -n "$LONGHORN_NAMESPACE" -o name --ignore-not-found)"
+      [ -z "$found" ] || fail "$found already exists"
+    done
   fi
   plan+=("$claim $volume $backup")
 done <<< "$claims"

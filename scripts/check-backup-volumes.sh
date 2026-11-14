@@ -36,7 +36,6 @@ echo "kubectl $*" >> "$FAKE_LOG"
 case "$*" in
   "create -f - -o jsonpath={.metadata.name}")
     manifest="$(cat)"
-    printf '%s\n' "$manifest" >> "$FAKE_CREATED"
     name="$(printf '%s\n' "$manifest" | sed -n 's/^  name: //p')"
     [ -n "$name" ] || name="$(printf '%s\n' "$manifest" | sed -n 's/^  generateName: //p')generated"
     kind="$(printf '%s\n' "$manifest" | sed -n 's/^kind: //p')"
@@ -53,6 +52,8 @@ case "$*" in
     printf '{"spec":{"csi":{"driver":"%s","volumeHandle":"%s"}}}\n' "$driver" "$3" ;;
   "get backups.longhorn.io "*"-o name"*)
     [ "$3" != "$FAKE_EXISTING_BACKUP" ] || echo "backup.longhorn.io/$3" ;;
+  "get snapshots.longhorn.io "*"-o name"*)
+    [ "$3" != "$FAKE_EXISTING_SNAPSHOT" ] || echo "snapshot.longhorn.io/$3" ;;
   "get snapshots.longhorn.io "*)
     echo true ;;
   "get backups.longhorn.io "*"-o jsonpath"*)
@@ -70,9 +71,8 @@ chmod +x "$work"/bin/*
 
 run() {
   : > "$work/log"
-  : > "$work/created"
   rm -rf "$work/created.d" && mkdir "$work/created.d"
-  FAKE_LOG="$work/log" FAKE_CREATED="$work/created" FAKE_CREATED_DIR="$work/created.d" FAKE_CLAIMS="${FAKE_CLAIMS:-$work/claims}" \
+  FAKE_LOG="$work/log" FAKE_CREATED_DIR="$work/created.d" FAKE_CLAIMS="${FAKE_CLAIMS:-$work/claims}" \
     PATH="$work/bin:$PATH" bash "$script" "$@" > "$work/output" 2>&1
 }
 
@@ -83,14 +83,13 @@ refused() {
 }
 
 created_count() {
-  grep -c "^kind: $1$" "$work/created" || true
+  find "$work/created.d" -name "*-$1-*" | wc -l | tr -d ' '
 }
 
 run name=pre-rebuild "" || { cat "$work/output" >&2; fail "a named backup of every labelled claim failed"; }
 grep -q -- '--context' "$work/log" && fail "kubectl was pinned to a context"
 grep -E '^kubectl (apply|delete|patch|edit|label|annotate|scale|replace)' "$work/log" && fail "the backup changed more than it created"
-[ "$(created_count Snapshot)" -eq 2 ] && [ "$(created_count Backup)" -eq 2 ] || fail "the backup did not create one Snapshot and one Backup per labelled claim: $(cat "$work/created")"
-grep -q "$postgres_volume" "$work/created" && fail "the backup touched the unlabelled Postgres volume"
+[ "$(created_count Snapshot)" -eq 2 ] && [ "$(created_count Backup)" -eq 2 ] || fail "the backup did not create one Snapshot and one Backup per labelled claim: $(ls "$work/created.d")"
 for volume in "$paperless_volume" "$webui_volume"; do
   id="${volume#pvc-}"
   name="pre-rebuild-${id:0:8}"
@@ -108,7 +107,7 @@ grep -q "^$webui $webui_volume pre-rebuild-22222222$" "$work/output" || fail "th
 
 run "$paperless" || { cat "$work/output" >&2; fail "a backup of one named claim failed"; }
 [ "$(created_count Backup)" -eq 1 ] || fail "a named target created other than one Backup"
-grep -q "generateName: backup-" "$work/created" || fail "an unnamed backup does not leave the name to the cluster"
+grep -qx "  generateName: backup-" "$work"/created.d/*-Backup-* || fail "an unnamed backup does not leave the name to the cluster"
 grep -q "^$paperless $paperless_volume backup-generated$" "$work/output" || fail "the summary lacks the generated backup name: $(cat "$work/output")"
 
 run "$paperless" pre-rebuild || { cat "$work/output" >&2; fail "a named claim with a positional name failed"; }
@@ -130,10 +129,13 @@ FAKE_NON_LONGHORN="$webui_volume" refused "a labelled claim on a non-Longhorn PV
 FAKE_NON_LONGHORN="$paperless_volume" refused "a named claim on a non-Longhorn PV" "$paperless"
 claim_json "$paperless" "" true | jq -s . > "$work/unbound"
 FAKE_CLAIMS="$work/unbound" refused "an unbound claim" "$paperless"
+grep -q "not bound to a PersistentVolume" "$work/output" || fail "an unbound claim was refused for another reason: $(cat "$work/output")"
 echo '[]' > "$work/none"
 FAKE_CLAIMS="$work/none" refused "a cluster without labelled claims" ""
 FAKE_EXISTING_BACKUP=pre-rebuild-22222222 refused "an existing backup name" "" pre-rebuild
 grep -q pre-rebuild-22222222 "$work/output" || fail "the refusal does not name the existing backup"
+FAKE_EXISTING_SNAPSHOT=pre-rebuild-11111111 refused "an existing snapshot name" "" pre-rebuild
+grep -q snapshot.longhorn.io/pre-rebuild-11111111 "$work/output" || fail "the refusal does not name the existing snapshot"
 
 if FAKE_FAILED_BACKUP=pre-rebuild-11111111 run "" pre-rebuild; then fail "a failed backup exited zero"; fi
 grep -q "^$paperless $paperless_volume FAILED" "$work/output" || fail "the failed volume has no failure line: $(cat "$work/output")"
