@@ -36,6 +36,8 @@ for file in "$tree/var/lib/sbctl/GUID" "$tree/etc/ssh/ssh_host_ed25519_key" "$pa
 done
 [ "$(git branch --show-current)" = main ] || fail "$repo_root is not on main"
 [ -z "$(git status --porcelain)" ] || fail "$repo_root has uncommitted changes"
+nixpkgs_rev="$(jq -r .nodes.nixpkgs.locked.rev flake.lock)"
+[[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]] || fail "flake.lock pins no nixpkgs revision to fetch sbctl from"
 
 open_ssh_session install-node "$CONTROL_PERSIST"
 ssh_args=()
@@ -91,7 +93,7 @@ if ! has_phase install; then
 fi
 
 installer=(ssh "${ssh_args[@]}" "root@$address")
-sbctl='nix --extra-experimental-features "nix-command flakes" shell nixpkgs#sbctl --command sbctl'
+sbctl="nix --extra-experimental-features \"nix-command flakes\" shell github:NixOS/nixpkgs/$nixpkgs_rev#sbctl --command sbctl"
 "${installer[@]}" 'rm -rf /var/lib/sbctl && mkdir -p /var/lib && cp -a /mnt/var/lib/sbctl /var/lib/sbctl'
 "${installer[@]}" "$sbctl enroll-keys --microsoft"
 status="$("${installer[@]}" "$sbctl status --json")"

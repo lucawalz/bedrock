@@ -99,6 +99,8 @@ grep -o -e '^nixos-anywhere' -e 'cp -a /mnt/var/lib/sbctl /var/lib/sbctl' -e 'sb
   || fail "the install, copy of the stick bundle, Secure Boot enrolment and reboot did not run in that order"
 grep 'sbctl\|systemctl reboot' "$work/log" | grep -v "ControlPath=/tmp/install-node\." \
   && fail "an installer command does not reuse the control master"
+nixpkgs_rev="$(jq -r .nodes.nixpkgs.locked.rev flake.lock)"
+[ "$(grep -c "shell github:NixOS/nixpkgs/$nixpkgs_rev#sbctl " "$work/log")" = 2 ] || fail "sbctl does not come from the flake's locked nixpkgs"
 
 FAKE_HOSTNAME=nixos run "$install" "$node" phases=disko,install || fail "a resumed install failed"
 grep -q -- '--phases disko,install ' "$work/log" || fail "the phases argument did not reach nixos-anywhere"
