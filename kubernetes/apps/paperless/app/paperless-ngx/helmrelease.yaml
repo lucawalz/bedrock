@@ -76,16 +76,16 @@ spec:
     persistence:
       data:
         enabled: true
-        existingClaim: paperless-ngx-data-encrypted
+        existingClaim: paperless-ngx-data
       media:
         enabled: true
-        existingClaim: paperless-ngx-media-encrypted
+        existingClaim: paperless-ngx-media
       export:
         enabled: true
-        existingClaim: paperless-ngx-export-encrypted
+        existingClaim: paperless-ngx-export
       consume:
         enabled: true
-        existingClaim: paperless-ngx-consume-encrypted
+        existingClaim: paperless-ngx-consume
     podLabels:
       bedrock.io/postgres-client: "true"
     automountServiceAccountToken: false
