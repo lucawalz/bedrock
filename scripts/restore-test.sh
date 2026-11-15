@@ -337,17 +337,11 @@ newest_base_backup_time() {
     .items[] | select(.spec.cluster.name == strenv(C) and .status.phase == "completed") | .status.stoppedAt' | sort | tail -n 1
 }
 
-archive_server() {
-  local server
+test_postgres() {
+  local check database table want got stopped server
   server="$(kubectl get clusters.postgresql.cnpg.io "$POSTGRES_SOURCE_CLUSTER" -n "$POSTGRES_NAMESPACE" -o json \
     | yq -p=json -r '[.spec.plugins[] | select(.isWALArchiver == true) | .parameters.serverName] | .[0] // ""')"
   [ -n "$server" ] || fail "cluster $POSTGRES_SOURCE_CLUSTER names no serverName on its isWALArchiver plugin"
-  echo "$server"
-}
-
-test_postgres() {
-  local check database table want got stopped server
-  server="$(archive_server)"
   if [ -n "$max_age_seconds" ]; then
     stopped="$(newest_base_backup_time)"
     [ -n "$stopped" ] || fail "cluster $POSTGRES_SOURCE_CLUSTER has no completed base backup"
