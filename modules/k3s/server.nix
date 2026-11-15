@@ -12,6 +12,12 @@ let
   isBootstrap = meta.hostname == inventory.bootstrapControlPlane;
   bootstrap = inventory.nodes.${inventory.bootstrapControlPlane};
   tlsDir = "/var/lib/rancher/k3s/server/tls";
+  rootSecret = name: {
+    file = "${secretsDir}/${name}.age";
+    mode = "0400";
+    owner = "root";
+    group = "root";
+  };
   auditPolicyEtcPath = "rancher/k3s/audit-policy.yaml";
   auditLogDir = "/var/log/kubernetes";
   auditLogMaxAgeDays = 30;
@@ -121,26 +127,9 @@ in
   };
 
   age.secrets = {
-    k3s-token = {
-      file = "${secretsDir}/k3s-token.age";
-      mode = "0400";
-      owner = "root";
-      group = "root";
-    };
-
-    etcd-s3-credentials = {
-      file = "${secretsDir}/etcd-s3-credentials.age";
-      mode = "0400";
-      owner = "root";
-      group = "root";
-    };
-
-    k3s-ca = lib.mkIf isBootstrap {
-      file = "${secretsDir}/k3s-ca.age";
-      mode = "0400";
-      owner = "root";
-      group = "root";
-    };
+    k3s-token = rootSecret "k3s-token";
+    etcd-s3-credentials = rootSecret "etcd-s3-credentials";
+    k3s-ca = lib.mkIf isBootstrap (rootSecret "k3s-ca");
   };
 
   environment.etc.${auditPolicyEtcPath}.text = builtins.toJSON auditPolicy;
