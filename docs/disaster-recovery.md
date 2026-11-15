@@ -394,7 +394,7 @@ The router is reflashed, not installed with nixos-anywhere:
    nixos-rebuild switch --flake .#router --target-host root@192.168.2.211 --build-host root@192.168.2.211
    ```
 
-4. After the Pi first joins, sign it from the Mac: `tailscale lock status` lists its node key under the locked-out nodes, then run `tailscale lock sign <node-key>` ([ADR 0017](adr/0017-lock-the-tailnet-to-signed-devices.md)).
+4. After the Pi first joins, sign it from the Mac: `tailscale lock status` lists its node key under the locked-out nodes, then run `tailscale lock sign <node-key>`.
 5. Confirm that the Mac reaches `10.20.0.1` through the subnet route before touching the nodes.
 
 ### Nodes
@@ -411,7 +411,7 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    It needs the firmware in setup mode from step 1, asks for the node name before the wipe, and puts the LUKS passphrase on the clipboard for the two disko prompts.
 
 3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
-4. When the node first joins the tailnet, sign it from the Mac: `tailscale lock status` lists its node key under the locked-out nodes, then run `tailscale lock sign <node-key>`.
+4. Sign the node from the Mac as in router step 4.
 5. Bind the root to the TPM as ADR 0016 states:
 
    ```

@@ -209,15 +209,19 @@ tailscale lock status
 tailscale lock sign <node-key>
 ```
 
-On the iPhone, the Tailscale app lists the locked-out device and signs it. Reinstalled hosts get this step after they first join, as in [Disaster recovery](disaster-recovery.md).
+On the iPhone, the Tailscale app lists the locked-out device and signs it.
 
-If both signers are lost, any node on the tailnet can turn the lock off for the whole tailnet with one disablement secret from the stick, taken from the first unused line of `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt`:
+If both signers are lost, any node on the tailnet can turn the lock off for the whole tailnet with an unused disablement secret from `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt` on the stick:
 
 ```
 tailscale lock disable <secret>
 ```
 
-The used secret becomes public, so it is struck from the file. Then re-initialise with the new signers' Tailnet Lock keys, writing the fresh secrets straight onto the stick again, and run `tailscale lock init` as in the ADR. Re-initialising signs every existing node.
+The used secret becomes public. Then re-initialise with the new signers' Tailnet Lock keys. The key of the node running the command must be one of them. The redirect writes the fresh secrets straight onto the stick and keeps them off the Mac's disk. It replaces the file, because every old secret is void after the disable and re-init:
+
+```
+tailscale lock init --gen-disablements 10 --gen-disablement-for-support --confirm <trusted-key> <trusted-key> > /Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt
+```
 
 To check that a secret on the stick is still valid without using it, compute its disablement value and compare it with the values listed by `tailscale lock status --json` (not proven: the exact output is confirmed after init):
 
