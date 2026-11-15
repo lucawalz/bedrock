@@ -6,7 +6,7 @@ set -euo pipefail
 script=scripts/deploy-nodes.sh
 estate_root="$PWD/hosts/common/estate-root.pub"
 estate_root_next="$PWD/hosts/common/estate-root-next.pub"
-secretive_socket="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+secretive_socket="$SECRETIVE_AGENT_SOCKET"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

@@ -31,9 +31,7 @@ done
 open_ssh_session enrol-node "$CONTROL_PERSIST"
 known_hosts="$ssh_session_dir/known_hosts"
 printf '%s %s\n' "$address" "$(cut -d' ' -f1,2 "$host_public_key")" > "$known_hosts"
-ssh_args=()
-for option in "${ssh_session_options[@]}"; do ssh_args+=(-o "$option"); done
-ssh_args+=(-o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
+ssh_args=("${ssh_session_args[@]}" -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
 partial_owned=false
 
 cleanup() {

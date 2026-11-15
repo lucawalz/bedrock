@@ -40,13 +40,9 @@ nixpkgs_rev="$(jq -r .nodes.nixpkgs.locked.rev flake.lock)"
 [[ "$nixpkgs_rev" =~ ^[0-9a-f]{40}$ ]] || fail "flake.lock pins no nixpkgs revision to fetch sbctl from"
 
 open_ssh_session install-node "$CONTROL_PERSIST"
-ssh_args=()
+ssh_args=("${ssh_session_args[@]}" -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
 na_ssh_args=()
-for option in "${ssh_session_options[@]}"; do
-  ssh_args+=(-o "$option")
-  na_ssh_args+=(--ssh-option "$option")
-done
-ssh_args+=(-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null)
+for option in "${ssh_session_options[@]}"; do na_ssh_args+=(--ssh-option "$option"); done
 clipboard_used=false
 
 clear_clipboard() {

@@ -8,9 +8,9 @@ require_tools openssl ssh-keygen uuidgen
 
 [ "$#" -eq 0 ] || { echo "usage: generate-rebuild-keys.sh" >&2; exit 1; }
 
-stick_root="${BEDROCK_STICK_ROOT:-/Volumes/bedrock-keys/bedrock}"
-root_cert="$stick_root/k3s-root-ca/root-ca.pem"
-out="$stick_root/rebuild-keys"
+stick="$(stick_root)"
+root_cert="$stick/k3s-root-ca/root-ca.pem"
+out="$(rebuild_keys_dir)"
 hosts=(control-plane-1 worker-1 worker-2 router)
 nodes=(control-plane-1 worker-1 worker-2)
 secure_boot_keys=("PK:Platform Key" "KEK:Key Exchange Key" "db:Database Key")
@@ -23,7 +23,7 @@ private_mode=600
 system_dir_mode=755
 
 openssl version | grep -q '^OpenSSL [3-9]' || { echo "openssl must be OpenSSL 3 or later, got: $(openssl version)" >&2; exit 1; }
-[ -d "$stick_root" ] || { echo "$stick_root is not mounted; plug in the bedrock-keys stick or set BEDROCK_STICK_ROOT" >&2; exit 1; }
+[ -d "$stick" ] || { echo "$stick is not mounted; plug in the bedrock-keys stick or set BEDROCK_STICK_ROOT" >&2; exit 1; }
 [ -f "$root_cert" ] || { echo "$root_cert is missing; the tokens pin its hash" >&2; exit 1; }
 mkdir "$out" || { echo "$out already exists; keys are generated once per rebuild, so move it aside first" >&2; exit 1; }
 

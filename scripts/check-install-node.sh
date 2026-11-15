@@ -12,7 +12,7 @@ address=10.20.0.11
 passphrase=test-install-passphrase
 recovery_key=test-recovery-key
 estate_root="$PWD/hosts/common/estate-root.pub"
-secretive_socket="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+secretive_socket="$SECRETIVE_AGENT_SOCKET"
 root_device=/dev/disk/by-partlabel/disk-main-root
 
 work="$(mktemp -d)"

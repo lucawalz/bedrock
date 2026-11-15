@@ -75,27 +75,29 @@ rebuild_keys_dir() {
   printf '%s/rebuild-keys\n' "$(stick_root)"
 }
 
+SECRETIVE_AGENT_SOCKET="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+
 stick_root() {
   printf '%s\n' "${BEDROCK_STICK_ROOT:-/Volumes/bedrock-keys/bedrock}"
 }
 
 open_ssh_session() {
-  local name="$1" persist="$2"
+  local name="$1" persist="$2" option
   ssh_session_dir="$(mktemp -d "/tmp/$name.XXXXXX")"
   ssh_session_options=(
-    "IdentityAgent=$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
+    "IdentityAgent=$SECRETIVE_AGENT_SOCKET"
     "IdentityFile=$repo_root/hosts/common/estate-root.pub"
     IdentitiesOnly=yes
     ControlMaster=auto
     "ControlPath=$ssh_session_dir/%C"
     "ControlPersist=$persist"
   )
+  ssh_session_args=()
+  for option in "${ssh_session_options[@]}"; do ssh_session_args+=(-o "$option"); done
 }
 
 close_ssh_session() {
-  local target="$1" option args=()
-  for option in "${ssh_session_options[@]}"; do args+=(-o "$option"); done
-  ssh "${args[@]}" -O exit "$target" 2>/dev/null || true
+  ssh "${ssh_session_args[@]}" -O exit "$1" 2>/dev/null || true
   rm -rf "$ssh_session_dir"
 }
 

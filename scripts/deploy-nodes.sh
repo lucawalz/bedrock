@@ -28,7 +28,6 @@ POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
 ENCRYPTED_ROOT_DEVICE=/dev/mapper/cryptroot
 ADMIN_KEY_DIR="$repo_root/hosts/common"
-ADMIN_AGENT_SOCKET="$HOME/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh"
 NO_AGENT=none
 
 if [ -n "${BEDROCK_SSH_IDENTITY:-}" ]; then
@@ -40,7 +39,7 @@ if [ -n "${BEDROCK_SSH_IDENTITY:-}" ]; then
 else
   ADMIN_IDENTITIES=("$ADMIN_KEY_DIR/estate-root.pub")
   [ ! -f "$ADMIN_KEY_DIR/estate-root-next.pub" ] || ADMIN_IDENTITIES+=("$ADMIN_KEY_DIR/estate-root-next.pub")
-  ADMIN_AGENT="$ADMIN_AGENT_SOCKET"
+  ADMIN_AGENT="$SECRETIVE_AGENT_SOCKET"
   ADMIN_IDENTITIES_ONLY=no
   PROBE_BATCH_MODE=yes
 fi

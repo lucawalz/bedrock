@@ -32,7 +32,7 @@ LONGHORN_READER_UID=1000
 LONGHORN_DRY_RUN_IMAGE=ghcr.io/paperless-ngx/paperless-ngx:dry-run
 LONGHORN_DRY_RUN_SIZE_BYTES=$((5 * 1024 ** 3))
 
-DUMPS_GNUPGHOME=/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps
+DUMPS_GNUPGHOME="$(stick_root)/gnupg-postgres-dumps"
 DUMPS_BUCKET=bedrock-postgres
 DUMPS_PREFIX=dumps
 DUMPS_CREDENTIALS_SECRET=postgres-backup-s3
