@@ -138,7 +138,7 @@ luks-discards volume:
 backup-volumes target="" name="":
     bash scripts/backup-volumes.sh {{ quote(target) }} {{ quote(name) }}
 
-# Restore an encrypted Longhorn backup into a static PersistentVolume for a claim once its Kustomization is suspended, for example: just restore-volume paperless/paperless-ngx-data-encrypted backup-0123456789abcdef longhorn-crypto-legacy
+# Restore an encrypted Longhorn backup into a static PersistentVolume for a claim whose Kustomization is suspended
 restore-volume target backup key="longhorn-crypto" kustomization="":
     bash scripts/restore-volume.sh {{ quote(target) }} {{ quote(backup) }} {{ quote(key) }} {{ quote(kustomization) }}
 
@@ -166,7 +166,7 @@ rekey-secrets:
 tailscale-authkeys:
     bash scripts/tailscale-authkeys.sh
 
-# Wipe and reinstall a node from the local main with its stick keys, enrol Secure Boot and reboot, for example: just install-node worker-1 phases=disko,install
+# Wipe and reinstall a node from the local main with its stick keys and enrol Secure Boot, for example: just install-node worker-1
 install-node node phases="":
     bash scripts/install-node.sh {{ quote(node) }} {{ quote(phases) }}
 
