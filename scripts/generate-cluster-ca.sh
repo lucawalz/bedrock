@@ -9,7 +9,7 @@ require_tools openssl age nix-instantiate jq tar
 [ "$#" -eq 0 ] || { echo "usage: generate-cluster-ca.sh" >&2; exit 1; }
 
 product=k3s
-root_ca_dir="${BEDROCK_ROOT_CA_DIR:-/Volumes/bedrock-keys/bedrock/k3s-root-ca}"
+root_ca_dir="${BEDROCK_ROOT_CA_DIR:-$(stick_root)/k3s-root-ca}"
 create_root="${BEDROCK_CREATE_ROOT_CA:-0}"
 root_cert="$root_ca_dir/root-ca.pem"
 root_key="$root_ca_dir/root-ca.key"
@@ -36,7 +36,9 @@ tarball_members=(
   server-ca.key server-ca.crt
 )
 
-openssl version | grep -q '^OpenSSL 3' || { echo "openssl must be OpenSSL 3, got: $(openssl version)" >&2; exit 1; }
+openssl version | grep -q '^OpenSSL [3-9]' || { echo "openssl must be OpenSSL 3 or later, got: $(openssl version)" >&2; exit 1; }
+[ -n "${BEDROCK_RAM_DISK:-}" ] && [ -d "$BEDROCK_RAM_DISK" ] ||
+  { echo "BEDROCK_RAM_DISK is not a mounted RAM disk; run just rekey-secrets, which issues the CA on one" >&2; exit 1; }
 [ -d "$(dirname "$root_ca_dir")" ] ||
   { echo "$(dirname "$root_ca_dir") is not mounted; plug in the bedrock-keys stick or set BEDROCK_ROOT_CA_DIR" >&2; exit 1; }
 command -v age-plugin-se >/dev/null 2>&1 ||
@@ -54,7 +56,7 @@ if [ ! -e "$root_cert" ] && [ "$create_root" != 1 ]; then
   exit 1
 fi
 
-work="$(mktemp -d)"
+work="$(mktemp -d "$BEDROCK_RAM_DISK/cluster-ca.XXXXXX")"
 trap 'rm -rf "$work"' EXIT
 tls="$work/tls"
 mkdir -p "$tls/etcd"
@@ -111,7 +113,6 @@ recipients() {
 
 tar --format ustar -cf "$work/ca.tar" -C "$tls" "${tarball_members[@]}"
 age -R <(recipients "$ca_secret") -o "$work/$ca_secret" "$work/ca.tar"
-mv "$work/$ca_secret" "secrets/$ca_secret"
 
 ca_hash="$(k3s_ca_hash "$root_cert")"
 
@@ -125,10 +126,10 @@ repin_token() {
   printf 'K10%s::%s:%s\n' "$ca_hash" "$token_user" "$password" |
     age -R <(recipients "$token_secret") -o "$work/$token_secret"
   unset password
-  mv "$work/$token_secret" "secrets/$token_secret"
 }
 
 repin_token "$server_token_secret" server
 repin_token "$agent_token_secret" node
+for secret in "$ca_secret" "$server_token_secret" "$agent_token_secret"; do mv "$work/$secret" "secrets/$secret"; done
 
 echo "Wrote secrets/$ca_secret, secrets/$server_token_secret and secrets/$agent_token_secret; the tokens pin CA hash $ca_hash"

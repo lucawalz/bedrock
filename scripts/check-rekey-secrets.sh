@@ -93,7 +93,7 @@ FAKE
 cat > "$repo/scripts/generate-cluster-ca.sh" <<'FAKE'
 #!/usr/bin/env bash
 set -euo pipefail
-echo "generate-cluster-ca identity=$BEDROCK_AGENIX_IDENTITY TMPDIR=$TMPDIR" >> "$FAKE_LOG"
+echo "generate-cluster-ca identity=$BEDROCK_AGENIX_IDENTITY TMPDIR=$TMPDIR ram=${BEDROCK_RAM_DISK:-}" >> "$FAKE_LOG"
 rules="$(nix eval --json --file secrets/secrets.nix)"
 recipients() { jq -r --arg file "$1" '.[$file].publicKeys[]' <<< "$rules"; }
 echo ca | age -R <(recipients k3s-ca.age | sed "${FAKE_CA_RECIPIENTS:+${FAKE_CA_RECIPIENTS}q}") -o secrets/k3s-ca.age
@@ -147,6 +147,7 @@ ramdisk_emptied || fail "the RAM disk contents were not removed before the detac
 grep -q "^agenix -r -i $ramdisk/.* TMPDIR=$ramdisk/" "$work/log" || fail "agenix did not re-key with an identity and TMPDIR on the RAM disk"
 grep -q "^generate-cluster-ca identity=$ramdisk/.* TMPDIR=$ramdisk/" "$work/log" \
   || fail "generate-cluster-ca did not run with an identity and TMPDIR on the RAM disk"
+grep -q "^generate-cluster-ca .* ram=$ramdisk\$" "$work/log" || fail "generate-cluster-ca was not told the RAM disk"
 [ "$(line_of '^agenix')" -lt "$(line_of '^generate-cluster-ca')" ] || fail "the cluster CA was issued before the re-key"
 
 rules="$(secret_rules)"

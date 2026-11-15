@@ -80,7 +80,7 @@ for token in "${TOKENS[@]}"; do
   mv "$TMPDIR/$token.age" "secrets/$token.age"
 done
 
-BEDROCK_AGENIX_IDENTITY="$identity" BEDROCK_ROOT_CA_DIR="$stick/k3s-root-ca" bash scripts/generate-cluster-ca.sh
+BEDROCK_RAM_DISK="$ram" BEDROCK_AGENIX_IDENTITY="$identity" BEDROCK_ROOT_CA_DIR="$stick/k3s-root-ca" bash scripts/generate-cluster-ca.sh
 
 check_decrypt() {
   local file="$1" key="$2" name="$3" plaintext="$4"
