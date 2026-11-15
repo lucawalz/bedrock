@@ -48,7 +48,7 @@ dry="$(FAKE_LOG=/dev/null PATH="$work/bin:$PATH" bash "$script" --dry-run 2>&1)"
 run() {
   : > "$work/log"
   FAKE_LOG="$work/log" FAKE_FAIL_ON="$1" FAKE_VOLUME="$2" FAKE_DNS_EMPTY="${3:-}" FAKE_GREETD_DEAD="${4:-}" PATH="$work/bin:$PATH" \
-    VOLUME_TIMEOUT_SECONDS=1 ROUTER_TIMEOUT_SECONDS=1 POLL_SECONDS=1 SHORT_TMPDIR="$work" bash "$script" >/dev/null 2>&1
+    VOLUME_TIMEOUT_SECONDS=1 ROUTER_TIMEOUT_SECONDS=1 POLL_SECONDS=1 SHORT_TMPDIR="$work" bash "$script" > "$work/output" 2>&1
 }
 
 run none "attached|healthy" || fail "healthy run failed"
@@ -62,6 +62,7 @@ grep 'readlink' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secr
 grep 'findmnt' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no .*-o BatchMode=yes" \
   && fail "a root device probe lacks the estate-root key, Secretive agent or BatchMode"
 grep -q "^ssh -F $work/router-ssh-config .*root@10.20.0.1 systemctl is-active greetd\$" "$work/log" || fail "the run did not check the router kiosk"
+grep -q "^ssh -F $work/router-ssh-config .*-o ControlPath=none .*root@10.20.0.1 true\$" "$work/log" || fail "the post-switch router probe reuses a pre-switch connection"
 [ "$(grep -c "^  ControlMaster auto\$" "$work/router-ssh-config")" = 1 ] || fail "router ssh config does not share one connection per host"
 grep -qx "  ControlPath $work/%C" "$work/router-ssh-config" || fail "router ssh config lacks a control path under SHORT_TMPDIR"
 grep -qx "  ControlPersist 10m" "$work/router-ssh-config" || fail "router ssh config does not keep its connections open"
@@ -105,6 +106,7 @@ if grep -q '^nix ' "$work/log"; then fail "a node was rebuilt before every root 
 
 if run none "attached|healthy" empty; then fail "empty DNS answer did not fail the run"; fi
 if run none "attached|healthy" "" dead; then fail "a stopped router kiosk did not fail the run"; fi
+grep -q "greetd is not active" "$work/output" || fail "a stopped router kiosk failed the run for another reason: $(cat "$work/output")"
 
 : > "$work/log"
 warnings="$(FAKE_LOG="$work/log" FAKE_FAIL_ON=none FAKE_KERNEL=b FAKE_VOLUME="attached|healthy" PATH="$work/bin:$PATH" \

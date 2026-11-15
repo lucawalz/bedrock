@@ -110,7 +110,7 @@ volumes_healthy() {
 
 router_answers() {
   local deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
-  until ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
+  until ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o ControlPath=none -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
     && [ -n "$(dig +short "@$ROUTER_ADDRESS" "$DNS_PROBE_NAME")" ]; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "Router did not answer ssh and DNS" >&2; return 1; }
     sleep "$POLL_SECONDS"
