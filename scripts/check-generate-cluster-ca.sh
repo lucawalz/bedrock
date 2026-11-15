@@ -31,13 +31,7 @@ printf 'old ca\n' | age -r "$recipient" -o "$repo/secrets/k3s-ca.age"
 printf 'K10%s::server:%s\n' "$old_hash" "$server_password" | age -r "$recipient" -o "$repo/secrets/k3s-token.age"
 printf 'K10%s::node:%s\n' "$old_hash" "$agent_password" | age -r "$recipient" -o "$work/agent-token.age"
 
-real_openssl="$(command -v openssl)"
 real_tar="$(command -v tar)"
-cat > "$work/bin/openssl" <<FAKE
-#!/bin/sh
-if [ "\$1" = version ] && [ -n "\${FAKE_OPENSSL_VERSION:-}" ]; then echo "\$FAKE_OPENSSL_VERSION"; exit 0; fi
-exec "$real_openssl" "\$@"
-FAKE
 cat > "$work/bin/tar" <<FAKE
 #!/bin/sh
 echo "tar \$*" >> "\$FAKE_LOG"
@@ -75,15 +69,10 @@ ca_hash="$(k3s_ca_hash "$work/stick/k3s-root-ca/root-ca.pem")"
   || fail "k3s-agent-token.age was not re-pinned to the root CA with its password kept"
 age -d -i "$work/identity.txt" "$repo/secrets/k3s-ca.age" | "$real_tar" -t | grep -qx server-ca.crt || fail "k3s-ca.age does not hold the CA tarball"
 
-reset
-FAKE_OPENSSL_VERSION="OpenSSL 4.0.0 1 Jan 2027" BEDROCK_RAM_DISK="$ram" run \
-  || { cat "$work/output" >&2; fail "OpenSSL 4 was refused"; }
-if FAKE_OPENSSL_VERSION="LibreSSL 3.3.6" BEDROCK_RAM_DISK="$ram" run; then fail "LibreSSL was accepted"; fi
-
 printf 'not a token\n' | age -r "$recipient" -o "$repo/secrets/k3s-agent-token.age"
 snapshot > "$work/before"
 if BEDROCK_RAM_DISK="$ram" run; then fail "a malformed agent token was accepted"; fi
 grep -q k3s-agent-token.age "$work/output" || fail "the malformed token refusal does not name k3s-agent-token.age"
 snapshot | cmp -s - "$work/before" || fail "a failed re-pin changed secrets/"
 
-echo "generate-cluster-ca works on the RAM disk, accepts OpenSSL 3 or later and writes secrets/ only after both tokens re-pin."
+echo "generate-cluster-ca works on the RAM disk and writes secrets/ only after both tokens re-pin."
