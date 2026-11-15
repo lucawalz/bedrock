@@ -22,6 +22,7 @@ NODE_READY_TIMEOUT=10m
 VOLUME_TIMEOUT_SECONDS="${VOLUME_TIMEOUT_SECONDS:-1800}"
 ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
+SSH_FAILURE_STATUS=255
 ROUTER_CONTROL_PERSIST=10m
 ROUTER_CONFIG="$SHORT_TMPDIR/router-ssh-config"
 POLL_SECONDS="${POLL_SECONDS:-5}"
@@ -117,8 +118,10 @@ router_answers() {
 }
 
 require_router_kiosk() {
-  ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" \
-    systemctl is-active greetd >/dev/null || fail "greetd is not active on the router; the bar kiosk is down"
+  ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" "root@$ROUTER_ADDRESS" \
+    systemctl is-active greetd >/dev/null && return
+  [ $? -eq "$SSH_FAILURE_STATUS" ] && fail "could not log in to the router to check the bar kiosk; check it with: ssh root@router systemctl is-active greetd"
+  fail "greetd is not active on the router; the bar kiosk is down"
 }
 
 warn_if_kernel_pending() {

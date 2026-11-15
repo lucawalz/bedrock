@@ -18,7 +18,7 @@ echo "ssh $*" >> "$FAKE_LOG"
 case "$*" in
   *readlink*) printf 'kernel-a\nkernel-%s\n' "${FAKE_KERNEL:-a}" ;;
   *findmnt*) case "$*" in *"${FAKE_PLAIN_ROOT_ON:-no-host}"*) echo /dev/nvme0n1p2 ;; *) echo /dev/mapper/cryptroot ;; esac ;;
-  *"is-active greetd"*) [ -z "$FAKE_GREETD_DEAD" ] || exit 3 ;;
+  *"is-active greetd"*) case "$FAKE_GREETD_DEAD" in unreachable) exit 255 ;; ?*) exit 3 ;; esac ;;
 esac
 FAKE
 cat > "$work/bin/nix" <<'FAKE'
@@ -110,6 +110,8 @@ if grep -q '^nix ' "$work/log"; then fail "a node was rebuilt before every root 
 if run none "attached|healthy" empty; then fail "empty DNS answer did not fail the run"; fi
 if run none "attached|healthy" "" dead; then fail "a stopped router kiosk did not fail the run"; fi
 grep -q "greetd is not active" "$work/output" || fail "a stopped router kiosk failed the run for another reason: $(cat "$work/output")"
+if run none "attached|healthy" "" unreachable; then fail "a failed router login did not fail the run"; fi
+grep -q "could not log in to the router" "$work/output" || fail "a failed router login was reported as: $(cat "$work/output")"
 
 : > "$work/log"
 warnings="$(FAKE_LOG="$work/log" FAKE_FAIL_ON=none FAKE_KERNEL=b FAKE_VOLUME="attached|healthy" PATH="$work/bin:$PATH" \
