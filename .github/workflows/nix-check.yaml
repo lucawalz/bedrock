@@ -67,6 +67,9 @@ jobs:
       - name: Test the Longhorn volume restore and its refusals
         run: bash scripts/check-restore-volume.sh
 
+      - name: Test the Longhorn volume re-key copy and its refusals
+        run: bash scripts/check-encrypt-volumes.sh
+
       - name: Test the on-demand Longhorn backups and their refusals
         run: bash scripts/check-backup-volumes.sh
 

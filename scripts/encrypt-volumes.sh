@@ -5,9 +5,9 @@ set -euo pipefail
 
 usage="usage: encrypt-volumes.sh <app> [--dry-run]"
 
-ENCRYPTED_CLASS=longhorn-encrypted
 KEY_NAMESPACE=longhorn-system
-KEY_SECRET=longhorn-crypto
+TARGET_KEY_SECRET=longhorn-crypto
+ROOT_COPY_CAPABILITIES='"CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID"'
 DRY_RUN_IMAGE=registry.invalid/encrypt-volumes:dry-run
 ROOT_UID=0
 SCALE_DOWN_TIMEOUT_SECONDS=300
@@ -32,11 +32,26 @@ case "$app" in
     WORKLOAD=open-webui
     KUSTOMIZATION=llm
     HELMRELEASE=open-webui
-    CLAIMS=(data:open-webui:open-webui-encrypted)
+    CLAIMS=(data:open-webui-encrypted:open-webui)
+    CLAIM_SWAP_FILE=kubernetes/apps/llm/app/open-webui/helmrelease.yaml
     OWNER_UID=0
     OWNER_GID=0
     ;;
-  *) echo "$usage" >&2; echo "known apps: open-webui" >&2; exit 2 ;;
+  paperless-ngx)
+    NAMESPACE=paperless
+    WORKLOAD_KIND=deployment
+    WORKLOAD=paperless-ngx
+    KUSTOMIZATION=paperless
+    HELMRELEASE=paperless-ngx
+    CLAIMS=()
+    for volume in data media export consume; do
+      CLAIMS+=("$volume:paperless-ngx-$volume-encrypted:paperless-ngx-$volume")
+    done
+    CLAIM_SWAP_FILE=kubernetes/apps/paperless/app/paperless-ngx/helmrelease.yaml
+    OWNER_UID=0
+    OWNER_GID=0
+    ;;
+  *) echo "$usage" >&2; echo "known apps: open-webui paperless-ngx" >&2; exit 2 ;;
 esac
 
 COPY_POD="$app-encrypt-copy"
@@ -126,6 +141,7 @@ $(copy_script | sed 's/^/          /')
         readOnlyRootFilesystem: true
         capabilities:
           drop: ["ALL"]
+$( [ "$OWNER_UID" -ne "$ROOT_UID" ] || echo "          add: [${ROOT_COPY_CAPABILITIES}]")
       resources:
         requests:
           cpu: 100m
@@ -160,13 +176,17 @@ pvc_field() {
   kubectl get pvc "$1" -n "$NAMESPACE" -o jsonpath="{$2}"
 }
 
+pv_key_secret() {
+  kubectl get pv "$(pvc_field "$1" .spec.volumeName)" -o jsonpath='{.spec.csi.nodePublishSecretRef.name}'
+}
+
 workload_field() {
   kubectl get "$WORKLOAD_KIND" "$WORKLOAD" -n "$NAMESPACE" -o jsonpath="{$1}"
 }
 
 replicas="$(workload_field .spec.replicas)"
 [ "$replicas" -gt 0 ] || fail "$WORKLOAD is already scaled to 0, perhaps by an earlier run; finish or undo that run first"
-kubectl get secret "$KEY_SECRET" -n "$KEY_NAMESPACE" >/dev/null || fail "secret $KEY_NAMESPACE/$KEY_SECRET is missing"
+kubectl get secret "$TARGET_KEY_SECRET" -n "$KEY_NAMESPACE" >/dev/null || fail "secret $KEY_NAMESPACE/$TARGET_KEY_SECRET is missing"
 for volume in "${volumes[@]}"; do
   old="$(old_claim "$volume")"
   new="$(new_claim "$volume")"
@@ -176,12 +196,13 @@ for volume in "${volumes[@]}"; do
   [ "$(pvc_field "$old" '.metadata.annotations.helm\.sh/resource-policy')" = keep ] \
     || fail "pvc $old lacks helm.sh/resource-policy keep, so swapping the claims would delete it"
   [ "$(pvc_field "$new" .status.phase)" = Bound ] || fail "pvc $new is not bound"
-  [ "$(pvc_field "$new" .spec.storageClassName)" = "$ENCRYPTED_CLASS" ] || fail "pvc $new is not on $ENCRYPTED_CLASS"
+  [ "$(pv_key_secret "$new")" = "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $new does not use the key $TARGET_KEY_SECRET"
+  [ "$(pv_key_secret "$old")" != "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $old already uses the key $TARGET_KEY_SECRET; there is nothing to move"
 done
 ! kubectl get pod "$COPY_POD" -n "$NAMESPACE" >/dev/null 2>&1 || fail "pod $COPY_POD already exists; delete it first"
 image="$(workload_field '.spec.template.spec.containers[0].image')"
 
-echo "This suspends Flux for $KUSTOMIZATION, scales $WORKLOAD to 0 and copies each $app volume onto its encrypted twin."
+echo "This suspends Flux for $KUSTOMIZATION, scales $WORKLOAD to 0 and copies each $app volume onto its twin on the key $TARGET_KEY_SECRET."
 echo "On success $app stays down and Flux stays suspended until the claims are swapped; on failure both are restored."
 read -r -p "Type $app to continue: " answer
 [ "$answer" = "$app" ] || { echo "Aborted."; exit 1; }
@@ -228,5 +249,12 @@ kubectl logs "$COPY_POD" -n "$NAMESPACE"
 copied=true
 
 echo "Copied and verified. $WORKLOAD stays at 0 and Flux stays suspended; the original claims are untouched."
-echo "Next: apply the claim swap, commit and push it, then run:"
+echo "Next: in $CLAIM_SWAP_FILE swap each existingClaim, commit and push it:"
+for volume in "${volumes[@]}"; do
+  echo "  $(old_claim "$volume") -> $(new_claim "$volume")"
+done
+echo "Then run:"
 echo "  flux resume kustomization $KUSTOMIZATION && flux resume helmrelease $HELMRELEASE -n $NAMESPACE"
+for volume in "${volumes[@]}"; do
+  echo "  just luks-discards $NAMESPACE/$(new_claim "$volume")"
+done

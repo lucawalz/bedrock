@@ -126,7 +126,7 @@ restore app file:
       pg_restore --clean --if-exists --single-transaction --exit-on-error -d "$database" < "$file"
     echo "Restored $database from $file"
 
-# Copy an app's volumes onto encrypted twins, leaving the app down until the claims are swapped, for example: just encrypt-volumes open-webui --dry-run
+# Copy an app's volumes onto twins on the new Longhorn key, leaving the app down until the claims are swapped, for example: just encrypt-volumes open-webui --dry-run
 encrypt-volumes app *args="":
     bash scripts/encrypt-volumes.sh {{ quote(app) }} {{ args }}
 

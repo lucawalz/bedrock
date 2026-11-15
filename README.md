@@ -190,7 +190,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just new-app ...` | Scaffold an app, see below |
 | `just new-secret <app>` | Create the app's encrypted secrets in `bedrock-secrets` with random values |
 | `just paperless-import <dir>` | Copy a local folder of scans into the Paperless consume folder |
-| `just encrypt-volumes <app>` | Copy an app's volumes onto encrypted twins before its claims are swapped; add `--dry-run` to print the copy pod |
+| `just encrypt-volumes <app>` | Copy an app's legacy-key or unencrypted volumes onto twins on the new Longhorn key before its claims are swapped; add `--dry-run` to print the copy pod |
 | `just deploy-nodes` | Rebuild worker-2, worker-1, control-plane-1 and the router in order, stopping at the first host that fails to come back Ready and healthy; add `--dry-run` to print the steps |
 | `just generate-rebuild-keys` | Write new host, Secure Boot, k3s token, Longhorn and LUKS install keys for a full reinstall to the key stick, once per rebuild |
 | `just install-node <node>` | Wipe and reinstall a node from the local `main` with its stick keys, enrol its Secure Boot keys and reboot; add `phases=disko,install` to resume in a running installer |
