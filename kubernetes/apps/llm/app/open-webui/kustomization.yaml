@@ -4,3 +4,4 @@ resources:
   - helmrelease.yaml
   - ingress.yaml
   - pvc-encrypted.yaml
+  - pvc.yaml
