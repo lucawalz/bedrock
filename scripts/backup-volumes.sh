@@ -34,10 +34,7 @@ fi
 name="${name#name=}"
 
 [ -z "$name" ] || [[ "$name" =~ $NAME_PATTERN ]] || usage_error
-if [ -n "$target" ]; then
-  [[ "$target" == */* ]] || usage_error
-  [[ "${target%%/*}" =~ $NAME_PATTERN && "${target#*/}" =~ $NAME_PATTERN ]] || usage_error
-fi
+[ -z "$target" ] || [[ "$target" == */* && "${target%%/*}" =~ $NAME_PATTERN && "${target#*/}" =~ $NAME_PATTERN ]] || usage_error
 
 require_tools kubectl jq
 
@@ -67,10 +64,6 @@ while IFS='|' read -r claim pv offsite; do
   plan+=("$claim $volume $backup")
 done <<< "$claims"
 
-object_name() {
-  if [ -n "$2" ]; then echo "name: $2"; else echo "generateName: $1-"; fi
-}
-
 create() {
   kubectl create -f - -o jsonpath='{.metadata.name}'
 }
@@ -92,7 +85,8 @@ backup_volume() {
 apiVersion: longhorn.io/v1beta2
 kind: Snapshot
 metadata:
-  $(object_name snapshot "$requested")
+  generateName: snapshot-
+  ${requested:+name: $requested}
   namespace: ${LONGHORN_NAMESPACE}
 spec:
   volume: ${volume}
@@ -104,7 +98,8 @@ MANIFEST
 apiVersion: longhorn.io/v1beta2
 kind: Backup
 metadata:
-  $(object_name backup "$requested")
+  generateName: backup-
+  ${requested:+name: $requested}
   namespace: ${LONGHORN_NAMESPACE}
   labels:
     backup-volume: ${volume}

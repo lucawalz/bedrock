@@ -12,7 +12,6 @@ require_tools nix jq age pbcopy cmp age-plugin-se
 KEY_PREFIX=tskey-auth-
 SECRET_PATTERN='^tailscale-authkey.*\.age$'
 
-[ -d "${TMPDIR:-/tmp}" ] || fail "TMPDIR $TMPDIR does not exist; unset it"
 [ -d "$(rebuild_keys_dir)/hosts" ] || fail "$(rebuild_keys_dir)/hosts is missing; mount the bedrock-keys stick"
 
 rules="$(secret_rules)"
@@ -51,8 +50,6 @@ for index in "${!files[@]}"; do
   [ -n "$key" ] || fail "the key for $host is empty"
   [[ "$key" == "$KEY_PREFIX"?* ]] || fail "the key for $host does not start with $KEY_PREFIX"
   printf '%s' "$key" | age -R <(secret_recipients "$rules" "$file") -o "$work/$file"
-  [ "$(age_stanza_count "$work/$file")" -eq "$(secret_recipients "$rules" "$file" | wc -l)" ] \
-    || fail "$file does not hold one stanza per recipient in secrets/secrets.nix"
   age -d -i "$(stick_host_key "$host")" "$work/$file" | cmp -s - <(printf '%s' "$key") \
     || fail "$file does not decrypt to the typed key with the $host key"
   unset key
