@@ -200,7 +200,7 @@ The Flux web UI has no port-forward path: it signs in through Pocket ID itself a
 
 Tailnet Lock ([ADR 0017](adr/0017-lock-the-tailnet-to-signed-devices.md)) admits a device to the tailnet only with a signature from a trusted signer, the Mac or the iPhone.
 
-A host that joined but reaches nothing, and is not reachable by name or address from any other node, is probably locked out. `tailscale lock status` on a signer lists it under the locked-out nodes with its node key.
+A host that joins but reaches nothing, and is not reachable by name or address from any other node, shows under the locked-out nodes with its node key in `tailscale lock status` on a signer.
 
 Sign it from the Mac:
 

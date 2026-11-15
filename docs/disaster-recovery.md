@@ -8,7 +8,7 @@ Everything declared in this repository and in `bedrock-secrets` is reconciled ba
 
 | Scenario | Recoverable | Mechanism |
 | --- | --- | --- |
-| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones, workloads reschedule, and a Postgres standby takes over. The running Postgres instances are still on unencrypted three-replica `longhorn` volumes; once they are recovered onto the declared `longhorn-encrypted-local`, a lost node's Postgres instance needs the manual step in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres) |
+| One disk or one node lost | Yes | Longhorn keeps three replicas of every volume except the two disposable ones, workloads reschedule, and a Postgres standby takes over. The Postgres instances sit on `longhorn-encrypted-local` volumes with one strict-local replica each, so a lost node's Postgres instance needs the manual step in [Losing a node that hosts Postgres](#losing-a-node-that-hosts-postgres) |
 | Anything declared in git | Yes | Flux reconciles it back ([ADR 0001](adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md)) |
 | Any cluster Secret | Yes, given the age key | SOPS ciphertext in the private `bedrock-secrets` repository ([ADR 0005](adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md)) |
 | A Postgres logical fault, a bad migration, a dropped table | Yes, to any point in the last 30 days | Continuous WAL archive and daily base backups in R2 ([ADR 0007](adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)) |
@@ -24,18 +24,18 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Seed | Where it lives | Why it matters |
 | --- | --- | --- |
 | SOPS age key (2026-11) | `age-cluster-2026-11.txt` on the offline medium and the `sops-age` Secret in `flux-system` | Decrypts every file in `bedrock-secrets`, including the deploy key for that repository. `just bootstrap` reads it from `/Volumes/bedrock-keys/bedrock/age-cluster-2026-11.txt` unless `SOPS_AGE_KEY_FILE` says otherwise |
-| SOPS age key (retired) | `age-keys.txt` on the offline medium | No longer a recipient: on 2026-11-13 every SOPS file was rotated to a new data key without it. It still decrypts the pre-rebuild git history, so it stays on the offline medium through the rollback window and is wiped together with the offline copy of the pre-rebuild backups, 30 days after the pre-rebuild objects are deleted from R2. The Mac copy `~/.config/sops/age/keys.txt` is deleted once the rotation is merged |
+| SOPS age key (retired) | `age-keys.txt` on the offline medium | No longer a recipient: on 2026-11-13 every SOPS file was rotated to a new data key without it. It still decrypts the pre-rebuild git history, so it stays on the offline medium through the rollback window and is wiped together with the offline copy of the pre-rebuild backups, 30 days after the pre-rebuild objects are deleted from R2. The Mac copy `~/.config/sops/age/keys.txt` was deleted |
 | SOPS age identity (Secure Enclave) | Secure Enclave of the Mac, created with `age-plugin-se`, referenced by `~/.config/sops/age/se-identity.txt`; only the public recipient is in git | A recipient on every SOPS file and the Mac's day-to-day decryption identity. It cannot be copied off the Mac |
 | K3s root CA | `root-ca.pem` and `root-ca.key` in `/Volumes/bedrock-keys/bedrock/k3s-root-ca/` on the offline medium only; `scripts/generate-cluster-ca.sh` reads them there, or from `BEDROCK_ROOT_CA_DIR` | Signs the cluster CA in `secrets/k3s-ca.age`; the agent token pins the root. Without it, the next CA re-issue needs a new root and a re-pinned token |
 | Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto` Secret, from `clusters/home/platform/longhorn-crypto.sops.yaml` in `bedrock-secrets`, and `rebuild-keys/longhorn-crypto.key` on the offline medium | Opens every `longhorn-encrypted` volume. Losing it makes the encrypted Paperless and Open WebUI backups unrecoverable |
-| Legacy Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto-legacy` Secret, from `clusters/home/platform/longhorn-crypto-legacy.sops.yaml` in `bedrock-secrets`, and `longhorn-crypto.key` on the offline medium | The key before the 2026-11 rebuild. Present only between a rebuild and its clean slate. `just restore-volume` uses it to open backups taken before the rebuild |
+| Legacy Longhorn volume encryption key | `CRYPTO_KEY_VALUE` of the `longhorn-crypto-legacy` Secret, from `clusters/home/platform/longhorn-crypto-legacy.sops.yaml` in `bedrock-secrets`, and `longhorn-crypto.key` on the offline medium (after a rebuild, `rebuild-keys-<yyyy-mm>/longhorn-crypto.key`) | The key before the 2026-11 rebuild. Present only between a rebuild and its clean slate. `just restore-volume` uses it to open backups taken before the rebuild |
 | The two repositories | GitHub: `bedrock` and the private `bedrock-secrets` | Flux syncs from them |
 | Admin host key | Secure Enclave key `estate-root` on the Mac, in `hosts/common/estate-root.pub`, read by `hosts/common/users.nix` and `hosts/router-installer.nix` | Root login on every host. It cannot be copied off the Mac |
 | Break-glass host key | `/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` on the offline medium only, passphrase-protected | Root login on every host when the Secure Enclave keys are unavailable. Also an admin recipient on every agenix secret, so `agenix -d` and `agenix -r` work with it when the Mac is lost |
 | Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
 | Switch admin password | `clusters/home/devices/switch.sops.yaml` in `bedrock-secrets`, decrypted with the SOPS age identities; the file is in no kustomization, so it is never applied to the cluster | Admin login of the TL-SG108PE, used through `just login switch`. Losing it is recovered by a factory reset and a new password, as in [Switch](#switch) |
 | Admin agenix identity (Secure Enclave) | The SOPS Secure Enclave identity, referenced by `~/.config/sops/age/se-identity.txt` on the Mac | A recipient on every agenix secret beside the break-glass key; needed to re-key host secrets when a host key is lost. It cannot be copied off the Mac |
-| Tailnet Lock disablement secrets | `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt` on the offline medium only, written by `tailscale lock init` | Turn Tailnet Lock off with `tailscale lock disable` when both signers are lost, as in [Admission break-glass](admission-break-glass.md#tailnet-lock). Losing them is recovered by re-initialising the lock from a signer, which issues new secrets |
+| Tailnet Lock disablement secrets | `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt` on the offline medium only, written by `tailscale lock init` | Turn Tailnet Lock off with `tailscale lock disable` when both signers are lost, as in [Admission break-glass](admission-break-glass.md#tailnet-lock). Losing them leaves the support secret as the only disable path; new secrets need a disable and a re-init |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host; for a full rebuild, generated ahead in `rebuild-keys/` on the offline medium | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed, unless it is installed with the keys generated ahead |
 | Secure Boot keys and LUKS recovery keys | `/var/lib/sbctl` on each node, and `rebuild-keys/` and `luks-recovery/` on the offline medium | Sign every boot of a node, and open its root when the TPM refuses ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) |
 
@@ -45,7 +45,7 @@ The K3s server token (`secrets/k3s-token.age`), the agent join token (`secrets/k
 
 | Data | Bucket | Schedule and retention | Encryption | Alerts |
 | --- | --- | --- | --- | --- |
-| Postgres (all app databases: Paperless document OCR text and metadata, Open WebUI chats, Pocket ID users and OIDC clients, LiteLLM keys and spend) | `bedrock-postgres`, under `postgres/` | WAL continuously (`archive_timeout` 5 min), base backup daily at 02:30, 30 days | None client-side, an accepted risk ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)) | `CNPGBackupStale`, `CNPGBackupNotConfigured` |
+| Postgres (all app databases: Paperless document OCR text and metadata, Open WebUI chats, Pocket ID users and OIDC clients, LiteLLM keys and spend) | `bedrock-postgres`, under `postgres-2026-11/` | WAL continuously (`archive_timeout` 5 min), base backup daily at 02:30, 30 days | None client-side, an accepted risk ([ADR 0012](adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md)) | `CNPGBackupStale`, `CNPGBackupNotConfigured` |
 | Longhorn volumes with the `offsite-backup` label: the four Paperless volumes and Open WebUI | `bedrock-longhorn` | Daily at 05:00, 14 kept | All of them are LUKS, so their backups are ciphertext | `LonghornBackupStale`, `LonghornBackupNeverCompleted` |
 | etcd | `bedrock-etcd`, under `etcd-snapshots/` | Every 12 hours, 5 kept, also on control-plane-1's disk | None client-side, an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)); Secrets are encrypted by K3s and the bootstrap data needs the server token | `EtcdSnapshotTooOld` |
 
@@ -192,11 +192,11 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
 
 ## Restoring data from R2
 
-The drills below restore each backup into a scratch object and compare it with production. Restoring into production has not been rehearsed, so the outlines here are untested.
+The drills below restore each backup into a scratch object and compare it with production. Restores into production ran once, on 2026-11-13.
 
 ### Postgres
 
-`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore through the barman-cloud plugin, under the server name it reads from the `isWALArchiver` plugin of the live production Cluster. The production Cluster in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` bootstraps by `recovery` from the archive of server name `postgres-2026-11`, which its WAL archiver also writes. The next rebuild that keeps data moves the archiver to a newer server name, because barman-cloud refuses to archive into a non-empty archive, before Flux first creates the Cluster. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
+`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore through the barman-cloud plugin, under the server name it reads from the `isWALArchiver` plugin of the live production Cluster. The production Cluster in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` bootstraps by `recovery` from the archive of server name `postgres-2026-11`, which its WAL archiver also writes. The next rebuild that keeps data moves the archiver to a newer server name, because barman-cloud refuses to archive into a non-empty archive, before Flux first creates the Cluster. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others. Until 2026-12-15, a restore to a point before the 2026-11-15 Pocket ID key rotation needs the old `ENCRYPTION_KEY`, recoverable from the `bedrock-secrets` git history.
 
 If the barman archive is unusable, the nightly logical dumps in `bedrock-postgres/dumps/<database>/<UTC time>.gpg` are the fallback; the newest key sorts last. They are encrypted to the OpenPGP key on the offline medium: `gpg --homedir /Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps --decrypt` reads one on stdin and writes the `pg_dump` custom-format archive to stdout, which `kubectl exec -i` into the primary can feed straight to `pg_restore`, so the plaintext never touches the disk.
 
@@ -262,7 +262,7 @@ Measured on worker-2 on 2026-11-13 (CET, 20:56 to 21:09), which held the primary
 
 ## Full rebuild from git with disk encryption
 
-This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran once, on 2026-11-13 (see the [timeline](#2026-11-13-rebuild-with-disk-encryption)). Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
+This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran once, on 2026-11-13 (see the [timeline](#2026-11-13-rebuild-with-disk-encryption)), with the hand scripts these recipes were built from. `just install-node`, `just enrol-node-tpm`, `just rekey-secrets`, `just tailscale-authkeys` and `just restore-volume` have run only in offline checks, and the Tailnet Lock signing steps have not run in a rebuild. `just backup-volumes`, `just restore-test`, `just offline-backup`, `just luks-discards` and `just encrypt-volumes` have run against the live cluster. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
 
 ### Contents of the stick
 
@@ -270,7 +270,7 @@ Before anything is wiped, `/Volumes/bedrock-keys/bedrock/` holds:
 
 - [ ] `age-cluster-2026-11.txt`, the cluster age key
 - [ ] `k3s-root-ca/root-ca.pem` and `k3s-root-ca/root-ca.key`
-- [ ] `longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key
+- [ ] `rebuild-keys/longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key; the top-level `longhorn-crypto.key` is the retired pre-2026-11 key
 - [ ] `ssh/estate-breakglass` and its passphrase
 - [ ] `tailnet-lock-disablements.txt`, the Tailnet Lock disablement secrets
 - [ ] `gnupg-postgres-dumps/`, which decrypts the logical dumps
@@ -278,7 +278,7 @@ Before anything is wiped, `/Volumes/bedrock-keys/bedrock/` holds:
 - [ ] `rebuild-keys/`, written by `just generate-rebuild-keys`:
   - `k3s-token` and `k3s-agent-token`, the new server and agent tokens, both pinning the hash of the root CA
   - `longhorn-crypto.key`, the new Longhorn key
-  - `luks-install-passphrase`, used once by disko and wiped after the TPM enrolment
+  - `luks-install-passphrase`, used once by disko; its LUKS slot is wiped after the TPM enrolment
   - `hosts/<host>/etc/ssh/ssh_host_ed25519_key` and `.pub` for control-plane-1, worker-1, worker-2 and router
   - `hosts/<node>/var/lib/sbctl/GUID` and `keys/{PK,KEK,db}/{PK,KEK,db}.{key,pem}` for each node
 
@@ -286,14 +286,14 @@ During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is
 
 ### Prepare
 
-1. Generate the keys once: `just generate-rebuild-keys`. It refuses to run while `rebuild-keys/` exists, writes every file mode 600, and prints only the paths, the CA hash the tokens pin and the four host public keys.
+1. Move `rebuild-keys/` aside to `rebuild-keys-<yyyy-mm>/` and never delete it: it holds the current Longhorn key, the host keys and the Secure Boot keys. Then generate the keys once: `just generate-rebuild-keys`. It refuses to run while `rebuild-keys/` exists, writes every file mode 600, and prints only the paths, the CA hash the tokens pin and the four host public keys.
 2. Prepare the commits on a local branch in each repository, never on `main`, because a push before the old nodes are wiped would hand the running cluster a Longhorn key that opens none of its volumes. In `bedrock`, on `feat/rebuild-install`:
    - Copy the new host public keys from `rebuild-keys/hosts/<host>/etc/ssh/ssh_host_ed25519_key.pub` into `secrets/secrets.nix`.
    - Run `just rekey-secrets`. It refuses while `secrets/secrets.nix` holds a host key that differs from the stick, asks once for the break-glass passphrase, re-keys every file in `secrets/`, writes the stick tokens to `k3s-token.age` and `k3s-agent-token.age`, re-issues the cluster CA with `scripts/generate-cluster-ca.sh`, checks each file against its recipients and the stick keys, and lists the changed files. Plaintext stays on a RAM disk that is detached at the end.
    - Create single-use Tailscale auth keys (`tag:cluster` for the nodes, `tag:router` for the router) and run `just tailscale-authkeys`, which prompts for each one without echo and encrypts it to its host key.
    - Keep the `externalClusters` archive `serverName` at the archive being recovered and set the `isWALArchiver` plugin `serverName` to a new, empty archive name as in [Postgres](#postgres), because barman-cloud refuses to archive into a non-empty archive.
 
-   Neither recipe stages or commits. In `bedrock-secrets`, on the same branch name: `longhorn-crypto` with the new key and `longhorn-crypto-legacy` with the current one.
+   Neither recipe stages or commits. In `bedrock-secrets`, on the same branch name: `longhorn-crypto` with the new key and `longhorn-crypto-legacy` with the key from `rebuild-keys-<yyyy-mm>/longhorn-crypto.key`.
 3. Stop the writes and take the final backups. Suspend and scale every app with a database or a volume to zero as `just restore` does (`flux suspend kustomization <app>`, then `kubectl -n <app> scale deploy,statefulset --all --replicas 0`), then:
 
    ```
@@ -464,19 +464,21 @@ The cadence is a monthly `just restore-test` and `just offline-backup`, a full r
 
 | Mechanism | Last proven | Result |
 | --- | --- | --- |
-| Full rebuild from git | 2026-11-06 | Passed, about 2 h 20 min, four defects fixed in git |
+| Full rebuild from git | 2026-11-13 | Passed with hand scripts |
 | Age key decrypts `bedrock-secrets` | 2026-11-06 | Passed |
 | Postgres clone from R2, replayed to the latest WAL | 2026-11-07 | Passed: 1 and 242 rows in both |
-| Encrypted Longhorn restore, wrong key refused | 2026-11-07 | Passed |
+| Encrypted Longhorn restore, wrong key refused | 2026-11-15 | Passed in `just restore-test all --max-age 2h` |
 | etcd snapshot in R2 under 13 hours old | 2026-11-07 | Passed |
 | Encrypted dumps decrypted from the key stick into a scratch database | 2026-11-10 | Passed: 1 and 242 rows in both |
 | Delete of a locked object with a bucket token refused | 2026-11-12 | Passed: `ObjectLockedByBucketPolicy` under `dumps/` and `etcd-snapshots/` |
 | Offline copy to the key stick | 2026-11-12 | Passed: 1.3 GB copied, all four dumps decrypt |
+| On-demand Longhorn backups with `just backup-volumes` | 2026-11-15 | Passed |
+| Tailnet Lock disablement secrets match the lock log | 2026-11-15 | Passed |
 | Host configurations build | Every pull request | `nix-check` in CI |
 | etcd restore from a snapshot | Never | Untested |
-| Postgres or a volume restored into production | Never | Untested |
-| Re-key to new host keys | Never | Untested |
-| Reinstall of a host's operating system | Never | Untested |
+| Postgres or a volume restored into production | 2026-11-13 | Passed, 27 min and 16 min |
+| Re-key to new host keys | 2026-11-13 | Passed with hand scripts |
+| Reinstall of a host's operating system | 2026-11-13 | Passed with hand scripts |
 
 ## Secret recovery
 
@@ -491,19 +493,28 @@ K3s does not restart when `/run/agenix/k3s-token` or `/run/agenix/k3s-agent-toke
 
 Every SOPS file is encrypted to two age recipients, listed in both `.sops.yaml` files: the Secure Enclave identity and the cluster key `age-cluster-2026-11.txt`. Run `sops` with `/opt/homebrew/bin` on `PATH` so it finds `age-plugin-se`, and with `SOPS_AGE_KEY_FILE=~/.config/sops/age/se-identity.txt` to decrypt on the Mac. After adding a recipient, run `sops updatekeys -y <file>` on every SOPS file in both repositories. After removing one, run `sops rotate -i --rm-age <recipient> <file>` so every file gets a new data key.
 
-Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `identity/`, `apps/`), each folder with a kustomization listing its files. Edit with `sops <path>`; `just new-secret <app>` creates an app's pair. The one SOPS file in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, holds the read-only deploy key for `bedrock-secrets` and is decrypted by the same age key, which makes that key the root of every cluster secret.
+Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `identity/`, `apps/`), each folder with a kustomization listing its files. Edit with `sops <path>`; `just new-secret <app>` creates an app's pair. The one SOPS file in this repository, `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, holds the read-only deploy key for `bedrock-secrets` (GitHub title `flux-read-only-2026-11`, rotated 2026-11-15) and is decrypted by the same age key, which makes that key the root of every cluster secret.
+
+## Rotating a credential
+
+- Pocket ID `ENCRYPTION_KEY`: rotate the data first, then the Secret. Run `/app/pocket-id encryption-key-rotate --new-key <key> --yes` in the running pod, change the Secret in `bedrock-secrets` and push at once. A plain Secret change leaves Pocket ID unable to read its signing and session keys, which loses every forward-auth host and the `bedrock` kubectl context. A Postgres restore to a point before a rotation needs the old key, recoverable from the `bedrock-secrets` git history.
+- `LITELLM_SALT_KEY` encrypts stored credentials and never changes once rows are encrypted with it. The master key is a plain Secret change.
+- `secrets/etcd-s3-credentials.age`: run `just deploy-nodes`, then `systemctl restart k3s` on control-plane-1, because K3s does not restart on an agenix change.
+- Secrets that exist at both ends need their sync Job run again after the push: `pocket-id-clients`, `litellm-keys`, `paperless-gpt-access` and `grafana-public-dashboard`. Each Job removes itself an hour after it finishes; delete a finished one that remains and reconcile its Flux Kustomization so Flux recreates it. The kiosk dashboard URL is in `grafana-public-dashboard` and in `secrets/grafana-kiosk-url.age`, so both change together.
+- The Grafana admin password lives in Grafana's database. Set it with `grafana cli admin reset-admin-password --password-from-stdin` in the pod, with the new value from the Secret.
+- The deploy key for `bedrock-secrets`: create a new key, add it on GitHub as read-only, `sops set` it into `kubernetes/clusters/home/bootstrap-secrets/bedrock-secrets-git-auth.sops.yaml`, push, confirm the Flux fetch succeeds, then delete the old key on GitHub.
 
 ## Admin SSH keys
 
 The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys, served to ssh by its agent at `~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh`:
 
 - `estate-root` logs in to the hosts. Each use requires Touch ID.
-- `github-push` authenticates to GitHub for pushes and fetches only. Each use requires Touch ID.
+- `github` authenticates to GitHub for pushes and fetches only. It has no access control: Secretive signs without a prompt.
 - `git-signing` signs every commit. It has Notify protection: Secretive shows a notification on each use and asks for nothing while the Mac is unlocked. It is registered on GitHub as a signing key and listed in `~/.ssh/allowed_signers`. Git uses it through `gpg.format ssh`, `user.signingkey ~/.ssh/git-signing.pub` and `gpg.ssh.program ~/.local/bin/git-ssh-sign`, a wrapper that runs `ssh-keygen` with `SSH_AUTH_SOCK` set to the Secretive agent. The repository rulesets require signed commits, so a Mac without this key cannot push.
 
 The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
 
-Every other host command (the README host commands, `scripts/refresh-kubeconfig.sh`, `scripts/luks-discards.sh`) runs plain `ssh`, `scp` or `nixos-rebuild --target-host root@<host>` and relies on two blocks in the Mac's `~/.ssh/config`. `~/.ssh/estate-root.pub` and `~/.ssh/github-push.pub` are the public halves exported from Secretive on that Mac:
+Every other host command (the README host commands, `scripts/refresh-kubeconfig.sh`, `scripts/luks-discards.sh`) runs plain `ssh`, `scp` or `nixos-rebuild --target-host root@<host>` and relies on two blocks in the Mac's `~/.ssh/config`. `~/.ssh/estate-root.pub` and `~/.ssh/github.pub` are the public halves exported from Secretive on that Mac:
 
 ```
 Host control-plane-1 worker-1 worker-2 router 10.20.0.* control-plane-1.tail26ab10.ts.net worker-1.tail26ab10.ts.net worker-2.tail26ab10.ts.net router.tail26ab10.ts.net
@@ -516,7 +527,7 @@ Host control-plane-1 worker-1 worker-2 router 10.20.0.* control-plane-1.tail26ab
 
 Host github.com
   IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
-  IdentityFile ~/.ssh/github-push.pub
+  IdentityFile ~/.ssh/github.pub
   IdentitiesOnly yes
 ```
 
@@ -524,21 +535,23 @@ A master connection stays open for 10 minutes and keeps the key it authenticated
 
 The keys carry no certificate and do not expire. They are rotated when the Mac is replaced and the old Mac still works:
 
-1. On the new Mac, create `estate-root`, `github-push` and `git-signing` in Secretive and export their public keys to `~/.ssh/`. Register `github-push` on GitHub as an authentication key and `git-signing` as a signing key, and add `git-signing` to `~/.ssh/allowed_signers`.
+1. On the new Mac, create `estate-root`, `github` and `git-signing` in Secretive and export their public keys to `~/.ssh/`. Register `github` on GitHub as an authentication key and `git-signing` as a signing key, and add `git-signing` to `~/.ssh/allowed_signers`.
 2. On the new Mac, copy the new `estate-root` public key to `hosts/common/estate-root-next.pub`, commit and push it. While that file is tracked, both Nix files install it as a root key next to `estate-root.pub`, and `scripts/deploy-nodes.sh` offers it as a second identity.
 3. On the old Mac, pull and run `just deploy-nodes`. It logs in with the old key and installs the new one on every host.
 4. On the new Mac, log in to every host with the new key, then `git mv hosts/common/estate-root-next.pub hosts/common/estate-root.pub`, commit and run `just deploy-nodes`. That deploy logs in with the new key and removes the old one.
-5. Remove the old Mac's `github-push` and `git-signing` keys from GitHub.
+5. Remove the old Mac's `github` and `git-signing` keys from GitHub.
+6. The Mac is a Tailnet Lock signer. Sign the new Mac from the iPhone app, then run `tailscale lock add <new Mac tlpub>` and `tailscale lock remove <old Mac tlpub>` from a signer. Whether the iOS app can run add and remove is unverified; if only the CLI can, run them from the new Mac once the iPhone has signed it.
 
 The break-glass key is not rotated and stays in `hosts/common/estate-breakglass.pub`.
 
-A lost Mac is recovered from the stick. On the new Mac, with the stick mounted and the Mac joined to the tailnet:
+A lost Mac is recovered from the stick. On the new Mac, with the stick mounted, the Mac joins the tailnet but stays locked out until a signer signs it, and the lost Mac stays a trusted signer until it is removed:
 
 1. Create the three keys and register them as in step 1 above.
 2. Replace `hosts/common/estate-root.pub` with the new `estate-root` public key and commit it.
 3. Deploy with the break-glass key: `BEDROCK_SSH_IDENTITY=/Volumes/bedrock-keys/bedrock/ssh/estate-breakglass just deploy-nodes`. With that variable set, the generated ssh config, `NIX_SSHOPTS` and the probes offer only that key, with `IdentitiesOnly yes` and no agent, so ssh asks for the key's passphrase, possibly more than once. The deploy removes the lost Mac's `estate-root` from every host.
 4. Prove login with the new key, then remove the lost Mac's keys from GitHub.
-5. Re-key agenix without the Mac's agenix key: replace the `luca-secure-enclave` recipient in `secrets/secrets.nix` with a new admin recipient, then run `agenix -r -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` from `secrets/`.
+5. Sign the new Mac from the iPhone app, then run `tailscale lock add <new Mac tlpub>` and `tailscale lock remove <lost Mac tlpub>` from a signer. If the iPhone cannot run them and the lost Mac was the only other signer, the path is the disable and re-init in [Admission break-glass](admission-break-glass.md#tailnet-lock) with a secret from the stick.
+6. Re-key agenix without the Mac's agenix key: replace the `luca-secure-enclave` recipient in `secrets/secrets.nix` with a new admin recipient, then run `agenix -r -i /Volumes/bedrock-keys/bedrock/ssh/estate-breakglass` from `secrets/`.
 
 Reinstalling the nodes and reflashing the router with the `router-installer` image applies only if the stick is lost too ([Full rebuild from git with disk encryption](#full-rebuild-from-git-with-disk-encryption)).
 
@@ -583,6 +596,5 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - Alertmanager has no volume, so after a node loss its stranded pod waits until the node returns or the pod is deleted. The router's deadman marks the estate stale after four missed Watchdog pings ([ADR 0015](adr/0015-observe-with-prometheus-loki-and-tempo.md)).
 - A mass reschedule outlasts its cause: every pod pulls through zot at once, and containerd does not fall back when the mirror is slow.
 - Draining a node that holds the only replica of a disposable volume (Ollama, zot) blocks until Longhorn has evicted the replica to another node.
-- A strict-local Postgres volume cannot move and every Longhorn `instance-manager` PodDisruptionBudget allows 0 disruptions, so every drain blocks until its timeout.
-- The procedure and measured result are in [Planned drain](#planned-drain).
+- A strict-local Postgres volume cannot move and every Longhorn `instance-manager` PodDisruptionBudget allows 0 disruptions, so every drain blocks until its timeout; the procedure and measured result are in [Planned drain](#planned-drain).
 - The drill cadence relies on the owner; no reminder is automated.

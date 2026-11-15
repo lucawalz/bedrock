@@ -22,7 +22,8 @@ In November 2026 the cluster was wiped and rebuilt from this repository to prove
 
 - Every host declared with NixOS flakes, including disk layout ([disko](https://github.com/nix-community/disko)) and host secrets ([agenix](https://github.com/ryantm/agenix)).
 - GitOps with Flux under the Flux Operator, ordered by `dependsOn` and checked in CI so a cold bootstrap converges.
-- No inbound port from the internet. Public traffic arrives over an outbound Cloudflare tunnel; admins use Tailscale.
+- No inbound port from the internet. Public traffic arrives over an outbound Cloudflare tunnel; admins use Tailscale with Tailnet Lock.
+- Nodes boot through Secure Boot and open a LUKS2 root with the TPM.
 - Default-deny NetworkPolicies in every namespace and Kyverno policies in `Enforce` mode.
 - Passkey single sign-on through Pocket ID and oauth2-proxy, with the OIDC clients declared in git.
 - Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless and Open WebUI volumes.
@@ -103,6 +104,8 @@ A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi ad
 | Apps | Self-contained app folders on the bjw-s app-template chart | [ADR 0013](docs/adr/0013-keep-each-app-self-contained-and-scaffold-new-ones.md) |
 | Updates | Pinned versions, Renovate | [ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md) |
 | Observability | kube-prometheus-stack, Loki, Tempo, Alloy, ntfy, a deadman on the router | [ADR 0015](docs/adr/0015-observe-with-prometheus-loki-and-tempo.md) |
+| Boot | Secure Boot and LUKS2 root unlocked by the TPM | [ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md) |
+| Tailnet | Tailnet Lock, devices admitted only with a signature | [ADR 0017](docs/adr/0017-lock-the-tailnet-to-signed-devices.md) |
 
 The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm release with its chart is listed in the generated [inventory](docs/inventory.md).
 
@@ -195,6 +198,9 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just generate-rebuild-keys` | Write new host, Secure Boot, k3s token, Longhorn and LUKS install keys for a full reinstall to the key stick, once per rebuild |
 | `just install-node <node>` | Wipe and reinstall a node from the local `main` with its stick keys, enrol its Secure Boot keys and reboot; add `phases=disko,install` to resume in a running installer |
 | `just enrol-node-tpm <node>` | After the first boot, bind the node's LUKS root to the TPM, write its recovery key to the stick and wipe the install passphrase |
+| `just rekey-secrets` | Re-key `secrets/` to the stick host keys, write the stick k3s tokens and re-issue the cluster CA, all on a RAM disk |
+| `just tailscale-authkeys` | Prompt for each host's single-use Tailscale auth key and encrypt it to that host's stick key |
+| `just offline-backup <mountpoint>` | Copy the newest dumps, etcd snapshot and Longhorn backups from R2 to a mounted disk |
 | `just luks-discards <namespace>/<pvc>` | Store allow-discards in an attached encrypted volume's LUKS2 header and trim it |
 | `just email-gate-deploy` | Deploy the Cloudflare Worker that gates the Paperless mail address by sender |
 
