@@ -196,7 +196,7 @@ The drills below restore each backup into a scratch object and compare it with p
 
 ### Postgres
 
-`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore (server name `postgres-2026-11`) through the barman-cloud plugin. The production Cluster in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` bootstraps by `recovery` from the archive of server name `postgres`, written by the cluster before the 2026-11 rebuild, and its WAL archiver writes under the new server name `postgres-2026-11`, so it never writes into the archive it reads from. The next rebuild that keeps data moves the recovery source to `postgres-2026-11` and the archiver to a newer server name, before Flux first creates the Cluster. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
+`just restore-test postgres` creates a one-instance `postgres-restore-test` Cluster that bootstraps by `recovery` from the `postgres-backup` ObjectStore through the barman-cloud plugin, under the server name it reads from the `isWALArchiver` plugin of the live production Cluster. The production Cluster in `kubernetes/infrastructure/configs/cnpg/cnpg-cluster.yaml` bootstraps by `recovery` from the archive of server name `postgres`, written by the cluster before the 2026-11 rebuild, and its WAL archiver writes under the new server name `postgres-2026-11`, so it never writes into the archive it reads from. The next rebuild that keeps data moves the recovery source to `postgres-2026-11` and the archiver to a newer server name, before Flux first creates the Cluster. The Cluster declares `longhorn-encrypted-local`, so the recovered instances land on LUKS volumes with one strict-local replica each; run `just luks-discards postgres/postgres-<n>` for each instance PVC once it is attached, or `filesystem-trim` frees nothing. For a single app, `just dump` and `just restore` move one database without touching the others.
 
 If the barman archive is unusable, the nightly logical dumps in `bedrock-postgres/dumps/<database>/<UTC time>.gpg` are the fallback; the newest key sorts last. They are encrypted to the OpenPGP key on the offline medium: `gpg --homedir /Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps --decrypt` reads one on stdin and writes the `pg_dump` custom-format archive to stdout, which `kubectl exec -i` into the primary can feed straight to `pg_restore`, so the plaintext never touches the disk.
 
@@ -212,6 +212,14 @@ just luks-discards paperless/paperless-ngx-data-encrypted
 ```
 
 `just restore-volume` refuses unless the backup is a completed encrypted one, the key Secret exists, nothing of the claim's name exists and the owning Kustomization is suspended; `kustomization=<name>` names the owner of a claim never applied. It restores into a Longhorn Volume named after the claim, leaves that Volume for inspection if the restore does not finish, then creates a `Retain` PersistentVolume of class `longhorn-encrypted` bound by `claimRef` to the claim. The chosen key Secret, `longhorn-crypto`, or `longhorn-crypto-legacy` for backups taken before the 2026-11 rebuild, must exist in `longhorn-system`; `bedrock-secrets` provides `longhorn-crypto`, or the offline copy if the repository is gone. A static PersistentVolume never reads a StorageClass, so the PersistentVolume names the chosen key itself.
+
+`just encrypt-volumes <app>` moves an app's volumes restored with `longhorn-crypto-legacy`, or never encrypted, onto twin claims on `longhorn-crypto`. It knows `open-webui` and `paperless-ngx`, refuses unless each twin's PersistentVolume uses `longhorn-crypto` and each old one does not, copies and verifies every volume with the app down, and leaves the app down and Flux suspended until the claims are swapped. The order:
+
+1. Add the twin claims in git, named without the `-encrypted` suffix, and let Flux create them.
+2. `just encrypt-volumes <app>`.
+3. Swap each `existingClaim` in the app's HelmRelease to its twin, commit and push.
+4. Resume the app's Kustomization and HelmRelease, as the recipe prints.
+5. `just luks-discards <namespace>/<claim>` for each twin once attached.
 
 ### etcd
 
@@ -445,7 +453,7 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
 
 - `postgres`: a clone from R2 replayed to the latest archived WAL, compared with production by row count on `pocket-id.schema_migrations` and `paperless.django_migrations`, which change only on upgrades.
 - `dumps`: the newest encrypted dumps of `pocket-id` and `paperless`, decrypted on the Mac with the key on the offline medium and streamed into a scratch database on the primary, compared the same way. It needs the `bedrock-keys` stick and refuses to run unless `/Volumes/bedrock-keys/bedrock/gnupg-postgres-dumps` is mounted, so checks run by an agent without the owner name the drills explicitly, for example `just restore-test postgres`.
-- `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with `longhorn-crypto`.
+- `longhorn`: a restore of the newest backup of the Paperless data volume, which must refuse to unlock with a random wrong key and must unlock and list files with the key Secret of the claim's PersistentVolume.
 - `etcd`: the newest snapshot in `s3://bedrock-etcd/etcd-snapshots` must be under 13 hours old.
 
 `--max-age <n>s|m|h|d`, for example `just restore-test all --max-age 2h`, also fails each drill whose newest backup is older: the newest completed base backup for `postgres`, the newest dump of each database for `dumps`, the restored backup for `longhorn`, and the snapshot for `etcd`.
