@@ -37,6 +37,7 @@ let
       '';
 
   kioskUser = "kiosk";
+  greetdRestartSeconds = 5;
 
   # user units are installed for every account, so a root ssh session would otherwise launch its own kiosk
   kioskOnly = lib.mapAttrs (
@@ -218,80 +219,87 @@ in
       home = "/home/${kioskUser}";
     };
 
-    systemd.user.services = kioskOnly {
-      kiosk-browser = {
-        description = "Bar panel dashboard browser";
-        restartTriggers = [ config.age.secrets.grafana-kiosk-url.file ];
-        serviceConfig = {
-          ExecStart = launchBrowser;
-          Restart = "always";
-          RestartSec = 10;
+    systemd = {
+      services.greetd.serviceConfig = {
+        Restart = lib.mkForce "always";
+        RestartSec = greetdRestartSeconds;
+      };
+
+      user.services = kioskOnly {
+        kiosk-browser = {
+          description = "Bar panel dashboard browser";
+          restartTriggers = [ config.age.secrets.grafana-kiosk-url.file ];
+          serviceConfig = {
+            ExecStart = launchBrowser;
+            Restart = "always";
+            RestartSec = 10;
+          };
+        };
+
+        kiosk-panel = {
+          description = "Bar panel power on";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = panelOn;
+            ExecStartPost = "${pkgs.systemd}/bin/systemctl --user --no-block restart kiosk-panel-off.timer";
+          };
+        };
+
+        kiosk-panel-schedule-on = {
+          description = "Bar panel scheduled power on";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = panelOn;
+          };
+        };
+
+        kiosk-panel-off = {
+          description = "Bar panel power off";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = panelOff;
+          };
+        };
+
+        kiosk-watchdog = {
+          description = "Bar panel estate reachability probe";
+          serviceConfig = {
+            Type = "oneshot";
+            ExecStart = wallWatchdog;
+          };
         };
       };
 
-      kiosk-panel = {
-        description = "Bar panel power on";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = panelOn;
-          ExecStartPost = "${pkgs.systemd}/bin/systemctl --user --no-block restart kiosk-panel-off.timer";
+      user.timers = kioskOnly {
+        kiosk-watchdog = {
+          description = "Probe the estate for the bar panel";
+          wantedBy = [ "timers.target" ];
+          timerConfig = {
+            OnStartupSec = "1min";
+            OnUnitActiveSec = "${toString probeIntervalSeconds}s";
+            AccuracySec = "5s";
+          };
         };
-      };
 
-      kiosk-panel-schedule-on = {
-        description = "Bar panel scheduled power on";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = panelOn;
+        kiosk-panel-off = {
+          description = "Blank the bar panel after its lit window";
+          timerConfig = {
+            OnActiveSec = "${toString panelLitSeconds}s";
+            AccuracySec = "5s";
+          };
         };
-      };
 
-      kiosk-panel-off = {
-        description = "Bar panel power off";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = panelOff;
+        kiosk-panel-schedule-on = {
+          description = "Light the bar panel during waking hours";
+          timerConfig.OnCalendar = panelOnTimes;
         };
-      };
 
-      kiosk-watchdog = {
-        description = "Bar panel estate reachability probe";
-        serviceConfig = {
-          Type = "oneshot";
-          ExecStart = wallWatchdog;
-        };
-      };
-    };
-
-    systemd.user.timers = kioskOnly {
-      kiosk-watchdog = {
-        description = "Probe the estate for the bar panel";
-        wantedBy = [ "timers.target" ];
-        timerConfig = {
-          OnStartupSec = "1min";
-          OnUnitActiveSec = "${toString probeIntervalSeconds}s";
-          AccuracySec = "5s";
-        };
-      };
-
-      kiosk-panel-off = {
-        description = "Blank the bar panel after its lit window";
-        timerConfig = {
-          OnActiveSec = "${toString panelLitSeconds}s";
-          AccuracySec = "5s";
-        };
-      };
-
-      kiosk-panel-schedule-on = {
-        description = "Light the bar panel during waking hours";
-        timerConfig.OnCalendar = panelOnTimes;
-      };
-
-      kiosk-panel-schedule-off = {
-        description = "Blank the bar panel outside waking hours";
-        timerConfig = {
-          OnCalendar = panelOffTimes;
-          Unit = "kiosk-panel-off.service";
+        kiosk-panel-schedule-off = {
+          description = "Blank the bar panel outside waking hours";
+          timerConfig = {
+            OnCalendar = panelOffTimes;
+            Unit = "kiosk-panel-off.service";
+          };
         };
       };
     };
