@@ -38,7 +38,7 @@ tarball_members=(
 
 openssl version | grep -q '^OpenSSL [3-9]' || { echo "openssl must be OpenSSL 3 or later, got: $(openssl version)" >&2; exit 1; }
 [ -n "${BEDROCK_RAM_DISK:-}" ] && [ -d "$BEDROCK_RAM_DISK" ] ||
-  { echo "BEDROCK_RAM_DISK is not a mounted RAM disk; run just rekey-secrets, which issues the CA on one" >&2; exit 1; }
+  { echo "BEDROCK_RAM_DISK is not set to an existing directory; run just rekey-secrets, which sets it to its RAM disk" >&2; exit 1; }
 [ -d "$(dirname "$root_ca_dir")" ] ||
   { echo "$(dirname "$root_ca_dir") is not mounted; plug in the bedrock-keys stick or set BEDROCK_ROOT_CA_DIR" >&2; exit 1; }
 command -v age-plugin-se >/dev/null 2>&1 ||
@@ -130,6 +130,6 @@ repin_token() {
 
 repin_token "$server_token_secret" server
 repin_token "$agent_token_secret" node
-for secret in "$ca_secret" "$server_token_secret" "$agent_token_secret"; do mv "$work/$secret" "secrets/$secret"; done
+for secret in "$server_token_secret" "$agent_token_secret" "$ca_secret"; do mv "$work/$secret" "secrets/$secret"; done
 
 echo "Wrote secrets/$ca_secret, secrets/$server_token_secret and secrets/$agent_token_secret; the tokens pin CA hash $ca_hash"
