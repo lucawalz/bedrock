@@ -213,13 +213,15 @@ just luks-discards paperless/paperless-ngx-data-encrypted
 
 `just restore-volume` refuses unless the backup is a completed encrypted one, the key Secret exists, nothing of the claim's name exists and the owning Kustomization is suspended; `kustomization=<name>` names the owner of a claim never applied. It restores into a Longhorn Volume named after the claim, leaves that Volume for inspection if the restore does not finish, then creates a `Retain` PersistentVolume of class `longhorn-encrypted` bound by `claimRef` to the claim. The chosen key Secret, `longhorn-crypto`, or `longhorn-crypto-legacy` for backups taken before the 2026-11 rebuild, must exist in `longhorn-system`; `bedrock-secrets` provides `longhorn-crypto`, or the offline copy if the repository is gone. A static PersistentVolume never reads a StorageClass, so the PersistentVolume names the chosen key itself.
 
-`just encrypt-volumes <app>` moves an app's volumes restored with `longhorn-crypto-legacy`, or never encrypted, onto twin claims on `longhorn-crypto`. It knows `open-webui` and `paperless-ngx`, refuses unless each twin's PersistentVolume uses `longhorn-crypto` and each old one does not, copies and verifies every volume with the app down, and leaves the app down and Flux suspended until the claims are swapped. The order:
+`just encrypt-volumes <app>` moves an app's volumes restored with `longhorn-crypto-legacy`, or never encrypted, onto twin claims on `longhorn-crypto`. It knows `open-webui` and `paperless-ngx`, refuses unless each twin's PersistentVolume uses `longhorn-crypto` and each old one does not and is `Retain`, copies and verifies every volume with the app down, and leaves the app down and Flux suspended until the claims are swapped. The order:
 
 1. Add the twin claims in git, named without the `-encrypted` suffix, and let Flux create them.
 2. `just encrypt-volumes <app>`.
 3. Swap each `existingClaim` in the app's HelmRelease to its twin, commit and push.
 4. Resume the app's Kustomization and HelmRelease, as the recipe prints.
 5. `just luks-discards <namespace>/<claim>` for each twin once attached.
+
+Remove `pvc-encrypted.yaml` from git only once the twins are verified; Flux then prunes the old claims, and their `Retain` PersistentVolumes stay `Released` until they are deleted by hand along with the legacy key.
 
 ### etcd
 
