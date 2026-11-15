@@ -299,15 +299,9 @@ in
     services = {
       greetd = {
         enable = true;
-        settings = {
-          initial_session = {
-            command = "${session}";
-            user = kioskUser;
-          };
-          default_session = {
-            command = "${lib.getExe pkgs.tuigreet} --time --remember --cmd ${session}";
-            user = "greeter";
-          };
+        settings.default_session = {
+          command = "${session}";
+          user = kioskUser;
         };
       };
     };
