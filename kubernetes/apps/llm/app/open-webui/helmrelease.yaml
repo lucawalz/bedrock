@@ -83,7 +83,7 @@ spec:
       enabled: false
     persistence:
       enabled: true
-      existingClaim: open-webui-encrypted
+      existingClaim: open-webui
     # the model cache is refetched on start so it never reaches the backed-up volume
     volumes:
       - name: model-cache
