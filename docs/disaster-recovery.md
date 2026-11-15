@@ -262,7 +262,7 @@ Measured on worker-2 on 2026-11-13 (CET, 20:56 to 21:09), which held the primary
 
 ## Full rebuild from git with disk encryption
 
-This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran once, on 2026-11-13 (see the [timeline](#2026-11-13-rebuild-with-disk-encryption)), with the hand scripts these recipes were built from. `just install-node`, `just enrol-node-tpm`, `just rekey-secrets`, `just tailscale-authkeys` and `just restore-volume` have run only in offline checks, and the Tailnet Lock signing steps have not run in a rebuild. `just backup-volumes`, `just restore-test`, `just offline-backup`, `just luks-discards` and `just encrypt-volumes` have run against the live cluster. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
+This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran once, on 2026-11-13 (see the [timeline](#2026-11-13-rebuild-with-disk-encryption)), with the hand scripts these recipes were built from. `just install-node`, `just enrol-node-tpm`, `just reenrol-node-tpm`, `just rekey-secrets`, `just tailscale-authkeys` and `just restore-volume` have run only in offline checks, and the Tailnet Lock signing steps have not run in a rebuild. `just backup-volumes`, `just restore-test`, `just offline-backup`, `just luks-discards` and `just encrypt-volumes` have run against the live cluster. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
 
 ### Contents of the stick
 
@@ -428,8 +428,16 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    just enrol-node-tpm control-plane-1
    ```
 
-   The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place; a partial file holding a key is never deleted. It wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
+   The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 and PCR 15 at all zeros (the policy of ADR 0016, which an unseal meets only before stage 1 has opened any volume) unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place; a partial file holding a key is never deleted. It wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
 6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
+
+A boot that does not unseal stops at the console prompt; the recovery key from `luks-recovery/<node>` opens the root there. A node still enrolled on PCRs 0+7 alone moves to the PCR 15 policy one node at a time, after `just deploy-nodes` has installed the initrd that measures the volume key:
+
+```
+just reenrol-node-tpm worker-2
+```
+
+The recipe pins the host key like `just enrol-node-tpm`, refuses an unknown node, a missing `luks-recovery/<node>`, Secure Boot not in user mode and a volume without both a tpm2 and a recovery token. It unlocks with the current TPM slot and replaces it in one `systemd-cryptenroll --wipe-slot=tpm2` call, never touches the recovery slot, prints the key slots and tokens from `cryptsetup luksDump` and the reboot command, and does not reboot. If the current TPM slot cannot unlock, it stops and names the recovery key fallback: type the key at the console and run the printed `systemd-cryptenroll` command there.
 
 When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
 
