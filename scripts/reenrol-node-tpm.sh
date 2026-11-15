@@ -23,6 +23,8 @@ MEASURE_LOG=/run/log/systemd/tpm2-measure.log
 ROOT_VOLUME_RECORD='"string" *: *"cryptsetup:cryptroot:'
 TPM2_TOKEN=systemd-tpm2
 RECOVERY_TOKEN=systemd-recovery
+STATE_MISMATCH='No TPM2 metadata matching the current system state'
+DRAIN_STEPS='the Planned drain steps in docs/disaster-recovery.md'
 
 address="$(node_address "$node")"
 [ -n "$address" ] || fail "$node is not a node in lib/inventory.nix"
@@ -38,7 +40,7 @@ node_run=(ssh "${ssh_session_args[@]}" "root@$address")
 boot_status="$("${node_run[@]}" bootctl status)"
 grep -qF "$SECURE_BOOT_USER_MODE" <<< "$boot_status" || fail "$node does not report '$SECURE_BOOT_USER_MODE'; enable Secure Boot in the firmware first"
 
-unmeasured="boot $node once on the generation from just deploy-nodes, which carries $MEASURED_OS_PARAMETER and tpm2-measure-pcr=yes"
+unmeasured="reboot $node through $DRAIN_STEPS onto the generation from just deploy-nodes, which carries $MEASURED_OS_PARAMETER and tpm2-measure-pcr=yes"
 cmdline="$("${node_run[@]}" cat /proc/cmdline)"
 grep -qw -- "$MEASURED_OS_PARAMETER" <<< "$cmdline" || fail "the running kernel of $node lacks $MEASURED_OS_PARAMETER; $unmeasured"
 measure_log="$("${node_run[@]}" cat "$MEASURE_LOG")" || fail "$MEASURE_LOG is missing on $node; $unmeasured"
@@ -51,9 +53,10 @@ luks_has_token "$RECOVERY_TOKEN" "$tokens" || fail "$ROOT_DEVICE has no $RECOVER
 
 if [ "$mode" = "$VERIFY_MODE" ]; then
   luks_has_token "$TPM2_TOKEN" "$tokens" || fail "$ROOT_DEVICE has no $TPM2_TOKEN token; run just reenrol-node-tpm $node"
-  if "${node_run[@]}" systemd-cryptenroll --unlock-tpm2-device=auto --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs="$TPM2_PCRS" "$ROOT_DEVICE" < /dev/null; then
+  if unseal="$("${node_run[@]}" systemd-cryptenroll --unlock-tpm2-device=auto --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs="$TPM2_PCRS" "$ROOT_DEVICE" < /dev/null 2>&1)"; then
     fail "the TPM of $node still unseals on the running system, so its slot is not bound to PCR $TPM2_VOLUME_KEY_PCR; run just reenrol-node-tpm $node"
   fi
+  grep -qF "$STATE_MISMATCH" <<< "$unseal" || fail "the TPM-only unseal on $node failed for another reason than the PCR state: $unseal"
   echo "$node measured its root volume key into PCR $TPM2_VOLUME_KEY_PCR ($pcr) and its TPM no longer unseals on the running system."
   exit 0
 fi
@@ -68,6 +71,6 @@ for token in "$TPM2_TOKEN" "$RECOVERY_TOKEN"; do
   luks_has_token "$token" "$tokens" || fail "$ROOT_DEVICE has no $token token after the re-enrolment; the recovery key in $recovery_file still opens it"
 done
 
-echo "$node is enrolled on PCRs $TPM2_PCRS. Reboot it: ssh root@$address systemctl reboot"
+echo "$node is enrolled on PCRs $TPM2_PCRS. Reboot it through $DRAIN_STEPS."
 echo "After it unlocks unattended, run: just reenrol-node-tpm $node verify"
 echo "If it stops at the passphrase prompt, type the recovery key from $recovery_file at the console, then run: just reenrol-node-tpm $node"

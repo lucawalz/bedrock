@@ -29,7 +29,11 @@ case "$*" in
   *"cat /run/log/systemd/tpm2-measure.log"*)
     [ -n "$FAKE_NO_MEASURE" ] || printf '\036{"pcr":15,"digests":[],"content_type":"systemd","content":{"string":"cryptsetup:cryptroot:1234","eventType":"volume-key"}}\n' ;;
   *"systemd-analyze pcrs 15"*) printf 'NR NAME            SHA256\n15 system-identity %s\n' "${FAKE_PCR15:-9c905bd9b9891bfb889b90a54c4b537b889cfa817c4389cc25754823a9443255}" ;;
-  *"--unlock-tpm2-device"*) cat > /dev/null; [ -n "$FAKE_TPM_UNSEALS" ] || exit 1 ;;
+  *"--unlock-tpm2-device"*)
+    cat > /dev/null
+    [ -z "$FAKE_TPM_UNSEALS" ] || exit 0
+    echo "${FAKE_UNSEAL_ERROR:-No TPM2 metadata matching the current system state found in LUKS2 header.}" >&2
+    exit 1 ;;
   *systemd-cryptenroll*)
     cat > "$FAKE_STDIN"
     [ -z "$FAKE_ENROL_EXIT" ] || exit "$FAKE_ENROL_EXIT"
@@ -79,7 +83,8 @@ for summary in '^Keyslots:$' '^Tokens:$' '^  [0-9]*: systemd-tpm2$' '^  [0-9]*: 
   grep -q "$summary" "$work/output" || fail "the re-enrolment summary lacks $summary"
 done
 if grep -q 'Digests:' "$work/output"; then fail "the summary printed more than the slots and tokens"; fi
-grep -q 'systemctl reboot' "$work/output" || fail "the re-enrolment did not print the reboot step"
+grep -q 'Planned drain' "$work/output" || fail "the re-enrolment does not send the reboot through the Planned drain"
+if grep -q 'systemctl reboot' "$work/output"; then fail "the re-enrolment prints a bare reboot"; fi
 grep -q "just reenrol-node-tpm $node verify" "$work/output" || fail "the re-enrolment did not print the verify step"
 
 FAKE_INITIAL_TOKENS=systemd-recovery run "$node" || fail "a volume that lost its TPM slot was not re-enrolled"
@@ -110,6 +115,8 @@ grep -q -- "systemd-cryptenroll --unlock-tpm2-device=auto --wipe-slot=tpm2 --tpm
 if grep -q -e 'unlock-key-file' "$work/log" || [ -e "$work/stdin" ]; then fail "the verify used the recovery key"; fi
 if key_leaked; then fail "the verify leaked the recovery key"; fi
 if FAKE_TPM_UNSEALS=1 run "$node" verify; then fail "a TPM that still unseals on the running system passed the verify"; fi
+if FAKE_UNSEAL_ERROR="Failed to find TPM2 device: No such device" run "$node" verify; then fail "an unseal that failed for another reason passed the verify"; fi
+grep -qF "No such device" "$work/output" || fail "a verify that failed for another reason does not show the cryptenroll message"
 if FAKE_PCR15="$(printf '%0*d' "$SHA256_HEX_LENGTH" 0)" run "$node" verify; then fail "an all-zero PCR 15 passed the verify"; fi
 if FAKE_NO_MEASURE=1 run "$node" verify; then fail "a boot without a volume key measurement passed the verify"; fi
 if FAKE_CMDLINE="" run "$node" verify; then fail "a boot without systemd.tpm2_measured_os=1 passed the verify"; fi
