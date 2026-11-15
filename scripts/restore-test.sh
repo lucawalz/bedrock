@@ -7,7 +7,7 @@ usage="usage: restore-test.sh [--dry-run] [--max-age <n>s|m|h|d] postgres|longho
 
 POSTGRES_NAMESPACE=postgres
 POSTGRES_SOURCE_CLUSTER=postgres
-POSTGRES_ARCHIVE_SERVER=postgres-2026-11
+POSTGRES_DRY_RUN_ARCHIVE_SERVER=postgres-dry-run
 POSTGRES_RESTORE_CLUSTER=postgres-restore-test
 POSTGRES_OBJECT_STORE=postgres-backup
 POSTGRES_RESTORE_TIMEOUT=30m
@@ -23,7 +23,7 @@ LONGHORN_ACCESS_MODE=rwo
 LONGHORN_RESTORE_TIMEOUT_SECONDS=1800
 LONGHORN_MOUNT_TIMEOUT_SECONDS=600
 LONGHORN_POLL_SECONDS=10
-LONGHORN_KEY_SECRET=longhorn-crypto
+LONGHORN_DRY_RUN_KEY_SECRET=longhorn-crypto
 LONGHORN_WRONG_KEY_SECRET=restore-test-wrong-key
 LONGHORN_WRONG_KEY_BYTES=32
 LONGHORN_KEY_ATTEMPT=restore-test-key
@@ -138,6 +138,7 @@ MANIFEST
 }
 
 restore_cluster() {
+  local archive_server="$1"
   cat <<MANIFEST
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
@@ -164,7 +165,7 @@ spec:
         name: barman-cloud.cloudnative-pg.io
         parameters:
           barmanObjectName: ${POSTGRES_OBJECT_STORE}
-          serverName: ${POSTGRES_ARCHIVE_SERVER}
+          serverName: ${archive_server}
 MANIFEST
 }
 
@@ -282,11 +283,11 @@ validate() {
 dry_run_manifests() {
   local name
   restore_network_policy > "$work/netpol.yaml"
-  restore_cluster > "$work/cluster.yaml"
+  restore_cluster "$POSTGRES_DRY_RUN_ARCHIVE_SERVER" > "$work/cluster.yaml"
   longhorn_volume_manifest "$LONGHORN_RESTORE_VOLUME" "s3://example@auto/?backup=backup-0&volume=pvc-0" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_RESTORE_REPLICAS" "$LONGHORN_ACCESS_MODE" > "$work/volume.yaml"
   wrong_key_secret | sed 's/CRYPTO_KEY_VALUE: .*/CRYPTO_KEY_VALUE: redacted/' > "$work/wrong-key.yaml"
   mount_attempt "$LONGHORN_WRONG_KEY_ATTEMPT" "$LONGHORN_WRONG_KEY_SECRET" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_DRY_RUN_IMAGE" > "$work/wrong-key-attempt.yaml"
-  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_DRY_RUN_IMAGE" > "$work/key-attempt.yaml"
+  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_DRY_RUN_KEY_SECRET" "$LONGHORN_DRY_RUN_SIZE_BYTES" "$LONGHORN_DRY_RUN_IMAGE" > "$work/key-attempt.yaml"
   for name in netpol cluster volume wrong-key wrong-key-attempt key-attempt; do
     echo "--- $name"
     cat "$work/$name.yaml"
@@ -336,19 +337,28 @@ newest_base_backup_time() {
     .items[] | select(.spec.cluster.name == strenv(C) and .status.phase == "completed") | .status.stoppedAt' | sort | tail -n 1
 }
 
+archive_server() {
+  local server
+  server="$(kubectl get clusters.postgresql.cnpg.io "$POSTGRES_SOURCE_CLUSTER" -n "$POSTGRES_NAMESPACE" -o json \
+    | yq -p=json -r '[.spec.plugins[] | select(.isWALArchiver == true) | .parameters.serverName] | .[0] // ""')"
+  [ -n "$server" ] || fail "cluster $POSTGRES_SOURCE_CLUSTER names no serverName on its isWALArchiver plugin"
+  echo "$server"
+}
+
 test_postgres() {
-  local check database table want got stopped
+  local check database table want got stopped server
+  server="$(archive_server)"
   if [ -n "$max_age_seconds" ]; then
     stopped="$(newest_base_backup_time)"
     [ -n "$stopped" ] || fail "cluster $POSTGRES_SOURCE_CLUSTER has no completed base backup"
     require_fresh "postgres: the newest base backup" "$stopped"
   fi
-  echo "postgres: recovering $POSTGRES_RESTORE_CLUSTER from $POSTGRES_OBJECT_STORE"
+  echo "postgres: recovering $POSTGRES_RESTORE_CLUSTER from $POSTGRES_OBJECT_STORE/$server"
   kubectl get cluster.postgresql.cnpg.io "$POSTGRES_RESTORE_CLUSTER" -n "$POSTGRES_NAMESPACE" >/dev/null 2>&1 \
     && fail "$POSTGRES_RESTORE_CLUSTER already exists; delete it first"
   cleanups+=(postgres_cleanup)
   restore_network_policy | kubectl apply -f -
-  restore_cluster | kubectl apply -f -
+  restore_cluster "$server" | kubectl apply -f -
   kubectl wait --for=condition=Ready "cluster.postgresql.cnpg.io/$POSTGRES_RESTORE_CLUSTER" \
     -n "$POSTGRES_NAMESPACE" --timeout="$POSTGRES_RESTORE_TIMEOUT" \
     || fail "$POSTGRES_RESTORE_CLUSTER did not become ready within $POSTGRES_RESTORE_TIMEOUT"
@@ -457,12 +467,14 @@ longhorn_cleanup() {
 }
 
 test_longhorn() {
-  local claim volume backup_url size encrypted created image
+  local claim volume key backup_url size encrypted created image
   claim="$(kubectl get deploy "$LONGHORN_DEPLOYMENT" -n "$LONGHORN_PVC_NAMESPACE" \
     -o jsonpath="{.spec.template.spec.volumes[?(@.name==\"$LONGHORN_DEPLOYMENT_VOLUME\")].persistentVolumeClaim.claimName}")"
   [ -n "$claim" ] || fail "deployment $LONGHORN_DEPLOYMENT mounts no claim as $LONGHORN_DEPLOYMENT_VOLUME"
   volume="$(kubectl get pvc "$claim" -n "$LONGHORN_PVC_NAMESPACE" -o jsonpath='{.spec.volumeName}')"
   [ -n "$volume" ] || fail "pvc $LONGHORN_PVC_NAMESPACE/$claim is not bound"
+  key="$(kubectl get pv "$volume" -o jsonpath='{.spec.csi.nodePublishSecretRef.name}')"
+  [ -n "$key" ] || fail "pv $volume of $claim names no key Secret"
   read -r backup_url size encrypted created < <(kubectl get backups.longhorn.io -n "$LONGHORN_NAMESPACE" -o json \
     | VOLUME="$volume" yq -p=json -r '
         [.items[] | select(.status.volumeName == strenv(VOLUME) and .status.state == "Completed")]
@@ -487,9 +499,9 @@ test_longhorn() {
   remove_attempt "$LONGHORN_WRONG_KEY_ATTEMPT"
   wait_until "$LONGHORN_MOUNT_TIMEOUT_SECONDS" "$LONGHORN_POLL_SECONDS" "detach of $LONGHORN_RESTORE_VOLUME" restore_detached
 
-  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$LONGHORN_KEY_SECRET" "$size" "$image" | kubectl apply -f -
+  mount_attempt "$LONGHORN_KEY_ATTEMPT" "$key" "$size" "$image" | kubectl apply -f -
   wait_until "$LONGHORN_MOUNT_TIMEOUT_SECONDS" "$LONGHORN_POLL_SECONDS" "a read of the restored volume with the key" attempt_finished "$LONGHORN_KEY_ATTEMPT"
-  echo "longhorn: the restored volume unlocks with $LONGHORN_KEY_SECRET and lists $(kubectl logs "$LONGHORN_KEY_ATTEMPT" -n "$LONGHORN_PVC_NAMESPACE")"
+  echo "longhorn: the restored volume unlocks with $key and lists $(kubectl logs "$LONGHORN_KEY_ATTEMPT" -n "$LONGHORN_PVC_NAMESPACE")"
 }
 
 test_etcd() {
