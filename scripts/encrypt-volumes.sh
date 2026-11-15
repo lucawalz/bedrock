@@ -7,6 +7,7 @@ usage="usage: encrypt-volumes.sh <app> [--dry-run]"
 
 KEY_NAMESPACE=longhorn-system
 TARGET_KEY_SECRET=longhorn-crypto
+RETAIN_RECLAIM_POLICY=Retain
 ROOT_COPY_CAPABILITIES='"CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID"'
 DRY_RUN_IMAGE=registry.invalid/encrypt-volumes:dry-run
 ROOT_UID=0
@@ -24,7 +25,6 @@ for arg in "$@"; do
   esac
 done
 
-# Each claim entry is volume:old-claim:new-claim, where volume is the pod volume name in the workload.
 case "$app" in
   open-webui)
     NAMESPACE=llm
@@ -102,7 +102,6 @@ done
 SCRIPT
 }
 
-# The app's labels and image keep the copy pod inside the app's Kyverno exceptions.
 copy_pod() {
   local image="$1" volume
   cat <<MANIFEST
@@ -176,8 +175,9 @@ pvc_field() {
   kubectl get pvc "$1" -n "$NAMESPACE" -o jsonpath="{$2}"
 }
 
-pv_key_secret() {
-  kubectl get pv "$(pvc_field "$1" .spec.volumeName)" -o jsonpath='{.spec.csi.nodePublishSecretRef.name}'
+pv_field() {
+  local volume
+  volume="$(pvc_field "$1" .spec.volumeName)" && kubectl get pv "$volume" -o jsonpath="{$2}"
 }
 
 workload_field() {
@@ -193,11 +193,13 @@ for volume in "${volumes[@]}"; do
   mounted="$(workload_field ".spec.template.spec.volumes[?(@.name==\"$volume\")].persistentVolumeClaim.claimName")"
   [ "$mounted" = "$old" ] || fail "$WORKLOAD mounts $mounted as $volume, not $old; the copy only runs before the claim swap"
   [ "$(pvc_field "$old" .status.phase)" = Bound ] || fail "pvc $old is not bound"
-  [ "$(pvc_field "$old" '.metadata.annotations.helm\.sh/resource-policy')" = keep ] \
-    || fail "pvc $old lacks helm.sh/resource-policy keep, so swapping the claims would delete it"
+  reclaim="$(pv_field "$old" .spec.persistentVolumeReclaimPolicy)" || fail "cannot read the PV of pvc $old"
+  [ "$reclaim" = "$RETAIN_RECLAIM_POLICY" ] \
+    || fail "the PV of pvc $old is not $RETAIN_RECLAIM_POLICY, so pruning the old claim after the swap would delete its data"
   [ "$(pvc_field "$new" .status.phase)" = Bound ] || fail "pvc $new is not bound"
-  [ "$(pv_key_secret "$new")" = "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $new does not use the key $TARGET_KEY_SECRET"
-  [ "$(pv_key_secret "$old")" != "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $old already uses the key $TARGET_KEY_SECRET; there is nothing to move"
+  [ "$(pv_field "$new" .spec.csi.nodePublishSecretRef.name)" = "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $new does not use the key $TARGET_KEY_SECRET"
+  old_key="$(pv_field "$old" .spec.csi.nodePublishSecretRef.name)" || fail "cannot read the PV of pvc $old"
+  [ "$old_key" != "$TARGET_KEY_SECRET" ] || fail "the PV of pvc $old already uses the key $TARGET_KEY_SECRET; there is nothing to move"
 done
 ! kubectl get pod "$COPY_POD" -n "$NAMESPACE" >/dev/null 2>&1 || fail "pod $COPY_POD already exists; delete it first"
 image="$(workload_field '.spec.template.spec.containers[0].image')"
