@@ -48,6 +48,11 @@ spec:
                   secretKeyRef:
                     name: litellm
                     key: LITELLM_MASTER_KEY
+              LITELLM_SALT_KEY:
+                valueFrom:
+                  secretKeyRef:
+                    name: litellm
+                    key: LITELLM_SALT_KEY
               ANTHROPIC_API_KEY:
                 valueFrom:
                   secretKeyRef:
