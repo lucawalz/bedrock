@@ -10,7 +10,7 @@ require_tools nix ssh
 
 keys="$(rebuild_keys_dir)"
 passphrase_file="$keys/luks-install-passphrase"
-host_public_key="$keys/hosts/$node/etc/ssh/ssh_host_ed25519_key.pub"
+host_public_key="$(stick_host_key "$node").pub"
 recovery_dir="$(stick_root)/luks-recovery"
 recovery_file="$recovery_dir/$node"
 partial_file="$recovery_dir/.$node.partial"
@@ -29,9 +29,7 @@ done
 [ ! -e "$recovery_file" ] || fail "$recovery_file already exists; $node was enrolled before, so move it aside only if that enrolment is gone"
 
 open_ssh_session enrol-node "$CONTROL_PERSIST"
-known_hosts="$ssh_session_dir/known_hosts"
-printf '%s %s\n' "$address" "$(cut -d' ' -f1,2 "$host_public_key")" > "$known_hosts"
-ssh_args=("${ssh_session_args[@]}" -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
+pin_node_host_key "$address" "$host_public_key"
 partial_owned=false
 
 cleanup() {
@@ -44,14 +42,13 @@ mkdir -p "$recovery_dir"
 (umask 077; set -o noclobber; : > "$partial_file") || fail "$partial_file exists from an earlier run; check it for a recovery key before removing it"
 partial_owned=true
 
-node_run=(ssh "${ssh_args[@]}" "root@$address")
-has_token() { grep -Eq "^[[:space:]]+[0-9]+: $1\$" <<< "$2"; }
+node_run=(ssh "${ssh_session_args[@]}" "root@$address")
 
 boot_status="$("${node_run[@]}" bootctl status)"
 grep -qF "$SECURE_BOOT_USER_MODE" <<< "$boot_status" || fail "$node does not report '$SECURE_BOOT_USER_MODE'; enable Secure Boot in the firmware first"
 
 tokens="$("${node_run[@]}" cryptsetup luksDump "$ROOT_DEVICE")"
-if has_token "$TPM2_TOKEN" "$tokens"; then
+if luks_has_token "$TPM2_TOKEN" "$tokens"; then
   echo "$ROOT_DEVICE already has a $TPM2_TOKEN token; not enrolling the TPM again."
 else
   "${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --tpm2-device=auto --tpm2-pcrs="$TPM2_PCRS" "$ROOT_DEVICE" < "$passphrase_file"
@@ -70,7 +67,7 @@ partial_owned=false
 
 tokens="$("${node_run[@]}" cryptsetup luksDump "$ROOT_DEVICE")"
 for token in "${REQUIRED_TOKENS[@]}"; do
-  has_token "$token" "$tokens" || fail "$ROOT_DEVICE has no $token token; the password slot stays"
+  luks_has_token "$token" "$tokens" || fail "$ROOT_DEVICE has no $token token; the password slot stays"
 done
 
 "${node_run[@]}" systemd-cryptenroll --unlock-key-file=/dev/stdin --wipe-slot=password "$ROOT_DEVICE" < "$passphrase_file"

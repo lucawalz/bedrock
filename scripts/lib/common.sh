@@ -96,6 +96,12 @@ open_ssh_session() {
   for option in "${ssh_session_options[@]}"; do ssh_session_args+=(-o "$option"); done
 }
 
+pin_node_host_key() {
+  local address="$1" host_public_key="$2" known_hosts="$ssh_session_dir/known_hosts"
+  printf '%s %s\n' "$address" "$(cut -d' ' -f1,2 "$host_public_key")" > "$known_hosts"
+  ssh_session_args+=(-o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$known_hosts")
+}
+
 close_ssh_session() {
   ssh "${ssh_session_args[@]}" -O exit "$1" 2>/dev/null || true
   rm -rf "$ssh_session_dir"
@@ -119,12 +125,19 @@ age_stanza_count() {
   awk '/^---/ { exit } /^-> / { count++ } END { print count + 0 }' "$1"
 }
 
-TPM2_BOOT_PCRS=0+7
+TPM2_BOOT_PCRS=(0 7)
 TPM2_VOLUME_KEY_PCR=15
+TPM2_PCR_BANK=sha256
 SHA256_HEX_LENGTH=64
 
 tpm2_unlock_pcrs() {
-  printf '%s+%s:sha256=%0*d\n' "$TPM2_BOOT_PCRS" "$TPM2_VOLUME_KEY_PCR" "$SHA256_HEX_LENGTH" 0
+  local pcr policy=""
+  for pcr in "${TPM2_BOOT_PCRS[@]}"; do policy+="$pcr:$TPM2_PCR_BANK+"; done
+  printf '%s%s:%s=%0*d\n' "$policy" "$TPM2_VOLUME_KEY_PCR" "$TPM2_PCR_BANK" "$SHA256_HEX_LENGTH" 0
+}
+
+luks_has_token() {
+  grep -Eq "^[[:space:]]+[0-9]+: $1\$" <<< "$2"
 }
 
 stick_host_key() {

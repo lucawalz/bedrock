@@ -14,7 +14,7 @@ recovery_key=test-recovery-key
 estate_root="$PWD/hosts/common/estate-root.pub"
 secretive_socket="$SECRETIVE_AGENT_SOCKET"
 root_device=/dev/disk/by-partlabel/disk-main-root
-tpm2_policy="0+7+15:sha256=$(printf '0%.0s' {1..64})"
+tpm2_policy="0:sha256+7:sha256+15:sha256=$(printf '%0*d' "$SHA256_HEX_LENGTH" 0)"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

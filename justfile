@@ -174,9 +174,9 @@ install-node node phases="":
 enrol-node-tpm node:
     bash scripts/enrol-node-tpm.sh {{ quote(node) }}
 
-# Replace a running node's TPM slot with the PCR 0+7+15 policy, unlocking with the current slot; reboot afterwards
-reenrol-node-tpm node:
-    bash scripts/reenrol-node-tpm.sh {{ quote(node) }}
+# Replace a running node's TPM slot with the PCR 0+7+15 policy using its stick recovery key; after the reboot add verify, for example: just reenrol-node-tpm worker-2 verify
+reenrol-node-tpm node mode="":
+    bash scripts/reenrol-node-tpm.sh {{ quote(node) }} {{ quote(mode) }}
 
 # Write the Pocket ID kubeconfig context bedrock into ~/.kube/config from control-plane-1
 kubeconfig:
