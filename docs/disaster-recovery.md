@@ -35,6 +35,7 @@ The age keys, the K3s root CA and the Longhorn volume encryption key are the thr
 | Break-glass kubeconfig | `/Volumes/bedrock-keys/bedrock/kubeconfig-admin.yaml` on the offline medium only, written by `just kubeconfig-admin` | A `system:masters` client certificate that does not depend on Pocket ID. `just bootstrap` runs with it, and it is the only cluster access while Pocket ID is down. The Mac keeps only the Pocket ID context `bedrock`. Recreated from control-plane-1 whenever lost, as long as root SSH works |
 | Switch admin password | `clusters/home/devices/switch.sops.yaml` in `bedrock-secrets`, decrypted with the SOPS age identities; the file is in no kustomization, so it is never applied to the cluster | Admin login of the TL-SG108PE, used through `just login switch`. Losing it is recovered by a factory reset and a new password, as in [Switch](#switch) |
 | Admin agenix identity (Secure Enclave) | The SOPS Secure Enclave identity, referenced by `~/.config/sops/age/se-identity.txt` on the Mac | A recipient on every agenix secret beside the break-glass key; needed to re-key host secrets when a host key is lost. It cannot be copied off the Mac |
+| Tailnet Lock disablement secrets | `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt` on the offline medium only, written by `tailscale lock init` | Turn Tailnet Lock off with `tailscale lock disable` when both signers are lost, as in [Admission break-glass](admission-break-glass.md#tailnet-lock). Losing them is recovered by re-initialising the lock from a signer, which issues new secrets |
 | Host SSH keys | `/etc/ssh/ssh_host_ed25519_key` on each host; for a full rebuild, generated ahead in `rebuild-keys/` on the offline medium | agenix secrets are encrypted to them. A reinstalled host gets new keys and cannot decrypt until the secrets are re-keyed, unless it is installed with the keys generated ahead |
 | Secure Boot keys and LUKS recovery keys | `/var/lib/sbctl` on each node, and `rebuild-keys/` and `luks-recovery/` on the offline medium | Sign every boot of a node, and open its root when the TPM refuses ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)) |
 
@@ -261,6 +262,7 @@ Before anything is wiped, `/Volumes/bedrock-keys/bedrock/` holds:
 - [ ] `k3s-root-ca/root-ca.pem` and `k3s-root-ca/root-ca.key`
 - [ ] `longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key
 - [ ] `ssh/estate-breakglass` and its passphrase
+- [ ] `tailnet-lock-disablements.txt`, the Tailnet Lock disablement secrets
 - [ ] `gnupg-postgres-dumps/`, which decrypts the logical dumps
 - [ ] `rclone/offline-backup.conf`, and `/Volumes/bedrock-keys/bedrock-offline/` with a copy taken after the final backups below
 - [ ] `rebuild-keys/`, written by `just generate-rebuild-keys`:
@@ -392,7 +394,8 @@ The router is reflashed, not installed with nixos-anywhere:
    nixos-rebuild switch --flake .#router --target-host root@192.168.2.211 --build-host root@192.168.2.211
    ```
 
-4. Confirm that the Mac reaches `10.20.0.1` through the subnet route before touching the nodes.
+4. After the Pi first joins, sign it from the Mac: `tailscale lock status` lists its node key under the locked-out nodes, then run `tailscale lock sign <node-key>` ([ADR 0017](adr/0017-lock-the-tailnet-to-signed-devices.md)).
+5. Confirm that the Mac reaches `10.20.0.1` through the subnet route before touching the nodes.
 
 ### Nodes
 
@@ -408,14 +411,15 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    It needs the firmware in setup mode from step 1, asks for the node name before the wipe, and puts the LUKS passphrase on the clipboard for the two disko prompts.
 
 3. At the console, enable Secure Boot in the firmware and type the install passphrase at the first boot.
-4. Bind the root to the TPM as ADR 0016 states:
+4. When the node first joins the tailnet, sign it from the Mac: `tailscale lock status` lists its node key under the locked-out nodes, then run `tailscale lock sign <node-key>`.
+5. Bind the root to the TPM as ADR 0016 states:
 
    ```
    just enrol-node-tpm control-plane-1
    ```
 
    The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place; a partial file holding a key is never deleted. It wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
-5. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
+6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
 
 When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
 

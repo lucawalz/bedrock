@@ -195,3 +195,32 @@ A port-forward reaches a Service directly, bypassing Traefik, forward-auth and t
 | LiteLLM | `kubectl -n litellm port-forward svc/litellm 4000` | `http://localhost:4000/ui` | LiteLLM master key, `just login litellm` |
 
 The Flux web UI has no port-forward path: it signs in through Pocket ID itself and redirects back to `flux.syslabs.dev`. `flux get all -A` and `flux reconcile` cover the same ground from the terminal.
+
+## Tailnet Lock
+
+Tailnet Lock ([ADR 0017](adr/0017-lock-the-tailnet-to-signed-devices.md)) admits a device to the tailnet only with a signature from a trusted signer, the Mac or the iPhone.
+
+A host that joined but reaches nothing, and is not reachable by name or address from any other node, is probably locked out. `tailscale lock status` on a signer lists it under the locked-out nodes with its node key.
+
+Sign it from the Mac:
+
+```
+tailscale lock status
+tailscale lock sign <node-key>
+```
+
+On the iPhone, the Tailscale app lists the locked-out device and signs it. Reinstalled hosts get this step after they first join, as in [Disaster recovery](disaster-recovery.md).
+
+If both signers are lost, any node on the tailnet can turn the lock off for the whole tailnet with one disablement secret from the stick, taken from the first unused line of `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt`:
+
+```
+tailscale lock disable <secret>
+```
+
+The used secret becomes public, so it is struck from the file. Then re-initialise with the new signers' Tailnet Lock keys, writing the fresh secrets straight onto the stick again, and run `tailscale lock init` as in the ADR. Re-initialising signs every existing node.
+
+To check that a secret on the stick is still valid without using it, compute its disablement value and compare it with the values listed by `tailscale lock status --json` (not proven: the exact output is confirmed after init):
+
+```
+tailscale lock disablement-kdf <secret>
+```
