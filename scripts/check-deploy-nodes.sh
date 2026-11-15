@@ -18,6 +18,7 @@ echo "ssh $*" >> "$FAKE_LOG"
 case "$*" in
   *readlink*) printf 'kernel-a\nkernel-%s\n' "${FAKE_KERNEL:-a}" ;;
   *findmnt*) case "$*" in *"${FAKE_PLAIN_ROOT_ON:-no-host}"*) echo /dev/nvme0n1p2 ;; *) echo /dev/mapper/cryptroot ;; esac ;;
+  *"is-active greetd"*) [ -z "$FAKE_GREETD_DEAD" ] || exit 3 ;;
 esac
 FAKE
 cat > "$work/bin/nix" <<'FAKE'
@@ -46,7 +47,7 @@ dry="$(FAKE_LOG=/dev/null PATH="$work/bin:$PATH" bash "$script" --dry-run 2>&1)"
 
 run() {
   : > "$work/log"
-  FAKE_LOG="$work/log" FAKE_FAIL_ON="$1" FAKE_VOLUME="$2" FAKE_DNS_EMPTY="${3:-}" PATH="$work/bin:$PATH" \
+  FAKE_LOG="$work/log" FAKE_FAIL_ON="$1" FAKE_VOLUME="$2" FAKE_DNS_EMPTY="${3:-}" FAKE_GREETD_DEAD="${4:-}" PATH="$work/bin:$PATH" \
     VOLUME_TIMEOUT_SECONDS=1 ROUTER_TIMEOUT_SECONDS=1 POLL_SECONDS=1 SHORT_TMPDIR="$work" bash "$script" >/dev/null 2>&1
 }
 
@@ -58,6 +59,13 @@ grep -q "^NIX_SSHOPTS=-i $estate_root -o IdentityAgent=$secretive_socket -o Iden
 [ "$(grep -c "^  IdentityAgent $secretive_socket\$" "$work/router-ssh-config")" = 2 ] || fail "router ssh config lacks the Secretive agent"
 grep 'readlink' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no .*-o BatchMode=yes" \
   && fail "a kernel probe lacks the estate-root key, Secretive agent or BatchMode"
+grep 'findmnt' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secretive_socket -o IdentitiesOnly=no .*-o BatchMode=yes" \
+  && fail "a root device probe lacks the estate-root key, Secretive agent or BatchMode"
+grep -q "^ssh -F $work/router-ssh-config .*root@10.20.0.1 systemctl is-active greetd\$" "$work/log" || fail "the run did not check the router kiosk"
+[ "$(grep -c "^  ControlMaster auto\$" "$work/router-ssh-config")" = 1 ] || fail "router ssh config does not share one connection per host"
+grep -qx "  ControlPath $work/%C" "$work/router-ssh-config" || fail "router ssh config lacks a control path under SHORT_TMPDIR"
+grep -qx "  ControlPersist 10m" "$work/router-ssh-config" || fail "router ssh config does not keep its connections open"
+grep -q "^ssh -F $work/router-ssh-config -O exit root@10.20.0.1\$" "$work/log" || fail "the run left the router control master open"
 
 [ ! -e "$estate_root_next" ] || fail "$estate_root_next exists; finish the rotation before running this check"
 trap 'rm -rf "$work" "$estate_root_next"' EXIT
@@ -78,6 +86,8 @@ grep -q "^NIX_SSHOPTS=-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes
 if grep -q -e estate-root -e Secretive "$work/router-ssh-config" "$work/log"; then fail "break-glass run still names estate-root or Secretive"; fi
 grep 'readlink' "$work/log" | grep -v -- "-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes .*-o BatchMode=no" \
   && fail "a break-glass kernel probe lacks the break-glass key or prompts disabled"
+grep 'findmnt' "$work/log" | grep -v -- "-i $breakglass -o IdentityAgent=none -o IdentitiesOnly=yes .*-o BatchMode=no" \
+  && fail "a break-glass root device probe lacks the break-glass key or prompts disabled"
 if BEDROCK_SSH_IDENTITY="$work/missing" run none "attached|healthy"; then fail "an unreadable break-glass key did not fail the run"; fi
 grep -qx '  HostName control-plane-1.tail26ab10.ts.net' "$work/router-ssh-config" || fail "router ssh config lacks the cp1-direct MagicDNS name"
 
@@ -94,6 +104,7 @@ grep -q 'findmnt' "$work/log" || fail "the run did not probe the root device"
 if grep -q '^nix ' "$work/log"; then fail "a node was rebuilt before every root device was checked"; fi
 
 if run none "attached|healthy" empty; then fail "empty DNS answer did not fail the run"; fi
+if run none "attached|healthy" "" dead; then fail "a stopped router kiosk did not fail the run"; fi
 
 : > "$work/log"
 warnings="$(FAKE_LOG="$work/log" FAKE_FAIL_ON=none FAKE_KERNEL=b FAKE_VOLUME="attached|healthy" PATH="$work/bin:$PATH" \

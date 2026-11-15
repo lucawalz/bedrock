@@ -22,6 +22,8 @@ NODE_READY_TIMEOUT=10m
 VOLUME_TIMEOUT_SECONDS="${VOLUME_TIMEOUT_SECONDS:-1800}"
 ROUTER_TIMEOUT_SECONDS="${ROUTER_TIMEOUT_SECONDS:-300}"
 SSH_CONNECT_TIMEOUT_SECONDS=5
+ROUTER_CONTROL_PERSIST=10m
+ROUTER_CONFIG="$SHORT_TMPDIR/router-ssh-config"
 POLL_SECONDS="${POLL_SECONDS:-5}"
 DNS_PROBE_NAME=registry.syslabs.dev
 ENCRYPTED_ROOT_DEVICE=/dev/mapper/cryptroot
@@ -66,10 +68,16 @@ identity_config() {
   echo "  IdentitiesOnly $ADMIN_IDENTITIES_ONLY"
 }
 
+close_router_connections() {
+  local target
+  for target in "root@$ROUTER_ADDRESS" "root@$CONTROL_PLANE_ADDRESS" cp1-direct; do
+    ssh -F "$ROUTER_CONFIG" -O exit "$target" 2>/dev/null || true
+  done
+}
+
 rebuild_router() {
-  local config="$SHORT_TMPDIR/router-ssh-config"
   mkdir -p "$SHORT_TMPDIR"
-  cat > "$config" <<CONFIG
+  cat > "$ROUTER_CONFIG" <<CONFIG
 Host cp1-direct
   HostName $CONTROL_PLANE_TAILNET_NAME
   HostKeyAlias $CONTROL_PLANE_ADDRESS
@@ -78,8 +86,13 @@ $(identity_config)
 Host $ROUTER_ADDRESS $CONTROL_PLANE_ADDRESS
   ProxyJump cp1-direct
 $(identity_config)
+Host *
+  ControlMaster auto
+  ControlPath $SHORT_TMPDIR/%C
+  ControlPersist $ROUTER_CONTROL_PERSIST
 CONFIG
-  TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="-F $config" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
+  trap close_router_connections EXIT
+  TMPDIR="$SHORT_TMPDIR" NIX_SSHOPTS="-F $ROUTER_CONFIG" nix develop --command env TMPDIR="$SHORT_TMPDIR" \
     nixos-rebuild switch --flake .#router --target-host "root@$ROUTER_ADDRESS" --build-host "$BUILD_HOST"
 }
 
@@ -97,12 +110,17 @@ volumes_healthy() {
 }
 
 router_answers() {
-  local config="$SHORT_TMPDIR/router-ssh-config" deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
-  until ssh -F "$config" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
+  local deadline=$((SECONDS + ROUTER_TIMEOUT_SECONDS))
+  until ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" true \
     && [ -n "$(dig +short "@$ROUTER_ADDRESS" "$DNS_PROBE_NAME")" ]; do
     [ "$SECONDS" -lt "$deadline" ] || { echo "Router did not answer ssh and DNS" >&2; return 1; }
     sleep "$POLL_SECONDS"
   done
+}
+
+require_router_kiosk() {
+  ssh -F "$ROUTER_CONFIG" "${ADMIN_SSH_OPTS[@]}" -o BatchMode="$PROBE_BATCH_MODE" -o ConnectTimeout="$SSH_CONNECT_TIMEOUT_SECONDS" "root@$ROUTER_ADDRESS" \
+    systemctl is-active greetd >/dev/null || fail "greetd is not active on the router; the bar kiosk is down"
 }
 
 warn_if_kernel_pending() {
@@ -139,4 +157,5 @@ done
 
 step rebuild_router
 step router_answers
-step warn_if_kernel_pending router "root@$ROUTER_ADDRESS" -F "$SHORT_TMPDIR/router-ssh-config"
+step require_router_kiosk
+step warn_if_kernel_pending router "root@$ROUTER_ADDRESS" -F "$ROUTER_CONFIG"
