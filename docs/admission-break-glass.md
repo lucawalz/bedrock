@@ -223,7 +223,7 @@ The used secret becomes public. Then re-initialise with the new signers' Tailnet
 tailscale lock init --gen-disablements 10 --gen-disablement-for-support --confirm <trusted-key> <trusted-key> > /Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt
 ```
 
-To check that the secrets on the stick are still valid without using them, compute the disablement value of each secret and compare it with the "Disablement values" list of `tailscale lock log`. The command reads each secret from the file, so no secret is typed. `disablement-kdf` prints `disablement:<value>` for each one, and every printed value must appear in the log's list. The log holds one extra value for Tailscale support.
+To check that the secrets on the stick are still valid without using them, run the block below. The first line reads each secret from the file, so none is typed, and prints `disablement:<value>` for each. Every value, without its `disablement:` prefix, must appear in the "Disablement values" list of `tailscale lock log`, which holds one extra value for Tailscale support.
 
 ```
 sed -n 's/.*disablement-secret://p' /Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt | while read -r secret; do tailscale lock disablement-kdf "$secret"; done
