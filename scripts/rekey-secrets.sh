@@ -45,15 +45,11 @@ done
 ram_device=""
 ram=""
 release_ram_disk() {
-  local status=$? cleared=true detached=true
-  if [ -n "$ram" ] && [ -d "$ram" ]; then rm -rf "${ram:?}"/* || cleared=false; fi
-  if [ -n "$ram_device" ]; then hdiutil detach -force "$ram_device" > /dev/null || detached=false; fi
-  if ! $cleared; then
-    echo "FAIL: clearing the RAM disk $ram_device at $ram failed; check by hand that it is detached: hdiutil detach -force $ram_device" >&2
-    status=1
-  fi
-  if ! $detached; then
-    echo "FAIL: detaching the RAM disk $ram_device failed; detach it by hand with: hdiutil detach -force $ram_device" >&2
+  local status=$? released=true
+  if [ -n "$ram" ] && [ -d "$ram" ]; then rm -rf "${ram:?}"/* || released=false; fi
+  if [ -n "$ram_device" ]; then hdiutil detach -force "$ram_device" > /dev/null || released=false; fi
+  if ! $released; then
+    echo "FAIL: clearing or detaching the RAM disk $ram_device at $ram failed; detach it by hand with: hdiutil detach -force $ram_device" >&2
     status=1
   fi
   exit "$status"
@@ -83,12 +79,9 @@ done
 BEDROCK_RAM_DISK="$ram" BEDROCK_AGENIX_IDENTITY="$identity" BEDROCK_ROOT_CA_DIR="$stick/k3s-root-ca" bash scripts/generate-cluster-ca.sh
 
 check_decrypt() {
-  local file="$1" key="$2" name="$3" plaintext="$4"
-  if [ -n "$plaintext" ]; then
-    age -d -i "$key" "secrets/$file" | cmp -s - "$plaintext" || fail "secrets/$file does not decrypt to $plaintext with the $name key"
-  else
-    age -d -i "$key" "secrets/$file" > /dev/null || fail "secrets/$file does not decrypt with the $name key"
-  fi
+  local file="$1" key="$2" plaintext="${3:-}"
+  age -d -i "$key" "secrets/$file" | if [ -n "$plaintext" ]; then cmp -s - "$plaintext"; else cat > /dev/null; fi \
+    || fail "secrets/$file does not decrypt${plaintext:+ to $plaintext} with $key"
 }
 
 while IFS= read -r file; do
@@ -98,19 +91,19 @@ while IFS= read -r file; do
     || fail "secrets/$file does not hold one stanza for each of its $expected recipients in secrets/secrets.nix"
   plaintext=""
   if [[ " ${TOKENS[*]} " == *" ${file%.age} "* ]]; then plaintext="$keys/${file%.age}"; fi
-  check_decrypt "$file" "$identity" break-glass "$plaintext"
+  check_decrypt "$file" "$identity" "$plaintext"
   for host in "${hosts[@]}"; do
     if stick_host_is_recipient "$rules" "$file" "$host"; then
-      check_decrypt "$file" "$(stick_host_key "$host")" "$host" "$plaintext"
+      check_decrypt "$file" "$(stick_host_key "$host")" "$plaintext"
     fi
   done
 done < <(jq -r 'keys[]' <<< "$rules")
 
 for file in "${SERVER_FILES[@]}"; do
-  check_decrypt "$file" "$(stick_host_key "$control_plane")" "$control_plane" ""
+  check_decrypt "$file" "$(stick_host_key "$control_plane")"
 done
 for node in "${nodes[@]}"; do
-  check_decrypt "$AGENT_FILE" "$(stick_host_key "$node")" "$node" ""
+  check_decrypt "$AGENT_FILE" "$(stick_host_key "$node")"
 done
 
 echo "Re-keyed and verified every file in secrets/. Changed, not staged:"
