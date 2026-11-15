@@ -429,15 +429,21 @@ control-plane-1 first, then worker-1, then worker-2, each wipe confirmed by the 
    ```
 
    The recipe pins the host key from `rebuild-keys/hosts/<node>/etc/ssh/ssh_host_ed25519_key.pub` and refuses unless `bootctl status` reports `Secure Boot: enabled (user)` and `/Volumes/bedrock-keys/bedrock/luks-recovery/<node>` does not exist yet. It enrols the TPM with PCRs 0+7 and PCR 15 at all zeros (the policy of ADR 0016, which an unseal meets only before stage 1 has opened any volume) unless a tpm2 token already exists, writes a recovery key without printing it to `luks-recovery/.<node>.partial` and moves it into place; a partial file holding a key is never deleted. It wipes the passphrase slot only once `cryptsetup luksDump` shows both the tpm2 and the recovery token.
-6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, and on the workers `/run/agenix` holds the agent token and not the server token.
+6. Reboot twice without a keyboard: each boot unlocks from the TPM, `lsblk` shows a `crypt` device under the root, on the workers `/run/agenix` holds the agent token and not the server token, and `just reenrol-node-tpm <node> verify` passes.
 
-A boot that does not unseal stops at the console prompt; the recovery key from `luks-recovery/<node>` opens the root there. A node still enrolled on PCRs 0+7 alone moves to the PCR 15 policy one node at a time, after `just deploy-nodes` has installed the initrd that measures the volume key:
+A boot that does not unseal stops at the console prompt; the recovery key from `luks-recovery/<node>` opens the root there, and that prompt is the only step that needs the console. A node still enrolled on PCRs 0+7 alone moves to the PCR 15 policy one node at a time: run `just deploy-nodes`, reboot the node once so it boots the generation with `systemd.tpm2_measured_os=1` and `tpm2-measure-pcr=yes`, then:
 
 ```
 just reenrol-node-tpm worker-2
 ```
 
-The recipe pins the host key like `just enrol-node-tpm`, refuses an unknown node, a missing `luks-recovery/<node>`, Secure Boot not in user mode and a volume without both a tpm2 and a recovery token. It unlocks with the current TPM slot and replaces it in one `systemd-cryptenroll --wipe-slot=tpm2` call, never touches the recovery slot, prints the key slots and tokens from `cryptsetup luksDump` and the reboot command, and does not reboot. If the current TPM slot cannot unlock, it stops and names the recovery key fallback: type the key at the console and run the printed `systemd-cryptenroll` command there.
+The recipe pins the host key like `just enrol-node-tpm` and refuses an unknown node, a missing `luks-recovery/<node>`, Secure Boot not in user mode, a volume without a recovery token, and a running boot that did not measure the cryptroot volume key into PCR 15. It pipes the recovery key from the stick to `systemd-cryptenroll --unlock-key-file=/dev/stdin` without its trailing newline and replaces the tpm2 slot in one `--wipe-slot=tpm2` call, never touching the recovery slot. It prints the key slots and tokens from `cryptsetup luksDump`, the reboot command and the verify step, and does not reboot. The same recipe re-enrols a node after a firmware update or a Secure Boot key change, once the recovery key has opened the root at the console. After the reboot:
+
+```
+just reenrol-node-tpm worker-2 verify
+```
+
+It passes only if the kernel command line carries `systemd.tpm2_measured_os=1`, the measurement log holds the cryptroot record, PCR 15 is not zero (`systemd-analyze pcrs 15`), and a TPM-only unseal on the running node fails.
 
 When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
 
