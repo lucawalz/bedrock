@@ -25,6 +25,8 @@ spec:
   values:
     fullnameOverride: open-webui
     replicaCount: 1
+    annotations:
+      reloader.stakater.com/auto: "true"
     podLabels:
       bedrock.io/postgres-client: "true"
     extraEnvVars:

@@ -86,6 +86,9 @@ spec:
       consume:
         enabled: true
         existingClaim: paperless-ngx-consume
+    controller:
+      annotations:
+        reloader.stakater.com/auto: "true"
     podLabels:
       bedrock.io/postgres-client: "true"
     automountServiceAccountToken: false

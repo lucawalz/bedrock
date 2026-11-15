@@ -29,6 +29,7 @@ spec:
         - cloudflare-tunnel
         - homepage
         - litellm
+        - llm
         - ntfy
         - oauth2-proxy
         - paperless
