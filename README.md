@@ -145,7 +145,7 @@ Internal names are subdomains of `syslabs.dev`. Ollama serves the local models i
 ### Hosts
 
 1. Router first, because nothing else has a network without it. Flash the `router-installer` SD image, then push the real configuration, which brings up the VLANs, DHCP and DNS.
-2. Install NixOS on each node (disko lays out the disk) and push its configuration. control-plane-1 starts K3s with `clusterInit`, and the `k3s-ca` unit installs the stable cluster CA from `secrets/k3s-ca.age` before the first start, so the agents join with the token already in agenix. `scripts/generate-cluster-ca.sh` creates that CA once from the offline root and is not part of a routine rebuild.
+2. Install NixOS on each node (disko lays out the disk) and push its configuration. control-plane-1 starts K3s with `clusterInit`, and the `k3s-ca` unit installs the stable cluster CA from `secrets/k3s-ca.age` before the first start, so the agents join with the token already in agenix. `just rekey-secrets` creates that CA once from the offline root through `scripts/generate-cluster-ca.sh`, on a RAM disk, and is not part of a routine rebuild.
 
 ```
 nixos-rebuild switch --flake .#control-plane-1 --target-host root@10.20.0.10 --build-host root@10.20.0.10
