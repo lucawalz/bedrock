@@ -64,6 +64,9 @@ grep 'findmnt' "$work/log" | grep -v -- "-i $estate_root -o IdentityAgent=$secre
 grep -q "^ssh -F $work/router-ssh-config .*root@10.20.0.1 systemctl is-active greetd\$" "$work/log" || fail "the run did not check the router kiosk"
 grep -q "^ssh -F $work/router-ssh-config .*-o ControlPath=none .*root@10.20.0.1 true\$" "$work/log" || fail "the post-switch router probe reuses a pre-switch connection"
 [ "$(grep -c "^  ControlMaster auto\$" "$work/router-ssh-config")" = 1 ] || fail "router ssh config does not share one connection per host"
+grep -q '^Host \*$' "$work/router-ssh-config" && fail "router ssh config multiplexes the ProxyJump hop, which breaks its stdio forward"
+awk '/^Host /{block=$2} block=="cp1-direct" && /ControlMaster/{found=1} END{exit !found}' "$work/router-ssh-config" \
+  && fail "router ssh config multiplexes the ProxyJump hop, which breaks its stdio forward"
 grep -qx "  ControlPath $work/%C" "$work/router-ssh-config" || fail "router ssh config lacks a control path under SHORT_TMPDIR"
 grep -qx "  ControlPersist 10m" "$work/router-ssh-config" || fail "router ssh config does not keep its connections open"
 grep -q "^ssh -F $work/router-ssh-config -O exit root@10.20.0.1\$" "$work/log" || fail "the run left the router control master open"

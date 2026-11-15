@@ -85,7 +85,6 @@ $(identity_config)
 Host $ROUTER_ADDRESS $CONTROL_PLANE_ADDRESS
   ProxyJump cp1-direct
 $(identity_config)
-Host *
   ControlMaster auto
   ControlPath $SHORT_TMPDIR/%C
   ControlPersist $ROUTER_CONTROL_PERSIST
