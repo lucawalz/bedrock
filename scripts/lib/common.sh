@@ -119,6 +119,14 @@ age_stanza_count() {
   awk '/^---/ { exit } /^-> / { count++ } END { print count + 0 }' "$1"
 }
 
+TPM2_BOOT_PCRS=0+7
+TPM2_VOLUME_KEY_PCR=15
+SHA256_HEX_LENGTH=64
+
+tpm2_unlock_pcrs() {
+  printf '%s+%s:sha256=%0*d\n' "$TPM2_BOOT_PCRS" "$TPM2_VOLUME_KEY_PCR" "$SHA256_HEX_LENGTH" 0
+}
+
 stick_host_key() {
   printf '%s/hosts/%s/etc/ssh/ssh_host_ed25519_key\n' "$(rebuild_keys_dir)" "$1"
 }

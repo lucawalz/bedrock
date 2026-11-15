@@ -14,6 +14,7 @@ recovery_key=test-recovery-key
 estate_root="$PWD/hosts/common/estate-root.pub"
 secretive_socket="$SECRETIVE_AGENT_SOCKET"
 root_device=/dev/disk/by-partlabel/disk-main-root
+tpm2_policy="0+7+15:sha256=$(printf '0%.0s' {1..64})"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -139,7 +140,7 @@ run "$enrol" "$node" || { cat "$work/output" >&2; fail "a valid enrolment failed
 [ -z "$(find "$recovery" ! -perm 600)" ] || fail "$recovery is not mode 600"
 [ "$(find "$stick/luks-recovery" -type f | wc -l)" -eq 1 ] || fail "the enrolment left a partial file next to $recovery"
 if grep -qF "$recovery_key" "$work/output"; then fail "the enrolment printed the recovery key"; fi
-grep -q -- "--tpm2-device=auto --tpm2-pcrs=0+7 $root_device" "$work/log" || fail "the TPM was not enrolled with PCRs 0+7"
+grep -q -- "--tpm2-device=auto --tpm2-pcrs=$tpm2_policy $root_device" "$work/log" || fail "the TPM was not enrolled with $tpm2_policy"
 [ "$(grep -c "^stdin=$passphrase\$" "$work/log")" = 3 ] || fail "the passphrase was not handed to each cryptenroll on stdin"
 grep -o -e 'tpm2-device' -e 'recovery-key' -e 'luksDump' -e 'wipe-slot=password' "$work/log" | tr '\n' ' ' \
   | grep -Eqx '(luksDump )?tpm2-device recovery-key luksDump wipe-slot=password ' || fail "the password slot was not wiped last"
