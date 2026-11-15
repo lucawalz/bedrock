@@ -8,5 +8,13 @@ _: {
       configurationLimit = 4;
       settings.editor = false;
     };
+    initrd.systemd = {
+      sockets.systemd-pcrextend.wantedBy = [ "sockets.target" ];
+      services."systemd-cryptsetup@cryptroot" = {
+        overrideStrategy = "asDropin";
+        wants = [ "systemd-pcrextend.socket" ];
+        after = [ "systemd-pcrextend.socket" ];
+      };
+    };
   };
 }
