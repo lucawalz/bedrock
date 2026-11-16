@@ -199,6 +199,7 @@ Day-two operations are `just` recipes; `just --list` prints them with their help
 | `just install-node <node>` | Wipe and reinstall a node from the local `main` with its stick keys, enrol its Secure Boot keys and reboot; add `phases=disko,install` to resume in a running installer |
 | `just enrol-node-tpm <node>` | After the first boot, bind the node's LUKS root to the TPM, write its recovery key to the stick and wipe the install passphrase |
 | `just reenrol-node-tpm <node>` | Replace a running node's TPM slot with the PCR 0+7+15 policy over ssh, unlocking with its recovery key from the stick; it never touches the recovery slot or reboots. Add `verify` after the reboot to check that PCR 15 is measured and the TPM no longer unseals |
+| `just known-hosts` | Write `~/.ssh/known_hosts.d/bedrock` with the pinned host keys from `secrets/secrets.nix` |
 | `just rekey-secrets` | Re-key `secrets/` to the stick host keys, write the stick k3s tokens and re-issue the cluster CA, all on a RAM disk |
 | `just tailscale-authkeys` | Prompt for each host's single-use Tailscale auth key and encrypt it to that host's stick key |
 | `just offline-backup <mountpoint>` | Copy the newest dumps, etcd snapshot and Longhorn backups from R2 to a mounted disk |

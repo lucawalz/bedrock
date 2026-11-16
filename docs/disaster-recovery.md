@@ -141,18 +141,20 @@ This is the procedure as run on 2026-11-06, with the fixes in place. It wipes th
      User root
      IdentityFile <repository>/hosts/common/estate-root.pub
      IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
+     UserKnownHostsFile ~/.ssh/known_hosts.d/bedrock
 
    Host 10.20.0.1 10.20.0.10
      ProxyJump cp1-direct
      IdentityFile <repository>/hosts/common/estate-root.pub
      IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
+     UserKnownHostsFile ~/.ssh/known_hosts.d/bedrock
    ```
 
    ```
    NIX_SSHOPTS="-F <config file>" nixos-rebuild switch --flake .#router --target-host root@10.20.0.1 --build-host root@10.20.0.10
    ```
 
-   `control-plane-1.tail26ab10.ts.net` is control-plane-1's MagicDNS name from `lib/inventory.nix`. `NIX_SSHOPTS` is split on spaces, so the jump goes in a config file rather than an inline `ProxyCommand`.
+   `control-plane-1.tail26ab10.ts.net` is control-plane-1's MagicDNS name from `lib/inventory.nix`. `NIX_SSHOPTS` is split on spaces, so the jump goes in a config file rather than an inline `ProxyCommand`. `UserKnownHostsFile` points at the file `just known-hosts` writes (see [Admin SSH keys](#admin-ssh-keys)); run it first.
 2. Build and stage the new generation on every node with `nixos-rebuild boot` (see [Changing a host](../README.md#changing-a-host) for `--build-host`), so each node comes up once, fresh, on the new generation.
 3. On worker-2, then worker-1, then control-plane-1: `systemctl stop k3s` and `k3s-killall.sh`, then confirm that `findmnt` lists nothing under `/var/lib/kubelet` or `/var/lib/longhorn`. A Longhorn CSI mount whose engine lived on an already stopped node can hang the forced unmount; `umount -l` clears it.
 4. Remove the state and purge the iSCSI node records in the same command as the reboot, since stale records break the next attach in either direction. Reboot control-plane-1 first:
@@ -559,12 +561,15 @@ Host control-plane-1 worker-1 worker-2 router 10.20.0.* control-plane-1.tail26ab
   ControlMaster auto
   ControlPath ~/.ssh/cm-%C
   ControlPersist 10m
+  UserKnownHostsFile ~/.ssh/known_hosts.d/bedrock
 
 Host github.com
   IdentityAgent ~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh
   IdentityFile ~/.ssh/github.pub
   IdentitiesOnly yes
 ```
+
+`just known-hosts` writes `~/.ssh/known_hosts.d/bedrock` atomically from `secrets/secrets.nix` and fails when a host has no key or more than one. The `UserKnownHostsFile` line makes ssh read that file instead of `~/.ssh/known_hosts` for these hosts, so after a reinstall the recipe is re-run once the new keys are in `secrets/secrets.nix`.
 
 A master connection stays open for 10 minutes and keeps the key it authenticated with, so after a key change `ssh -O exit <host>` closes it before the next login proves anything.
 
