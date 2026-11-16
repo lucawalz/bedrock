@@ -328,7 +328,7 @@ metadata:
     gethomepage.dev/name: $name
     gethomepage.dev/group: Apps
     gethomepage.dev/href: https://$route_host
-    gethomepage.dev/podSelector: app.kubernetes.io/name=$name
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=$name
     gethomepage.dev/statusStyle: "dot"
 spec:
   entryPoints:
