@@ -7,6 +7,7 @@ reenrol=scripts/reenrol-node-tpm.sh
 node=worker-1
 root_device=/dev/disk/by-partlabel/disk-main-root
 tpm2_policy="0:sha256+7:sha256+15:sha256=$(printf '%0*d' "$SHA256_HEX_LENGTH" 0)"
+firmware_policy="7:sha256+15:sha256=$(printf '%0*d' "$SHA256_HEX_LENGTH" 0)"
 recovery_key=test-recovery-key-abcdef
 
 work="$(mktemp -d)"
@@ -43,7 +44,10 @@ case "$*" in
     printf 'LUKS header information\nKeyslots:\n'
     n=0; while read -r token; do printf '  %s: luks2\n\tKey:        512 bits\n' "$n"; n=$((n + 1)); done < "$FAKE_TOKENS"
     printf 'Tokens:\n'
-    n=0; while read -r token; do printf '  %s: %s\n\tKeyslot:    %s\n' "$n" "$token" "$n"; n=$((n + 1)); done < "$FAKE_TOKENS"
+    n=0; while read -r token; do
+      printf '  %s: %s\n\tKeyslot:    %s\n' "$n" "$token" "$n"
+      [ "$token" != systemd-tpm2 ] || printf '\ttpm2-hash-pcrs:   %s\n' "${FAKE_TOKEN_PCRS:-0+7+15}"
+      n=$((n + 1)); done < "$FAKE_TOKENS"
     printf 'Digests:\n  0: pbkdf2\n' ;;
 esac
 FAKE
@@ -87,11 +91,21 @@ grep -q 'Planned drain' "$work/output" || fail "the re-enrolment does not send t
 if grep -q 'systemctl reboot' "$work/output"; then fail "the re-enrolment prints a bare reboot"; fi
 grep -q "just reenrol-node-tpm $node verify" "$work/output" || fail "the re-enrolment did not print the verify step"
 
+run "$node" firmware || { cat "$work/output" >&2; fail "a valid firmware-mode enrolment failed"; }
+grep -q -- "systemd-cryptenroll --unlock-key-file=/dev/stdin --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=$firmware_policy $root_device\$" "$work/log" \
+  || fail "the firmware mode did not enrol on $firmware_policy"
+printf '%s' "$recovery_key" | cmp -s - "$work/stdin" || fail "the firmware mode did not pipe the recovery key"
+if key_leaked; then fail "the firmware mode leaked the recovery key"; fi
+for step in 'flash the firmware' 'Planned drain' "just reenrol-node-tpm $node\$" "just reenrol-node-tpm $node verify"; do
+  grep -q -- "$step" "$work/output" || fail "the firmware mode output lacks $step"
+done
+
 FAKE_INITIAL_TOKENS=systemd-recovery run "$node" || fail "a volume that lost its TPM slot was not re-enrolled"
 
 refused "an unknown node" worker-9
 refused "a missing node argument"
 refused "an unknown mode" "$node" migrate
+refused "a mode after verify" "$node" verify firmware
 FAKE_UNREACHABLE=1 refused "an unreachable node" "$node"
 FAKE_SECURE_BOOT="disabled (setup)" refused "Secure Boot in setup mode" "$node"
 FAKE_INITIAL_TOKENS=systemd-tpm2 refused "a volume without a recovery slot" "$node"
@@ -114,6 +128,8 @@ grep -q -- "systemd-cryptenroll --unlock-tpm2-device=auto --wipe-slot=tpm2 --tpm
   || fail "the verify did not attempt a TPM-only unseal"
 if grep -q -e 'unlock-key-file' "$work/log" || [ -e "$work/stdin" ]; then fail "the verify used the recovery key"; fi
 if key_leaked; then fail "the verify leaked the recovery key"; fi
+if FAKE_TOKEN_PCRS=7+15 run "$node" verify; then fail "a TPM slot left on PCRs 7+15 passed the verify"; fi
+grep -qF "just reenrol-node-tpm $node" "$work/output" || fail "a verify of a firmware-window slot does not name the plain re-enrolment"
 if FAKE_TPM_UNSEALS=1 run "$node" verify; then fail "a TPM that still unseals on the running system passed the verify"; fi
 if FAKE_UNSEAL_ERROR="Failed to find TPM2 device: No such device" run "$node" verify; then fail "an unseal that failed for another reason passed the verify"; fi
 grep -qF "No such device" "$work/output" || fail "a verify that failed for another reason does not show the cryptenroll message"

@@ -132,7 +132,8 @@ SHA256_HEX_LENGTH=64
 
 tpm2_unlock_pcrs() {
   local pcr policy=""
-  for pcr in "${TPM2_BOOT_PCRS[@]}"; do policy+="$pcr:$TPM2_PCR_BANK+"; done
+  [ "$#" -gt 0 ] || set -- "${TPM2_BOOT_PCRS[@]}"
+  for pcr in "$@"; do policy+="$pcr:$TPM2_PCR_BANK+"; done
   printf '%s%s:%s=%0*d\n' "$policy" "$TPM2_VOLUME_KEY_PCR" "$TPM2_PCR_BANK" "$SHA256_HEX_LENGTH" 0
 }
 

@@ -4,11 +4,17 @@ set -euo pipefail
 . "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 VERIFY_MODE=verify
-usage="usage: reenrol-node-tpm.sh <node> [$VERIFY_MODE]"
+FIRMWARE_MODE=firmware
+FIRMWARE_PCR=0
+FIRMWARE_UPDATE_BOOT_PCRS=()
+for boot_pcr in "${TPM2_BOOT_PCRS[@]}"; do
+  [ "$boot_pcr" = "$FIRMWARE_PCR" ] || FIRMWARE_UPDATE_BOOT_PCRS+=("$boot_pcr")
+done
+usage="usage: reenrol-node-tpm.sh <node> [$VERIFY_MODE|$FIRMWARE_MODE]"
 [ "$#" -ge 1 ] && [ "$#" -le 2 ] || { echo "$usage" >&2; exit 2; }
 node="$1"
 mode="${2:-}"
-[ -z "$mode" ] || [ "$mode" = "$VERIFY_MODE" ] || { echo "$usage" >&2; exit 2; }
+[ -z "$mode" ] || [ "$mode" = "$VERIFY_MODE" ] || [ "$mode" = "$FIRMWARE_MODE" ] || { echo "$usage" >&2; exit 2; }
 
 require_tools nix ssh
 
@@ -16,12 +22,17 @@ host_public_key="$(stick_host_key "$node").pub"
 recovery_file="$(stick_root)/luks-recovery/$node"
 CONTROL_PERSIST=10m
 ROOT_DEVICE=/dev/disk/by-partlabel/disk-main-root
-TPM2_PCRS="$(tpm2_unlock_pcrs)"
+if [ "$mode" = "$FIRMWARE_MODE" ]; then
+  TPM2_PCRS="$(tpm2_unlock_pcrs "${FIRMWARE_UPDATE_BOOT_PCRS[@]}")"
+else
+  TPM2_PCRS="$(tpm2_unlock_pcrs)"
+fi
 SECURE_BOOT_USER_MODE='Secure Boot: enabled (user)'
 MEASURED_OS_PARAMETER=systemd.tpm2_measured_os=1
 MEASURE_LOG=/run/log/systemd/tpm2-measure.log
 ROOT_VOLUME_RECORD='"string" *: *"cryptsetup:cryptroot:'
 TPM2_TOKEN=systemd-tpm2
+TPM2_TOKEN_PCRS_LINE='tpm2-hash-pcrs:'
 RECOVERY_TOKEN=systemd-recovery
 STATE_MISMATCH='No TPM2 metadata matching the current system state'
 DRAIN_STEPS='the Planned drain steps in docs/disaster-recovery.md'
@@ -53,6 +64,9 @@ luks_has_token "$RECOVERY_TOKEN" "$tokens" || fail "$ROOT_DEVICE has no $RECOVER
 
 if [ "$mode" = "$VERIFY_MODE" ]; then
   luks_has_token "$TPM2_TOKEN" "$tokens" || fail "$ROOT_DEVICE has no $TPM2_TOKEN token; run just reenrol-node-tpm $node"
+  bound_pcrs="$(awk -v token="$TPM2_TOKEN" -v key="$TPM2_TOKEN_PCRS_LINE" '/^  [0-9]+: / { on = ($2 == token) } on && $1 ~ "^" key "$" { print $2 }' <<< "$tokens")"
+  default_pcrs="$(printf '%s\n' "${TPM2_BOOT_PCRS[@]}" "$TPM2_VOLUME_KEY_PCR" | sort -n | paste -sd+ -)"
+  [ "$(tr '+' '\n' <<< "$bound_pcrs" | sort -n | paste -sd+ -)" = "$default_pcrs" ] || fail "the $TPM2_TOKEN token of $node is bound to PCRs '$bound_pcrs', not $default_pcrs; run just reenrol-node-tpm $node"
   if unseal="$("${node_run[@]}" systemd-cryptenroll --unlock-tpm2-device=auto --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs="$TPM2_PCRS" "$ROOT_DEVICE" < /dev/null 2>&1)"; then
     fail "the TPM of $node still unseals on the running system, so its slot is not bound to PCR $TPM2_VOLUME_KEY_PCR; run just reenrol-node-tpm $node"
   fi
@@ -71,6 +85,11 @@ for token in "$TPM2_TOKEN" "$RECOVERY_TOKEN"; do
   luks_has_token "$token" "$tokens" || fail "$ROOT_DEVICE has no $token token after the re-enrolment; the recovery key in $recovery_file still opens it"
 done
 
-echo "$node is enrolled on PCRs $TPM2_PCRS. Reboot it through $DRAIN_STEPS."
+if [ "$mode" = "$FIRMWARE_MODE" ]; then
+  echo "$node is enrolled on PCRs $TPM2_PCRS, without PCR $FIRMWARE_PCR. Next: flash the firmware, then reboot it through $DRAIN_STEPS."
+  echo "After it unlocks unattended, run: just reenrol-node-tpm $node"
+else
+  echo "$node is enrolled on PCRs $TPM2_PCRS. Reboot it through $DRAIN_STEPS."
+fi
 echo "After it unlocks unattended, run: just reenrol-node-tpm $node verify"
 echo "If it stops at the passphrase prompt, type the recovery key from $recovery_file at the console, then run: just reenrol-node-tpm $node"
