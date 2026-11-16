@@ -44,6 +44,7 @@ spec:
               DISABLE_ICON_DOWNLOAD: "true"
               SSO_ENABLED: "true"
               SSO_ONLY: "true"
+              SSO_SIGNUPS_ALLOWED: "false"
               SSO_PKCE: "true"
               SSO_AUTHORITY: https://id.${cluster_domain}
               SSO_CLIENT_ID: vaultwarden
