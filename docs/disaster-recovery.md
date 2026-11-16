@@ -260,9 +260,28 @@ One node at a time:
 
 Measured on worker-2 on 2026-11-13 (CET, 20:56 to 21:09), which held the primary: the promote took 27 s. The drain evicted the standby, which went Pending, but blocked the full 300 s on the `instance-manager` PodDisruptionBudget and left the node cordoned. The kernel was up 1 min 48 s after the reboot with TPM unlock unattended, and 3 instances were ready 7 min 14 s after it, with `postgres-1` back on the same strict-local volume. The time the standby stays Pending while cordoned after a reboot was not measured.
 
+After a reboot of control-plane-1 on 2026-11-15, Longhorn created a second, empty replica for a strict-local Postgres instance volume, and its validator denied every attach with `BUG: replica should be 1 for strict-local`, so the Postgres pod stayed in Init. The volume is the PVC's `volumeName` (`kubectl -n postgres get pvc <pvc> -o jsonpath='{.spec.volumeName}'`). List its replicas with `kubectl -n longhorn-system get replicas.longhorn.io -l longhornvolume=<volume> -o wide`: the empty one has no `spec.nodeID` and no `spec.diskID`, while the real one runs on the volume's node. Delete only the empty one:
+
+```
+kubectl -n longhorn-system delete replicas.longhorn.io <replica>
+```
+
+The volume then attaches with its data untouched; wait until `kubectl -n postgres get cluster postgres` shows 3 ready instances before the next node.
+
 ## Full rebuild from git with disk encryption
 
 This reinstalls all four hosts from the flake: the three nodes onto a LUKS2 root with TPM2 unlock and Secure Boot ([ADR 0016](adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)), the router onto an unencrypted SD card. Every disk is wiped, so the data comes back from R2. It reuses the steps of [Rebuilding the cluster from git](#rebuilding-the-cluster-from-git) where they apply. The steps ran once, on 2026-11-13 (see the [timeline](#2026-11-13-rebuild-with-disk-encryption)), with the hand scripts these recipes were built from. `just install-node`, `just enrol-node-tpm`, `just reenrol-node-tpm`, `just rekey-secrets`, `just tailscale-authkeys` and `just restore-volume` have run only in offline checks, and the Tailnet Lock signing steps have not run in a rebuild. `just backup-volumes`, `just restore-test`, `just offline-backup`, `just luks-discards` and `just encrypt-volumes` have run against the live cluster. Commands run from the repository root in the dev shell on the Mac, with the `bedrock-keys` stick mounted.
+
+### Drill or rotation
+
+The periodic rebuild is a drill that reuses the current keys on the stick: the host keys, the cluster age key, the K3s root CA and cluster CA, the K3s tokens and the Longhorn key. The full rotation below is kept for a real or suspected compromise. A drill runs the steps below with these differences:
+
+- `rebuild-keys/` stays in place and is not moved aside; `just generate-rebuild-keys` and `just rekey-secrets` are skipped. `just install-node` installs the same host and Secure Boot keys from `rebuild-keys/hosts/<node>/` and reuses `luks-install-passphrase`.
+- `bedrock-secrets` is not changed: there is no new Longhorn key and no `longhorn-crypto-legacy`, and `just restore-volume` runs with its default key `longhorn-crypto`.
+- `luks-recovery/` is moved aside to `luks-recovery-<yyyy-mm>/` before the first node is enrolled, because a wiped node's old recovery key opens nothing and `just enrol-node-tpm` refuses while `luks-recovery/<node>` exists.
+- Still run on every drill: Secure Boot setup mode in the firmware and the enrolment by `just install-node`, the TPM enrolment, new Tailscale auth keys with `just tailscale-authkeys`, the Tailnet Lock signing of every host, the new archiver `serverName` for Postgres, and the final backups.
+
+A drill does not rehearse a restore with a new Longhorn key; only the full rotation does.
 
 ### Contents of the stick
 
@@ -270,19 +289,19 @@ Before anything is wiped, `/Volumes/bedrock-keys/bedrock/` holds:
 
 - [ ] `age-cluster-2026-11.txt`, the cluster age key
 - [ ] `k3s-root-ca/root-ca.pem` and `k3s-root-ca/root-ca.key`
-- [ ] `rebuild-keys/longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key; the top-level `longhorn-crypto.key` is the retired pre-2026-11 key
+- [ ] `rebuild-keys/longhorn-crypto.key`, the current Longhorn key, which becomes the legacy key in a rotation; the top-level `longhorn-crypto.key` is the retired pre-2026-11 key
 - [ ] `ssh/estate-breakglass` and its passphrase
 - [ ] `tailnet-lock-disablements.txt`, the Tailnet Lock disablement secrets
 - [ ] `gnupg-postgres-dumps/`, which decrypts the logical dumps
 - [ ] `rclone/offline-backup.conf`, and `/Volumes/bedrock-keys/bedrock-offline/` with a copy taken after the final backups below
-- [ ] `rebuild-keys/`, written by `just generate-rebuild-keys`:
-  - `k3s-token` and `k3s-agent-token`, the new server and agent tokens, both pinning the hash of the root CA
-  - `longhorn-crypto.key`, the new Longhorn key
-  - `luks-install-passphrase`, used once by disko; its LUKS slot is wiped after the TPM enrolment
+- [ ] `rebuild-keys/`, written by `just generate-rebuild-keys`; a rotation writes it anew in [Prepare](#prepare), a drill reads the same files unchanged:
+  - `k3s-token` and `k3s-agent-token`, the server and agent tokens, both pinning the hash of the root CA
+  - `longhorn-crypto.key`, the Longhorn key
+  - `luks-install-passphrase`, used by disko at each install; its LUKS slot is wiped after the TPM enrolment
   - `hosts/<host>/etc/ssh/ssh_host_ed25519_key` and `.pub` for control-plane-1, worker-1, worker-2 and router
   - `hosts/<node>/var/lib/sbctl/GUID` and `keys/{PK,KEK,db}/{PK,KEK,db}.{key,pem}` for each node
 
-During the run it gains `kubeconfig-admin.yaml`, written after the cluster CA is re-issued, and `luks-recovery/<node>`, one recovery key per node.
+During a rotation it gains `kubeconfig-admin.yaml`, written after the cluster CA is re-issued, and during every run `luks-recovery/<node>`, one recovery key per node.
 
 ### Prepare
 
@@ -445,9 +464,9 @@ just reenrol-node-tpm worker-2 verify
 
 It passes only if the kernel command line carries `systemd.tpm2_measured_os=1`, the measurement log holds the cryptroot record, PCR 15 is not zero (`systemd-analyze pcrs 15`), and a TPM-only unseal on the running node fails with `No TPM2 metadata matching the current system state`; a failure for any other reason fails the verify. The next node starts only after the verify passes.
 
-When an install phase fails, for example because a Secretive approval was missed and ssh fell back to a password prompt that cut the installer connection, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
+When an install phase fails, for example because the installer connection dropped, re-run from the failed phase with the remaining phases, such as `just install-node <node> phases=disko,install`. Commit signing can also fail intermittently with `failed to write commit object`; retrying the commit resolves it.
 
-Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig signed by the re-issued CA onto the stick.
+Once all three old nodes are wiped, push `main` of both repositories. After control-plane-1 is up, `just kubeconfig-admin` writes the break-glass kubeconfig onto the stick, signed by the cluster CA that a rotation re-issues and a drill keeps.
 
 ### Bootstrap and restore
 
@@ -474,7 +493,7 @@ Once all three old nodes are wiped, push `main` of both repositories. After cont
 
 `--max-age <n>s|m|h|d`, for example `just restore-test all --max-age 2h`, also fails each drill whose newest backup is older: the newest completed base backup for `postgres`, the newest dump of each database for `dumps`, the restored backup for `longhorn`, and the snapshot for `etcd`.
 
-The cadence is a monthly `just restore-test` and `just offline-backup`, a full rebuild from git every six months, and both before a major upgrade. Nothing schedules them; they are run by hand.
+The cadence is a monthly `just restore-test` and `just offline-backup`, a rebuild drill from git with the current keys every six months, and both before a major upgrade. Nothing schedules them; they are run by hand.
 
 | Mechanism | Last proven | Result |
 | --- | --- | --- |
@@ -522,9 +541,11 @@ Cluster secrets live in `bedrock-secrets` under `clusters/home/` (`platform/`, `
 
 The admin keys are [Secretive](https://github.com/maxgoedjen/secretive) Secure Enclave keys, served to ssh by its agent at `~/Library/Containers/com.maxgoedjen.Secretive.SecretAgent/Data/socket.ssh`:
 
-- `estate-root` logs in to the hosts. Each use requires Touch ID.
-- `github` authenticates to GitHub for pushes and fetches only. It has no access control: Secretive signs without a prompt.
-- `git-signing` signs every commit. It has Notify protection: Secretive shows a notification on each use and asks for nothing while the Mac is unlocked. It is registered on GitHub as a signing key and listed in `~/.ssh/allowed_signers`. Git uses it through `gpg.format ssh`, `user.signingkey ~/.ssh/git-signing.pub` and `gpg.ssh.program ~/.local/bin/git-ssh-sign`, a wrapper that runs `ssh-keygen` with `SSH_AUTH_SOCK` set to the Secretive agent. The repository rulesets require signed commits, so a Mac without this key cannot push.
+- `estate-root` logs in to the hosts.
+- `github` authenticates to GitHub for pushes and fetches only.
+- `git-signing` signs every commit. It is registered on GitHub as a signing key and listed in `~/.ssh/allowed_signers`. Git uses it through `gpg.format ssh`, `user.signingkey ~/.ssh/git-signing.pub` and `gpg.ssh.program ~/.local/bin/git-ssh-sign`, a wrapper that runs `ssh-keygen` with `SSH_AUTH_SOCK` set to the Secretive agent. The repository rulesets require signed commits, so a Mac without this key cannot push.
+
+Since 2026-11-15 all three keys have authentication None in Secretive: no Touch ID and no notification on use. A process running in the unlocked Mac session can therefore push signed commits to GitHub, reach the cluster with cluster-admin rights through Flux, and log in as root on every host, all without a prompt. The owner approves host and cluster actions by hand, which is a working practice and not a technical control. This is an accepted risk, listed in [Known gaps](#known-gaps). The break-glass key is unchanged: passphrase-protected and only on the stick.
 
 The public half of `estate-root` is in `hosts/common/estate-root.pub`, which `scripts/deploy-nodes.sh` points `IdentityFile` at so ssh offers that key from the agent. The `sc_auth` and `/usr/lib/ssh-keychain.dylib` route was tried and produced cryptographically invalid signatures, so it is not used.
 
@@ -604,6 +625,7 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 - control-plane-1 is the only API server. While it is down, running workloads keep serving, but nothing reschedules, and a CNPG instance that restarts cannot start, because its instance manager reads the Cluster from the API first.
 - Postgres backups are plaintext in R2, which is an accepted risk.
 - etcd snapshots in R2 are plaintext apart from Secrets and the bootstrap data, which is an accepted risk ([ADR 0004](adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md)).
+- The Secretive keys sign without a prompt, which is an accepted risk ([Admin SSH keys](#admin-ssh-keys)).
 - etcd disk latency is not monitored. etcd serves its metrics on loopback only, so the API server's view of etcd request latency (`EtcdRequestsSlow`) is the only etcd signal.
 - Cloudflare R2 is the only continuous off-site copy, and the tunnel DNS records and Access applications are kept only in the Cloudflare dashboard. The offline copy is up to a month old.
 - A stolen bucket token can erase the barman archive, every Longhorn backup and any dump or etcd snapshot older than its lock; the offline copy is then the newest Longhorn data that survives. A credential with R2 admin rights, such as a `wrangler login` session, can drop the lock rules first and erase everything in R2, which is why the wrangler session is logged out with `wrangler logout` outside lock maintenance.
