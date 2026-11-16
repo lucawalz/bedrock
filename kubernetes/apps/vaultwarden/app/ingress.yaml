@@ -1,0 +1,23 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: Vaultwarden
+    gethomepage.dev/icon: vaultwarden.png
+    gethomepage.dev/group: Apps
+    gethomepage.dev/href: https://vault.${cluster_domain}
+    gethomepage.dev/pod-selector: app.kubernetes.io/name=vaultwarden
+    gethomepage.dev/statusStyle: "dot"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`vault.${cluster_domain}`)
+      kind: Rule
+      services:
+        - name: vaultwarden
+          port: 8080
+  tls: {}

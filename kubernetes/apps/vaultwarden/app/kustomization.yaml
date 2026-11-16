@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: vaultwarden
+components:
+  - ../../../components/network-policies/base
+  - ../../../components/topology-spread
+resources:
+  - helmrelease.yaml
+  - ingress.yaml
+  - networkpolicies.yaml
+  - pvc.yaml

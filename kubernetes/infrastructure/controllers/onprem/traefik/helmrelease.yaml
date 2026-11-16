@@ -84,6 +84,7 @@ spec:
           - paperless
           - pocket-id
           - traefik
+          - vaultwarden
           - zot
       kubernetesIngress:
         namespaces:
@@ -97,6 +98,7 @@ spec:
           - paperless
           - pocket-id
           - traefik
+          - vaultwarden
           - zot
     tlsStore:
       default:

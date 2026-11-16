@@ -1,0 +1,106 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: vaultwarden
+  namespace: vaultwarden
+spec:
+  interval: 30m
+  timeout: 10m
+  chart:
+    spec:
+      chart: app-template
+      version: "5.3.0"
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  install:
+    strategy:
+      name: RetryOnFailure
+  upgrade:
+    force: true
+    strategy:
+      name: RetryOnFailure
+  driftDetection:
+    mode: warn
+  values:
+    controllers:
+      vaultwarden:
+        strategy: Recreate
+        pod:
+          labels:
+            bedrock.io/postgres-client: "true"
+        annotations:
+          reloader.stakater.com/auto: "true"
+        containers:
+          app:
+            image:
+              repository: docker.io/vaultwarden/server
+              tag: 1.37.5@sha256:4fe17f415f90087377d37c755e0ea3cf189dcc6794e49cdd2a9adbb4937d9e1f
+            env:
+              DOMAIN: https://vault.${cluster_domain}
+              ROCKET_PORT: "8080"
+              SIGNUPS_ALLOWED: "false"
+              DISABLE_ICON_DOWNLOAD: "true"
+              SSO_ENABLED: "true"
+              SSO_ONLY: "true"
+              SSO_PKCE: "true"
+              SSO_AUTHORITY: https://id.${cluster_domain}
+              SSO_CLIENT_ID: vaultwarden
+            envFrom:
+              - secretRef:
+                  name: vaultwarden
+            probes:
+              liveness:
+                enabled: true
+                custom: true
+                spec:
+                  tcpSocket:
+                    port: 8080
+                  periodSeconds: 15
+              readiness:
+                enabled: true
+                custom: true
+                spec:
+                  httpGet:
+                    path: /alive
+                    port: 8080
+                  periodSeconds: 10
+              startup:
+                enabled: false
+            resources:
+              requests:
+                cpu: 10m
+                memory: 64Mi
+              limits:
+                memory: 256Mi
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+    defaultPodOptions:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+    service:
+      app:
+        controller: vaultwarden
+        ports:
+          http:
+            port: 8080
+    persistence:
+      data:
+        existingClaim: vaultwarden-data
+        globalMounts:
+          - path: /data
+      tmp:
+        type: emptyDir
+        globalMounts:
+          - path: /tmp

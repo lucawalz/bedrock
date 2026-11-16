@@ -171,6 +171,7 @@
         "/(^|/)litellm$/",
         "/(^|/)open-webui$/",
         "/(^|/)ntfy$/",
+        "/^docker\\.io/vaultwarden/server$/",
         "/(^|/)cloudflared$/",
         "/(^|/)zot$/",
         "/^flagger$/"
