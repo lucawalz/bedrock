@@ -178,6 +178,10 @@ enrol-node-tpm node:
 reenrol-node-tpm node mode="":
     bash scripts/reenrol-node-tpm.sh {{ quote(node) }} {{ quote(mode) }}
 
+# Write ~/.ssh/known_hosts.d/bedrock with the pinned host keys from git
+known-hosts:
+    bash scripts/known-hosts.sh
+
 # Write the Pocket ID kubeconfig context bedrock into ~/.kube/config from control-plane-1
 kubeconfig:
     bash scripts/refresh-kubeconfig.sh

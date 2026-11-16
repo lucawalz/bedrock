@@ -1,10 +1,11 @@
 let
+  tailnetDomain = "tail26ab10.ts.net";
   nodes = {
     control-plane-1 = {
       role = "server";
       address = "10.20.0.10";
       mac = "98:fa:9b:a0:67:b7";
-      magicDnsName = "control-plane-1.tail26ab10.ts.net";
+      magicDnsName = "control-plane-1.${tailnetDomain}";
     };
     worker-1 = {
       role = "agent";
@@ -44,5 +45,6 @@ assert
     bootstrapControlPlane
     controlPlanes
     nodes
+    tailnetDomain
     ;
 }

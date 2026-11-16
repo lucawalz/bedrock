@@ -79,6 +79,9 @@ jobs:
       - name: Test the Tailscale auth key writes and their refusals
         run: bash scripts/check-tailscale-authkeys.sh
 
+      - name: Test the pinned known_hosts file and its refusals
+        run: bash scripts/check-known-hosts.sh
+
   inventory:
     runs-on: ubuntu-latest
     timeout-minutes: 30
