@@ -21,3 +21,4 @@ The decision log from before the rebuild is kept in the [archive](archive/README
 - [0015. Observe with Prometheus, Loki and Tempo](0015-observe-with-prometheus-loki-and-tempo.md) (accepted)
 - [0016. Boot nodes through Secure Boot and unlock LUKS with the TPM](0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md) (accepted)
 - [0017. Lock the tailnet to signed devices](0017-lock-the-tailnet-to-signed-devices.md) (accepted)
+- [0018. Keep passwords in Vaultwarden behind Pocket ID](0018-keep-passwords-in-vaultwarden-behind-pocket-id.md) (accepted)

@@ -26,7 +26,7 @@ In November 2026 the cluster was wiped and rebuilt from this repository to prove
 - Nodes boot through Secure Boot and open a LUKS2 root with the TPM.
 - Default-deny NetworkPolicies in every namespace and Kyverno policies in `Enforce` mode.
 - Passkey single sign-on through Pocket ID and oauth2-proxy, with the OIDC clients declared in git.
-- Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless and Open WebUI volumes.
+- Off-site backups to Cloudflare R2 for Postgres, Longhorn volumes and etcd, with a restore drill (`just restore-test`) and LUKS-encrypted Paperless, Open WebUI and Vaultwarden volumes.
 - A scaffold, `just new-app`, that writes a self-contained app folder which passes every check.
 
 ## Architecture
@@ -94,7 +94,7 @@ A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi ad
 | Cluster CA | Stable CA under an offline root | [ADR 0004](docs/adr/0004-keep-a-stable-cluster-ca-under-an-offline-root.md) |
 | GitOps | Flux 2.10 under the Flux Operator | [ADR 0001](docs/adr/0001-reconcile-the-cluster-from-git-with-the-flux-operator.md) |
 | Secrets | agenix for hosts, SOPS with age in the private `bedrock-secrets` repository | [ADR 0005](docs/adr/0005-keep-host-secrets-in-agenix-and-cluster-secrets-in-sops.md) |
-| Storage | Longhorn, with LUKS-encrypted volumes for Paperless and Open WebUI | [ADR 0006](docs/adr/0006-store-volumes-on-longhorn.md) |
+| Storage | Longhorn, with LUKS-encrypted volumes for Paperless, Open WebUI and Vaultwarden | [ADR 0006](docs/adr/0006-store-volumes-on-longhorn.md) |
 | Databases | One CloudNativePG cluster with per-app roles and databases, barman-cloud plugin | [ADR 0007](docs/adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md) |
 | Network policy | Default deny, reusable Kustomize components, kube-router enforcement | [ADR 0008](docs/adr/0008-deny-network-traffic-by-default.md) |
 | Admission | Kyverno in `Enforce` mode | [ADR 0009](docs/adr/0009-enforce-workload-policy-with-kyverno.md) |
@@ -106,6 +106,7 @@ A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi ad
 | Observability | kube-prometheus-stack, Loki, Tempo, Alloy, ntfy, a deadman on the router | [ADR 0015](docs/adr/0015-observe-with-prometheus-loki-and-tempo.md) |
 | Boot | Secure Boot and LUKS2 root unlocked by the TPM | [ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md) |
 | Tailnet | Tailnet Lock, devices admitted only with a signature | [ADR 0017](docs/adr/0017-lock-the-tailnet-to-signed-devices.md) |
+| Passwords | Vaultwarden behind Pocket ID, internal only | [ADR 0018](docs/adr/0018-keep-passwords-in-vaultwarden-behind-pocket-id.md) |
 
 The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm release with its chart is listed in the generated [inventory](docs/inventory.md).
 
@@ -115,6 +116,7 @@ The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm
 | --- | --- | --- |
 | Blog | Static Hugo site, released by Flagger | public (`lucawalz.dev`) |
 | Open WebUI | Chat front end for the local models, own login | public (`chat`) |
+| Vaultwarden | Password manager for the Bitwarden clients, Pocket ID login | internal (`vault`) |
 | Paperless | Document archive, own login | internal (`paperless`) |
 | paperless-gpt | Vision OCR and tagging for Paperless with Claude Haiku through LiteLLM | internal, forward-auth (`paperless-gpt`) |
 | LiteLLM | OpenAI-compatible gateway in front of Ollama and Anthropic | internal, forward-auth and own login (`litellm`) |
