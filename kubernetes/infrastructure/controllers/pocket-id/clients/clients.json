@@ -30,5 +30,16 @@
     "pkceEnabled": true,
     "skipConsent": true,
     "isGroupRestricted": false
+  },
+  {
+    "id": "vaultwarden",
+    "name": "vaultwarden",
+    "callbackURLs": ["https://vault.syslabs.dev/identity/connect/oidc-signin"],
+    "logoutCallbackURLs": [],
+    "isPublic": false,
+    "pkceEnabled": true,
+    "skipConsent": true,
+    "isGroupRestricted": true,
+    "allowedUserGroups": ["admins"]
   }
 ]

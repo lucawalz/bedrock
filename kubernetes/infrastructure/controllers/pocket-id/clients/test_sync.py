@@ -15,6 +15,7 @@ OTHER_ID = "user-other"
 GROUP_ID = "group-admins"
 SERVER_ERROR = 500
 LOOPBACK_HOSTS = ("localhost", "127.0.0.1")
+VAULTWARDEN_CALLBACK = "https://vault.syslabs.dev/identity/connect/oidc-signin"
 SECRETS = {"restricted": "restricted-client-secret", "open": "open-client-secret", "owner-email": OWNER_EMAIL + "\n"}
 RESTRICTED = {
     "id": "restricted",
@@ -193,6 +194,16 @@ class SyncTest(unittest.TestCase):
         self.assertTrue(declared["kubernetes"]["callbackURLs"])
         for url in declared["kubernetes"]["callbackURLs"]:
             self.assertIn(urllib.parse.urlsplit(url).hostname, LOOPBACK_HOSTS)
+
+    def test_the_declared_vaultwarden_client_is_confidential_pkce_and_restricted_to_admins(self):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "clients.json")) as handle:
+            declared = {client["id"]: client for client in json.load(handle)}
+        vaultwarden = declared["vaultwarden"]
+        self.assertFalse(vaultwarden["isPublic"])
+        self.assertTrue(vaultwarden["pkceEnabled"])
+        self.assertTrue(vaultwarden["isGroupRestricted"])
+        self.assertEqual(vaultwarden["allowedUserGroups"], [sync.ADMINS_GROUP])
+        self.assertEqual(vaultwarden["callbackURLs"], [VAULTWARDEN_CALLBACK])
 
     def test_unrestricted_clients_need_no_owner(self):
         fake = FakePocketId(users=[], clients=["open"])
