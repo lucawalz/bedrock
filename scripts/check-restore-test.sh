@@ -77,6 +77,8 @@ done
 
 FAKE_ARCHIVE_SERVER=postgres-2027-01 drill postgres || fail "a postgres drill failed: $(cat "$work/output")"
 grep -q 'serverName: postgres-2027-01$' "$work/applied" || fail "the restore cluster does not read the WAL archiver's serverName: $(cat "$work/applied")"
+grep -q '^postgres: vaultwarden.__diesel_schema_migrations has 42 rows in both$' "$work/output" \
+  || fail "the postgres drill does not compare the vaultwarden migration history: $(cat "$work/output")"
 if FAKE_ARCHIVE_SERVER="" drill postgres; then fail "a postgres drill without an archive server passed"; fi
 grep -q 'isWALArchiver' "$work/output" || fail "the missing archive server refusal does not name the WAL archiver: $(cat "$work/output")"
 grep -q '^kubectl apply' "$work/log" && fail "a postgres drill without an archive server applied a manifest"
