@@ -4,7 +4,7 @@ This is a personal homelab repository. Secrets are committed only in encrypted f
 
 ## Reporting a vulnerability
 
-Report a suspected vulnerability privately through the "Report a vulnerability" form under the repository's Security tab, rather than opening a public issue. A maintainer will respond there.
+Report a suspected vulnerability privately through the "Report a vulnerability" form at <https://github.com/lucawalz/bedrock/security/advisories/new>, rather than opening a public issue. Reports are acknowledged within 7 days. Coordinated disclosure follows within 90 days of the report, or earlier once a fix is deployed.
 
 ## Supported versions
 
