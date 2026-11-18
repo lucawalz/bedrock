@@ -1,16 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    "docker:pinDigests"
-  ],
+  "extends": ["github>lucawalz/.github//renovate/default"],
   "nix": {
     "description": "Keep the beta nix manager opted in, since Renovate ships it disabled",
     "enabled": true,
     "lockFileMaintenance": {
-      "enabled": true,
-      "minimumReleaseAge": null
+      "minimumReleaseAge": null,
+      "automerge": false
     }
   },
   "flux": {
@@ -84,12 +80,10 @@
     }
   ],
   "rebaseWhen": "conflicted",
-  "platformAutomerge": true,
   "platformCommit": "enabled",
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 0,
   "prHourlyLimit": 2,
-  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "description": "Group all nixpkgs flake updates together",
@@ -124,8 +118,8 @@
       "pinDigests": false
     },
     {
-      "description": "Auto-merge minor, patch, and digest updates",
-      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "description": "Auto-merge pin updates",
+      "matchUpdateTypes": ["pin"],
       "automerge": true
     },
     {
@@ -177,12 +171,14 @@
         "/^flagger$/"
       ],
       "matchUpdateTypes": ["minor", "patch"],
-      "automerge": false
+      "automerge": false,
+      "labels": ["dependencies", "held"]
     },
     {
       "description": "Hold the node image inputs, since a bump rebuilds the snapshot",
       "matchFileNames": ["infra/packer/**"],
-      "automerge": false
+      "automerge": false,
+      "labels": ["dependencies", "held"]
     },
     {
       "description": "Step stateful infrastructure one minor at a time",
@@ -201,7 +197,8 @@
       "matchPackageNames": ["/^traefik$/", "/^traefik-crds$/", "/^docker\\.io/traefik$/"],
       "groupName": "traefik and its crds",
       "separateMajorMinor": false,
-      "automerge": false
+      "automerge": false,
+      "labels": ["dependencies", "held"]
     },
     {
       "description": "Ship prometheus-operator-crds with kube-prometheus-stack, whose operator minor is the crds major",
@@ -217,7 +214,8 @@
       ],
       "groupName": "kube-prometheus-stack and its crds",
       "separateMajorMinor": false,
-      "automerge": false
+      "automerge": false,
+      "labels": ["dependencies", "held"]
     },
     {
       "description": "Deploy every blog build, ordered by its build timestamp, without review",
@@ -225,7 +223,8 @@
       "matchPackageNames": ["ghcr.io/lucawalz/blog"],
       "versioning": "regex:^main-(?<major>\\d{14})-[0-9a-f]+$",
       "minimumReleaseAge": null,
-      "automerge": true
+      "automerge": true,
+      "labels": ["dependencies"]
     }
   ]
 }
