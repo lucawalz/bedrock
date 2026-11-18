@@ -181,6 +181,12 @@
       "labels": ["dependencies", "held"]
     },
     {
+      "description": "Track the Hetzner base image by version only, since its name cannot carry a digest",
+      "matchFileNames": ["infra/packer/**"],
+      "matchPackageNames": ["debian"],
+      "pinDigests": false
+    },
+    {
       "description": "Step stateful infrastructure one minor at a time",
       "matchManagers": ["flux"],
       "matchPackageNames": [
