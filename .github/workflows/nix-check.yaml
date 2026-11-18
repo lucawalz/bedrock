@@ -116,4 +116,6 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
 
       - name: Build ${{ matrix.host }} toplevel
-        run: nix build --no-link --print-out-paths ".#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel"
+        env:
+          HOST: ${{ matrix.host }}
+        run: nix build --no-link --print-out-paths ".#nixosConfigurations.${HOST}.config.system.build.toplevel"
