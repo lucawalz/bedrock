@@ -25,7 +25,7 @@ spec:
   values:
     tempo:
       # renovate: datasource=docker depName=docker.io/grafana/tempo
-      tag: 2.9.0@sha256:65a5789759435f1ef696f1953258b9bbdb18eb571d5ce711ff812d2e128288a4
+      tag: 3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
       reportingEnabled: false
       memBallastSizeMbs: 0
       extraEnv:
