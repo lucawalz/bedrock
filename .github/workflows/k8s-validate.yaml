@@ -1,9 +1,7 @@
 name: k8s-validate
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -19,7 +17,6 @@ jobs:
 
       - uses: ./.github/actions/manifest-tools
 
-      # The catalog carries third-party CRDs only, so anything this repository installs is derived here instead.
       - name: Derive schemas for the CRDs this repository installs
         run: |
           RENDER_OUTPUT_DIR="$RUNNER_TEMP/rendered" bash scripts/render-helm-releases.sh > /dev/null
@@ -175,7 +172,6 @@ jobs:
           persist-credentials: false
 
       - name: Check SOPS files are actually encrypted
-        # Prevents accidentally committing decrypted secrets
         run: |
           fail=0
           while read -r file; do

@@ -1,0 +1,66 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    uses: ./.github/workflows/docs.yaml
+    permissions:
+      contents: read
+
+  k8s-validate:
+    uses: ./.github/workflows/k8s-validate.yaml
+    permissions:
+      contents: read
+
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    permissions:
+      contents: read
+
+  nix-check:
+    uses: ./.github/workflows/nix-check.yaml
+    permissions:
+      contents: read
+
+  renovate-validate:
+    uses: ./.github/workflows/renovate-validate.yaml
+    permissions:
+      contents: read
+
+  zizmor:
+    uses: lucawalz/.github/.github/workflows/zizmor.yml@512d402b682a017ae2629ee41f794686a8d1468c # v0.1.0
+    permissions:
+      contents: read
+
+  pr-title:
+    if: github.event_name == 'pull_request'
+    uses: lucawalz/.github/.github/workflows/pr-title.yml@512d402b682a017ae2629ee41f794686a8d1468c # v0.1.0
+    permissions:
+      contents: read
+      pull-requests: read
+
+  codeql:
+    uses: lucawalz/.github/.github/workflows/codeql.yml@512d402b682a017ae2629ee41f794686a8d1468c # v0.1.0
+    permissions:
+      contents: read
+      security-events: write
+    with:
+      languages: actions,python,javascript-typescript
+
+  ci-gate:
+    if: always()
+    needs: [docs, k8s-validate, lint, nix-check, renovate-validate, zizmor, pr-title, codeql]
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-skips: pr-title

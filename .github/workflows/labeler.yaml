@@ -1,0 +1,14 @@
+name: labeler
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    uses: lucawalz/.github/.github/workflows/labeler.yml@512d402b682a017ae2629ee41f794686a8d1468c # v0.1.0
+    permissions:
+      contents: read
+      pull-requests: write

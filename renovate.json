@@ -80,7 +80,6 @@
     }
   ],
   "rebaseWhen": "conflicted",
-  "platformCommit": "enabled",
   "timezone": "Europe/Berlin",
   "prConcurrentLimit": 0,
   "prHourlyLimit": 2,

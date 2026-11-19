@@ -1,9 +1,7 @@
 name: nix-check
 
 on:
-  pull_request:
-  push:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -41,12 +39,9 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@ef8a148080ab6020fd15196c2084a2eea5ff2d25 # v22
 
       - uses: DeterminateSystems/magic-nix-cache-action@908b263ff629f4cc17666315b7fd3ec127c6244d # v14
-        # Caches the Nix store across runs, cutting cold-build time significantly
 
       - name: Evaluate all NixOS configurations
         run: nix flake check --no-build
-        # --no-build evaluates all modules and catches Nix errors without
-        # spending 20+ minutes building the full system closure
 
   secrets-scripts:
     runs-on: ubuntu-latest

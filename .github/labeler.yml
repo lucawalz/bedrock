@@ -1,0 +1,19 @@
+kubernetes:
+  - changed-files:
+      - any-glob-to-any-file: kubernetes/**
+
+hosts:
+  - changed-files:
+      - any-glob-to-any-file: hosts/**
+
+nix:
+  - changed-files:
+      - any-glob-to-any-file: modules/**
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: docs/**
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: .github/**

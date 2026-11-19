@@ -1,14 +1,11 @@
 # bedrock
 
-[![nix-check](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/nix-check.yaml)
-[![k8s-validate](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/k8s-validate.yaml)
-[![lint](https://github.com/lucawalz/bedrock/actions/workflows/lint.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/lint.yaml)
-[![docs](https://github.com/lucawalz/bedrock/actions/workflows/docs.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/docs.yaml)
+[![ci](https://github.com/lucawalz/bedrock/actions/workflows/ci.yaml/badge.svg)](https://github.com/lucawalz/bedrock/actions/workflows/ci.yaml)
 [![GitOps: Flux](https://img.shields.io/badge/GitOps-Flux-316CE6)](https://fluxcd.io/)
 [![NixOS flakes](https://img.shields.io/badge/NixOS-flakes-5277C3?logo=nixos&logoColor=white)](https://nixos.org/)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A bare-metal Kubernetes home lab that is rebuilt from Git.
+Bare-metal Kubernetes homelab on NixOS, reconciled with Flux GitOps
 
 ## Description
 
@@ -85,7 +82,7 @@ Public traffic never reaches the LAN directly. Cloudflare terminates TLS at its 
 
 A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi advertises `10.20.0.0/24` to the tailnet, and each node also joins the tailnet as its own `tag:cluster` device, so the nodes stay reachable when the Pi is not ([ADR 0003](docs/adr/0003-run-k3s-as-one-server-and-two-agents-on-the-tailnet.md)). Firmware sits outside Nix and is patched by hand: `rpi-eeprom` on the Pi and the BIOS on the nodes.
 
-## Stack
+### Stack
 
 | Layer | Component | Decision |
 | --- | --- | --- |
@@ -110,7 +107,7 @@ A TP-Link TL-SG108PE carries the VLAN tags and powers the Pi over PoE. The Pi ad
 
 The full record set is indexed in [docs/adr](docs/adr/README.md), and every Helm release with its chart is listed in the generated [inventory](docs/inventory.md).
 
-### Services
+#### Services
 
 | Service | Purpose | Access |
 | --- | --- | --- |
@@ -268,17 +265,22 @@ Recovery depends on the repositories, the three offline keys and the R2 buckets.
 
 ## Continuous integration
 
-Every pull request and push to `main` runs:
+Every pull request and push to `main` runs `ci`, which calls these workflows and reports one aggregate `ci-gate` check, the only required check on `main`:
 
-- `nix-check`: `nixfmt`, `statix`, `deadnix`, `nix flake check` and a build of every cluster node. `nix-build-router` builds the router closure on an arm64 runner when router files change, and weekly.
-- `k8s-validate`: kubeconform against upstream and CRD schemas, `kustomize build` of every kustomization, a render of every HelmRelease, a render of the Flux Kustomizations with their substitutions, the Kyverno policy tests, the promtool rule tests, a check that SOPS files are encrypted, and the repository checks in `scripts/check-*.sh` (CRD order, CRD-only charts, HelmRelease retry strategy, apps index, Helm sources, alert namespaces, default ServiceAccounts, snapshot coverage).
+- `nix-check`: `nixfmt`, `statix`, `deadnix`, `nix flake check`, the secrets and recovery script tests, and a build of every cluster node.
+- `k8s-validate`: kubeconform against upstream and CRD schemas, with schemas for the CRDs this repository installs derived from its own CRDs because the schema catalog carries only third-party ones, `kustomize build` of every kustomization, a render of every HelmRelease, a render of the Flux Kustomizations with their substitutions, the Kyverno policy tests, the promtool rule tests, a check that SOPS files are encrypted, and the repository checks in `scripts/check-*.sh` (CRD order, CRD-only charts, HelmRelease retry strategy, apps index, Helm sources, alert namespaces, default ServiceAccounts, snapshot coverage).
 - `lint`: shellcheck and actionlint.
 - `docs`: the ADR index and the generated inventory.
 - `renovate-validate`: the Renovate configuration.
+- The shared [zizmor](https://docs.zizmor.sh/) workflow audit, CodeQL for the workflows, Python and JavaScript, and a Conventional Commits check of the pull request title, all from [lucawalz/.github](https://github.com/lucawalz/.github).
 
-`image-scan` runs weekly and on demand instead: Trivy scans every image the cluster runs for critical vulnerabilities with a fix, and one GitHub issue lists them.
+Outside the gate, `nix-build-router` builds the router closure on an arm64 runner when router files change, and weekly. `labeler` labels pull requests by path, `scorecard` runs the OpenSSF Scorecard on `main` and weekly, and `image-scan` runs weekly and on demand: Trivy scans every image the cluster runs for critical vulnerabilities with a fix, and one GitHub issue lists them.
 
 `scripts/check-alert-selectors.sh` needs the live Prometheus and is run by hand after rule changes and rebuilds ([alert selector audit](docs/alert-selector-audit.md)). [Renovate](https://docs.renovatebot.com/) keeps the pins current ([ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md)).
+
+## Support
+
+Open an issue on the [GitHub repository](https://github.com/lucawalz/bedrock/issues); [SUPPORT.md](https://github.com/lucawalz/.github/blob/main/SUPPORT.md) covers where questions go. Report security issues as described in [SECURITY.md](SECURITY.md).
 
 ## Roadmap
 
@@ -294,11 +296,9 @@ The roadmap is a direction, not a commitment.
 
 This is a personal home lab, not a product, but issues and forks are welcome. Anyone reusing the layout will need to adapt it to their own hardware, domain and accounts.
 
-To work on it, enter the dev shell with `nix develop` and run `nix flake check` and `scripts/check-*.sh` before opening a pull request. Commits are SSH-signed with the Secretive `git-signing` key, and the repository rulesets require signed commits. Report security issues as described in [SECURITY.md](SECURITY.md).
+To work on it, enter the dev shell with `nix develop` and run `nix flake check` and `scripts/check-*.sh` before opening a pull request. Commits are SSH-signed with the Secretive `git-signing` key, and the repository rulesets require signed commits.
 
-## Support
-
-Open an issue on the [GitHub repository](https://github.com/lucawalz/bedrock/issues).
+The shared [contributing guide](https://github.com/lucawalz/.github/blob/main/CONTRIBUTING.md) and [code of conduct](https://github.com/lucawalz/.github/blob/main/CODE_OF_CONDUCT.md) apply.
 
 ## Authors and acknowledgment
 
