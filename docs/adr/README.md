@@ -2,6 +2,8 @@
 
 These records describe the architecture of the bedrock cluster as it was rebuilt from git in November 2026. Each one states the context, the decision and its consequences, and stays short. A record that a later decision overturns is marked superseded and keeps its text.
 
+The records follow Michael Nygard's format, as described in the [shared contributing guide](https://github.com/lucawalz/.github/blob/main/CONTRIBUTING.md#documentation).
+
 The decision log from before the rebuild is kept in the [archive](archive/README.md) for its reasoning. It is no longer maintained, and the records below supersede it.
 
 - [1. Reconcile the cluster from git with the Flux Operator](0001-reconcile-the-cluster-from-git-with-the-flux-operator.md) (accepted)
