@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 11. Serve through Traefik and a Cloudflare tunnel
 
-# 0011. Serve through Traefik and a Cloudflare tunnel
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

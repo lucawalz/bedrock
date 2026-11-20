@@ -1,13 +1,20 @@
----
-status: accepted, implemented
-date: 2026-07-29
----
+# 69. Record the Longhorn prerequisites that NixOS does not provide
 
-# 0069. Record the Longhorn prerequisites that NixOS does not provide
+Date: 2026-07-29
+
+## Status
+
+Accepted, implemented
 
 ## Context
 
 Longhorn is written for a conventional Linux distribution. It assumes an iSCSI initiator is installed and running, that host binaries can be reached under `/usr/local/bin`, that the NFS client is present for ReadWriteMany volumes, and that the kernel modules it probes for are loaded. NixOS provides none of these by default, so each had to be supplied explicitly in `modules/services/storage.nix`, and each was found the hard way. Nothing recorded why any of it exists: [0005](0005-longhorn-storage.md) chose Longhorn but never mentions iSCSI, kernel modules or the symlink, so a nixpkgs bump that touches any of them presents as a Longhorn fault with no trail back to the host layer. That happened twice in July 2026 and cost about fourteen hours the first time.
+
+### Options considered
+
+- Record the prerequisites in an ADR, chosen. The configuration is small, but every line of it is load-bearing and none of it is obvious, and rediscovering any one line costs hours of debugging aimed at Longhorn when the fault is in the host.
+- Rely on comments in `modules/services/storage.nix`. Rejected. The file already carries brief comments and they were not enough: they say what each line does, not what breaks without it, and they cannot hold the open-iscsi upgrade hazard, which spans the host layer and the storage layer and belongs in neither file alone.
+- Extend [0005](0005-longhorn-storage.md). Rejected. That record decides which storage system to run; what the host must provide to run it is a separate decision, and the ADR log does not rewrite accepted records.
 
 ## Decision
 
@@ -19,12 +26,6 @@ Record the four prerequisites, what each is for, and how each fails when absent.
 - `nfs-utils`, installed through `hosts/common/packages.nix` rather than this module, because ReadWriteMany volumes are served by a share manager that needs the NFS client on whichever node mounts them.
 
 One further failure belongs here, because it lives in the host layer even though it presents as a storage fault. An open-iscsi version change invalidates the persisted node records under `/etc/iscsi/nodes` in both directions, and a single invalid file aborts the whole directory read, so one stale record from a departed portal disables every `iscsiadm` call on that node, Longhorn engines fail to start their iSCSI frontend, and volumes cycle between attaching and faulted. Upgrading a host across such a change means purging `/etc/iscsi/nodes` and `/etc/iscsi/send_targets` in the same operation as the reboot, so nothing rewrites the records in between.
-
-## Options considered
-
-- Record the prerequisites in an ADR, chosen. The configuration is small, but every line of it is load-bearing and none of it is obvious, and rediscovering any one line costs hours of debugging aimed at Longhorn when the fault is in the host.
-- Rely on comments in `modules/services/storage.nix`. Rejected. The file already carries brief comments and they were not enough: they say what each line does, not what breaks without it, and they cannot hold the open-iscsi upgrade hazard, which spans the host layer and the storage layer and belongs in neither file alone.
-- Extend [0005](0005-longhorn-storage.md). Rejected. That record decides which storage system to run; what the host must provide to run it is a separate decision, and the ADR log does not rewrite accepted records.
 
 ## Consequences
 

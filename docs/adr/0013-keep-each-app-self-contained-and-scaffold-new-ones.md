@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 13. Keep each app self-contained and scaffold new ones
 
-# 0013. Keep each app self-contained and scaffold new ones
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

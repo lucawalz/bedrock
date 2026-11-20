@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-13
----
+# 16. Boot nodes through Secure Boot and unlock LUKS with the TPM
 
-# 0016. Boot nodes through Secure Boot and unlock LUKS with the TPM
+Date: 2026-11-13
+
+## Status
+
+Accepted
 
 ## Context
 

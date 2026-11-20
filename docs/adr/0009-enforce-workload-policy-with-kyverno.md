@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 9. Enforce workload policy with Kyverno
 
-# 0009. Enforce workload policy with Kyverno
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

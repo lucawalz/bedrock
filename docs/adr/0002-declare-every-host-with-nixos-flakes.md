@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 2. Declare every host with NixOS flakes
 
-# 0002. Declare every host with NixOS flakes
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

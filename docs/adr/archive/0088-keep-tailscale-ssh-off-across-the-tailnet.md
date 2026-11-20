@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-10-26
----
+# 88. Keep Tailscale SSH off across the tailnet
 
-# 0088. Keep Tailscale SSH off across the tailnet
+Date: 2026-10-26
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -11,19 +12,19 @@ On 25 October 2026 a researcher published the Tailworm report against Tailscale 
 
 The estate never used Tailscale SSH. `RunSSH` is false on the Pi router, the three home nodes and the operator's Mac, no node has a `tailscale serve` configuration and none is an app connector. Hosts are reached over OpenSSH with keys only, root login without a password is refused, and that is the path [0074](0074-home-nodes-on-the-tailnet.md) relies on for control-plane-1. The tailnet policy, which is not tracked in this repository, still carried Tailscale's default `ssh` rule: any member could reach its own devices as any user, root included, in check mode. Nothing used it, but it was the one grant the report's chain needs.
 
-## Decision
-
-Remove the `ssh` section from the tailnet policy entirely, so Tailscale SSH grants nothing to anyone even if a device turns it on locally. Add an `sshTests` entry asserting that `tag:cluster` cannot reach root on `tag:cluster` over Tailscale SSH, and a policy test asserting that `tag:cluster` cannot reach the operator's Mac, so a policy edit that reintroduces either path fails on save.
-
-No Tailscale release fixes the report yet; 1.104.2 is both the latest and the version it tested. Upgrading from 1.98.8 is still worthwhile for unrelated fixes, among them the TLS intermediate distrust in TS-2026-013, and is a separate host update following the `flannel.1` rebind step in the disaster-recovery runbook, since a package bump restarts `tailscaled`.
-
-## Options considered
+### Options considered
 
 - Remove the `ssh` section from the policy, chosen. It is enforced at the coordination server, covers every device including the Mac and phone, and needs no host rebuild.
 - Also pin `--ssh=false` on every NixOS host. Rejected for now: with no `ssh` rules, a locally enabled Tailscale SSH server accepts nobody, so the flag adds a host-side setting that changes nothing the policy does not already enforce.
 - Rely on a Tailscale upgrade instead. Rejected because no fixed release exists, so an upgrade alone leaves the report's chain open.
 - Enable Tailnet Lock. Deferred rather than rejected. In the report it stopped the final step, where the attacker enrolls a machine of their own. It also turns every rebuilt or re-enrolled host into a manual signing step and adds disablement secrets to hold safely. With Tailscale SSH granting nothing, the chain never starts, and no enrolled host keeps a live auth key that a compromised device could reuse.
 - Scope the member grant down from `*`. Out of scope. The report's chain does not use it once Tailscale SSH is off, and narrowing it risks locking the operator out, as the policy itself notes.
+
+## Decision
+
+Remove the `ssh` section from the tailnet policy entirely, so Tailscale SSH grants nothing to anyone even if a device turns it on locally. Add an `sshTests` entry asserting that `tag:cluster` cannot reach root on `tag:cluster` over Tailscale SSH, and a policy test asserting that `tag:cluster` cannot reach the operator's Mac, so a policy edit that reintroduces either path fails on save.
+
+No Tailscale release fixes the report yet; 1.104.2 is both the latest and the version it tested. Upgrading from 1.98.8 is still worthwhile for unrelated fixes, among them the TLS intermediate distrust in TS-2026-013, and is a separate host update following the `flannel.1` rebind step in the disaster-recovery runbook, since a package bump restarts `tailscaled`.
 
 ## Consequences
 

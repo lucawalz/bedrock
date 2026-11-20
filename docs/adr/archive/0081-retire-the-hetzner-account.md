@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-06
----
+# 81. Retire the Hetzner account and accept an estate with no off-site backups
 
-# 0081. Retire the Hetzner account and accept an estate with no off-site backups
+Date: 2026-09-06
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -23,6 +24,25 @@ off and no `DataUpload` object was ever recorded, so no volume bytes left throug
 off-site was the estate's Secrets and its claim-to-volume bindings, while volume durability rode
 Longhorn's own BackupTarget. The intended replacement is a NAS in the rack, chosen but not bought and
 deferred on cost, so treating it as imminent would be planning around something that does not exist.
+
+### Options considered
+
+- Remove everything and accept the gap, chosen. It is the only option that leaves the repository
+  describing what actually runs; the alternatives keep manifests, credentials or bills alive for a
+  capability that is either absent or paid for twice.
+- Repoint every writer at a different rented S3 provider. It preserves the off-site copy and is the
+  strongest argument against this record. Rejected because it trades one standing bill for another to
+  hold data meant to land on hardware already chosen, and because each of four cutovers is a moment a
+  backup chain breaks silently, as the barman-cloud cutover already did once.
+- Buy the NAS now and cut straight over. Deferred rather than rejected: it is the intended end state,
+  but committing four figures of unplanned spend to preserve a mechanism that has never been
+  restore-tested is the wrong order to do things in.
+- Back up to a local disk on the control-plane node or the operator workstation. Rejected. It sits in
+  the same building, so it answers none of the scenarios [0009](0009-velero-backups.md) was written
+  for, and it is a hand-managed path outside the GitOps loop.
+- Keep Velero alone against another bucket for the Secrets copy. Rejected, but it exposes the one
+  thing genuinely lost: every Secret it captured is already SOPS ciphertext in `bedrock-secrets` bar
+  the age key that opens that repository, and that escrow belongs in a password manager.
 
 ## Decision
 
@@ -51,25 +71,6 @@ addressed its bucket through a bucket name, a region, an endpoint and one creden
 [0009](0009-velero-backups.md) kept that configuration provider-neutral, so restoring them is a
 matter of creating buckets and restoring four values rather than choosing an architecture again.
 
-## Options considered
-
-- Remove everything and accept the gap, chosen. It is the only option that leaves the repository
-  describing what actually runs; the alternatives keep manifests, credentials or bills alive for a
-  capability that is either absent or paid for twice.
-- Repoint every writer at a different rented S3 provider. It preserves the off-site copy and is the
-  strongest argument against this record. Rejected because it trades one standing bill for another to
-  hold data meant to land on hardware already chosen, and because each of four cutovers is a moment a
-  backup chain breaks silently, as the barman-cloud cutover already did once.
-- Buy the NAS now and cut straight over. Deferred rather than rejected: it is the intended end state,
-  but committing four figures of unplanned spend to preserve a mechanism that has never been
-  restore-tested is the wrong order to do things in.
-- Back up to a local disk on the control-plane node or the operator workstation. Rejected. It sits in
-  the same building, so it answers none of the scenarios [0009](0009-velero-backups.md) was written
-  for, and it is a hand-managed path outside the GitOps loop.
-- Keep Velero alone against another bucket for the Secrets copy. Rejected, but it exposes the one
-  thing genuinely lost: every Secret it captured is already SOPS ciphertext in `bedrock-secrets` bar
-  the age key that opens that repository, and that escrow belongs in a password manager.
-
 ## Consequences
 
 There is no off-site copy of anything. A fire, a theft or a flood now takes the cluster and every copy
@@ -95,7 +96,7 @@ Nothing bills, leaving the domain and the Cloudflare and Tailscale accounts as t
 external costs. Records whose backup or burst premise died with the account are marked in place rather
 than rewritten, with [0009](0009-velero-backups.md) the exception and fully superseded.
 
-## Update 2026-09-12
+### Update 2026-09-12
 
 Postgres's half of this record was reversed sooner than expected, and an audit along the way found
 that the removal had left a defect: with `spec.backup` gone, the CNPG cluster's `LastBackupSucceeded`

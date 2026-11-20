@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-07
----
+# 84. Parameterise the estate for multiple control planes
 
-# 0084. Parameterise the estate for multiple control planes
+Date: 2026-09-07
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -19,6 +20,21 @@ second control plane was considered, because the fix is spread across five files
 subsystems, and one of those edits fails in a way that is not obvious from reading the diff: a
 second server started with `clusterInit = true` bootstraps its own independent single-member cluster
 instead of joining the first.
+
+### Options considered
+
+- Parameterise the inventory and derive everything from it, chosen. It turns a five-file edit across
+  three subsystems into one data entry, and it puts the non-obvious `clusterInit` case beyond reach.
+- Leave the singular field and edit the code when a second machine arrives. Rejected for the same
+  reason: the edits are spread wide and one of them fails silently.
+- Derive the bootstrap node as the head of the sorted control-plane list. Rejected, because bootstrap
+  status is a historical fact rather than a property that should follow from name ordering.
+- Introduce an API virtual address so joining does not depend on one specific node. Rejected for now:
+  it is the right answer for the join-time single point of failure and cannot be tested without
+  hardware that does not exist yet.
+- Rename the roles to k3s's own vocabulary at the hostname level as well. Rejected. The inventory uses
+  those words for the role, where they are exact, while the hostnames keep the vocabulary Kubernetes
+  uses for the same distinction.
 
 ## Decision
 
@@ -42,21 +58,6 @@ that defines the nodes.
 `bootstrapControlPlane` is explicit rather than derived as the first control plane in sort order,
 because which node ran `--cluster-init` is a fact about the cluster's history, and a rename or a
 reordering must not change which node the rest of the estate treats as the bootstrap.
-
-## Options considered
-
-- Parameterise the inventory and derive everything from it, chosen. It turns a five-file edit across
-  three subsystems into one data entry, and it puts the non-obvious `clusterInit` case beyond reach.
-- Leave the singular field and edit the code when a second machine arrives. Rejected for the same
-  reason: the edits are spread wide and one of them fails silently.
-- Derive the bootstrap node as the head of the sorted control-plane list. Rejected, because bootstrap
-  status is a historical fact rather than a property that should follow from name ordering.
-- Introduce an API virtual address so joining does not depend on one specific node. Rejected for now:
-  it is the right answer for the join-time single point of failure and cannot be tested without
-  hardware that does not exist yet.
-- Rename the roles to k3s's own vocabulary at the hostname level as well. Rejected. The inventory uses
-  those words for the role, where they are exact, while the hostnames keep the vocabulary Kubernetes
-  uses for the same distinction.
 
 ## Consequences
 

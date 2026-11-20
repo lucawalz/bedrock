@@ -1,23 +1,24 @@
----
-status: accepted, superseded in part by 0032
-date: 2026-06-15
----
+# 23. Replace the self-hosted WireGuard overlay with Tailscale
 
-# 0023. Replace the self-hosted WireGuard overlay with Tailscale
+Date: 2026-06-15
+
+## Status
+
+Accepted, superseded in part by [32. Drop the worker-2 standby subnet router](0032-drop-worker-2-standby-subnet-router.md)
 
 ## Context
 
 [0010](0010-wireguard-overlay.md) put a self-hosted WireGuard hub on the NixOS router so the admin workstation and the cloud burst nodes could reach the cluster over a private overlay. The hub carried real cost. Every peer was a hand-managed entry in the router config, each burst node needed key material injected at provisioning time and a oneshot service to raise `wg0` before k3s could start, and the home line had to act as a fixed WireGuard endpoint whose public address could not live in committed config. The overlay worked, but it was the most fragile and least automatic part of the setup, and it stood in the way of moving burst capacity onto Cluster API.
 
-## Decision
-
-Tailscale replaces the self-hosted WireGuard hub. The Pi router runs as a Tailscale subnet router and advertises the trusted `10.20.0.0/24` range, so the admin workstation and any tailnet member reach the cluster without a manual peer list. Burst nodes join the tailnet at boot from an auth key and ride the same overlay, which removes the bespoke key injection and the `wg0`-up dance. The router keeps AdGuard as the LAN resolver, so Tailscale is told not to manage DNS. worker-2 also ran a standby subnet router advertising the same prefix, so the Pi was not a single point of failure, until [0032](0032-drop-worker-2-standby-subnet-router.md) removed it and left the Pi as the sole advertiser. Reaching the advertised prefix is not the same as reaching every port on it. Forwarding from `tailscale0` into VLAN 20 is an explicit port allowlist per [0012](0012-bulletproof-router-hardening.md), which leaves subnet-router advertisement and peer onboarding unchanged.
-
-## Options considered
+### Options considered
 
 - Tailscale, chosen. A managed control plane removes peer bookkeeping, gives burst nodes a one-line join, and fits the Cluster API direction. The cost is a third party in the control plane, though not in the data path between peers.
 - Keep the self-hosted WireGuard hub. It has no third party at all, but every peer and burst node is manual, and it was the main obstacle to automated burst capacity.
 - A different self-hosted mesh such as NetBird or Headscale. Self-hostable, but each is another control plane to run and keep patched, which is the operational weight this change is meant to shed.
+
+## Decision
+
+Tailscale replaces the self-hosted WireGuard hub. The Pi router runs as a Tailscale subnet router and advertises the trusted `10.20.0.0/24` range, so the admin workstation and any tailnet member reach the cluster without a manual peer list. Burst nodes join the tailnet at boot from an auth key and ride the same overlay, which removes the bespoke key injection and the `wg0`-up dance. The router keeps AdGuard as the LAN resolver, so Tailscale is told not to manage DNS. worker-2 also ran a standby subnet router advertising the same prefix, so the Pi was not a single point of failure, until [0032](0032-drop-worker-2-standby-subnet-router.md) removed it and left the Pi as the sole advertiser. Reaching the advertised prefix is not the same as reaching every port on it. Forwarding from `tailscale0` into VLAN 20 is an explicit port allowlist per [0012](0012-bulletproof-router-hardening.md), which leaves subnet-router advertisement and peer onboarding unchanged.
 
 ## Consequences
 

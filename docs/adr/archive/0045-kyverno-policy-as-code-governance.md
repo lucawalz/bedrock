@@ -1,13 +1,20 @@
----
-status: accepted
-date: 2026-06-20
----
+# 45. Govern workloads with Kyverno policy-as-code in audit-first rollout
 
-# 0045. Govern workloads with Kyverno policy-as-code in audit-first rollout
+Date: 2026-06-20
+
+## Status
+
+Accepted
 
 ## Context
 
 The triage in [0043](0043-triage-production-readiness-findings.md) hardened the first-party workloads by hand and wrote down which trade-offs were deliberate. That posture lived only as prose and as the discipline of whoever last edited a manifest. The first-party manifests already followed a consistent shape covering resource bounds, privilege, capabilities, and image tags, but that shape was convention, not a contract, and nothing surfaced a single view of a running cluster's compliance. The conventions needed to become machine-checked policy with one source of truth shared between the cluster and CI.
+
+### Options considered
+
+- Kyverno, chosen. Policies are Kubernetes-native YAML, so the same resource drives admission control, background audit, and the CI gate with no second language, and it emits native `PolicyReport` resources that render into a UI and Prometheus metrics.
+- OPA Gatekeeper. Rejected. Policies are written in Rego, a separate language to learn and test, which splits the source of truth between the cluster and any shift-left check, and its reporting ecosystem is thinner than the PolicyReport path.
+- Keep the scanner sweep from [0043](0043-triage-production-readiness-findings.md) and add no admission control. Rejected. A periodic off-cluster scan catches drift late, cannot stop a non-compliant Pod from admitting, and leaves the conventions as prose.
 
 ## Decision
 
@@ -18,12 +25,6 @@ All five validation policies carry `validationFailureAction: Enforce` cluster-wi
 Getting there was audit-first. Every policy shipped `validationFailureAction: Audit` so admitting the existing workloads, most of them upstream Helm charts that do not meet the restricted baseline, never broke, and graduation to enforce was decided per namespace through `validationFailureActionOverrides` on the evidence of an offline `kyverno apply`. Only `blog` and `homepage` graduated at first, because their first-party Deployments passed all five policies, and the litellm database-init Job failed four of them, carrying no resource bounds and no security context, until it was corrected to non-root with dropped capabilities and bounded resources. That rollout is finished and the mechanism it used is gone: the overrides appear nowhere in the tree and `blog` and `homepage` hold no special status.
 
 Policy Reporter installs as a second HelmRelease in the same namespace for reporting. Its Prometheus metrics exporter and Kyverno plugin are enabled, its ServiceMonitor carries the `release: kube-prometheus-stack` label, and its Grafana dashboards render into the `monitoring` namespace through the sidecar label. Its own UI is disabled and carries no route, so PolicyReports are read through Grafana and `kubectl` rather than through a dashboard of its own.
-
-## Options considered
-
-- Kyverno, chosen. Policies are Kubernetes-native YAML, so the same resource drives admission control, background audit, and the CI gate with no second language, and it emits native `PolicyReport` resources that render into a UI and Prometheus metrics.
-- OPA Gatekeeper. Rejected. Policies are written in Rego, a separate language to learn and test, which splits the source of truth between the cluster and any shift-left check, and its reporting ecosystem is thinner than the PolicyReport path.
-- Keep the scanner sweep from [0043](0043-triage-production-readiness-findings.md) and add no admission control. Rejected. A periodic off-cluster scan catches drift late, cannot stop a non-compliant Pod from admitting, and leaves the conventions as prose.
 
 ## Consequences
 

@@ -1,23 +1,24 @@
----
-status: accepted
-date: 2026-07-09
----
+# 65. Adopt CoreDNS into Flux for DNS high availability
 
-# 0065. Adopt CoreDNS into Flux for DNS high availability
+Date: 2026-07-09
+
+## Status
+
+Accepted
 
 ## Context
 
 In-cluster DNS ran as the k3s bundled CoreDNS addon, owned by a `k3s.cattle.io` Addon object. It shipped as a single replica with no PodDisruptionBudget, so the loss of the node holding that pod took cluster DNS down until it rescheduled and every service lookup stalled in the meantime. The addon ownership also meant any manual edit to the CoreDNS Deployment, Service, or ConfigMap was reverted the next time k3s reconciled its addons, so the resource could not be tuned in place. That left DNS as the one critical-path service the topology work in [0053](0053-ha-critical-path-survives-node-loss.md) left single-replica.
 
-## Decision
-
-Disable the k3s CoreDNS addon with `--disable=coredns`, matching the existing convention that already disables servicelb, traefik, and local-storage on the control-plane node, and manage CoreDNS as raw manifests in Flux under the infrastructure controllers. The Flux copy runs two replicas with a required pod anti-affinity on `kubernetes.io/hostname`, so the two pods always land on different nodes, and a PodDisruptionBudget with `minAvailable: 1` keeps a voluntary disruption from draining both at once. This follows the GitOps model from [0002](0002-nixos-flakes-flux-gitops.md) and reuses the required-anti-affinity-plus-budget pattern the ingress path adopted in [0053](0053-ha-critical-path-survives-node-loss.md). The Service keeps the cluster DNS address pinned at 10.43.0.10, the value every pod inherits through its resolv.conf, and the ConfigMap carries the Corefile verbatim from the addon alongside a static NodeHosts block for the three nodes.
-
-## Options considered
+### Options considered
 
 - CoreDNS as Flux-managed raw manifests at two replicas, chosen. Durable, versioned, and highly available, with spread and a disruption budget under the cluster's own control.
 - Scaling the k3s addon in place with an HPA or a manifest override. Rejected, the same way it was declined in [0053](0053-ha-critical-path-survives-node-loss.md): the addon reverts edits on reconcile, so any override fights k3s rather than owning the resource.
 - Leaving CoreDNS single-replica. Rejected, because it remained the last single point of failure on the critical path after the ingress and database work.
+
+## Decision
+
+Disable the k3s CoreDNS addon with `--disable=coredns`, matching the existing convention that already disables servicelb, traefik, and local-storage on the control-plane node, and manage CoreDNS as raw manifests in Flux under the infrastructure controllers. The Flux copy runs two replicas with a required pod anti-affinity on `kubernetes.io/hostname`, so the two pods always land on different nodes, and a PodDisruptionBudget with `minAvailable: 1` keeps a voluntary disruption from draining both at once. This follows the GitOps model from [0002](0002-nixos-flakes-flux-gitops.md) and reuses the required-anti-affinity-plus-budget pattern the ingress path adopted in [0053](0053-ha-critical-path-survives-node-loss.md). The Service keeps the cluster DNS address pinned at 10.43.0.10, the value every pod inherits through its resolv.conf, and the ConfigMap carries the Corefile verbatim from the addon alongside a static NodeHosts block for the three nodes.
 
 ## Consequences
 

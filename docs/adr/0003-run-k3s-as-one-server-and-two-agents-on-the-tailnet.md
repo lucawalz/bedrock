@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 3. Run K3s as one server and two agents on the tailnet
 
-# 0003. Run K3s as one server and two agents on the tailnet
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

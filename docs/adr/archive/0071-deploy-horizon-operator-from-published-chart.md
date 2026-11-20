@@ -1,15 +1,23 @@
----
-status: accepted, burst provisioning premise superseded by 0081
-date: 2026-08-02
----
+# 71. Deploy the horizon operator from its published OCI chart
 
-# 0071. Deploy the horizon operator from its published OCI chart
+Date: 2026-08-02
+
+## Status
+
+Accepted, burst provisioning premise superseded by [81. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md)
 
 ## Context
 
 [0062](0062-retire-elastic-cluster-autoscaler.md) left on-demand capacity entirely to the horizon tool, run from a workstation against the hcloud API. That covers provisioning, but nothing in the cluster reacts when a burst node fails to arrive or leaves without being cleaned up. Horizon ships an operator that runs in the cluster instead: it reconciles leases against a provider and collects orphaned Node objects once a node has missed its registration window. Horizon publishes that operator as a Helm chart to `ghcr.io`, which is the artifact an adopter installs and the only supported way to install it. Two things in this repository decide how a chart can be consumed. Every chart source lives in `kubernetes/clusters/home/sources/helm/` as a `HelmRepository`, and there is not a single `OCIRepository` in the estate. `scripts/render-helm-releases.sh`, which CI runs directly and again through `scripts/apply-policies.sh`, resolves a release's source by matching `spec.chart.spec.sourceRef.name` against the `HelmRepository` documents in that directory, so a release that points at a chart through `spec.chartRef` has no `spec.chart.spec` for the renderer to read: it renders nothing, reports no source, and fails the build.
 
 The reaper from [0026](0026-orphan-node-reaper.md) is the other thing the operator touches. Its first pass selected nodes labelled `horizon.dev/pool=reserved` whose Ready condition is not True and deleted them every ten minutes; its second pass, added by [0040](0040-reap-orphaned-longhorn-nodes.md), finalizes stranded `nodes.longhorn.io` records. The first pass and the operator claim the same job and disagree about timing. Horizon allows a node fifteen minutes to register, and a reserved node carries `horizon.dev/pool=reserved` from cloud-init before k3s has joined, so for the first fifteen minutes of its life it matches the reaper's selector exactly while being entirely healthy. On a ten-minute schedule the reaper deletes it mid-join.
+
+### Options considered
+
+- A `HelmRepository` of `type: oci`, chosen. It is one manifest, it matches every other source in the repository, and CI renders and policy-checks the resulting workloads without any change to the tooling.
+- An `OCIRepository` with `spec.chartRef` on the release. This is the more current Flux idiom and the only one that allows pinning by digest and verifying a signature, neither of which the estate does for any chart. Rejected here because `render-helm-releases.sh` would need a second source kind and a second resolution path, and since `apply-policies.sh` renders through it, an unrendered release silently drops out of policy coverage rather than failing loudly. It is worth doing when digest pinning is adopted across the board, as one change to the renderer and every source at once.
+- Vendor the rendered manifests into this repository. Rejected. It removes the registry as a runtime dependency, but it defeats the reason for deploying here at all: a vendored copy exercises this repository's rendering rather than the published chart, so the install path an adopter follows could break and nothing here would notice.
+- Keep the reaper's Node-deletion pass as a safety net under the operator. Rejected. Two controllers deleting nodes on different clocks is not redundancy, and the reaper holds the shorter one, so it would delete healthy nodes during a normal join and the failure would look like an unreliable provider rather than a scheduled job.
 
 ## Decision
 
@@ -18,13 +26,6 @@ Deploy the horizon operator into the cluster from its published chart, and narro
 The custom resource definitions install from the chart and are never deleted. The release sets `install.crds: Create` and `upgrade.crds: CreateReplace`, matching cert-manager, MetalLB, and Traefik. Deleting them is not a recoverable operation: the lease CRD is the only record of which servers the operator owns, so removing it cascade-deletes every lease and leaves the servers running and billing with nothing left in the cluster that knows about them. Uninstalling the operator is therefore a Helm uninstall, never a CRD removal, and a teardown that needs the servers gone releases the leases first.
 
 The reaper loses its Node-deletion pass. The `node-reaper` CronJob is renamed `longhorn-node-finalizer` and keeps only the Longhorn pass, because that is now all it does. The operator owns Node deletion and is the only thing that should, since it knows when a node was created and how long its registration window has left, which the reaper never did. Its cluster-scoped grant narrows from get, list, and delete on core `nodes` to get alone, which is what the surviving pass needs for its backing-node existence check.
-
-## Options considered
-
-- A `HelmRepository` of `type: oci`, chosen. It is one manifest, it matches every other source in the repository, and CI renders and policy-checks the resulting workloads without any change to the tooling.
-- An `OCIRepository` with `spec.chartRef` on the release. This is the more current Flux idiom and the only one that allows pinning by digest and verifying a signature, neither of which the estate does for any chart. Rejected here because `render-helm-releases.sh` would need a second source kind and a second resolution path, and since `apply-policies.sh` renders through it, an unrendered release silently drops out of policy coverage rather than failing loudly. It is worth doing when digest pinning is adopted across the board, as one change to the renderer and every source at once.
-- Vendor the rendered manifests into this repository. Rejected. It removes the registry as a runtime dependency, but it defeats the reason for deploying here at all: a vendored copy exercises this repository's rendering rather than the published chart, so the install path an adopter follows could break and nothing here would notice.
-- Keep the reaper's Node-deletion pass as a safety net under the operator. Rejected. Two controllers deleting nodes on different clocks is not redundancy, and the reaper holds the shorter one, so it would delete healthy nodes during a normal join and the failure would look like an unreliable provider rather than a scheduled job.
 
 ## Consequences
 

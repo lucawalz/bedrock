@@ -1,23 +1,24 @@
----
-status: accepted
-date: 2025-11-02
----
+# 8. Use Traefik as the cluster ingress
 
-# 0008. Use Traefik as the cluster ingress
+Date: 2025-11-02
+
+## Status
+
+Accepted
 
 ## Context
 
 Traffic from the Cloudflare Tunnel has to land somewhere inside the cluster that routes by hostname to the right service. That ingress also has to terminate or pass through TLS and integrate with the certificate issuer. K3s ships Traefik by default, so the question was whether to keep it or replace it with something else.
 
-## Decision
-
-Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm release in `kubernetes/infrastructure/controllers/onprem/traefik/` rather than the K3s-bundled copy, which is disabled. Traefik's IngressRoute CRDs and middleware cover the routing needs, and it works cleanly with the cert-manager issuer from [0006](0006-cert-manager-dns01.md). Keeping the tool K3s already standardizes on avoided introducing a second ingress for no real gain.
-
-## Options considered
+### Options considered
 
 - Traefik, chosen. Already the K3s default, with IngressRoute CRDs, middleware, and a dashboard, and a clean fit with cert-manager.
 - ingress-nginx. Widely used and well understood, but switching to it meant replacing a working default with no advantage that mattered here.
 - HAProxy. Fast and capable, but lower-level for this use and without the CRD-driven routing that makes Traefik convenient.
+
+## Decision
+
+Traefik is the in-cluster ingress and reverse proxy, run as a Flux-managed Helm release in `kubernetes/infrastructure/controllers/onprem/traefik/` rather than the K3s-bundled copy, which is disabled. Traefik's IngressRoute CRDs and middleware cover the routing needs, and it works cleanly with the cert-manager issuer from [0006](0006-cert-manager-dns01.md). Keeping the tool K3s already standardizes on avoided introducing a second ingress for no real gain.
 
 ## Consequences
 

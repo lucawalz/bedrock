@@ -1,15 +1,25 @@
----
-status: accepted, burst premise superseded by 0081
-date: 2026-08-05
----
+# 73. Make the burst node image generic and let horizon supply the join
 
-# 0073. Make the burst node image generic and let horizon supply the join
+Date: 2026-08-05
+
+## Status
+
+Accepted, burst premise superseded by [81. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md)
 
 ## Context
 
 `modules/k3s/cluster-node.nix` dates from the CAPI and CAPH era ([0027](0027-durable-capi-node-snapshot-pipeline.md), [0041](0041-hetzner-autoscaling-native-provider.md)), when a Cluster API bootstrap provider wrote `/etc/rancher/k3s/config.yaml` onto the node before k3s started, deciding at boot whether the node was the one server or one of many agents. The image carried a launcher for that, and the k3s systemd unit's `ExecStart` was replaced with `lib.mkForce` on it, so the unit that `services.k3s` built from `enable`, `role`, `package` and `extraFlags` was evaluated and then discarded: only the launcher's own guess and the raw `k3s <role>` binary ran. Every option expressed through the NixOS k3s module was inert on a burst node for as long as that override existed.
 
 Two more pieces of the same era survived past the point they had anything to detect. `k3s-cluster-config-augment` sniffed a `10.0.` address on whichever interface carried one and wrote it in as `node-ip` and `flannel-iface`, which matched the Hetzner private network CAPH nodes joined over and which nodes launched by horizon do not have, since they join over the public interface and Tailscale. And `tailscaled-autoconnect` carried a `preStart` loop waiting up to nine minutes for `/etc/tailscale/authkey` to appear. Horizon's cloud-init writes the key before `cloud-final.service` completes, so ordering the unit after that target makes the wait redundant; the ordering is added here in the same change that removes the loop, rather than one relying on the other already being true. CAPH and the autoscaler that drove it are gone ([0062](0062-retire-elastic-cluster-autoscaler.md), [0071](0071-deploy-horizon-operator-from-published-chart.md)), horizon supplies cloud-init directly, and a burst node is always an agent joining the externally managed home control plane ([0030](0030-externally-managed-control-plane.md), [0033](0033-adopt-external-controlplane-object.md)).
+
+### Options considered
+
+- Drop the launcher and extract `estate.nix`, chosen. It makes the NixOS module's output the thing that actually runs on a burst node, and it gives a stated rule for which settings follow a node wherever it sits.
+- Keep the launcher and special-case the missing CAPI config file. Rejected. The root problem is the `ExecStart` override itself, and any special case still leaves the NixOS module's output unused.
+- Import `common.nix` from `cluster-node.nix` instead of extracting `estate.nix`. Rejected. `common.nix` carries the `k3s-token` age secret, and a burst node's join comes from horizon at boot, so the image should not contain an age-encrypted secret it has no use for.
+- Treat the firewall ports and the registry mirror as role-agnostic and leave them in `estate.nix`. Rejected. Neither depends on the node's role and both depend on its network position, so a node with a public address would open cluster ports on the internet and point containerd at a name only the home resolver answers.
+- Rely on the Cloud Firewall to cover the ports instead of keeping them out of the image. Rejected for the reason [0072](0072-burst-node-credential-blast-radius.md) gives: the two layers exist so that either one failing still leaves the other, and opening in the guest exactly what the outer layer denies collapses them into one.
+- Add `dm_crypt`, or drop `services.openiscsi`, while the file was already being edited. Rejected on both counts, as changes decided by proximity rather than on their own terms.
 
 ## Decision
 
@@ -24,15 +34,6 @@ The parts of the k3s estate that hold regardless of where a node sits on the net
 Two prerequisites are deliberately left as they are. `dm_crypt` is not added to the burst image even though [0069](0069-longhorn-prerequisites-on-nixos.md) lists it, because that record already calls the module's absence advisory and a burst node never carries the `bedrock.io/storage=true` label the Longhorn chart pins every component's node selector on, so no Longhorn component can schedule there whatever modules are loaded. `services.openiscsi` is kept even though the same reasoning would remove it, because 0069 scoped that consolidation as future work spanning both `cluster-node.nix` and `storage.nix`, and doing part of it here as a side effect would leave the two files disagreeing about why they still differ.
 
 `scripts/nixos-image-hash.sh` names the promoted snapshot after a hash of the inputs `nixos-anywhere` evaluates through the `#cluster-node` flake output, and `estate.nix` is added to that list; without it, a later change to the estate's kubelet thresholds, sysctls or package pin would change what the image contains while leaving the hash, and therefore the pipeline's decision not to rebuild, unchanged. The workflow that runs the pipeline had the same omission and is corrected with it: its push filter had drifted from the hash inputs, so a push touching only `estate.nix` or the hash script itself renamed the snapshot without starting a build and left the promoted image under a name nothing would produce again. Nothing enforces that the two lists stay aligned, so any change to the hash inputs has to be made in the workflow filter as well.
-
-## Options considered
-
-- Drop the launcher and extract `estate.nix`, chosen. It makes the NixOS module's output the thing that actually runs on a burst node, and it gives a stated rule for which settings follow a node wherever it sits.
-- Keep the launcher and special-case the missing CAPI config file. Rejected. The root problem is the `ExecStart` override itself, and any special case still leaves the NixOS module's output unused.
-- Import `common.nix` from `cluster-node.nix` instead of extracting `estate.nix`. Rejected. `common.nix` carries the `k3s-token` age secret, and a burst node's join comes from horizon at boot, so the image should not contain an age-encrypted secret it has no use for.
-- Treat the firewall ports and the registry mirror as role-agnostic and leave them in `estate.nix`. Rejected. Neither depends on the node's role and both depend on its network position, so a node with a public address would open cluster ports on the internet and point containerd at a name only the home resolver answers.
-- Rely on the Cloud Firewall to cover the ports instead of keeping them out of the image. Rejected for the reason [0072](0072-burst-node-credential-blast-radius.md) gives: the two layers exist so that either one failing still leaves the other, and opening in the guest exactly what the outer layer denies collapses them into one.
-- Add `dm_crypt`, or drop `services.openiscsi`, while the file was already being edited. Rejected on both counts, as changes decided by proximity rather than on their own terms.
 
 ## Consequences
 

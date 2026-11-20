@@ -1,22 +1,23 @@
----
-status: accepted
-date: 2026-06-13
----
+# 12. Harden the router declaratively before it faces the internet
 
-# 0012. Harden the router declaratively before it faces the internet
+Date: 2026-06-13
+
+## Status
+
+Accepted
 
 ## Context
 
 The router is the inter-zone gateway and, with the tunnel kept under [0014](0014-declarative-minimal-cloudflare-exposure.md), the box that mediates every crossing between the cluster, the DMZ, the home LAN, and the internet. Its firewall once opened management ports on every interface, which is acceptable behind the home line but not for a box that gates trust boundaries. The hardening has to be declarative like the rest of the router, not a one-off set of manual rules.
 
-## Decision
-
-The router is hardened declaratively in `modules/router/firewall.nix`. The firewall defaults to deny between zones, with an explicit allow for the trusted cluster zone and a default-deny posture for everything else. No management services, not SSH, DNS, DHCP, or the AdGuard interface, listen where they are not wanted, and only the required ports are forwarded. The original rule also trusted the WireGuard zone, which went away when [0023](0023-tailscale-overlay.md) replaced WireGuard with Tailscale, and the Tailscale overlay that took its place is not trusted toward VLAN 20 either. Forwarding from `tailscale0` into the cluster zone was once a single blanket accept, which made the overlay an exception to the default-deny posture this record establishes; it is now an explicit allowlist of SSH to the three nodes, the Kubernetes API on the control plane, the service VIP on 80 and 443, and IPv4 echo requests, with everything else dropped. The router's own input path stays trusted on `tailscale0`, because SSH to the router and DNS from AdGuard both arrive there, and removing that trust severs both in the same rebuild with physical console as the only recovery.
-
-## Options considered
+### Options considered
 
 - Declarative hardening on the NixOS router, chosen. A small, observable surface, defined in the same flake as everything else.
 - Lean on an upstream device for protection. Not viable, since the home line is the perimeter and there is nothing upstream left to lean on.
+
+## Decision
+
+The router is hardened declaratively in `modules/router/firewall.nix`. The firewall defaults to deny between zones, with an explicit allow for the trusted cluster zone and a default-deny posture for everything else. No management services, not SSH, DNS, DHCP, or the AdGuard interface, listen where they are not wanted, and only the required ports are forwarded. The original rule also trusted the WireGuard zone, which went away when [0023](0023-tailscale-overlay.md) replaced WireGuard with Tailscale, and the Tailscale overlay that took its place is not trusted toward VLAN 20 either. Forwarding from `tailscale0` into the cluster zone was once a single blanket accept, which made the overlay an exception to the default-deny posture this record establishes; it is now an explicit allowlist of SSH to the three nodes, the Kubernetes API on the control plane, the service VIP on 80 and 443, and IPv4 echo requests, with everything else dropped. The router's own input path stays trusted on `tailscale0`, because SSH to the router and DNS from AdGuard both arrive there, and removing that trust severs both in the same rebuild with physical console as the only recovery.
 
 ## Consequences
 

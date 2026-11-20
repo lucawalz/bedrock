@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 14. Pin versions and update them with Renovate
 
-# 0014. Pin versions and update them with Renovate
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

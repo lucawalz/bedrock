@@ -1,9 +1,10 @@
----
-status: accepted, premise superseded by 0074
-date: 2026-06-17
----
+# 32. Drop the worker-2 standby subnet router
 
-# 0032. Drop the worker-2 standby subnet router
+Date: 2026-06-17
+
+## Status
+
+Accepted, premise superseded by [74. Put the home nodes on the tailnet and move flannel onto tailscale0](0074-home-nodes-on-the-tailnet.md)
 
 ## Context
 

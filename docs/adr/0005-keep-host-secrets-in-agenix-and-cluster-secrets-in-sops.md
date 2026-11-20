@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 5. Keep host secrets in agenix and cluster secrets in SOPS
 
-# 0005. Keep host secrets in agenix and cluster secrets in SOPS
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

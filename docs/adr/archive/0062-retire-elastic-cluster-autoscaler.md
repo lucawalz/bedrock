@@ -1,9 +1,10 @@
----
-status: accepted, on-demand capacity premise superseded by 0081
-date: 2026-07-06
----
+# 62. Retire the elastic cluster-autoscaler
 
-# 0062. Retire the elastic cluster-autoscaler
+Date: 2026-07-06
+
+## Status
+
+Accepted, on-demand capacity premise superseded by [81. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md)
 
 ## Context
 

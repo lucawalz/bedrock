@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-16
----
+# 18. Keep passwords in Vaultwarden behind Pocket ID
 
-# 0018. Keep passwords in Vaultwarden behind Pocket ID
+Date: 2026-11-16
+
+## Status
+
+Accepted
 
 ## Context
 

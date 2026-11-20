@@ -1,9 +1,10 @@
----
-status: superseded by 0041 and 0071
-date: 2026-06-15
----
+# 26. Prune orphan burst node objects with an in-cluster reaper
 
-# 0026. Prune orphan burst node objects with an in-cluster reaper
+Date: 2026-06-15
+
+## Status
+
+Superseded by [41. Autoscale Hetzner burst nodes with the native cluster-autoscaler provider](0041-hetzner-autoscaling-native-provider.md) and [71. Deploy the horizon operator from its published OCI chart](0071-deploy-horizon-operator-from-published-chart.md)
 
 ## Context
 
@@ -11,15 +12,15 @@ The burst pools from [0024](0024-autoscaler-owned-burst-pool.md) and [0025](0025
 
 The control-plane node and the home workers must never be at risk from any automated pruning. They carry no `horizon.dev/pool` label, which gives a clean predicate that excludes them by construction.
 
-## Decision
-
-A `node-reaper` CronJob runs every ten minutes in `caph-system` and deletes only Node objects that are simultaneously stale, burst-pool, and unowned: labelled as an elastic or reserved pool node, not `Ready`, and referenced by no Machine in any namespace. The job fails safe. It builds the owned set from a single cluster-wide Machine listing, and if that listing errors it exits non-zero and deletes nothing, because acting on a partial owned set could remove a node that still belongs to a live Machine. A run with no candidates is a no-op, and deletes do not wait so one stuck node cannot stall the rest. Tailscale device cleanup is left entirely to Tailscale, since burst nodes register as ephemeral devices that Tailscale removes once they go offline, so the reaper never touches the Tailscale API.
-
-## Options considered
+### Options considered
 
 - An in-cluster CronJob with a fail-safe predicate, chosen. It needs no extra controller, the deletion rule is auditable in a few lines of shell, and the label predicate makes it impossible to touch a control-plane or home worker node.
 - A custom controller watching Node and Machine objects. It would react faster than a ten-minute poll, but it is far more code and operational surface for a tidy-up that has no latency requirement.
 - Relying on CAPI core node deletion alone. This is the behaviour that already failed to complete for the abrupt scale-down of an externally managed cluster, which is the gap this record filled.
+
+## Decision
+
+A `node-reaper` CronJob runs every ten minutes in `caph-system` and deletes only Node objects that are simultaneously stale, burst-pool, and unowned: labelled as an elastic or reserved pool node, not `Ready`, and referenced by no Machine in any namespace. The job fails safe. It builds the owned set from a single cluster-wide Machine listing, and if that listing errors it exits non-zero and deletes nothing, because acting on a partial owned set could remove a node that still belongs to a live Machine. A run with no candidates is a no-op, and deletes do not wait so one stuck node cannot stall the rest. Tailscale device cleanup is left entirely to Tailscale, since burst nodes register as ephemeral devices that Tailscale removes once they go offline, so the reaper never touches the Tailscale API.
 
 ## Consequences
 

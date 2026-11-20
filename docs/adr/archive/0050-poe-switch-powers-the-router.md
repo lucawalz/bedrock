@@ -1,13 +1,20 @@
----
-status: accepted
-date: 2026-06-22
----
+# 50. Replace the layer-2 switch with a PoE model that powers the router
 
-# 0050. Replace the layer-2 switch with a PoE model that powers the router
+Date: 2026-06-22
+
+## Status
+
+Accepted
 
 ## Context
 
 The zoned network in [0015](0015-zoned-network-on-a-nixos-router.md) and [0016](0016-concrete-zoned-ip-scheme.md) put a TP-Link TL-SG108E in front of the Raspberry Pi router as a plain layer-2 VLAN tagger, with the Pi reaching everything over a single trunk cable: the home LAN untagged on the native VLAN, VLAN 20 tagged for the cluster, and VLAN 30 tagged for the DMZ. Two things about that switch were unsatisfying. The Pi drew its power from a separate USB-C brick, so the router depended on two cables and two power sources where one would do. And the switch took its management address from the Speedport over DHCP, which these Easy Smart switches renew unreliably; when a lease lapsed the switch fell off the network and its web UI became unreachable. The physical port assignment was also never written down, so a rewire had nothing to check against.
+
+### Options considered
+
+- Keep the TL-SG108E and leave the Pi on its USB-C brick. Rejected: it keeps the second power cable and does nothing about the management address falling off DHCP.
+- Restore the old switch's configuration file onto the new one. Rejected: the E and PE are different models and the binary config does not transfer, so the VLANs were re-entered by hand.
+- Keep DHCP for the switch and reserve the address on the Speedport. Workable, but it still leans on the switch renewing a lease, which is the behaviour that failed before. A static address removes the dependency outright.
 
 ## Decision
 
@@ -21,12 +28,6 @@ Replace the TL-SG108E with its PoE sibling, the TP-Link TL-SG108PE, and power th
 | 6 | control-plane-1 | untagged VLAN 20, PVID 20 |
 | 7 | worker-1 | untagged VLAN 20, PVID 20 |
 | 8 | worker-2 | untagged VLAN 20, PVID 20 |
-
-## Options considered
-
-- Keep the TL-SG108E and leave the Pi on its USB-C brick. Rejected: it keeps the second power cable and does nothing about the management address falling off DHCP.
-- Restore the old switch's configuration file onto the new one. Rejected: the E and PE are different models and the binary config does not transfer, so the VLANs were re-entered by hand.
-- Keep DHCP for the switch and reserve the address on the Speedport. Workable, but it still leans on the switch renewing a lease, which is the behaviour that failed before. A static address removes the dependency outright.
 
 ## Consequences
 

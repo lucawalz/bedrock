@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 15. Observe with Prometheus, Loki and Tempo
 
-# 0015. Observe with Prometheus, Loki and Tempo
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

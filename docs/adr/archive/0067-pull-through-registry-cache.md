@@ -1,15 +1,24 @@
----
-status: accepted
-date: 2026-07-25
----
+# 67. Cache upstream container images with an in-cluster pull-through registry
 
-# 0067. Cache upstream container images with an in-cluster pull-through registry
+Date: 2026-07-25
+
+## Status
+
+Accepted
 
 ## Context
 
 Every container image in the cluster came straight from its upstream registry, and nothing sat in between. The three nodes each pulled the same image independently, so a workload that moved or scaled fetched the same layers over the home uplink two or three times. The kubelet image garbage collector runs at a high threshold of 70 percent and a low threshold of 55 percent, set in `modules/k3s/estate.nix`, so images are evicted routinely and refetched later, which turns a one-time download into a recurring one. Rebuilding a node re-downloads its entire working set. Anonymous pulls from Docker Hub are rate limited per address, and the whole LAN shares one address, so a burst of reconciles could exhaust the budget for everything behind the router.
 
 The failure mode is worse than slow. When an upstream registry is unreachable or rate limits a pull, the affected pods sit in `ImagePullBackOff` until the limit resets, and there is no local copy to fall back on. Four registries account for effectively all traffic: `docker.io`, `ghcr.io`, `quay.io`, and `registry.k8s.io`.
+
+### Options considered
+
+- Zot in-cluster behind Traefik, chosen. It reuses the ingress, the wildcard certificate, and the storage that already exist, it is delivered the same way as every other controller, and its `sync` extension covers all four upstreams from one deployment.
+- A separate LoadBalancer address for the cache. Rejected: `dmz-pool` holds exactly one address and Traefik has it, and widening the pool would mean reworking the VLAN 20 address plan agreed in [0016](0016-concrete-zoned-ip-scheme.md) for a service that has no reason to bypass the ingress.
+- The registry cache on the router or a node outside Kubernetes. Rejected because it would put a stateful service outside the GitOps and backup model established in [0002](0002-nixos-flakes-flux-gitops.md), and the router is the one host in the estate whose failure takes the whole network with it.
+- Four separate `registry:2` mirror deployments, one per upstream. Rejected as four times the objects, four times the storage, and four hostnames, to do what zot does in one deployment.
+- K3s's embedded distributed registry mirror, Spegel. Rejected because it shares images between nodes that already hold them rather than caching upstream, so it does nothing for the first pull, for a rebuilt node, or for a rate limit.
 
 ## Decision
 
@@ -22,14 +31,6 @@ Node configuration lands in `environment.etc."rancher/k3s/registries.yaml"` in `
 The second endpoint is what keeps a cold cluster bootable. K3s compares the last endpoint of a mirror against containerd's implicit default endpoint for that registry, and when they match it moves that endpoint into the `server` fallback line of the generated `hosts.toml` instead of leaving it in the host list. Rewrites attach to host entries and never to the fallback, so the upstream is tried with the original, unrewritten repository name; without that behaviour the rewrite would follow the fallback and ask Docker Hub for a repository that does not exist. The circularity this resolves is real, because zot's own image comes from one of the cached upstreams, so the first pull after a cold start is a pull of the cache through the cache. It fails against the cache, falls through to the upstream, and the cluster comes up.
 
 Storage is a `longhorn-disposable` volume, single replica with a Delete reclaim policy. Every byte in it is a copy of something that still exists upstream, so replicating it three times would spend real disk on data that costs nothing to refetch, and losing it costs only the next few pulls.
-
-## Options considered
-
-- Zot in-cluster behind Traefik, chosen. It reuses the ingress, the wildcard certificate, and the storage that already exist, it is delivered the same way as every other controller, and its `sync` extension covers all four upstreams from one deployment.
-- A separate LoadBalancer address for the cache. Rejected: `dmz-pool` holds exactly one address and Traefik has it, and widening the pool would mean reworking the VLAN 20 address plan agreed in [0016](0016-concrete-zoned-ip-scheme.md) for a service that has no reason to bypass the ingress.
-- The registry cache on the router or a node outside Kubernetes. Rejected because it would put a stateful service outside the GitOps and backup model established in [0002](0002-nixos-flakes-flux-gitops.md), and the router is the one host in the estate whose failure takes the whole network with it.
-- Four separate `registry:2` mirror deployments, one per upstream. Rejected as four times the objects, four times the storage, and four hostnames, to do what zot does in one deployment.
-- K3s's embedded distributed registry mirror, Spegel. Rejected because it shares images between nodes that already hold them rather than caching upstream, so it does nothing for the first pull, for a rebuilt node, or for a rate limit.
 
 ## Consequences
 

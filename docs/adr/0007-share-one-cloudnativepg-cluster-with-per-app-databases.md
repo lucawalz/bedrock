@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 7. Share one CloudNativePG cluster with per-app databases
 
-# 0007. Share one CloudNativePG cluster with per-app databases
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

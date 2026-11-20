@@ -1,15 +1,24 @@
----
-status: superseded by 0080
-date: 2026-08-31
----
+# 79. Expose Grocy publicly with a path-scoped forward-auth bypass
 
-# 0079. Expose Grocy publicly with a path-scoped forward-auth bypass
+Date: 2026-08-31
+
+## Status
+
+Superseded by [80. Retire Grocy and withdraw its public exposure](0080-retire-grocy.md)
 
 ## Context
 
 Grocy tracks groceries, fridge contents and expiry dates, and its value depends on being usable from a phone in a shop. The browser interface can sit behind Authentik like every other internal application, but the native iOS client cannot: it authenticates with an application-issued API key sent as a `GROCY-API-KEY` header and has no way to complete an interactive forward-auth flow. Leaving the whole host behind forward auth would make the application work in a browser and fail in the app that justifies deploying it.
 
 The estate is otherwise default deny. Three hosts are public through the Cloudflare tunnel under [0014](0014-declarative-minimal-cloudflare-exposure.md), and only one of them, `rancher.syslabs.dev`, carried a path-scoped bypass for an unattended client at the time, recorded in [0059](0059-outbound-only-peers-via-public-rancher.md). Adding a fourth public host with an unauthenticated path prefix is a change in security posture rather than a routine configuration change, so it belongs in the record.
+
+### Options considered
+
+- A path-scoped bypass for the API prefix, chosen. The interface keeps a login gate while the one client that cannot use single sign-on reaches exactly the prefix it needs and no more. The cost is a public prefix whose only application-layer control is an API key, mitigated by the key's strength, by Grocy returning 401 on that prefix itself, and by Cloudflare Access in front.
+- Grocy's `ReverseProxyAuthMiddleware`. Rejected. Pointing `AUTH_CLASS` at it would remove a double login by trusting a header Authentik sets, and it is unsafe precisely because of the bypass: the API route does not pass through forward auth, so a client could set the trusted header itself and be authenticated as any user on every API route.
+- A separate hostname for the API. Rejected. It would keep one gate per host and avoid priorities entirely, but the client expects a single base URL for both the interface and the API.
+- Keep Grocy internal and reach it over Tailscale. Rejected. It is the safest option and it defeats the purpose, because the phone has to work in a shop, on mobile data, without the owner remembering to bring up an overlay first.
+- A rate limit on the bypassed prefix. Rejected. Brute force against a key of this size is not a credible threat, and a middleware that guards against nothing is debt.
 
 ## Decision
 
@@ -22,14 +31,6 @@ The layered argument is unchanged in substance, but the layers moved to the edge
 The bypass is safe on three independent legs, each verified against the shipped code rather than assumed. The prefix is exact, so the Swagger interface at `GET /api`, which is a browser page, does not match it. Grocy protects the bypassed prefix itself: its `BaseAuthMiddleware` computes an API-route flag from the same literal prefix and returns a bare 401 rather than a redirect for any unauthenticated request under it, including paths that match no route, with only the root and login routes treated as public. And the key is strong, since Grocy generates API keys as 24 random bytes from a cryptographically secure source, so guessing one is not a practical attack.
 
 The Grocy administrator password is changed from its shipped default before the tunnel entry lands, because Grocy offers no way to seed a credential from a manifest and publishing first would expose a default-credentialed instance behind the bypass. The Authentik proxy provider and application held for this host were removed once the middleware was, since a provider for an application that never calls it is drift rather than configuration.
-
-## Options considered
-
-- A path-scoped bypass for the API prefix, chosen. The interface keeps a login gate while the one client that cannot use single sign-on reaches exactly the prefix it needs and no more. The cost is a public prefix whose only application-layer control is an API key, mitigated by the key's strength, by Grocy returning 401 on that prefix itself, and by Cloudflare Access in front.
-- Grocy's `ReverseProxyAuthMiddleware`. Rejected. Pointing `AUTH_CLASS` at it would remove a double login by trusting a header Authentik sets, and it is unsafe precisely because of the bypass: the API route does not pass through forward auth, so a client could set the trusted header itself and be authenticated as any user on every API route.
-- A separate hostname for the API. Rejected. It would keep one gate per host and avoid priorities entirely, but the client expects a single base URL for both the interface and the API.
-- Keep Grocy internal and reach it over Tailscale. Rejected. It is the safest option and it defeats the purpose, because the phone has to work in a shop, on mobile data, without the owner remembering to bring up an overlay first.
-- A rate limit on the bypassed prefix. Rejected. Brute force against a key of this size is not a credible threat, and a middleware that guards against nothing is debt.
 
 ## Consequences
 

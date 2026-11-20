@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 10. Sign in through Pocket ID and oauth2-proxy
 
-# 0010. Sign in through Pocket ID and oauth2-proxy
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -29,4 +30,3 @@ Several admin UIs (Flux, Homepage, Longhorn, Prometheus, Alertmanager, paperless
 - A rotated client secret reaches Pocket ID only when the Job next runs, up to about 70 minutes later.
 - Everyday cluster access needs a passkey, and a stolen Mac kubeconfig holds no credential. The refresh token cached in the macOS keychain keeps issuing cluster-admin tokens until it expires.
 - While Pocket ID or its database is down, `kubectl` works only with the stick kubeconfig ([admission break-glass](../admission-break-glass.md)).
-

@@ -1,9 +1,10 @@
----
-status: accepted, anonymous access replaced by a public dashboard link
-date: 2026-06-23
----
+# 54. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID
 
-# 0054. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID
+Date: 2026-06-23
+
+## Status
+
+Accepted, anonymous access replaced by a public dashboard link
 
 ## Context
 
@@ -13,6 +14,14 @@ date: 2026-06-23
 keyboard, so an unattended session has no way to clear the login and rests on the sign-in page.
 Bring-up added a second problem: the desktop session pillarboxed, and the boot console filled the
 panel only through the panel's own scaler, so neither path gave a true 1:1 picture.
+
+### Options considered
+
+- Keep Headlamp but bypass Authentik for the router's source IP. Rejected: Traefik does not reliably
+  see the real client IP without `externalTrafficPolicy: Local`, so the result is either an
+  unauthenticated `cluster-admin` UI on the gateway or extra parts to scope the exception narrowly.
+- A dedicated custom status page rendered for the bar. Rejected: more to build and maintain than a
+  Grafana dashboard already backed by Prometheus and the existing panel library.
 
 ## Decision
 
@@ -33,14 +42,6 @@ keeps the clock and widens the blanking to an even total of 1442, which the kern
 preferred. A oneshot service applies it before greetd starts rather than the initramfs, which was
 tried first and left the router in emergency mode; after boot a failure degrades the picture only.
 
-## Options considered
-
-- Keep Headlamp but bypass Authentik for the router's source IP. Rejected: Traefik does not reliably
-  see the real client IP without `externalTrafficPolicy: Local`, so the result is either an
-  unauthenticated `cluster-admin` UI on the gateway or extra parts to scope the exception narrowly.
-- A dedicated custom status page rendered for the bar. Rejected: more to build and maintain than a
-  Grafana dashboard already backed by Prometheus and the existing panel library.
-
 ## Consequences
 
 The panel shows live cluster status with no interactive login to clear, and the corrected timing was
@@ -50,7 +51,7 @@ Removing Headlamp leaves the most network-exposed host with no path to a `cluste
 This supersedes the display target in [0051](0051-headlamp-window-into-the-cluster.md) alone; the
 kiosk session it describes is retained.
 
-## Update 2026-07-25
+### Update 2026-07-25
 
 The EDID half of this record still describes what runs; the kiosk half does not. Anonymous Grafana
 access is gone, `auth.anonymous.enabled` is `false`, and with it removed the panel reproduced the
@@ -61,6 +62,6 @@ cannot complete an interactive login, but the scope narrows: anonymous Viewer op
 dashboard, while a public link opens one and its unguessable token is the only credential, which is
 why the URL is treated as a secret rather than committed in the clear.
 
-## Update 2026-11-07
+### Update 2026-11-07
 
 The public dashboard was created by hand, so the cluster rebuild that emptied the Grafana database took it with it, and the panel showed an empty frame because Grafana answers the share page with 200 whether or not the share exists. The share is now recreated from git: the `grafana-public-dashboard` Job creates the public dashboard for the `wallbar` dashboard through the Grafana API with a fixed access token, which the API accepts on create, and replaces the share when the token is rotated. The token lives in `bedrock-secrets` for the Job and in the agenix secret for the router, never in this repository. The kiosk probe now asks the share's API rather than the page, so a missing or disabled share counts as unreachable, and the page re-renders whenever the deadman status changes, not only when reachability flips.

@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 1. Reconcile the cluster from git with the Flux Operator
 
-# 0001. Reconcile the cluster from git with the Flux Operator
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

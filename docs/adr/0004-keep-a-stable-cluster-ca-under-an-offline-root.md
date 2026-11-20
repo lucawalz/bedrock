@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 4. Keep a stable cluster CA under an offline root
 
-# 0004. Keep a stable cluster CA under an offline root
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

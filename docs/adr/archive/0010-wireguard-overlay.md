@@ -1,24 +1,25 @@
----
-status: superseded by 0023
-date: 2026-06-13
----
+# 10. Self-host a WireGuard overlay to replace ZeroTier
 
-# 0010. Self-host a WireGuard overlay to replace ZeroTier
+Date: 2026-06-13
+
+## Status
+
+Superseded by [23. Replace the self-hosted WireGuard overlay with Tailscale](0023-tailscale-overlay.md)
 
 ## Context
 
 The cluster nodes and the remote cloud burst nodes needed a private overlay so the control plane sat on a stable address and a cloud node could join across the open internet. That overlay was ZeroTier, which routes peers through ZeroTier's public root servers, putting a third party in the data path. The homelab already declared its router and secrets in Git, and an overlay that depends on someone else's infrastructure did not fit that model.
 
-## Decision
-
-A self-hosted WireGuard hub runs on the NixOS router from [0003](0003-nixos-router-over-opnsense.md), replacing ZeroTier. WireGuard is in the kernel, declared in the router's NixOS config, and answers only authenticated peers, so it is silent to scanners. The router becomes the hub, and both cluster nodes and burst nodes peer with it directly.
-
-## Options considered
+### Options considered
 
 - Self-hosted WireGuard, chosen. In-kernel, declarative, and free of any third party in the path.
 - Keep ZeroTier. It works and joins are easy, but it routes through ZeroTier's roots and is less declarative.
 - NetBird. Self-hostable, but a heavier control plane to run, with its own reliability and CVE history.
 - Tailscale. Smooth to operate, but its control plane is a managed third party, the thing this move was meant to remove.
+
+## Decision
+
+A self-hosted WireGuard hub runs on the NixOS router from [0003](0003-nixos-router-over-opnsense.md), replacing ZeroTier. WireGuard is in the kernel, declared in the router's NixOS config, and answers only authenticated peers, so it is silent to scanners. The router becomes the hub, and both cluster nodes and burst nodes peer with it directly.
 
 ## Consequences
 

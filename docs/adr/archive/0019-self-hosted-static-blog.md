@@ -1,25 +1,26 @@
----
-status: accepted
-date: 2026-07-06
----
+# 19. Self-host the blog and portfolio
 
-# 0019. Self-host the blog and portfolio
+Date: 2026-07-06
+
+## Status
+
+Accepted
 
 ## Context
 
 A public blog and portfolio was wanted at the apex `lucawalz.dev`, served from the cluster through the existing Cloudflare tunnel. Because it is public-facing, its attack surface matters more than its feature set. Blog content and cluster infrastructure change for different reasons and on different cadences, so keeping prose and manifests in one repository would couple two concerns better kept apart. This record consolidates the original build decision with the domain choice and the deploy automation that followed it. The site first ran at `blog.syslabs.dev`, since retired and removed from the tunnel.
+
+### Options considered
+
+- A static Hugo site in a separate content repository, chosen. No database and no server-side rendering means a small attack surface and output Cloudflare can cache in full, where a dynamic CMS such as Ghost or WriteFreely would carry a database and a running application as public attack surface, and content held here alongside the manifests would couple prose edits to infrastructure history.
+- The `lucawalz.dev` apex as a single site, chosen. A `.dev` apex reads as a developer's home, sits alongside the cluster's `syslabs.dev`, and forces HTTPS through HSTS preload, where a `.com` carries no ranking advantage and no HTTPS-by-default guarantee and a `blog.` subdomain fragments search authority across hostnames.
+- Flux Image Update Automation for deploys, chosen. It keeps Git the source of truth and ties every deploy to an immutable tag with nothing beyond the controllers the Flux bootstrap already installs, where a CI `kubectl rollout restart` cannot reach an internal-only API server and moves deploy authority out of Git, a registry watcher such as Keel adds a controller outside the Flux model, and a hand-bumped pinned tag is the toil this removes.
 
 ## Decision
 
 The blog is a static [Hugo](https://gohugo.io/) site. Content lives in a separate public repository, [lucawalz/blog](https://github.com/lucawalz/blog), so authoring is markdown in Git and stays independent of cluster infrastructure. GitHub Actions builds a container image on each change, compiling the site with Hugo and serving it from nginx, and pushes it to a public GHCR package at `ghcr.io/lucawalz/blog`. bedrock serves that image behind Traefik with a hardened Deployment: a read-only root filesystem, a non-root securityContext, and a default-deny NetworkPolicy in its namespace. It is served at the apex `lucawalz.dev` as one property, with the blog as a path at `/posts` rather than a `blog.` subdomain, so the apex serves the portfolio and the writing as a single site and search authority accrues to one hostname. The cutover off `blog.syslabs.dev` was a full migration rather than a redirect. Public TLS terminates at Cloudflare's edge and the tunnel hop to Traefik stays on `noTLSVerify`, so the domain choice needed no internal certificate change, and the `.dev` zone is on the HSTS preload list, so the apex is HTTPS-only by default.
 
 The blog deploys through Flux Image Update Automation. Its CI tags each image with a sortable `main-<timestamp>-<shortsha>` tag alongside `latest`. An ImageRepository scans the GHCR package, an ImagePolicy selects the newest image by timestamp, and an ImageUpdateAutomation writes the resulting immutable tag into the blog Deployment and commits it to `main`. The Deployment image carries the `$imagepolicy` setter marker so the controller knows which field to update, and the automation's write path is scoped to `./kubernetes/apps/blog`, so it can only touch blog manifests. This replaced an earlier manual tag-bump model that had rotted into a floating `latest` tag, where a rebuild left the pod spec unchanged and nothing redeployed.
-
-## Options considered
-
-- A static Hugo site in a separate content repository, chosen. No database and no server-side rendering means a small attack surface and output Cloudflare can cache in full, where a dynamic CMS such as Ghost or WriteFreely would carry a database and a running application as public attack surface, and content held here alongside the manifests would couple prose edits to infrastructure history.
-- The `lucawalz.dev` apex as a single site, chosen. A `.dev` apex reads as a developer's home, sits alongside the cluster's `syslabs.dev`, and forces HTTPS through HSTS preload, where a `.com` carries no ranking advantage and no HTTPS-by-default guarantee and a `blog.` subdomain fragments search authority across hostnames.
-- Flux Image Update Automation for deploys, chosen. It keeps Git the source of truth and ties every deploy to an immutable tag with nothing beyond the controllers the Flux bootstrap already installs, where a CI `kubectl rollout restart` cannot reach an internal-only API server and moves deploy authority out of Git, a registry watcher such as Keel adds a controller outside the Flux model, and a hand-bumped pinned tag is the toil this removes.
 
 ## Consequences
 

@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 6. Store volumes on Longhorn
 
-# 0006. Store volumes on Longhorn
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

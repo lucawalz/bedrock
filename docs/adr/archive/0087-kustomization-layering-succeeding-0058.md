@@ -1,13 +1,20 @@
----
-status: accepted
-date: 2026-09-13
----
+# 87. Record the Flux Kustomization layering that replaced the four-way split
 
-# 0087. Record the Flux Kustomization layering that replaced the four-way split
+Date: 2026-09-13
+
+## Status
+
+Accepted
 
 ## Context
 
 [0058](0058-split-cluster-infrastructure-kustomizations.md) split `cluster-infrastructure` into `cluster-storage`, `cluster-networking`, `cluster-monitoring` and `cluster-security`. The day after that split landed, `kubernetes/clusters/home/config/` was re-sorted into layer files and two of those four names disappeared. Nothing recorded what replaced them, so 0058 pointed at a set of names only half of which exist, and every audit of the estate has had to read the config directory to work out the current shape and then guess at the rule behind it.
+
+### Options considered
+
+- Record the current layering and mark 0058's names superseded, chosen. The layering is what the cluster already does, and writing it down turns a repeated rediscovery into something that can be read once while leaving 0058's blast-radius reasoning intact.
+- Rewrite 0058 in place to describe the current names. Rejected, because it would erase the four-way split and the adopt-then-reprune migration that justified it, which is the part of that record still worth reading.
+- Leave the successor unrecorded and keep reading the config directory. Rejected, because the directory states which Kustomizations exist and never states the rule that decides a new one's dependencies, which is the part that was being guessed.
 
 ## Decision
 
@@ -18,12 +25,6 @@ Four Kustomizations carry the foundation. `cluster-sources` and `cluster-namespa
 Above the foundation, `base.yaml` holds the controllers the rest of the estate assumes: cert-manager and its issuers, storage, the CNPG operator, security, delivery, notifications, Alloy, CoreDNS and metrics-server. `edge-onprem.yaml` holds the on-premises ingress path and the MetalLB address pool that depends on it. `fleet.yaml` holds Rancher, observability and the Flux operator. `home.yaml` holds the concerns particular to this cluster: the databases, Authentik, pgAdmin, MinIO, the orphan reaper, horizon and the Flux instance. Three concerns keep a file each: `apps.yaml` for `cluster-apps`, which lays down the per-app Kustomizations of [0066](0066-standardize-app-delivery-per-app-kustomizations.md), `policies.yaml` for `cluster-policies`, and `zot.yaml` for `cluster-zot`.
 
 The files are an editorial grouping and nothing more. Flux reads each Kustomization on its own, so `dependsOn` and only `dependsOn` decides what reconciles when. The rule a new Kustomization follows is therefore about dependencies, not about which file it lands in: depend on the sources, secrets and namespaces it consumes, and on the Kustomization that installs the controller whose custom resource definitions it needs. `cluster-policies` depends on `cluster-security` for exactly that reason. The admission window that opens because the application tier waits on neither of them is recorded in [0082](0082-gitops-guardrail-boundary.md) rather than restated here.
-
-## Options considered
-
-- Record the current layering and mark 0058's names superseded, chosen. The layering is what the cluster already does, and writing it down turns a repeated rediscovery into something that can be read once while leaving 0058's blast-radius reasoning intact.
-- Rewrite 0058 in place to describe the current names. Rejected, because it would erase the four-way split and the adopt-then-reprune migration that justified it, which is the part of that record still worth reading.
-- Leave the successor unrecorded and keep reading the config directory. Rejected, because the directory states which Kustomizations exist and never states the rule that decides a new one's dependencies, which is the part that was being guessed.
 
 ## Consequences
 

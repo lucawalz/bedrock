@@ -1,15 +1,22 @@
----
-status: accepted
-date: 2026-07-11
----
+# 66. Standardize app delivery with per-app Kustomizations and shared components
 
-# 0066. Standardize app delivery with per-app Kustomizations and shared components
+Date: 2026-07-11
+
+## Status
+
+Accepted
 
 ## Context
 
 Every application under `kubernetes/apps/` reconciled through one Flux Kustomization named `cluster-apps`, which built them all together with `wait: true` and `prune: true`. Adding an app meant hand-authoring roughly seven files and wiring them by copy and paste: a workload manifest, a Traefik `IngressRoute`, a `NetworkPolicy` set, a namespace file, and edits to central kustomization lists. The apps did not even share a shape, since some brought their own upstream chart, some were hand-rolled raw Deployments, and only a few used the bjw-s `app-template` chart, so each new app was a fresh opportunity for the small mistake that keeps a workload from coming up.
 
 The boilerplate concentrated in two files copied almost verbatim per app: the `IngressRoute` and the `NetworkPolicy` set, whose default-deny, allow-dns, and allow-from-traefik policies repeated everywhere and varied only in the app name, the hostname, and the port. The domain was hardcoded in every ingress. There was no variable substitution anywhere, no shared component library, and no per-app reconciliation boundary, so a single stalled app held the whole layer not-ready, which is the same failure-domain problem [0058](0058-split-cluster-infrastructure-kustomizations.md) solved one level up.
+
+### Options considered
+
+- Keep the single `cluster-apps` Kustomization and hand-author each app. The status quo. It needs no migration but leaves the copy-paste boilerplate, the hardcoded domain, the divergent app shapes, and the shared failure domain in place.
+- Standardize the wiring with a templating engine or a `ResourceSet` generator. At this scale it is more machinery than the problem warrants, and it moves the applied manifests behind another layer of indirection, which works against keeping renders easy to read and debug. Rejected as over-engineering.
+- Per-app Kustomizations with a small fixed set of shared components and a two-variable substitution, chosen. Components exist only for repeated resources, the variable set is bounded, and everything renders to plain reviewable YAML that the CI gate validates, removing the boilerplate and the shared failure domain without introducing a generator to maintain.
 
 ## Decision
 
@@ -18,12 +25,6 @@ Adopt the mainstream Flux pattern of a per-app Kustomization plus a small shared
 The `IngressRoute` stays a per-app file rather than a component. Its host prefix, service, port, middlewares, route count, and homepage discovery annotations vary independently and are not derivable from the app name, so templating it would be a leaky abstraction; the one shared change is that its host reads `${cluster_domain}`. App-specific network policies the components do not cover stay as per-app files alongside the component reference. Only the apps whose manifests are a Deployment, a Service, and a mount move onto `app-template`. The apps whose upstream chart encodes real logic keep it, because forcing those onto a generic chart would re-implement their probes, model-pull orchestration, and coordinated volumes by hand, which is exactly the source of come-up failures this change is meant to reduce. The blog stays raw manifests, since its Flagger canary and image-automation setter marker do not survive being wrapped in a Helm release, and its `ks.yaml` carries no `postBuild` so envsubst never touches those markers.
 
 A pre-merge validation gate makes the substitution indirection safe. A CI job renders every app with `flux build --dry-run`, which applies the inline substitutions, and pipes the result through `kubeconform`, so a broken render fails in the pull request rather than in the cluster. A companion check fails on any unescaped literal `$` in a substituted file, the one real envsubst footgun, which otherwise silently empties a value. The same script backs a local pre-commit hook. Carry out the cutover as the adopt-then-reprune migration [0058](0058-split-cluster-infrastructure-kustomizations.md) established: set `cluster-apps` to `prune: false`, let the per-app Kustomizations adopt the running objects, confirm they report healthy, then re-enable pruning in a separate commit. The apps that keep their chart re-home with no disruption. The raw-to-Helm apps are the exception, because Helm refuses to install over a resource it does not already own, so their old Deployment and Service must be pruned before their releases converge and those stateless dashboards restart once.
-
-## Options considered
-
-- Keep the single `cluster-apps` Kustomization and hand-author each app. The status quo. It needs no migration but leaves the copy-paste boilerplate, the hardcoded domain, the divergent app shapes, and the shared failure domain in place.
-- Standardize the wiring with a templating engine or a `ResourceSet` generator. At this scale it is more machinery than the problem warrants, and it moves the applied manifests behind another layer of indirection, which works against keeping renders easy to read and debug. Rejected as over-engineering.
-- Per-app Kustomizations with a small fixed set of shared components and a two-variable substitution, chosen. Components exist only for repeated resources, the variable set is bounded, and everything renders to plain reviewable YAML that the CI gate validates, removing the boilerplate and the shared failure domain without introducing a generator to maintain.
 
 ## Consequences
 

@@ -5,12 +5,11 @@ set -euo pipefail
 
 adr_dirs=(docs/adr docs/adr/archive)
 
-front_matter_status() {
+record_status() {
   awk '
-    NR == 1 && $0 != "---" { exit }
-    NR > 1 && $0 == "---" { exit }
-    /^status:/ { sub(/^status:[[:space:]]*/, ""); print; exit }
-  ' "$1"
+    found && NF { print; exit }
+    $0 == "## Status" { found = 1 }
+  ' "$1" | sed -E 's/\[([0-9]+)\. [^]]*\]\([^)]*\)/\1/g' | tr '[:upper:]' '[:lower:]'
 }
 
 index_entry() {
@@ -22,7 +21,7 @@ index_entry() {
       before = substr($0, 1, pos - 1)
       bstart = index(before, "[")
       title = substr(before, bstart + 1)
-      sub(/^[0-9][0-9][0-9][0-9]\. /, "", title)
+      sub(/^[0-9]+\. /, "", title)
 
       rest = substr($0, pos + length(link))
       sub(/^[[:space:]]+/, "", rest)
@@ -40,10 +39,13 @@ index_entry() {
 
 file_title() {
   awk '
-    /^# [0-9][0-9][0-9][0-9]\. / {
-      number = substr($0, 3, 4)
-      sub(/^# [0-9][0-9][0-9][0-9]\. /, "")
-      print number "\t" $0
+    /^# [0-9]+\. / {
+      title = $0
+      sub(/^# /, "", title)
+      number = title
+      sub(/\..*/, "", number)
+      sub(/^[0-9]+\. /, "", title)
+      print number "\t" title
       exit
     }
   ' "$1"
@@ -85,10 +87,10 @@ check_index() {
     if [ ! -f "$adr_dir/$l" ]; then
       continue
     fi
-    recorded="$(front_matter_status "$adr_dir/$l")"
+    recorded="$(record_status "$adr_dir/$l")"
     IFS=$'\t' read -r indexed_title indexed < <(index_entry "$l") || true
     if [ -z "$(normalize_status "$recorded")" ]; then
-      status_drift="$status_drift$l declares no status in its front matter"$'\n'
+      status_drift="$status_drift$l declares no status"$'\n'
     elif [ "$(normalize_status "$recorded")" != "$(normalize_status "$indexed")" ]; then
       status_drift="$status_drift$l records \"$recorded\" but the index says \"$indexed\""$'\n'
     fi
@@ -96,8 +98,8 @@ check_index() {
     heading_number="" file_heading=""
     IFS=$'\t' read -r heading_number file_heading < <(file_title "$adr_dir/$l") || true
     if [ -z "$file_heading" ]; then
-      title_drift="$title_drift$l has no \"# NNNN. Title\" heading to compare"$'\n'
-    elif [ "$heading_number" != "${l%%-*}" ]; then
+      title_drift="$title_drift$l has no \"# N. Title\" heading to compare"$'\n'
+    elif [ "$heading_number" != "$((10#${l%%-*}))" ]; then
       title_drift="$title_drift$l heading is numbered $heading_number"$'\n'
     elif [ "$file_heading" != "$indexed_title" ]; then
       title_drift="$title_drift$l heading reads \"$file_heading\" but the index says \"$indexed_title\""$'\n'

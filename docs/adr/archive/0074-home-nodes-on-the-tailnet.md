@@ -1,15 +1,26 @@
----
-status: accepted
-date: 2026-08-06
----
+# 74. Put the home nodes on the tailnet and move flannel onto tailscale0
 
-# 0074. Put the home nodes on the tailnet and move flannel onto tailscale0
+Date: 2026-08-06
+
+## Status
+
+Accepted
 
 ## Context
 
 Burst capacity was leased by horizon ([0071](0071-deploy-horizon-operator-from-published-chart.md)), which wrote the join configuration into each server's cloud-init. That configuration set `flannel-iface: tailscale0`, so a burst node advertised its tailnet address as its flannel endpoint and expected the rest of the cluster to reach it there. The three home nodes could not. They were not tailnet members, so they reached `100.64.0.0/10` only through the Pi subnet router, and the Pi forwards from `tailscale0` into VLAN 20 through a narrow port allowlist rather than as a general route ([0012](0012-bulletproof-router-hardening.md), [0023](0023-tailscale-overlay.md)). Measured on 5 August 2026, a home node pinging a live burst node's tailnet address returned total packet loss, and a probe pod on the burst node could neither resolve `kubernetes.default.svc` nor reach a pod at home. The node itself reached Ready throughout, because kubelet talks to the apiserver over the routed VLAN 20 path and never touches the overlay, so a burst node that is Ready, schedulable and carrying pods that can reach nothing is the failure this record removes.
 
 Two earlier records reasoned from the premise that the home nodes would stay off the tailnet. [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) pinned the home flannel MTU to the tailnet path MTU and rejected `flannel-iface: tailscale0` on the grounds that the home nodes have no `tailscale0` to bind. [0032](0032-drop-worker-2-standby-subnet-router.md) removed worker-2's standby subnet router and concluded that no home node is a tailnet member any more. That second record also carries the incident that shapes the method here: worker-2 was tailnet-native while the other two were Pi-mediated, so the two directions never agreed on a route and the pod VXLAN between them passed zero traffic. A mixed topology is the specific hazard, not tailnet membership itself.
+
+### Options considered
+
+- Put every home node on the tailnet and bind flannel to `tailscale0` fleet-wide, chosen. It is the only shape in which every node agrees on one endpoint family, and it is what [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) rejected purely on the premise that the home nodes had no `tailscale0`.
+- Keep the home nodes off the tailnet and widen the Pi's forward allowlist to carry overlay traffic into VLAN 20. Rejected. It makes the Pi a mandatory hop for every pod packet to a burst node, restoring the Pi-mediated leg whose asymmetry [0032](0032-drop-worker-2-standby-subnet-router.md) records, and it widens the router hardening from [0012](0012-bulletproof-router-hardening.md) to forward unauthenticated VXLAN into the trusted zone.
+- Give burst nodes their own cluster or overlay joined through a gateway, the topological fix [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) names as its follow-up. Rejected for now. It recovers the native LAN MTU for home-to-home traffic, but it replaces one flat overlay with a federation to operate, which is a far larger change than the failure it would fix.
+- Do both phases in one rebuild. Rejected. That is the mixed topology [0032](0032-drop-worker-2-standby-subnet-router.md) records, and it removes the only point at which node-to-node reachability can be proven independently of whether flannel works.
+- Order `k3s.service` after `tailscaled.service` or after the `tailscale0` device unit instead. Rejected. Both are satisfied before the interface carries a tailnet address, so flannel could still bind an addressless interface.
+- Add `Requires=tailscaled-autoconnect.service` alongside the ordering. Rejected. It converts a recoverable Tailscale failure into a stopped k3s, and on the control plane that is the API server.
+- Delete `cni0` with `flannel.1` on each node, as [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) prescribes. Rejected. That instruction belongs to a change where the pod-facing MTU moved, and here it would detach every running pod's veth for no gain.
 
 ## Decision
 
@@ -24,16 +35,6 @@ With `--flannel-iface=tailscale0`, flannel has nothing to bind unless `tailscale
 `flannel.1` is a persistent VXLAN device. A k3s restart reuses the existing interface at its old binding and MTU, so the device has to be deleted for a changed `flannel-iface` to take effect. Deleting `cni0` alongside it, which is what [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) prescribes for an MTU change, is wrong here: `cni0` is the pod-facing bridge, its MTU and gateway are unchanged by this record, and removing it detaches every running pod's veth with no CNI re-add to reattach them. The rollout deletes `flannel.1` and nothing else.
 
 `flannel-net-conf.json` is byte-identical across this change and still carries an outer MTU of 1280. Measured live on all three nodes afterwards, `tailscale0` is 1280 and `flannel.1` came up at 1230, which is the same value a `tailscale0`-bound flannel derives from the tunnel on its own, so [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md)'s pin now states the value the topology produces rather than working around two ends disagreeing. Pod traffic between two home nodes now rides WireGuard over `tailscale0` rather than raw VXLAN on the LAN. The nodes were confirmed connecting directly rather than through a relay, so the cost is encryption overhead on a LAN path, and it is stated plainly because it is a real regression for intra-home traffic and because keeping two interfaces is not expressible: flannel binds one interface per overlay.
-
-## Options considered
-
-- Put every home node on the tailnet and bind flannel to `tailscale0` fleet-wide, chosen. It is the only shape in which every node agrees on one endpoint family, and it is what [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) rejected purely on the premise that the home nodes had no `tailscale0`.
-- Keep the home nodes off the tailnet and widen the Pi's forward allowlist to carry overlay traffic into VLAN 20. Rejected. It makes the Pi a mandatory hop for every pod packet to a burst node, restoring the Pi-mediated leg whose asymmetry [0032](0032-drop-worker-2-standby-subnet-router.md) records, and it widens the router hardening from [0012](0012-bulletproof-router-hardening.md) to forward unauthenticated VXLAN into the trusted zone.
-- Give burst nodes their own cluster or overlay joined through a gateway, the topological fix [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) names as its follow-up. Rejected for now. It recovers the native LAN MTU for home-to-home traffic, but it replaces one flat overlay with a federation to operate, which is a far larger change than the failure it would fix.
-- Do both phases in one rebuild. Rejected. That is the mixed topology [0032](0032-drop-worker-2-standby-subnet-router.md) records, and it removes the only point at which node-to-node reachability can be proven independently of whether flannel works.
-- Order `k3s.service` after `tailscaled.service` or after the `tailscale0` device unit instead. Rejected. Both are satisfied before the interface carries a tailnet address, so flannel could still bind an addressless interface.
-- Add `Requires=tailscaled-autoconnect.service` alongside the ordering. Rejected. It converts a recoverable Tailscale failure into a stopped k3s, and on the control plane that is the API server.
-- Delete `cni0` with `flannel.1` on each node, as [0031](0031-pin-home-flannel-mtu-to-tailnet-path.md) prescribes. Rejected. That instruction belongs to a change where the pod-facing MTU moved, and here it would detach every running pod's veth for no gain.
 
 ## Consequences
 

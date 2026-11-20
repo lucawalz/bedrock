@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-08
----
+# 86. Thin provision Longhorn, and detect what no derived expression can
 
-# 0086. Thin provision Longhorn, and detect what no derived expression can
+Date: 2026-09-08
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -29,6 +30,24 @@ empty. The reported symptom was not that ceiling: zot was attached and healthy, 
 `longhorn-disposable` sets `dataLocality: best-effort`, so Longhorn had created a second replica
 record for a copy local to the pod on worker-1, where the 85.9 GB it declared did not fit. The volume
 was never at risk, and that unsatisfiable preference was the only thing in the estate saying anything.
+
+### Options considered
+
+- Thin provision, and pair the derived alerts with ones reading Longhorn's own verdict, chosen. It
+  raises the ceiling without promising a disk it cannot deliver, and leaves a signal that survives
+  the settings changing again.
+- Right-size the declarations instead. Rejected. Longhorn cannot shrink, so each is a recreate with
+  data migration, and it fights a tool where a declaration is a ceiling to grow into, trading a
+  one-time provisioning problem for a permanent expansion treadmill.
+- Drop the per-disk reserve to zero instead. Rejected. It reaches a 55 GiB ceiling in one line, but
+  the reserve is the only thing standing between replica scheduling and the operating system, the nix
+  store and containerd's image store on the same disk.
+- Put the over-provisioning factor in both alert expressions rather than in a recording rule.
+  Rejected. Two copies of a number duplicating a HelmRelease value is the defect 0085 records,
+  doubled; one copy is still a duplicate, but it is one a promtool case can pin.
+- Alert on the `Scheduled` condition only and drop the headroom alerts as unreliable. Rejected. The
+  condition is reactive and fires once a replica has failed to place, where the headroom alerts are
+  predictive, and 0085 exists because that prediction was wanted and silently absent.
 
 ## Decision
 
@@ -74,24 +93,6 @@ a gap costing over 20 GB of scheduling budget once multiplied by the replica cou
 fires on every freshly created volume where nothing is wasted and an absolute gap fires on a large
 volume in genuine use. It demands no action, because every correction is a claim recreated with its
 data migrated.
-
-## Options considered
-
-- Thin provision, and pair the derived alerts with ones reading Longhorn's own verdict, chosen. It
-  raises the ceiling without promising a disk it cannot deliver, and leaves a signal that survives
-  the settings changing again.
-- Right-size the declarations instead. Rejected. Longhorn cannot shrink, so each is a recreate with
-  data migration, and it fights a tool where a declaration is a ceiling to grow into, trading a
-  one-time provisioning problem for a permanent expansion treadmill.
-- Drop the per-disk reserve to zero instead. Rejected. It reaches a 55 GiB ceiling in one line, but
-  the reserve is the only thing standing between replica scheduling and the operating system, the nix
-  store and containerd's image store on the same disk.
-- Put the over-provisioning factor in both alert expressions rather than in a recording rule.
-  Rejected. Two copies of a number duplicating a HelmRelease value is the defect 0085 records,
-  doubled; one copy is still a duplicate, but it is one a promtool case can pin.
-- Alert on the `Scheduled` condition only and drop the headroom alerts as unreliable. Rejected. The
-  condition is reactive and fires once a replica has failed to place, where the headroom alerts are
-  predictive, and 0085 exists because that prediction was wanted and silently absent.
 
 ## Consequences
 

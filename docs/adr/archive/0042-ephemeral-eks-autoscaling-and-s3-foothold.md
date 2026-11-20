@@ -1,13 +1,21 @@
----
-status: superseded by 0049
-date: 2026-06-19
----
+# 42. Run AWS as an ephemeral autoscaling EKS cluster with an ephemeral S3 backup demo
 
-# 0042. Run AWS as an ephemeral autoscaling EKS cluster with an ephemeral S3 backup demo
+Date: 2026-06-19
+
+## Status
+
+Superseded by [49. Remove the AWS multi-cloud build and keep backups on Hetzner](0049-remove-aws-multicloud-build.md)
 
 ## Context
 
 AWS in this homelab is for learning the ecosystem and demonstrating multi-cloud GitOps, not a full-time production dependency, and the student credits covering it will end. An EKS control plane bills about 73 USD per month at the standard-support hourly rate for as long as it exists, independent of node count, and EKS cannot scale the cluster itself to zero. A version that has aged into extended support bills six times as much. So an EKS cluster left running is a standing cost for a capability used occasionally, and an outdated one is far worse. The pieces were already in place: the AWS provider and Rancher Turtles were deployed and ready, and a cluster definition existed but was referenced by no kustomization, so nothing was live and there was no cost. Unlike Hetzner, AWS does expose a managed control plane, so Cluster API models something real here, which is why [0041](0041-hetzner-autoscaling-native-provider.md) keeps it for AWS while dropping it for Hetzner.
+
+### Options considered
+
+- The AWS provider plus the cluster-autoscaler on a managed node group, chosen. It keeps AWS on the same declarative Cluster API backbone already deployed, needs a small IAM surface, and is sufficient for a lab that bursts occasionally.
+- Karpenter. It is the modern EKS default, but it provisions raw EC2 and bypasses the provider's node groups entirely, which adds a parallel non-CAPI worker path and the largest IAM surface for bin-packing value a small cluster does not need. Auto Mode adds a per-node fee and removes node-level control. Reserved for a future large or spot-heavy workload.
+- Crossplane or an OpenTofu controller for provisioning. Each adds a second infrastructure reconciliation engine and its own state and credentials to do what the AWS provider already does here.
+- A long-running EKS cluster scaled to zero nodes. This does not address the control-plane fee, which is billed whenever the cluster exists, so it saves little over teardown while keeping the cluster exposed.
 
 ## Decision
 
@@ -16,13 +24,6 @@ Provision AWS through the Cluster API AWS provider, run the EKS cluster as an ep
 Both are wired into Flux through their own Kustomizations, suspended by default in Git, so the control plane, its one managed node group, and a secondary Velero backup location alongside the existing object storage from [0009](0009-velero-backups.md) stay fully declared but inert until a stand-up resumes them. Giving each its own Kustomization rather than folding them into the shared tree means suspending AWS never touches the Hetzner control plane or the CAPI core. The idle lever is teardown rather than node scale-to-zero, because the control-plane fee dominates, and the control plane is pinned inside the standard-support window after an earlier pin aged out of it.
 
 The worker layer stays fully declarative: the node group carries its bounds in Git plus the annotation that stops the provider owning the replica count, and the autoscaler runs inside the EKS cluster adjusting the desired count within them. It bootstraps through the gitops-peer ClusterResourceSet and peer overlay from [0035](0035-standalone-gitops-managed-cloud-cluster.md), so the cluster reconciles its own autoscaler with no push from the home cluster. Workload identity uses IRSA rather than Pod Identity, which the provider version in use cannot declare and which would need an out-of-band association on every rebuild, at the cost of refreshing the role trust policy to the new OIDC issuer each rebuild.
-
-## Options considered
-
-- The AWS provider plus the cluster-autoscaler on a managed node group, chosen. It keeps AWS on the same declarative Cluster API backbone already deployed, needs a small IAM surface, and is sufficient for a lab that bursts occasionally.
-- Karpenter. It is the modern EKS default, but it provisions raw EC2 and bypasses the provider's node groups entirely, which adds a parallel non-CAPI worker path and the largest IAM surface for bin-packing value a small cluster does not need. Auto Mode adds a per-node fee and removes node-level control. Reserved for a future large or spot-heavy workload.
-- Crossplane or an OpenTofu controller for provisioning. Each adds a second infrastructure reconciliation engine and its own state and credentials to do what the AWS provider already does here.
-- A long-running EKS cluster scaled to zero nodes. This does not address the control-plane fee, which is billed whenever the cluster exists, so it saves little over teardown while keeping the cluster exposed.
 
 ## Consequences
 

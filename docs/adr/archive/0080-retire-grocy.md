@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-05
----
+# 80. Retire Grocy and withdraw its public exposure
 
-# 0080. Retire Grocy and withdraw its public exposure
+Date: 2026-09-05
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -13,6 +14,15 @@ reach it from a shop. The application is not used, and the native client the pat
 exists for was never adopted. What remains is a fourth public host, one prefix of it reachable with
 no edge authentication beyond Cloudflare Access, a replicated and nightly-backed-up volume, and two
 dashboard-managed Access applications to remember.
+
+### Options considered
+
+- Remove the application, chosen. Nothing depends on it, it holds no data worth keeping, and every
+  piece is declared in the repository bar two dashboard-managed objects that were always manual.
+- Keep it internal and drop only the tunnel entry, rejected. It retires the part that carries risk
+  and leaves a replicated volume, a nightly backup and an application to patch for nothing.
+- Keep it deployed and scale it to zero, rejected. Everything remains, and a scaled-down workload is
+  harder to notice as dead than an absent one.
 
 ## Decision
 
@@ -24,15 +34,6 @@ than archived and its Longhorn backups are purged explicitly, because Longhorn d
 backups when the volume they came from is deleted and a retention window only prunes on a new backup
 that will never be taken. This supersedes [0079](0079-public-grocy-with-scoped-api-bypass.md), which
 keeps its reasoning about scoping an unauthenticated prefix at the edge.
-
-## Options considered
-
-- Remove the application, chosen. Nothing depends on it, it holds no data worth keeping, and every
-  piece is declared in the repository bar two dashboard-managed objects that were always manual.
-- Keep it internal and drop only the tunnel entry, rejected. It retires the part that carries risk
-  and leaves a replicated volume, a nightly backup and an application to patch for nothing.
-- Keep it deployed and scale it to zero, rejected. Everything remains, and a scaled-down workload is
-  harder to notice as dead than an absent one.
 
 ## Consequences
 

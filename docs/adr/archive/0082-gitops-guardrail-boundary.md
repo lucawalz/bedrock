@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-06
----
+# 82. Establish the GitOps guardrail boundary and its accepted trade-offs
 
-# 0082. Establish the GitOps guardrail boundary and its accepted trade-offs
+Date: 2026-09-06
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -19,6 +20,22 @@ because they are the boundary that keeps a workload from doing harm regardless o
 it. What runs inside that boundary may be imperative when that is the honest description of the
 estate, and when it is, the step is written down in the disaster-recovery runbook or the admission
 break-glass runbook rather than represented as something git controls.
+
+### Options considered
+
+- State one governing rule and record every decision under it, chosen. A component-by-component answer
+  would have given a different boundary for `rancher-webhook`'s resources than for its replica count,
+  even though both are chart-rendered fields outside this repository's control, purely because they
+  surfaced in different tasks. One rule is auditable in a way a pile of exceptions is not.
+- GitOps everything, including the fields Helm's own field manager owns and the storage reserve
+  Longhorn only accepts on disk creation. Rejected. Both would mean fighting a controller for
+  ownership of a field on every reconcile, which is worse than an honest recorded imperative step.
+- Leave floating chart ranges and unset drift detection, accepting that some silent drift is the cost
+  of a small cluster. Rejected, because chart drift and hold-list evasion were measured as live: five
+  held charts were already floating past the point the hold rule exists to stop.
+- Reverse the earlier `remediateLastFailure: false` decision back to automatic rollback, as the
+  originating spec proposed. Rejected on the same reasoning the earlier commit recorded: an automatic
+  rollback mid-upgrade on stateful infrastructure is a worse resting state than a visible stall.
 
 ## Decision
 
@@ -137,22 +154,6 @@ record:
   live under `cluster-policies`, and `cluster-apps` waits on neither, so a rebuild reopens a window in
   which restarting pods are admitted with no exceptions. The mitigation is procedural: suspend the
   application tier until the exceptions are present, or split the pin into a second push.
-
-## Options considered
-
-- State one governing rule and record every decision under it, chosen. A component-by-component answer
-  would have given a different boundary for `rancher-webhook`'s resources than for its replica count,
-  even though both are chart-rendered fields outside this repository's control, purely because they
-  surfaced in different tasks. One rule is auditable in a way a pile of exceptions is not.
-- GitOps everything, including the fields Helm's own field manager owns and the storage reserve
-  Longhorn only accepts on disk creation. Rejected. Both would mean fighting a controller for
-  ownership of a field on every reconcile, which is worse than an honest recorded imperative step.
-- Leave floating chart ranges and unset drift detection, accepting that some silent drift is the cost
-  of a small cluster. Rejected, because chart drift and hold-list evasion were measured as live: five
-  held charts were already floating past the point the hold rule exists to stop.
-- Reverse the earlier `remediateLastFailure: false` decision back to automatic rollback, as the
-  originating spec proposed. Rejected on the same reasoning the earlier commit recorded: an automatic
-  rollback mid-upgrade on stateful infrastructure is a worse resting state than a visible stall.
 
 ## Consequences
 

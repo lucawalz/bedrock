@@ -1,13 +1,20 @@
----
-status: superseded by 0062
-date: 2026-06-19
----
+# 41. Autoscale Hetzner burst nodes with the native cluster-autoscaler provider
 
-# 0041. Autoscale Hetzner burst nodes with the native cluster-autoscaler provider
+Date: 2026-06-19
+
+## Status
+
+Superseded by [62. Retire the elastic cluster-autoscaler](0062-retire-elastic-cluster-autoscaler.md)
 
 ## Context
 
 Hetzner Cloud exposes no managed Kubernetes control plane. The home cluster is k3s on three bare-metal nodes, and Hetzner autoscaling reduces to one thing: add Hetzner VMs as k3s agents to the existing home cluster when capacity runs out, and delete them when idle. The implementation from [0024](0024-autoscaler-owned-burst-pool.md), [0025](0025-elastic-and-reserved-node-pools.md), [0030](0030-externally-managed-control-plane.md), and [0033](0033-adopt-external-controlplane-object.md) modelled that as a full Cluster API workload cluster named `burst`, whose control plane was the home cluster reached through a custom control-plane object, provisioned by CAPH, managed by Rancher Turtles, and scaled by the cluster-autoscaler in its Cluster API mode. Wrapping three home nodes in a synthetic Cluster to satisfy CAPI produced a standing set of failures: the autoscaler crash-looped because it resolved the infra template at a contract version CAPH does not serve and no release of CAPH does, Rancher imported the synthetic cluster a second time, and abrupt node teardown stranded Longhorn node records, which is why the reaper in [0026](0026-orphan-node-reaper.md) exists. The whole machinery is overhead for a requirement that needs none of it.
+
+### Options considered
+
+- The native Hetzner provider, chosen. It implements the actual requirement without a synthetic Cluster, so CAPH, Turtles, and the control-plane object go with it, taking the contract skew and the double import along.
+- Keep the Cluster API model and pin the autoscaler to the older contract with capacity annotations. This restores autoscaling but retains every piece of wrapper complexity and depends on a deprecated API version served only until a future core bump drops it. A stopgap, not a design.
+- Karpenter for Hetzner. No mature provider exists; the only routes are the Cluster API provider, which returns to the broken contract, or a hand-port, and Karpenter's instance-shape bin-packing is wasted on a burst pool of one or two fixed shapes.
 
 ## Decision
 
@@ -16,12 +23,6 @@ Autoscale Hetzner burst capacity with the cluster-autoscaler's native Hetzner cl
 Nodes boot from the baked snapshot of [0027](0027-durable-capi-node-snapshot-pipeline.md), selected by label so the rebuild pipeline carries over unchanged. Their cloud-init runs the k3s agent join in place of the config file CAPH used to write, so the node module reads its server, token, and labels from instance metadata. The provider deletes the server and the Node object together on scale-down. The cloud-controller-manager stays out, since burst nodes join over Tailscale, store on Longhorn, and never front a Hetzner load balancer.
 
 Automatic capacity stays with the autoscaler and scales from zero on pending-pod pressure. On-demand capacity is owned by horizon, which creates and deletes servers through the provider API under a label the autoscaler does not manage, so the two never contend and the cluster autoscales with no horizon involvement. This supersedes [0024](0024-autoscaler-owned-burst-pool.md), [0025](0025-elastic-and-reserved-node-pools.md), [0026](0026-orphan-node-reaper.md), [0030](0030-externally-managed-control-plane.md), and [0033](0033-adopt-external-controlplane-object.md), and narrows the Cluster API claim in [0036](0036-aws-via-managed-eks-control-plane.md) to AWS, where a managed control plane makes it fit.
-
-## Options considered
-
-- The native Hetzner provider, chosen. It implements the actual requirement without a synthetic Cluster, so CAPH, Turtles, and the control-plane object go with it, taking the contract skew and the double import along.
-- Keep the Cluster API model and pin the autoscaler to the older contract with capacity annotations. This restores autoscaling but retains every piece of wrapper complexity and depends on a deprecated API version served only until a future core bump drops it. A stopgap, not a design.
-- Karpenter for Hetzner. No mature provider exists; the only routes are the Cluster API provider, which returns to the broken contract, or a hand-port, and Karpenter's instance-shape bin-packing is wasted on a burst pool of one or two fixed shapes.
 
 ## Consequences
 

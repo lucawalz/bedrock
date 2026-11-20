@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-06-16
----
+# 28. Route alerts and reconciliation failures to a self-hosted ntfy
 
-# 0028. Route alerts and reconciliation failures to a self-hosted ntfy
+Date: 2026-06-16
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -11,6 +12,15 @@ Alertmanager shipped with a single `null` receiver and Flux had no `Provider` or
 every Prometheus alert and every reconciliation failure was silently discarded. The estate keeps
 internal services off the public internet, with public exposure limited to the tunnel hosts
 ([0014](0014-declarative-minimal-cloudflare-exposure.md)), so the sink should follow that posture.
+
+### Options considered
+
+- Self-hosted ntfy, chosen. It keeps alert content on the network and needs one deployed component.
+- An `ntfy-alertmanager` bridge, rejected: templating covers the need and a bridge adds a second
+  component from a personal registry.
+- ntfy.sh SaaS, rejected: zero ops, but alert content and topic names leave the lab.
+- Self-hosted gotify, rejected: heavier, needs a volume, and has no native Alertmanager receiver.
+- Token authentication, rejected: tokens live in a runtime database and cannot be seeded declaratively.
 
 ## Decision
 
@@ -26,15 +36,6 @@ Grafana's unified alerting posts to the same endpoint, and Flux publishes throug
 and an `Alert` scoped to `eventSeverity: error`. ntfy runs without authentication and without
 persistence, because its NetworkPolicy admits only Traefik, monitoring, and flux-system, and it is
 reachable only over the overlay or the LAN.
-
-## Options considered
-
-- Self-hosted ntfy, chosen. It keeps alert content on the network and needs one deployed component.
-- An `ntfy-alertmanager` bridge, rejected: templating covers the need and a bridge adds a second
-  component from a personal registry.
-- ntfy.sh SaaS, rejected: zero ops, but alert content and topic names leave the lab.
-- Self-hosted gotify, rejected: heavier, needs a volume, and has no native Alertmanager receiver.
-- Token authentication, rejected: tokens live in a runtime database and cannot be seeded declaratively.
 
 ## Consequences
 

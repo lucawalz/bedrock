@@ -1,23 +1,24 @@
----
-status: accepted, implemented
-date: 2026-07-06
----
+# 63. Return the homelab to a single region after the fleet demonstration
 
-# 0063. Return the homelab to a single region after the fleet demonstration
+Date: 2026-07-06
+
+## Status
+
+Accepted, implemented
 
 ## Context
 
 The multi-region fleet layout in [0061](0061-multi-region-fleet-layout.md) was built to demonstrate proper multi-region production GitOps for a university presentation and a blog post, not for operational use. The homelab is three bare-metal nodes run by one operator, running a second region is uneconomical, and there is no requirement for one. The layout is byte-identical for the home cluster and every cloud region is declared but unprovisioned, so it costs nothing to run. Once the presentation and the post are delivered, though, it is standing structure with no consumer: an edge profile with a single archetype in use, region values that vary against nothing, and spoke entrypoints no cluster reconciles. Carried indefinitely on a single-operator homelab, that reads as generality without a purpose. The work done along the way that improved the homelab is independent of the layout and worth keeping; the cross-region machinery is not.
 
-## Decision
-
-Once the demonstration is delivered, return the repository to a single home cluster and collapse the fleet layout to a single-cluster shape. Remove the isolated multi-region additions: the region values, the spoke entrypoints, the cloud edge profile, the hub-side spoke Cluster instances, and each app's cloud overlay. Then collapse the on-prem edge profile back into the infrastructure tree, so a single cluster is no longer described through an archetype it is the only member of. Because the home cluster was never parameterized, the reversion deletes structure it does not reconcile and touches no running workload, so the home region renders byte-for-byte as before. This supersedes [0061](0061-multi-region-fleet-layout.md) once carried out.
-
-## Options considered
+### Options considered
 
 - Revert to a single cluster once the demonstration is done, chosen. The fleet layout served its purpose as a reference architecture and a talk. Kept past that it is overhead for an estate that runs one cluster by hand, and the honest form of a single-cluster repository is a single-cluster repository.
 - Keep the fleet layout indefinitely. Rejected. With the demonstration delivered there is no second region and no plan for one, so the profiles, region values, and spoke entrypoints become single-use scaffolding that implies a generality the estate does not have.
 - Keep the layout but strip only the cloud spokes. Rejected. It removes the running-cost risk but leaves the profile split and the region values in place around a single member, which is the least coherent of the three states: neither a clean single cluster nor a populated fleet.
+
+## Decision
+
+Once the demonstration is delivered, return the repository to a single home cluster and collapse the fleet layout to a single-cluster shape. Remove the isolated multi-region additions: the region values, the spoke entrypoints, the cloud edge profile, the hub-side spoke Cluster instances, and each app's cloud overlay. Then collapse the on-prem edge profile back into the infrastructure tree, so a single cluster is no longer described through an archetype it is the only member of. Because the home cluster was never parameterized, the reversion deletes structure it does not reconcile and touches no running workload, so the home region renders byte-for-byte as before. This supersedes [0061](0061-multi-region-fleet-layout.md) once carried out.
 
 ## Consequences
 

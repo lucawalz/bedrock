@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-06
----
+# 83. Rename the control-plane node from master to control-plane-1
 
-# 0083. Rename the control-plane node from master to control-plane-1
+Date: 2026-09-06
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -24,6 +25,21 @@ hostname at startup, which would leave a renamed node restarting into a datastor
 member no longer matched it. With one member there is no quorum to absorb that, so the only available
 mitigation was a fresh, verified snapshot taken immediately beforehand and a known path back to it.
 
+### Options considered
+
+- Rename against a deployed and healthy estate, chosen. It is the only sequence in which a snapshot
+  worth restoring exists and the repository and the cluster agree on the name at every point.
+- Rename immediately, alongside the rest of the pass. Rejected. There was no deployed estate to take
+  the snapshot against, and the repository and the cluster would have disagreed about the node's name
+  until whichever of them changed second.
+- Leave the node named `master`. Rejected as a default rather than a choice. The inconsistency is
+  cosmetic on its own, but it was the last place the repository's vocabulary did not match itself.
+- Rename the workers to a matching scheme as well. Rejected. `worker-1` and `worker-2` already match
+  Kubernetes' own vocabulary for a non-control-plane node, and renaming them would multiply the
+  Longhorn rebuild this record accepts for no gain over renaming the one name that is wrong.
+- Do the etcd side first and the repository-wide rename second. Rejected. The two are not separable,
+  for the reason the decision gives.
+
 ## Decision
 
 Rename the node to `control-plane-1`, but only against a deployed and healthy estate and with a
@@ -39,21 +55,6 @@ move in the same window as the hostname, or the operator loses apiserver access 
 rebuild that is supposed to prove the rename worked. The prepared response to a control plane that
 does not return under the new name is restoring that snapshot rather than improvising a repair, by
 the procedure in [the disaster-recovery runbook](../../disaster-recovery.md).
-
-## Options considered
-
-- Rename against a deployed and healthy estate, chosen. It is the only sequence in which a snapshot
-  worth restoring exists and the repository and the cluster agree on the name at every point.
-- Rename immediately, alongside the rest of the pass. Rejected. There was no deployed estate to take
-  the snapshot against, and the repository and the cluster would have disagreed about the node's name
-  until whichever of them changed second.
-- Leave the node named `master`. Rejected as a default rather than a choice. The inconsistency is
-  cosmetic on its own, but it was the last place the repository's vocabulary did not match itself.
-- Rename the workers to a matching scheme as well. Rejected. `worker-1` and `worker-2` already match
-  Kubernetes' own vocabulary for a non-control-plane node, and renaming them would multiply the
-  Longhorn rebuild this record accepts for no gain over renaming the one name that is wrong.
-- Do the etcd side first and the repository-wide rename second. Rejected. The two are not separable,
-  for the reason the decision gives.
 
 ## Consequences
 

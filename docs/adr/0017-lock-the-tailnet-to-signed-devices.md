@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-15
----
+# 17. Lock the tailnet to signed devices
 
-# 0017. Lock the tailnet to signed devices
+Date: 2026-11-15
+
+## Status
+
+Accepted
 
 ## Context
 

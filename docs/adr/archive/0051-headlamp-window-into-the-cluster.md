@@ -1,9 +1,10 @@
----
-status: superseded by 0054
-date: 2026-06-23
----
+# 51. Turn the router's bar display into a window into the cluster with Headlamp
 
-# 0051. Turn the router's bar display into a window into the cluster with Headlamp
+Date: 2026-06-23
+
+## Status
+
+Superseded by [54. Drive the router bar display with an anonymous Grafana kiosk and a corrected panel EDID](0054-bar-display-grafana-kiosk-and-corrected-edid.md)
 
 ## Context
 
@@ -11,6 +12,17 @@ date: 2026-06-23
 and the same build attached a 1280x400 HDMI bar panel to it. The panel should be more than a static
 readout: a live graphical view of the cluster that is also a usable interactive desktop. The
 router is the gateway and the most network-exposed host, so the view has to run somewhere else.
+
+### Options considered
+
+- Headlamp as a desktop application on the router with a read-only kubeconfig. Rejected: it is not
+  packaged in nixpkgs, and a kubeconfig on the gateway is a worse blast radius than in-cluster.
+- A Grafana kiosk on the panel. Rejected as redundant, since Grafana is already reached from a
+  browser, and it shows metrics rather than the live cluster objects wanted here.
+- A bare-framebuffer status renderer with no desktop. Rejected because the panel is also wanted as
+  an interactive desktop, not a one-way readout.
+- niri as the compositor. Rejected for now: on aarch64 it builds from source, its greetd autologin
+  story is less settled, and it would add a flake input. labwc and sway cover the need without that.
 
 ## Decision
 
@@ -24,17 +36,6 @@ The panel runs a kiosk Wayland session: greetd autologs an unprivileged `kiosk` 
 which opens Chromium in app mode at the dashboard URL and idles the output off after ten minutes.
 labwc is chosen for its small footprint and written so the compositor is a one-line swap to sway,
 with a tuigreet fallback for a manual login. Panel mode and EDID handling are settled at bring-up.
-
-## Options considered
-
-- Headlamp as a desktop application on the router with a read-only kubeconfig. Rejected: it is not
-  packaged in nixpkgs, and a kubeconfig on the gateway is a worse blast radius than in-cluster.
-- A Grafana kiosk on the panel. Rejected as redundant, since Grafana is already reached from a
-  browser, and it shows metrics rather than the live cluster objects wanted here.
-- A bare-framebuffer status renderer with no desktop. Rejected because the panel is also wanted as
-  an interactive desktop, not a one-way readout.
-- niri as the compositor. Rejected for now: on aarch64 it builds from source, its greetd autologin
-  story is less settled, and it would add a flake input. labwc and sway cover the need without that.
 
 ## Consequences
 

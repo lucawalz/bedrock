@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 12. Back up off-site to Cloudflare R2 and test restores
 
-# 0012. Back up off-site to Cloudflare R2 and test restores
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

@@ -1,26 +1,27 @@
----
-status: accepted, burst premise superseded by 0081
-date: 2026-08-20
----
+# 76. Run the burst measurement harness's privileged injection Jobs in the monitoring namespace
 
-# 0076. Run the burst measurement harness's privileged injection Jobs in the monitoring namespace
+Date: 2026-08-20
+
+## Status
+
+Accepted, burst premise superseded by [81. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md)
 
 ## Context
 
 `scripts/measure-burst.sh` measures how long a burst node takes to boot, join and disappear, and it does that by injecting scripted failures at a fixed offset after the node is ready. Three of its five scenarios need to act on the node itself: stop the watchdog unit, revoke the node token and restart the unit so the agent re-reads it, or both at once. There is no way in over SSH, because horizon attaches only the keys named on the `ProviderConfig` and the estate's named none, and [0072](0072-burst-node-credential-blast-radius.md) narrows TCP 22 on those nodes to a single administrative address at the Cloud Firewall anyway. On-node access therefore means a privileged pod with `hostPID` that enters the host namespaces with `nsenter`, scheduled onto the burst node and tolerating its taint. The obvious namespace for that pod is `horizon-system`, where the operator and the lease live. It is also the one namespace where the pod cannot run. `horizon-system` carries `pod-security.kubernetes.io/enforce: baseline`, which rejects both `hostPID` and `privileged`, and three cluster-wide Kyverno policies in `Enforce` mode reject the same pod for three further reasons. A server-side dry run of the Job there returned exactly those four objections. `monitoring` accepts the same manifest unchanged: it carries `pod-security.kubernetes.io/enforce: privileged` because node-exporter needs the host namespaces for its own reasons, and it is listed in both `config.webhooks.namespaceSelector` and `config.resourceFiltersIncludeNamespaces` in the Kyverno HelmRelease, so Kyverno does not evaluate it at admission at all.
+
+### Options considered
+
+- Run the Job in `monitoring`, chosen. No policy changes, no manifests in Git, and nothing left over when the harness goes.
+- Label `horizon-system` as PodSecurity privileged and add a Kyverno `PolicyException` for the three policies. Rejected. PodSecurity enforce cannot be scoped below the namespace, so this admits every future pod in the namespace holding the burst credential, and the exception would be committed to Git where it long outlives the measurement.
+- Give the harness its own namespace, labelled privileged and excluded from Kyverno. Rejected for now. It is the correct shape if the harness becomes permanent, but it puts a new relaxed namespace and a new Kyverno exclusion into Git for a tool that has not yet earned either.
+- Reach the node over SSH instead. Rejected. Horizon attaches no key the harness holds, and adding one would mean a key on every burst node plus a Cloud Firewall change, which is a larger and more permanent widening than the pod.
 
 ## Decision
 
 Run the harness's injection Jobs in `monitoring`, and treat that as borrowed for the duration of the evaluation rather than as the harness's permanent home.
 
 The pod is scheduled by `nodeSelector` onto the burst node and tolerates the burst taint, so the namespace it is declared in has no bearing on where it runs or what it touches. What the namespace decides is only whether admission lets it through, which makes the choice one between borrowing a namespace that is already relaxed for an unrelated but similar reason and relaxing a namespace that is not. Relaxing `horizon-system` is the worse of the two: PodSecurity enforce is a namespace label, so there is no way to admit one Job without admitting every pod in the namespace that holds the delete-capable credential from 0072, the Kyverno side would need a `PolicyException` covering three policies on top, and both changes would be reconciled from Git and outlive the measurement run that motivated them. Borrowing `monitoring` costs nothing to add and nothing to remove, since the harness applies the Job, waits for it, reads its logs and deletes it, leaving no declared object behind.
-
-## Options considered
-
-- Run the Job in `monitoring`, chosen. No policy changes, no manifests in Git, and nothing left over when the harness goes.
-- Label `horizon-system` as PodSecurity privileged and add a Kyverno `PolicyException` for the three policies. Rejected. PodSecurity enforce cannot be scoped below the namespace, so this admits every future pod in the namespace holding the burst credential, and the exception would be committed to Git where it long outlives the measurement.
-- Give the harness its own namespace, labelled privileged and excluded from Kyverno. Rejected for now. It is the correct shape if the harness becomes permanent, but it puts a new relaxed namespace and a new Kyverno exclusion into Git for a tool that has not yet earned either.
-- Reach the node over SSH instead. Rejected. Horizon attaches no key the harness holds, and adding one would mean a key on every burst node plus a Cloud Firewall change, which is a larger and more permanent widening than the pod.
 
 ## Consequences
 

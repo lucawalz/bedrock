@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-11-07
----
+# 8. Deny network traffic by default
 
-# 0008. Deny network traffic by default
+Date: 2026-11-07
+
+## Status
+
+Accepted
 
 ## Context
 

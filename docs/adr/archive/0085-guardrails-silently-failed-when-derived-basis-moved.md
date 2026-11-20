@@ -1,9 +1,10 @@
----
-status: accepted
-date: 2026-09-08
----
+# 85. Guardrails silently failed when the value they were derived from moved
 
-# 0085. Guardrails silently failed when the value they were derived from moved
+Date: 2026-09-08
+
+## Status
+
+Accepted
 
 ## Context
 
@@ -33,6 +34,21 @@ what it could actually schedule and 76.3 percent of what the alert measured, and
 been reporting `Scheduled=False` with reason `LocalReplicaSchedulingFailure` for roughly fifteen
 hours with both alerts silent throughout.
 
+### Options considered
+
+- Enumerate eight gateway pairs and fix the denominator, chosen. It closes both defects with the
+  narrowest source list that survives a Node object being replaced.
+- Widen the NetworkPolicy source to `10.42.0.0/16`. Rejected. These policies sit beside a
+  `default-deny` policy in each namespace, and the point of listing only the `.0` and `.1` addresses
+  is that those are the only ones host-originated traffic uses; a `/16` would let any pod in any
+  namespace reach `longhorn-system`, `cattle-system` and `postgres`.
+- Match the allowed source by selector instead of by address. Rejected as unavailable rather than
+  undesirable: host-network traffic from the API server and kubelet carries no pod or namespace
+  identity to match against, so `ipBlock` is the only expressible form.
+- Leave the headroom thresholds and only correct the description's units. Rejected. The description
+  was not the defect, and relabelling raw capacity as something it is not would have hidden the same
+  bug under corrected prose.
+
 ## Decision
 
 **Widen the NetworkPolicies to every allocatable gateway pair, not the current one.** The three
@@ -53,21 +69,6 @@ divides one metric by another was checked for a raw capacity standing in for an 
 kubelet volume-fill rules already measure against the usable figure kubelet reports, the container
 memory rules compare against the limit itself, and the blog recording rules divide by request counts
 rather than by any capacity, so no other alert shared this defect's shape.
-
-## Options considered
-
-- Enumerate eight gateway pairs and fix the denominator, chosen. It closes both defects with the
-  narrowest source list that survives a Node object being replaced.
-- Widen the NetworkPolicy source to `10.42.0.0/16`. Rejected. These policies sit beside a
-  `default-deny` policy in each namespace, and the point of listing only the `.0` and `.1` addresses
-  is that those are the only ones host-originated traffic uses; a `/16` would let any pod in any
-  namespace reach `longhorn-system`, `cattle-system` and `postgres`.
-- Match the allowed source by selector instead of by address. Rejected as unavailable rather than
-  undesirable: host-network traffic from the API server and kubelet carries no pod or namespace
-  identity to match against, so `ipBlock` is the only expressible form.
-- Leave the headroom thresholds and only correct the description's units. Rejected. The description
-  was not the defect, and relabelling raw capacity as something it is not would have hidden the same
-  bug under corrected prose.
 
 ## Consequences
 
@@ -98,7 +99,7 @@ The stale apiserver certificate Subject Alternative Names remain unpruned, for t
 [0083](0083-rename-control-plane-node-to-control-plane-1.md) records, and the one new fact is that
 k3s's `--tls-san-security` flag defaults to true, so the set cannot grow further.
 
-## Update 2026-09-12
+### Update 2026-09-12
 
 The closing sweep above searched one shape of the defect and then declared the class closed. It was
 correct about denominators and wrong about the class. An audit of every rule against the live series

@@ -1,15 +1,24 @@
----
-status: accepted, burst capacity superseded by 0081
-date: 2026-08-03
----
+# 72. Bound the blast radius of burst nodes that carry a delete-capable Hetzner credential
 
-# 0072. Bound the blast radius of burst nodes that carry a delete-capable Hetzner credential
+Date: 2026-08-03
+
+## Status
+
+Accepted, burst capacity superseded by [81. Retire the Hetzner account and accept an estate with no off-site backups](0081-retire-the-hetzner-account.md)
 
 ## Context
 
 [0071](0071-deploy-horizon-operator-from-published-chart.md) put the horizon operator in the cluster, and horizon leased ephemeral Hetzner servers to serve bursts of capacity. Those servers held public IPv4 addresses, joined the cluster over Tailscale, and were expected to disappear when their lease expired. The awkward part is how they disappear. Hetzner bills for a server for as long as the server object exists, powering the machine off does not stop the meter because the reserved capacity is only released on delete, and Hetzner offers no server-side lifetime after which an instance removes itself. A machine that has lost contact with the cluster therefore cannot stop costing money on its own unless it can call the Hetzner API and delete itself, and Hetzner tokens are project-scoped with no per-resource permissions. Horizon's own record on the provider seam notes that the same requirement is free on AWS through shutdown behaviour and free on Google Compute Engine through a maximum run duration, and on Hetzner costs a delete-capable credential sitting on a disposable machine.
 
 That record also prescribes the mitigation: a dedicated project holding nothing but ephemeral capacity and the node images, so a leaked token can only destroy things that were going to be destroyed anyway. The estate did not have that. Everything horizon touched lived in the same Hetzner project the rest of the homelab used, and moving to a separate one is not a configuration change. The node image was a second reason the exposure was real rather than theoretical: it once opened 6443, 10250 and 8472 on every interface, publishing the apiserver port, the kubelet port and the VXLAN overlay to the internet for the whole of a node's life, until those rules were removed and the promoted snapshot rebuilt without them.
+
+### Options considered
+
+- Bound the credential with the ownership guard and two network layers, chosen. It is the only shape that holds without waiting on a project migration, and each layer covers a way the other can be absent.
+- A dedicated Hetzner project immediately, which is what horizon's record prescribes. It is the only option that makes the boundary something the provider enforces rather than something horizon respects. Deferred rather than rejected: it requires rebuilding the node image and the snapshot pipeline against a second project and second token, and the guard plus an otherwise empty project already covers the case it protects against.
+- Rely on the in-guest firewall alone and skip the Cloud Firewall. Rejected. Every way the image can be wrong is a way that firewall is absent, and a burst node is exactly the machine most likely to boot a stale image, since it is created from a snapshot rather than deployed by hand.
+- Withhold the credential and reconcile leases only from inside the cluster. Rejected. It works while the cluster can see the node, which is the case that was never the problem; the credential exists for the partitioned node, and removing it turns a bounded cost into an open-ended one.
+- Close TCP 22 in the image as well, so the public interface offers nothing. Rejected. A node whose Tailscale connection never comes up has no other way in, and that is the failure most likely to need a look at the console rather than a redeploy, so the port stays open in the guest and is narrowed to one source address at the Cloud Firewall instead.
 
 ## Decision
 
@@ -20,14 +29,6 @@ The credential is accepted because the alternative is worse. Without it a node t
 The shared project is accepted for now rather than treated as fixed. It holds no other servers, so the set of instances the guard would let a stolen token delete is the set of burst nodes, and the node image is named after a content hash of the flake, the node modules and the Packer definition, so rebuilding it inside a dedicated project is a workflow run rather than a migration. That matters because Hetzner exposes moving a snapshot between projects only as a console action with no API behind it, so a dedicated project is a rebuild and never a transfer. This is recorded the way [0057](0057-cnpg-barman-dr-and-velero-scope.md) records the object storage keys, and for the same reason: that record had to be corrected once it turned out a separate credential shared full control of both buckets with every other key, because the key pairs were project-wide and no bucket policy existed. The boundary around burst capacity is likewise horizon's label guard and the contents of the project, not a permission the cloud enforces.
 
 Two layers of network containment sit under that. Inside the guest, the node image opens no cluster ports on the public interface and `tailscale0` is the only trusted interface, so the apiserver, the kubelet and the overlay are reachable over the tailnet and nowhere else. Outside the guest, a Hetzner Cloud Firewall named `horizon-burst` allows inbound TCP 22 from a single administrative address and inbound UDP 41641 for direct Tailscale connections, and denies everything else. The outer layer is the one that has to hold when the inner one does not, because cloud-init failing, an image reverting or a rule being dropped are all ways the in-guest firewall stops being what the repository says it is, and none of them reach a firewall enforced in the provider's network.
-
-## Options considered
-
-- Bound the credential with the ownership guard and two network layers, chosen. It is the only shape that holds without waiting on a project migration, and each layer covers a way the other can be absent.
-- A dedicated Hetzner project immediately, which is what horizon's record prescribes. It is the only option that makes the boundary something the provider enforces rather than something horizon respects. Deferred rather than rejected: it requires rebuilding the node image and the snapshot pipeline against a second project and second token, and the guard plus an otherwise empty project already covers the case it protects against.
-- Rely on the in-guest firewall alone and skip the Cloud Firewall. Rejected. Every way the image can be wrong is a way that firewall is absent, and a burst node is exactly the machine most likely to boot a stale image, since it is created from a snapshot rather than deployed by hand.
-- Withhold the credential and reconcile leases only from inside the cluster. Rejected. It works while the cluster can see the node, which is the case that was never the problem; the credential exists for the partitioned node, and removing it turns a bounded cost into an open-ended one.
-- Close TCP 22 in the image as well, so the public interface offers nothing. Rejected. A node whose Tailscale connection never comes up has no other way in, and that is the failure most likely to need a look at the console rather than a redeploy, so the port stays open in the guest and is narrowed to one source address at the Cloud Firewall instead.
 
 ## Consequences
 

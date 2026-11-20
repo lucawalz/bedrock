@@ -1,15 +1,24 @@
----
-status: accepted
-date: 2026-08-23
----
+# 78. Put the horizon interface behind oauth2-proxy and an Authentik OAuth2 provider
 
-# 0078. Put the horizon interface behind oauth2-proxy and an Authentik OAuth2 provider
+Date: 2026-08-23
+
+## Status
+
+Accepted
 
 ## Context
 
 Every gated host in this estate is served the same way. Traefik matches the host, the shared `authentik-forward-auth` middleware asks the embedded outpost whether the request carries a session, and the application behind it trusts the answer. The horizon interface was wired that way first, and for a dashboard that only has to be reached by a signed-in operator it is enough. The horizon interface is not that: it impersonates the caller against the API server on every request, so it has to know who the caller is with certainty rather than accept an upstream's assertion, which means verifying a token itself against a key set it fetches, plus issuer, audience and expiry.
 
 The token the forward-auth middleware copies onto every gated request is not verifiable. An Authentik proxy provider signs it HS256 with the provider's own client secret, and `ProxyProviderSerializer` exposes no `signing_key` field, so there is no way to give the provider an asymmetric key from a blueprint: the provider's JWKS endpoint returns an empty key set and its metadata advertises HS256 alone. Verifying that token would require the interface to hold the gate's own credential, which defeats the reason for verifying at all. An attempt to set `signing_key` on the proxy providers was committed and reverted, because Authentik discards unknown serializer attributes silently and the result was configuration that implied a capability the system did not have. `OAuth2ProviderSerializer` does expose `signing_key`, and an OAuth2 provider publishes a real JWKS signed by the referenced certificate keypair, so the credential to verify against is a public key, which is the only thing the interface should ever hold.
+
+### Options considered
+
+- oauth2-proxy in front, chosen. The interface gains an id token it can verify against a published key set and keeps no login code, and the estate gains one component in one namespace rather than a change to how every other host is gated.
+- Forward auth with the interface verifying the Authentik JWT header, the original design. Rejected on evidence: the token is HS256 signed with the proxy provider's client secret, the JWKS is empty, and no blueprint attribute changes that, so verification would mean handing the interface the gate's own secret.
+- Forward auth with the interface trusting the username header without verification. Rejected. The interface impersonates on the strength of that header, so anything that can reach the pod can name any user, which converts a NetworkPolicy from defence in depth into the only thing standing between an in-cluster pod and cluster-admin impersonation.
+- An Authentik OAuth2 provider with the interface performing the login flow itself. Rejected. It removes a component, but it puts a full authorization code flow, a session cookie, a state parameter and a token refresh loop inside the interface, which is a large amount of security-sensitive code to own for a single dashboard when a maintained proxy does exactly that job.
+- Migrate every gated host to oauth2-proxy for consistency. Rejected as scope this decision does not need. Forward auth is adequate for hosts that only need a signed-in visitor, and moving them all to gain uniformity would trade a working path for a larger one.
 
 ## Decision
 
@@ -22,14 +31,6 @@ Traefik routes the host to oauth2-proxy and no longer attaches the forward-auth 
 The network path is stated end to end and nothing is left implicit. Traefik reaches oauth2-proxy and only oauth2-proxy, oauth2-proxy reaches the interface and Authentik, and the interface is no longer reachable from the Traefik namespace at all, so a route added later cannot skip the proxy by accident. The chart ships its own NetworkPolicy for the interface and this release turns it off, because it admits whole namespaces and defaults to the Traefik namespace, which stopped being the correct source the moment a proxy was placed in between; the admissible source is now one pod set inside the interface's own namespace, which a namespace list cannot name, and two policies each describing half a path is worse than one describing all of it.
 
 The interface's impersonation grant is narrowed to the single user who holds an account on this instance. The chart defaults to an unrestricted `impersonate` verb, which is a path to any identity in the cluster, including cluster-admin, for anything that can reach the interface's ServiceAccount. There is one account here and no groups, so the grant is written to say so.
-
-## Options considered
-
-- oauth2-proxy in front, chosen. The interface gains an id token it can verify against a published key set and keeps no login code, and the estate gains one component in one namespace rather than a change to how every other host is gated.
-- Forward auth with the interface verifying the Authentik JWT header, the original design. Rejected on evidence: the token is HS256 signed with the proxy provider's client secret, the JWKS is empty, and no blueprint attribute changes that, so verification would mean handing the interface the gate's own secret.
-- Forward auth with the interface trusting the username header without verification. Rejected. The interface impersonates on the strength of that header, so anything that can reach the pod can name any user, which converts a NetworkPolicy from defence in depth into the only thing standing between an in-cluster pod and cluster-admin impersonation.
-- An Authentik OAuth2 provider with the interface performing the login flow itself. Rejected. It removes a component, but it puts a full authorization code flow, a session cookie, a state parameter and a token refresh loop inside the interface, which is a large amount of security-sensitive code to own for a single dashboard when a maintained proxy does exactly that job.
-- Migrate every gated host to oauth2-proxy for consistency. Rejected as scope this decision does not need. Forward auth is adequate for hosts that only need a signed-in visitor, and moving them all to gain uniformity would trade a working path for a larger one.
 
 ## Consequences
 

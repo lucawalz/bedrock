@@ -1,9 +1,10 @@
----
-status: accepted, premise superseded by 0074
-date: 2026-06-17
----
+# 31. Pin the home flannel MTU to the tailnet path MTU
 
-# 0031. Pin the home flannel MTU to the tailnet path MTU
+Date: 2026-06-17
+
+## Status
+
+Accepted, premise superseded by [74. Put the home nodes on the tailnet and move flannel onto tailscale0](0074-home-nodes-on-the-tailnet.md)
 
 ## Context
 
@@ -11,15 +12,15 @@ Burst nodes are Hetzner machines that join the home cluster over Tailscale. They
 
 The home nodes were not tailnet members at the time and had no `tailscale0`, so their flannel device derived its MTU from the 1500-byte LAN and settled at the flannel default of 1450. The two ends of the overlay disagreed: home flannel emitted VXLAN frames sized for 1450 while the tailnet leg only carried 1280. Cross-node pod packets larger than roughly 1200 bytes set the don't-fragment bit and exceeded the tunnel, so they were dropped with fragmentation-needed on the tailnet leg. The drop was silent to the workload, which black-holed pod-to-pod and pod-to-CoreDNS traffic on the burst node and crashed pod-networked workloads there.
 
-## Decision
-
-Pin the home flannel overlay to 1230 so every node's overlay agrees at the tailnet path MTU. k3s exposes no first-class flannel-MTU option, so the shared k3s module deploys a flannel net-conf carrying the cluster pod CIDR, the vxlan backend, and an MTU of 1280, and points k3s at it with `--flannel-conf`. The net-conf field is the outer encapsulated-packet size, so it has to carry 1280 for the device to land on 1230; an earlier 1230 in the field produced a 1180 device. The override lives in the module both the server and agent import, so every home node receives it, and it keeps k3s's own pod CIDR, vxlan backend, VNI, and port so only the MTU changes. [0074](0074-home-nodes-on-the-tailnet.md) later made the home nodes tailnet members, which removes the premise above but not the pin: a `tailscale0`-bound flannel derives exactly the same 1230, and the file is still why the overlay reads as it does.
-
-## Options considered
+### Options considered
 
 - Deploy a flannel net-conf override through the shared k3s module, setting the outer MTU to 1280 so the overlay device settles at 1230, chosen. It is the single place that reaches all home nodes, it changes only the MTU while preserving the pod CIDR and backend, and it lands the same 1230 the burst node already uses.
 - Set `flannel-iface: tailscale0` on the home nodes as well, rejected at the time because they were not tailnet members and had no interface for flannel to bind. [0074](0074-home-nodes-on-the-tailnet.md) reverses that premise and adopts the binding.
 - Add static routes or push the correction through the Pi router, rejected. The underlay already routes correctly, and the only fault is the MTU mismatch, which routing changes do not address.
+
+## Decision
+
+Pin the home flannel overlay to 1230 so every node's overlay agrees at the tailnet path MTU. k3s exposes no first-class flannel-MTU option, so the shared k3s module deploys a flannel net-conf carrying the cluster pod CIDR, the vxlan backend, and an MTU of 1280, and points k3s at it with `--flannel-conf`. The net-conf field is the outer encapsulated-packet size, so it has to carry 1280 for the device to land on 1230; an earlier 1230 in the field produced a 1180 device. The override lives in the module both the server and agent import, so every home node receives it, and it keeps k3s's own pod CIDR, vxlan backend, VNI, and port so only the MTU changes. [0074](0074-home-nodes-on-the-tailnet.md) later made the home nodes tailnet members, which removes the premise above but not the pin: a `tailscale0`-bound flannel derives exactly the same 1230, and the file is still why the overlay reads as it does.
 
 ## Consequences
 
