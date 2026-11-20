@@ -8,7 +8,7 @@ adr_dirs=(docs/adr docs/adr/archive)
 record_status() {
   awk '
     found && NF { print; exit }
-    $0 == "## Status" { found = 1 }
+    /^## Status[[:space:]]*$/ { found = 1 }
   ' "$1" | sed -E 's/\[([0-9]+)\. [^]]*\]\([^)]*\)/\1/g' | tr '[:upper:]' '[:lower:]'
 }
 
