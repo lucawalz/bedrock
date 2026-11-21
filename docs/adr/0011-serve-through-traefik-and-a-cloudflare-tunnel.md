@@ -26,12 +26,6 @@ Two services are meant for the public: the blog at `lucawalz.dev` and Open WebUI
 - The tunnel's public DNS records and Cloudflare Access applications are still managed in the Cloudflare dashboard, not from git.
 - Traefik logs and middlewares see the VIP node, not the client, so no rule can key on a client address. Closing anonymous registry reads would go through zot's own access policy and registry credentials on the nodes, not through Traefik.
 - Internal access depends on the router's DNS. A device that does not use it resolves the public records instead, which exist only for the two public hosts.
-
-## Accepted risk
-
-Open WebUI v0.13.4 still ships PyJWT 2.13.0 (CVE-2026-102268, fixed in 2.14.0) and Authlib 1.7.2 (CVE-2026-96760). The same image carries further fixable criticals that issue #316 tracks. The release is deployed anyway, because the affected authentication libraries sit behind two gates:
-
-- On the tunnel path, the Cloudflare Access "MFA" policy admits only the owner's GitHub identity before a request reaches Open WebUI.
-- On the LAN path, Open WebUI's own login is the only gate, and only LAN and tailnet clients reach it.
-
-Revisit when the first upstream release ships PyJWT 2.14 or later, which the image-scan issue #316 surfaces. The image is then bumped and this section removed.
+- Accepted risk: Open WebUI v0.13.4 still ships PyJWT 2.13.0 (CVE-2026-102268, fixed in 2.14.0) and Authlib 1.7.2 (CVE-2026-96760). The same image carries further fixable criticals that the issue the image-scan workflow maintains tracks. The release is accepted for deployment anyway, because the affected authentication libraries sit behind two gates. Revisit at the first upstream release that fixes both libraries, meaning PyJWT 2.14 or later and an Authlib release without CVE-2026-96760, which the image-scan issue surfaces; the image is then bumped and this entry removed. The gates:
+  - On the tunnel path, the Cloudflare Access "MFA" policy admits only the owner's GitHub identity before a request reaches Open WebUI.
+  - On the LAN path, Open WebUI's own login is the only gate, and only LAN and tailnet clients reach it.

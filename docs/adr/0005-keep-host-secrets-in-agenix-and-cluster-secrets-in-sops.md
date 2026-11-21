@@ -8,7 +8,7 @@ Accepted
 
 ## Context
 
-Hosts and the cluster consume secrets at different times. A host needs its join token, tailnet auth key and backup credentials before K3s exists. The cluster needs Kubernetes Secrets that Flux can apply. This repository is public, so ciphertext of cluster secrets is kept out of it. Its history still holds 2025 and 2026-06 SOPS ciphertext encrypted to retired keys (`age1t3ce...`, `age16s0zny...`). Every credential behind it was rotated in November 2026 and the old cluster key is retired, so that history exposes nothing current.
+Hosts and the cluster consume secrets at different times. A host needs its join token, tailnet auth key and backup credentials before K3s exists. The cluster needs Kubernetes Secrets that Flux can apply. This repository is public, so ciphertext of cluster secrets is kept out of it. Its history still holds older SOPS ciphertext encrypted to retired keys.
 
 ## Decision
 
@@ -20,6 +20,6 @@ Hosts and the cluster consume secrets at different times. A host needs its join 
 
 ## Consequences
 
-- A leak of this repository exposes no current cluster secret. New cluster secrets live only in `bedrock-secrets`, and the older ciphertext in history is encrypted to retired keys.
+- A leak of this repository exposes no current cluster secret. New cluster secrets live only in `bedrock-secrets`. The history holds 2025 and 2026-06 SOPS ciphertext encrypted to retired keys (`age1t3ce...`, `age16s0zny...`); every credential behind it was rotated in November 2026 and the old cluster key is retired.
 - A rebuild needs both repositories and the age key; without the key, every cluster Secret has to be recreated by hand.
 - Two secret systems have to be learned, each matched to the stage at which its consumer runs.

@@ -55,6 +55,8 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 | cloudflared | `cloudflare/cloudflared` |
 | zot | `zot`, `ghcr.io/project-zot/zot` |
 
+The shared `lucawalz/.github` preset is held by the same rule: its release tag moves only through a held pull request.
+
 ## Consequences
 
 - The same commit installs the same versions on every rebuild.
