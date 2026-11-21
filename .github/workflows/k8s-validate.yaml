@@ -131,9 +131,11 @@ jobs:
         env:
           # renovate: datasource=github-releases depName=kyverno/kyverno
           KYVERNO_VERSION: v1.19.2
+          KYVERNO_SHA256: 357eaf1df8bc24ddd5a73979fadeaae6a032e8710f11af264229756e4956bf4a
         run: |
-          curl -sSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" \
-            | tar xz -C /usr/local/bin kyverno
+          curl -sSfL -o "$RUNNER_TEMP/kyverno.tar.gz" "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz"
+          echo "${KYVERNO_SHA256}  $RUNNER_TEMP/kyverno.tar.gz" | sha256sum -c -
+          tar xz -f "$RUNNER_TEMP/kyverno.tar.gz" -C /usr/local/bin kyverno
 
       - name: Run policy unit tests
         run: kyverno test tests/policies/
@@ -155,10 +157,12 @@ jobs:
         env:
           # renovate: datasource=github-releases depName=prometheus/prometheus
           PROMETHEUS_VERSION: v3.16.0
+          PROMETHEUS_SHA256: 68727009472a2c02e1ff7f062fd5b3e637285bffc8fc2d340c76fb449d6e0f34
         run: |
           prometheus_dir="prometheus-${PROMETHEUS_VERSION#v}.linux-amd64"
-          curl -sSL "https://github.com/prometheus/prometheus/releases/download/${PROMETHEUS_VERSION}/${prometheus_dir}.tar.gz" \
-            | tar xz --strip-components=1 -C /usr/local/bin "${prometheus_dir}/promtool"
+          curl -sSfL -o "$RUNNER_TEMP/prometheus.tar.gz" "https://github.com/prometheus/prometheus/releases/download/${PROMETHEUS_VERSION}/${prometheus_dir}.tar.gz"
+          echo "${PROMETHEUS_SHA256}  $RUNNER_TEMP/prometheus.tar.gz" | sha256sum -c -
+          tar xz -f "$RUNNER_TEMP/prometheus.tar.gz" --strip-components=1 -C /usr/local/bin "${prometheus_dir}/promtool"
 
       - name: Check and test alert rules
         run: bash scripts/check-alert-rules.sh
@@ -194,9 +198,11 @@ jobs:
         env:
           # renovate: datasource=github-releases depName=fluxcd/flux2
           FLUX_VERSION: v2.10.0
+          FLUX_SHA256: 208dd7012c04fedeed5b2d0b6e63df3b15b1c34a381527811685c098bc9f8659
         run: |
-          curl -sSL "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz" \
-            | tar xz -C /usr/local/bin flux
+          curl -sSfL -o "$RUNNER_TEMP/flux.tar.gz" "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz"
+          echo "${FLUX_SHA256}  $RUNNER_TEMP/flux.tar.gz" | sha256sum -c -
+          tar xz -f "$RUNNER_TEMP/flux.tar.gz" -C /usr/local/bin flux
 
       - uses: ./.github/actions/manifest-tools
 
