@@ -107,6 +107,11 @@
       "groupName": "{{{packageFileDir}}}"
     },
     {
+      "description": "Ship every paperless-ngx image update in one pull request",
+      "matchPackageNames": ["/(^|/)paperless-ngx$/"],
+      "groupName": "paperless-ngx"
+    },
+    {
       "description": "Let images from registries that publish no release timestamp pass the release age wait",
       "matchDatasources": ["docker"],
       "minimumReleaseAgeBehaviour": "timestamp-optional"
