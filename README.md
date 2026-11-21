@@ -283,7 +283,7 @@ Every pull request and push to `main` runs `ci`, which calls these workflows and
 - `lint`: shellcheck and actionlint.
 - `docs`: the ADR index and the generated inventory.
 - `renovate-validate`: the Renovate configuration.
-- `gitleaks`: a secret scan of the commits in every push and pull request.
+- `gitleaks`: a secret scan of the full history on every push and pull request, with a checksum-verified binary.
 - The shared [zizmor](https://docs.zizmor.sh/) workflow audit, CodeQL for the workflows, Python and JavaScript, and a Conventional Commits check of the pull request title, all from [lucawalz/.github](https://github.com/lucawalz/.github).
 
 Outside the gate, `nix-build-router` builds the router closure on an arm64 runner when router files change, and weekly. `labeler` labels pull requests by path, `scorecard` runs the OpenSSF Scorecard on `main` and weekly, and `image-scan` runs weekly and on demand: Trivy scans every image the cluster runs for critical vulnerabilities with a fix, and one GitHub issue lists them.
