@@ -93,13 +93,6 @@
             ./hosts/router
           ];
         };
-        cluster-node = nixpkgs.lib.nixosSystem {
-          system = "x86_64-linux";
-          modules = [
-            disko.nixosModules.disko
-            ./modules/k3s/cluster-node.nix
-          ];
-        };
         router-installer = nixpkgs.lib.nixosSystem {
           system = "aarch64-linux";
           modules = [

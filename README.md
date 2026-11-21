@@ -241,7 +241,7 @@ flake.nix              every host and the dev shells
 lib/                   the node inventory and the builder that generates the cluster nodes
 hosts/                 shared base, control-plane-1, the router and the router installer image
 modules/
-  k3s/                 server and agent roles, plus the dormant cloud node image
+  k3s/                 server and agent roles
   router/              firewall, DHCP, DNS, deadman and the bar panel kiosk
   tailscale/           the tailnet client
   services/            host prerequisites for Longhorn
@@ -253,7 +253,6 @@ kubernetes/
   apps/                one self-contained folder per app
 cloudflare/            the email gate Worker
 tailscale/             the tailnet access policy, pasted into the admin console
-infra/packer/          the dormant Packer template for a cloud node snapshot
 scripts/               bootstrap, scaffold, restore drills and the CI checks
 tests/                 Kyverno policy tests and promtool alert-rule tests
 docs/                  ADRs, the inventory and the runbooks

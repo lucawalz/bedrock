@@ -52,15 +52,6 @@
     },
     {
       "customType": "regex",
-      "description": "Update the base image and plugin pins in the Packer templates",
-      "managerFilePatterns": ["/^infra/packer/.+\\.pkr\\.hcl$/"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)(?: versioning=(?<versioning>\\S+?))?\\s+[A-Za-z0-9_-]+?\\s*=\\s*\"[a-z]+-(?<currentValue>[^\"\\s]+)\"",
-        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+?) depName=(?<depName>\\S+?)(?: extractVersion=(?<extractVersion>\\S+?))?\\s+version\\s*=\\s*\"=\\s*(?<currentValue>[^\"\\s]+)\""
-      ]
-    },
-    {
-      "customType": "regex",
       "description": "Track the Flux minor line pinned on the FluxInstance distribution",
       "managerFilePatterns": ["/^kubernetes/clusters/home/flux-operator/instance/fluxinstance\\.yaml$/"],
       "matchStrings": ["version:\\s*\"(?<currentValue>\\d+\\.\\d+)\\.x\""],
@@ -69,14 +60,6 @@
       "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+)\\.\\d+$",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)$",
       "autoReplaceStringTemplate": "version: \"{{{newValue}}}.x\""
-    },
-    {
-      "customType": "regex",
-      "description": "Update the nixos-anywhere flake reference used by Packer",
-      "managerFilePatterns": ["/^infra/packer/.+\\.pkr\\.hcl$/"],
-      "matchStrings": ["github:nix-community/nixos-anywhere\\?ref=(?<currentValue>[^'\"\\s]+)"],
-      "depNameTemplate": "nix-community/nixos-anywhere",
-      "datasourceTemplate": "github-tags"
     }
   ],
   "rebaseWhen": "conflicted",
@@ -180,18 +163,6 @@
       "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": false,
       "labels": ["dependencies", "held"]
-    },
-    {
-      "description": "Hold the node image inputs, since a bump rebuilds the snapshot",
-      "matchFileNames": ["infra/packer/**"],
-      "automerge": false,
-      "labels": ["dependencies", "held"]
-    },
-    {
-      "description": "Track the Hetzner base image by version only, since its name cannot carry a digest",
-      "matchFileNames": ["infra/packer/**"],
-      "matchPackageNames": ["debian"],
-      "pinDigests": false
     },
     {
       "description": "Step stateful infrastructure one minor at a time",
