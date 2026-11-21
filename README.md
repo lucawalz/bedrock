@@ -258,6 +258,18 @@ tests/                 Kyverno policy tests and promtool alert-rule tests
 docs/                  ADRs, the inventory and the runbooks
 ```
 
+## Security
+
+A stolen node yields a ciphertext disk. The LUKS2 root is sealed to PCRs 0, 7 and 15 under Secure Boot, and the recovery keys exist only on the offline stick. The owner declined a firmware password, so the rule is to check the firmware before typing a recovery key at a console ([ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)).
+
+A stolen or compromised Mac holds no plaintext SSH, age or CA key, and kubectl signs in through OIDC only. The Secretive keys sign and push without a prompt, so a process in the unlocked session reaches GitHub, host root and, through a signed commit, the cluster ([ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md), [disaster recovery](docs/disaster-recovery.md#admin-ssh-keys)).
+
+A leaked R2 token reaches one bucket. Dumps and etcd snapshots are locked against deletion, and the dumps are gpg-encrypted to an offline key. Longhorn backups and the barman base backups and WAL stay erasable, the Longhorn volumes are LUKS ciphertext, and the barman data is plaintext in R2 ([ADR 0012](docs/adr/0012-back-up-off-site-to-cloudflare-r2-and-test-restores.md), [ADR 0007](docs/adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)).
+
+A compromised app meets default-deny NetworkPolicies, Kyverno in `Enforce` mode, no cluster-wide Secret read outside an allowlist, a Traefik that reads Secrets only in the namespaces it serves, never `flux-system` or `longhorn-system`, and Postgres `sameuser` access ([ADR 0008](docs/adr/0008-deny-network-traffic-by-default.md), [ADR 0009](docs/adr/0009-enforce-workload-policy-with-kyverno.md), [ADR 0007](docs/adr/0007-share-one-cloudnativepg-cluster-with-per-app-databases.md)). The accepted risks are recorded in the Consequences of each ADR.
+
+Vulnerabilities are reported as described in [SECURITY.md](SECURITY.md).
+
 ## Recovery
 
 Recovery depends on the repositories, the three offline keys and the R2 buckets. The [disaster recovery runbook](docs/disaster-recovery.md) covers the measured rebuild, restores from R2, the drill cadence and the known gaps. The [admission break-glass runbook](docs/admission-break-glass.md) covers a webhook that blocks the writes needed to repair it, and the [alert selector audit](docs/alert-selector-audit.md) covers the live check of alert rules.
