@@ -6,6 +6,8 @@ in
 {
   imports = [ ./common.nix ];
 
+  services.openssh.settings.AllowTcpForwarding = false;
+
   services.k3s = {
     enable = true;
     role = "agent";
