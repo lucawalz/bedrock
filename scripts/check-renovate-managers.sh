@@ -69,7 +69,7 @@ if status == 0:
 
 ADR_PATH = "docs/adr/0014-pin-versions-and-update-them-with-renovate.md"
 HELD_HEADING = "### Held for review"
-HELD_UPDATE_TYPES = {"minor", "patch"}
+HELD_UPDATE_TYPES = {"minor", "patch", "digest"}
 TAG_OR_DIGEST = re.compile(r"(?::[^:/@]+)?(?:@sha256:[0-9a-f]+)?$")
 
 
@@ -127,7 +127,7 @@ for name in held:
         print(f"Held dependency {name} from {ADR_PATH} appears nowhere in the repository")
         status = 1
     elif not any(holds(rule, name) for rule in config.get("packageRules", [])):
-        print(f"No packageRule holds minor and patch updates of {name} for review")
+        print(f"No packageRule holds minor, patch and digest updates of {name} for review")
         status = 1
 
 if status == 0:

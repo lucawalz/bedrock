@@ -122,7 +122,7 @@
       "automerge": true
     },
     {
-      "description": "Hold critical infrastructure minors and patches for manual review",
+      "description": "Hold critical infrastructure minors, patches and digests for manual review",
       "matchManagers": ["flux", "kubernetes", "custom.regex"],
       "matchPackageNames": [
         "/^longhorn$/",
@@ -171,7 +171,7 @@
         "/(^|/)ollama$/",
         "/^flagger$/"
       ],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": false,
       "labels": ["dependencies", "held"]
     },
