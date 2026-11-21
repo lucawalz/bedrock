@@ -32,3 +32,4 @@ The cluster runs unattended most of the time, and the owner should hear about a 
 - The live selector check cannot run in CI and is run by hand after rule changes and rebuilds.
 - etcd disk latency is not watched. `EtcdRequestsSlow` reads the API server's client-side etcd latency instead, which includes but cannot isolate slow WAL fsyncs.
 - An audit policy change takes effect only through the K3s restart that a rebuild of control-plane-1 triggers, which briefly takes down the only API server.
+- The node keeps about 40 hours of `audit.log`, in 10 files of 100 MB. Loki, with `retention_period: 336h`, is the record, and a reader past the node window queries Loki instead of the file.
