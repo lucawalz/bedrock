@@ -34,7 +34,7 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 | Component | Dependency names |
 | --- | --- |
 | Longhorn | `longhorn`, `docker.io/longhornio/longhorn-manager`, `docker.io/longhornio/longhorn-ui`, `docker.io/longhornio/csi-attacher`, `docker.io/longhornio/csi-provisioner`, `docker.io/longhornio/csi-node-driver-registrar`, `docker.io/longhornio/csi-resizer`, `docker.io/longhornio/csi-snapshotter`, `docker.io/longhornio/livenessprobe` |
-| CloudNativePG | `cloudnative-pg`, `plugin-barman-cloud`, `ghcr.io/cloudnative-pg/cloudnative-pg`, `ghcr.io/cloudnative-pg/plugin-barman-cloud`, `ghcr.io/cloudnative-pg/plugin-barman-cloud-sidecar` |
+| CloudNativePG | `cloudnative-pg`, `plugin-barman-cloud`, `ghcr.io/cloudnative-pg/cloudnative-pg`, `ghcr.io/cloudnative-pg/plugin-barman-cloud`, `ghcr.io/cloudnative-pg/plugin-barman-cloud-sidecar`, `ghcr.io/cloudnative-pg/postgresql` |
 | kube-prometheus-stack | `kube-prometheus-stack`, `prometheus-operator-crds`, `quay.io/prometheus-operator/prometheus-operator`, `quay.io/prometheus-operator/prometheus-config-reloader`, `quay.io/prometheus/prometheus`, `quay.io/prometheus/alertmanager`, `quay.io/prometheus/node-exporter`, `registry.k8s.io/kube-state-metrics/kube-state-metrics`, `quay.io/kiwigrid/k8s-sidecar`, `ghcr.io/jkroepke/kube-webhook-certgen` |
 | cert-manager | `cert-manager`, `quay.io/jetstack/cert-manager-controller`, `quay.io/jetstack/cert-manager-webhook`, `quay.io/jetstack/cert-manager-cainjector`, `quay.io/jetstack/cert-manager-acmesolver`, `quay.io/jetstack/cert-manager-startupapicheck` |
 | Traefik | `traefik`, `traefik-crds`, `docker.io/traefik` |
@@ -50,6 +50,8 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 | LiteLLM | `ghcr.io/berriai/litellm` |
 | Open WebUI | `open-webui`, `ghcr.io/open-webui/open-webui` |
 | ntfy | `docker.io/binwiederhier/ntfy` |
+| Vaultwarden | `docker.io/vaultwarden/server` |
+| Ollama | `ollama`, `docker.io/ollama/ollama` |
 | cloudflared | `cloudflare/cloudflared` |
 | zot | `zot`, `ghcr.io/project-zot/zot` |
 
