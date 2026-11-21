@@ -67,21 +67,6 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-webhooks
-  namespace: flux-system
-spec:
-  podSelector:
-    matchLabels:
-      app: notification-controller
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - namespaceSelector: {}
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
   name: allow-flux-operator-ui-ingress
   namespace: flux-system
 spec:
