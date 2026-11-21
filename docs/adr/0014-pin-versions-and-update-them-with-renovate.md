@@ -15,7 +15,7 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 - Every chart, image, Flux distribution line, Nix input and GitHub Action is pinned. Images carry a tag and its digest (`tag@sha256:...`), Actions use commit SHAs with the version as a comment, and the Nix inputs are fixed by `flake.lock`. Kyverno rejects the `latest` tag at admission ([0009](0009-enforce-workload-policy-with-kyverno.md)).
 - A chart's default images are set explicitly in its HelmRelease values, so Renovate sees them and pins their digests. Renovate ships a chart and the images in its HelmRelease in one pull request. `scripts/check-manifests.sh` renders every workload and fails when a container image, or a Prometheus Operator image, lacks a digest, and when a Prometheus or Alertmanager `version` no longer matches its image tag.
 - Digest-exempt:
-  - The Flux controllers. The Flux Operator installs them from the `FluxInstance` already pinned by digest, and no values set them.
+  - The Flux controllers. The `FluxInstance` pins the `2.10.x` line, not a digest. The Flux Operator, itself held and digest-pinned, resolves and runs each controller image by digest, and no values set them.
   - The images below, listed in `digest_exempt_images`.
   - Longhorn engine and instance manager. Longhorn names an EngineImage or instance manager after its image string, so a new string starts an engine upgrade that stays manual here.
   - Longhorn share manager and backing image manager. Each ShareManager and BackingImageManager records its image, so a new string replaces the NFS server of a shared volume or the manager that serves backing images on a disk.
