@@ -167,8 +167,8 @@ metadata:
     kustomize.toolkit.fluxcd.io/prune: disabled
   labels:
 ${postgres_label}    bedrock.io/traefik-routable: "true"
-    pod-security.kubernetes.io/enforce: baseline
-    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: ServiceAccount
