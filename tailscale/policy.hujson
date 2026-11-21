@@ -57,7 +57,7 @@
         },
         {
             "src":  "tag:cluster",
-            "deny": ["tag:cluster:6443", "tag:cluster:10250", "tag:cluster:2379", "tag:cluster:7946", "10.20.0.10:6443", "macbook:22"],
+            "deny": ["tag:cluster:6443", "tag:cluster:10250", "tag:cluster:2379", "tag:cluster:7946", "10.20.0.10:6443", "10.20.0.11:22", "10.20.0.12:10250", "10.20.0.50:443", "macbook:22"],
         },
         {
             "src":  "tag:router",
