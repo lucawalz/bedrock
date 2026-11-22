@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   scorecard:
-    uses: lucawalz/.github/.github/workflows/scorecard.yml@512d402b682a017ae2629ee41f794686a8d1468c # v0.1.0
+    uses: lucawalz/.github/.github/workflows/scorecard.yml@b4689c6655b628d5b755ad9a12ec7f247a72d392 # v0.2.0
     permissions:
       actions: read
       contents: read
