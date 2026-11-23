@@ -31,6 +31,7 @@ spec:
       USERMAP_UID: "1000"
       USERMAP_GID: "1000"
       PAPERLESS_URL: https://paperless.${cluster_domain}
+      PAPERLESS_ALLOWED_HOSTS: paperless.${cluster_domain},paperless-ngx
       PAPERLESS_DBENGINE: postgresql
       PAPERLESS_DBHOST: postgres-rw.postgres.svc.cluster.local
       PAPERLESS_DBPORT: "5432"
