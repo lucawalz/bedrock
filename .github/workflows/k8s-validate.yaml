@@ -197,7 +197,7 @@ jobs:
       - name: Install flux
         env:
           # renovate: datasource=github-releases depName=fluxcd/flux2
-          FLUX_VERSION: v2.10.0
+          FLUX_VERSION: v2.10.1
           FLUX_SHA256: 208dd7012c04fedeed5b2d0b6e63df3b15b1c34a381527811685c098bc9f8659
         run: |
           curl -sSfL -o "$RUNNER_TEMP/flux.tar.gz" "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz"
