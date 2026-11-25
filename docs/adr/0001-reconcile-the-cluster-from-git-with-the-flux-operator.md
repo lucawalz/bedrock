@@ -21,6 +21,6 @@ The cluster is meant to be rebuildable from this repository alone. The rebuild i
 
 ## Consequences
 
-- A cold bootstrap converges without manual steps beyond `just bootstrap` and the owner-held keys.
+- A cold bootstrap converges without manual steps beyond `just bootstrap` and the offline keys.
 - A failed upgrade is not rolled back. It keeps retrying until the fix lands in git, which is the intended way to recover.
 - The age key and the deploy key are the inputs a rebuild needs that the repository cannot hold.

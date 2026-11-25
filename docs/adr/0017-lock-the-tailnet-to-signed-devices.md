@@ -12,7 +12,7 @@ The four tagged hosts and the admin devices reach each other over the tailnet, a
 
 ## Decision
 
-- Tailnet Lock is enabled with `tailscale lock init`. The trusted signers are the Mac and the owner's iPhone. The Mac signs with the CLI and the iPhone through the Tailscale app. `init` takes the Tailnet Lock key of the node it runs on, so the Mac's key is always among them, and it signs every existing node, so nothing is locked out when the lock turns on.
+- Tailnet Lock is enabled with `tailscale lock init`. The trusted signers are the Mac and the iPhone. The Mac signs with the CLI and the iPhone through the Tailscale app. `init` takes the Tailnet Lock key of the node it runs on, so the Mac's key is always among them, and it signs every existing node, so nothing is locked out when the lock turns on.
 - `init` generates 10 disablement secrets, and the command's stdout is redirected straight onto the stick at `/Volumes/bedrock-keys/bedrock/tailnet-lock-disablements.txt`. Nothing is written to the Mac's SSD. `init` also generates the support disablement secret (`--gen-disablement-for-support`), which lets Tailscale support disable the lock.
 - A reinstalled or newly joined host is locked out until a signer runs `tailscale lock sign <node-key>` for it. Signed auth keys are not used, because Tailscale advises against them.
 - Tailnet Lock and device approval are mutually exclusive, so device approval stays off. Key expiry is off on the four tagged devices.
