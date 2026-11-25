@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: flagger
-      version: "1.44.0"
+      version: "1.45.0"
       sourceRef:
         kind: HelmRepository
         name: flagger
@@ -52,4 +52,4 @@ spec:
       install: false
     image:
       repository: ghcr.io/fluxcd/flagger
-      tag: 1.44.0@sha256:d7898869ab003087a33d216219d7d04f3cdf6547d80a6dcdfd37aeb61072a632
+      tag: 1.45.0@sha256:15b372d35012f9ae450f9030bc82217369c0aee082ed5a5225830010cf972b2b
