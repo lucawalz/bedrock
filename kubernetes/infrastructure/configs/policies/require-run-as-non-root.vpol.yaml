@@ -9,7 +9,7 @@ metadata:
     policies.kyverno.io/subject: Pod
 spec:
   validationActions:
-    - Audit
+    - Deny
   evaluation:
     background:
       enabled: true
