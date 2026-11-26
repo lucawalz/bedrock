@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>lucawalz/.github//renovate/default#v0.2.0"],
+  "extends": ["github>lucawalz/.github//renovate/default#v0.4.0"],
   "nix": {
     "description": "Keep the beta nix manager opted in, since Renovate ships it disabled",
     "enabled": true,
