@@ -28,4 +28,4 @@ Three identical mini PCs have to carry the control plane, the workloads and the 
 - Tailscale's `ts-input` chain accepts all `tailscale0` traffic before the NixOS firewall, so the policy is the only filter for every node listener; this is an accepted risk.
 - frr-k8s runs FRR (`mgmtd`, `bfdd`) on every node with no BGP or BFD peers, and no other host reaches it; this is accepted.
 - On an empty cache zot fetches a large image fully before answering, which can outlast the containerd pull deadline. Pods back off and recover once the cache is warm.
-- The tailnet policy tests pin the Mac by its tailnet address, because a user email would publish the owner's login. An address no device holds fails every `accept` test on save, which a deliberate bad save proves once. The iPhone shares the Mac's `autogroup:member` grants, so a second source adds nothing.
+- The tailnet policy tests pin the Mac by its tailnet address, because a user email would publish a login address. An address no device holds fails every `accept` test on save, which a deliberate bad save proves once. The iPhone shares the Mac's `autogroup:member` grants, so a second source adds nothing.

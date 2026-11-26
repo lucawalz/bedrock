@@ -130,8 +130,8 @@ jobs:
       - name: Install kyverno CLI
         env:
           # renovate: datasource=github-releases depName=kyverno/kyverno
-          KYVERNO_VERSION: v1.19.2
-          KYVERNO_SHA256: 357eaf1df8bc24ddd5a73979fadeaae6a032e8710f11af264229756e4956bf4a
+          KYVERNO_VERSION: v1.20.0
+          KYVERNO_SHA256: 06b8f3ca7b5626473be8fb4d343ad54ab84e317142766f72420e7d44b80942e2
         run: |
           curl -sSfL -o "$RUNNER_TEMP/kyverno.tar.gz" "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz"
           echo "${KYVERNO_SHA256}  $RUNNER_TEMP/kyverno.tar.gz" | sha256sum -c -
@@ -197,8 +197,8 @@ jobs:
       - name: Install flux
         env:
           # renovate: datasource=github-releases depName=fluxcd/flux2
-          FLUX_VERSION: v2.10.0
-          FLUX_SHA256: 208dd7012c04fedeed5b2d0b6e63df3b15b1c34a381527811685c098bc9f8659
+          FLUX_VERSION: v2.10.1
+          FLUX_SHA256: 967365ff84aabc97871827ff33713ef0c09f62dd83c18759e3a5e39adcea9285
         run: |
           curl -sSfL -o "$RUNNER_TEMP/flux.tar.gz" "https://github.com/fluxcd/flux2/releases/download/${FLUX_VERSION}/flux_${FLUX_VERSION#v}_linux_amd64.tar.gz"
           echo "${FLUX_SHA256}  $RUNNER_TEMP/flux.tar.gz" | sha256sum -c -

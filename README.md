@@ -165,7 +165,7 @@ With three nodes Ready, `just bootstrap` brings Flux up. Each step asks before i
 Three steps stay manual afterwards:
 
 - Delete the previous cluster's deploy key on GitHub. The new key is read-only, since nothing in the cluster writes to git.
-- Open `https://id.syslabs.dev/setup` at once, register the owner passkey, and mark the owner email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login. The API server rejects an unverified email too, so `just kubeconfig` and the passkey login of `kubectl get nodes` come after this.
+- Open `https://id.syslabs.dev/setup` at once, register the admin passkey, and mark the admin email as verified in the Pocket ID admin UI. There is no SMTP, and oauth2-proxy rejects an unverified email with a 500 on every forward-auth login. The API server rejects an unverified email too, so `just kubeconfig` and the passkey login of `kubectl get nodes` come after this.
 - The public DNS records for the tunnel hostnames are made by hand in the Cloudflare dashboard.
 
 Flux then works through `kubernetes/clusters/home/config/` in `dependsOn` order. `flux get kustomizations -A` and `flux get helmreleases -A` show the progress. A cold start takes over an hour, most of it image pulls through the empty zot cache.
@@ -260,7 +260,7 @@ docs/                  ADRs, the inventory and the runbooks
 
 ## Security
 
-A stolen node yields a ciphertext disk. The LUKS2 root is sealed to PCRs 0, 7 and 15 under Secure Boot, and the recovery keys exist only on the offline stick. The owner declined a firmware password, so the rule is to check the firmware before typing a recovery key at a console ([ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)).
+A stolen node yields a ciphertext disk. The LUKS2 root is sealed to PCRs 0, 7 and 15 under Secure Boot, and the recovery keys exist only on the offline stick. No firmware password is set, so check the firmware before typing a recovery key at a console ([ADR 0016](docs/adr/0016-boot-nodes-through-secure-boot-and-unlock-luks-with-the-tpm.md)).
 
 A stolen or compromised Mac holds no plaintext SSH, age or CA key, and kubectl signs in through OIDC only. The Secretive keys sign and push without a prompt, so a process in the unlocked session reaches GitHub, host root and, through a signed commit, the cluster ([ADR 0014](docs/adr/0014-pin-versions-and-update-them-with-renovate.md), [disaster recovery](docs/disaster-recovery.md#admin-ssh-keys)).
 
