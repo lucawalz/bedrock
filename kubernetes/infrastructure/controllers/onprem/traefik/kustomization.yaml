@@ -4,7 +4,6 @@ namespace: traefik
 
 components:
   - ../../../../components/forward-auth
-  - ../../../../components/network-policies/base
 
 resources:
   - helmrelease.yaml
