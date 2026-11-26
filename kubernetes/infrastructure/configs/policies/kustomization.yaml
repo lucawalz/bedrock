@@ -13,4 +13,5 @@ resources:
   - require-drop-all-capabilities.vpol.yaml
   - disallow-latest-tag.vpol.yaml
   - default-privilege-escalation.mpol.yaml
+  - generate-network-policies.gpol.yaml
   - exceptions.yaml
