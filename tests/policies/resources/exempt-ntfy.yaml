@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ntfy-5f7c8d9b6-k3n8v
+  namespace: ntfy
+  labels:
+    app.kubernetes.io/name: ntfy
+    app.kubernetes.io/instance: ntfy
+spec:
+  containers:
+    - name: ntfy
+      image: docker.io/binwiederhier/ntfy:v2.14.0

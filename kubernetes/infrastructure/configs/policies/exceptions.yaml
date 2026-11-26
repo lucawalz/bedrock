@@ -146,3 +146,125 @@ spec:
         operator: AllIn
         value:
           - "docker.io/binwiederhier/ntfy:*"
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: paperless-ngx
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: require-drop-all-capabilities
+      kind: ValidatingPolicy
+    - name: require-run-as-non-root
+      kind: ValidatingPolicy
+  matchConditions:
+    - name: kind
+      expression: object.kind in ['Pod', 'Deployment']
+    - name: namespace
+      expression: object.metadata.namespace == 'paperless'
+    - name: labels
+      expression: >-
+        object.metadata.?labels[?'app.kubernetes.io/name'].orValue('') == 'paperless-ngx' &&
+        object.metadata.?labels[?'app.kubernetes.io/instance'].orValue('') == 'paperless-ngx'
+    - name: images
+      expression: >-
+        [has(object.spec.template) ? object.spec.template.spec : object.spec].all(s,
+          (s.containers + s.?initContainers.orValue([]) + s.?ephemeralContainers.orValue([])).all(c,
+            c.image.startsWith('ghcr.io/paperless-ngx/paperless-ngx:')))
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: reloader-drop-capabilities
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: require-drop-all-capabilities
+      kind: ValidatingPolicy
+  matchConditions:
+    - name: kind
+      expression: object.kind in ['Pod', 'Deployment']
+    - name: namespace
+      expression: object.metadata.namespace == 'reloader'
+    - name: labels
+      expression: >-
+        object.metadata.?labels[?'app.kubernetes.io/name'].orValue('') == 'reloader' &&
+        object.metadata.?labels[?'app.kubernetes.io/instance'].orValue('') == 'reloader'
+    - name: images
+      expression: >-
+        [has(object.spec.template) ? object.spec.template.spec : object.spec].all(s,
+          (s.containers + s.?initContainers.orValue([]) + s.?ephemeralContainers.orValue([])).all(c,
+            c.image.startsWith('ghcr.io/stakater/reloader:')))
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: ollama-run-as-non-root
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: require-run-as-non-root
+      kind: ValidatingPolicy
+  matchConditions:
+    - name: kind
+      expression: object.kind in ['Pod', 'Deployment']
+    - name: namespace
+      expression: object.metadata.namespace == 'llm'
+    - name: labels
+      expression: >-
+        object.metadata.?labels[?'app.kubernetes.io/name'].orValue('') == 'ollama' &&
+        object.metadata.?labels[?'app.kubernetes.io/instance'].orValue('') == 'ollama'
+    - name: images
+      expression: >-
+        [has(object.spec.template) ? object.spec.template.spec : object.spec].all(s,
+          (s.containers + s.?initContainers.orValue([]) + s.?ephemeralContainers.orValue([])).all(c,
+            c.image.startsWith('docker.io/ollama/ollama:')))
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: open-webui-run-as-non-root
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: require-run-as-non-root
+      kind: ValidatingPolicy
+  matchConditions:
+    - name: kind
+      expression: object.kind in ['Pod', 'StatefulSet']
+    - name: namespace
+      expression: object.metadata.namespace == 'llm'
+    - name: labels
+      expression: >-
+        object.metadata.?labels[?'app.kubernetes.io/name'].orValue('') == 'open-webui' &&
+        object.metadata.?labels[?'app.kubernetes.io/instance'].orValue('') == 'open-webui'
+    - name: images
+      expression: >-
+        [has(object.spec.template) ? object.spec.template.spec : object.spec].all(s,
+          (s.containers + s.?initContainers.orValue([]) + s.?ephemeralContainers.orValue([])).all(c,
+            c.image.startsWith('ghcr.io/open-webui/open-webui:')))
+---
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: ntfy-run-as-non-root
+  namespace: kyverno
+spec:
+  policyRefs:
+    - name: require-run-as-non-root
+      kind: ValidatingPolicy
+  matchConditions:
+    - name: kind
+      expression: object.kind in ['Pod', 'Deployment']
+    - name: namespace
+      expression: object.metadata.namespace == 'ntfy'
+    - name: labels
+      expression: >-
+        object.metadata.?labels[?'app.kubernetes.io/name'].orValue('') == 'ntfy' &&
+        object.metadata.?labels[?'app.kubernetes.io/instance'].orValue('') == 'ntfy'
+    - name: images
+      expression: >-
+        [has(object.spec.template) ? object.spec.template.spec : object.spec].all(s,
+          (s.containers + s.?initContainers.orValue([]) + s.?ephemeralContainers.orValue([])).all(c,
+            c.image.startsWith('docker.io/binwiederhier/ntfy:')))

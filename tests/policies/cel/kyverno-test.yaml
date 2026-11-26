@@ -1,0 +1,177 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: cel-pod-security-and-limits
+policies:
+  - ../../../kubernetes/infrastructure/configs/policies/require-resources.vpol.yaml
+  - ../../../kubernetes/infrastructure/configs/policies/require-run-as-non-root.vpol.yaml
+  - ../../../kubernetes/infrastructure/configs/policies/disallow-privilege-escalation.vpol.yaml
+  - ../../../kubernetes/infrastructure/configs/policies/require-drop-all-capabilities.vpol.yaml
+  - ../../../kubernetes/infrastructure/configs/policies/disallow-latest-tag.vpol.yaml
+exceptions:
+  - ../../../kubernetes/infrastructure/configs/policies/exceptions.yaml
+resources:
+  - ../resources/compliant.yaml
+  - ../resources/violating.yaml
+  - ../resources/escalating.yaml
+  - ../resources/exempt.yaml
+  - ../resources/init-violating.yaml
+  - ../resources/ephemeral-violating.yaml
+  - ../resources/exempt-reloader.yaml
+  - ../resources/exempt-encrypt-copy.yaml
+  - ../resources/exempt-ollama.yaml
+  - ../resources/exempt-ntfy.yaml
+  - ../resources/paperless-foreign-image.yaml
+  - ../resources/paperless-foreign-sidecar.yaml
+  - ../resources/paperless-unlabelled.yaml
+  - ../resources/paperless-deployment.yaml
+  - ../resources/paperless-deployment-foreign.yaml
+  - ../resources/reloader-deployment.yaml
+  - ../resources/open-webui-statefulset.yaml
+results:
+  - policy: require-resources
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: require-resources
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+      - init-violating
+    result: fail
+  - policy: require-resources
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - ephemeral-violating
+    result: pass
+  - policy: require-resources
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx
+    result: fail
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - compliant
+      - init-violating
+    result: pass
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+      - ephemeral-violating
+      - paperless-ngx-x
+      - paperless-ngx-y
+      - paperless-ngx-z
+    result: fail
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - paperless-ngx-7d9f8c6b4-x2k9p
+      - open-webui-encrypt-copy
+      - ollama-6c8d9f7b5-q7m2w
+      - ntfy-5f7c8d9b6-k3n8v
+    result: skip
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx
+    result: skip
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx-foreign
+    result: fail
+  - policy: disallow-privilege-escalation
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - compliant
+      - init-violating
+    result: pass
+  - policy: disallow-privilege-escalation
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+      - escalating
+      - ephemeral-violating
+    result: fail
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - compliant
+      - init-violating
+    result: pass
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+      - ephemeral-violating
+      - paperless-ngx-x
+      - paperless-ngx-y
+      - paperless-ngx-z
+    result: fail
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - paperless-ngx-7d9f8c6b4-x2k9p
+      - reloader-reloader-6b6f7c9d8f-h4k2p
+    result: skip
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx
+    result: skip
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx-foreign
+    result: fail
+  - policy: disallow-latest-tag
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - compliant
+    result: pass
+  - policy: disallow-latest-tag
+    isValidatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+      - init-violating
+      - ephemeral-violating
+    result: fail
+  - policy: disallow-latest-tag
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - paperless-ngx
+    result: pass
+  - policy: require-drop-all-capabilities
+    isValidatingPolicy: true
+    kind: Deployment
+    resources:
+      - reloader-reloader
+    result: skip
+  - policy: require-run-as-non-root
+    isValidatingPolicy: true
+    kind: StatefulSet
+    resources:
+      - open-webui
+    result: skip

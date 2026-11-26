@@ -9,4 +9,9 @@ resources:
   - require-drop-all-capabilities.yaml
   - disallow-latest-tag.yaml
   - generate-network-policies.yaml
+  - require-resources.vpol.yaml
+  - require-run-as-non-root.vpol.yaml
+  - disallow-privilege-escalation.vpol.yaml
+  - require-drop-all-capabilities.vpol.yaml
+  - disallow-latest-tag.vpol.yaml
   - exceptions.yaml
