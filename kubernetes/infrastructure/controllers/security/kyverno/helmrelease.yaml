@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: kyverno
-      version: "3.8.2"
+      version: "3.9.2"
       sourceRef:
         kind: HelmRepository
         name: kyverno
@@ -60,7 +60,7 @@ spec:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyverno
-          tag: v1.18.2@sha256:0a540e2ddf74d0d2d3d45f9ef248d7dbc96576accdbcc6a2dd7eaff9fea56504
+          tag: v1.19.2@sha256:c8c4dd09e720d2cd7fd24ca73ac28e46651001372f988e0cba3f2f612f04b955
       podAntiAffinity:
         preferredDuringSchedulingIgnoredDuringExecution: []
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -82,7 +82,7 @@ spec:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyvernopre
-          tag: v1.18.2@sha256:cd8cb4a31d25b3992734fb8f24a90ef691c90ce49338c89bea96792160eacb98
+          tag: v1.19.2@sha256:27f3cc52e628559b56d08363b85316819802086c9808606914f7805a244148f4
     backgroundController:
       replicas: 1
       resources:
@@ -95,7 +95,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/background-controller
-        tag: v1.18.2@sha256:d62566ce41bd0d4a32bf2cf44b9ebfc02c36374f821f83070890287f62f68671
+        tag: v1.19.2@sha256:c46e124f21ef8a6bb4b48de57106808b1007edcd5ddd4ff7df5d23b9efa60ce2
     cleanupController:
       replicas: 1
       resources:
@@ -108,7 +108,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/cleanup-controller
-        tag: v1.18.2@sha256:b0395d29ae332276e6910eb40418be9bc127c068d659f90aa1bcddd6be99ccb4
+        tag: v1.19.2@sha256:d7340aa7c9315080c3dafa7b765d090ced37353e89e5cd7a3f9ac69e8fb532b2
     reportsController:
       replicas: 1
       resources:
@@ -122,7 +122,7 @@ spec:
       image:
         registry: reg.kyverno.io
         repository: kyverno/reports-controller
-        tag: v1.18.2@sha256:f09cf305170014e191b94e1c54f5be73163d8824eefad49349675c4efe43159a
+        tag: v1.19.2@sha256:5fb6d3e738050dbce84f60ecabaede7665fbe0578d07c1e8c912443b035e79c3
     features:
       policyExceptions:
         enabled: true
@@ -139,15 +139,15 @@ spec:
       image:
         registry: ghcr.io
         repository: kyverno/readiness-checker
-        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+        tag: v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a
     webhooksCleanup:
       image:
         registry: ghcr.io
         repository: kyverno/readiness-checker
-        tag: v1.18.2@sha256:4fb1870b1a4adfed0fa7a32b7c3bcaf736fb889c7e1947ee8b20710bc2f5a5ce
+        tag: v1.19.2@sha256:02600428e7c956e222f4376413525866ed9fec28e6bcb1222774ce6bf5fc904a
     crds:
       migration:
         image:
           registry: reg.kyverno.io
           repository: kyverno/kyverno-cli
-          tag: v1.18.2@sha256:7224ed05508c24419c3df98114c28ba682ad0a940dcdb7b9fdba0a4b6bf943cf
+          tag: v1.19.2@sha256:322ec5044d600930cb3af0e56dc33154a2d1d1fba58f4cadad3f47be7e78b11c
