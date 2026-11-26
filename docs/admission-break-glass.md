@@ -20,7 +20,7 @@ Blast radius is set by two fields on the configuration object: `failurePolicy`, 
 The symptom is a write that fails with a message naming the webhook rather than the resource:
 
 ```
-Internal error occurred: failed calling webhook "validate.kyverno.svc-fail": failed to call webhook: Post "https://kyverno-svc.kyverno.svc:443/...": context deadline exceeded
+Internal error occurred: failed calling webhook "vpol.validate.kyverno.svc-fail": failed to call webhook: Post "https://kyverno-svc.kyverno.svc:443/...": context deadline exceeded
 ```
 
 A policy rejection names the rule that refused and is a deliberate answer from a healthy webhook. A webhook failure names the transport. Only the second calls for this runbook.
@@ -38,7 +38,7 @@ All of these are `failurePolicy: Fail`. The first row reaches across resource ki
 
 | Configuration | Owner | What it blocks while unavailable |
 | --- | --- | --- |
-| `kyverno-resource-validating-webhook-cfg` | Kyverno | Pods, deployments, daemonsets, jobs and cronjobs, in every namespace outside the webhook `namespaceSelector` |
+| `kyverno-resource-validating-webhook-cfg` | Kyverno | Through `vpol.validate.kyverno.svc-fail`, pods, deployments, replicasets, statefulsets, daemonsets, jobs and cronjobs in every namespace outside the webhook `namespaceSelector`. Through `protect-generation-labels.kyverno.svc`, creates and updates of objects labelled `generate.kyverno.io/policy-name`, such as the generated `default-deny` and `allow-dns`, in every namespace |
 | the remaining six `Fail` `kyverno-*` configurations | Kyverno | Kyverno's own policies, exceptions and global context entries |
 | `longhorn-webhook-validator`, `longhorn-webhook-mutator` | Longhorn | Volumes, backups, backup targets and backing images, so volume and backup recovery |
 | `cnpg-validating-webhook-configuration`, `cnpg-mutating-webhook-configuration` | CNPG operator | Clusters, backups, scheduled backups, databases and poolers, so database restore and failover changes |
@@ -46,13 +46,13 @@ All of these are `failurePolicy: Fail`. The first row reaches across resource ki
 | `frr-k8s-validating-webhook-configuration` | frr-k8s | FRR configurations |
 | `cert-manager-webhook` validating and mutating | cert-manager | `cert-manager.io` and `acme.cert-manager.io` resources, so certificate issuance and renewal |
 
-Namespaces are not in the table on purpose. Kyverno's resource webhooks also receive Namespace writes for `generate-network-policies`, and a `Fail` answer there would hold `cluster-namespaces` not-Ready during a Kyverno outage. `cluster-security`, which deploys Kyverno, depends on `cluster-namespaces`, so it could not heal that. The policy therefore sets `failurePolicy: Ignore`: a Kyverno outage lets the Namespace write through without its baseline policies. A namespace created during an outage is checked once Kyverno is back with `kubectl get netpol default-deny allow-dns -n <namespace>`, and if they are missing, reconciling `cluster-policies` re-runs generation for existing namespaces.
+Namespaces are not in the table on purpose. Kyverno's resource webhooks also receive Namespace writes for `generate-network-policies`, and a `Fail` answer there would hold `cluster-namespaces` not-Ready during a Kyverno outage. `cluster-security`, which deploys Kyverno, depends on `cluster-namespaces`, so it could not heal that. Its webhook, `gpol.validate.kyverno.svc-ignore`, therefore has `failurePolicy: Ignore`: a Kyverno outage lets the Namespace write through without its baseline policies. A namespace created during an outage is checked once Kyverno is back with `kubectl get netpol default-deny allow-dns -n <namespace>`, and if they are missing, reconciling `cluster-policies` re-runs generation for existing namespaces.
 
 The subsystem webhooks are circular: a Longhorn outage blocks the Longhorn writes needed to repair it, and the same holds for CNPG and MetalLB. The procedure below applies unchanged with the configuration name substituted.
 
-The resource mutating webhook, `kyverno-resource-mutating-webhook-cfg`, is `Ignore`, because the only mutating policy sets `failurePolicy: Ignore`, so a Kyverno outage skips the mutation rather than blocking the write.
+The resource mutating webhook, `mpol.validate.kyverno.svc-ignore` in `kyverno-resource-mutating-webhook-cfg`, is `Ignore`, because the only mutating policy sets `failurePolicy: Ignore`, so a Kyverno outage skips the mutation rather than blocking the write.
 
-The Kyverno resource webhooks exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
+The Kyverno resource webhooks other than `protect-generation-labels.kyverno.svc` exclude `kube-system`, `kyverno`, and the recovery namespaces `flux-system`, `longhorn-system`, `cert-manager`, `metallb-system`, `monitoring` and `cnpg-system`, so recovery work inside those proceeds during a Kyverno outage. Work anywhere else does not.
 
 ## Disabling enforcement
 
@@ -126,14 +126,14 @@ Seven entries are `Ignore` by design and are expected in that output at rest. An
 | `kube-prometheus-stack-admission` | `alertmanagerconfigsvalidate.monitoring.coreos.com` |
 | `kube-prometheus-stack-admission` | `prometheusrulemutate.monitoring.coreos.com` |
 | `kube-prometheus-stack-admission` | `prometheusrulevalidate.monitoring.coreos.com` |
-| `kyverno-resource-mutating-webhook-cfg` | `mutate.kyverno.svc-ignore` |
-| `kyverno-resource-validating-webhook-cfg` | `validate.kyverno.svc-ignore` |
+| `kyverno-resource-mutating-webhook-cfg` | `mpol.validate.kyverno.svc-ignore` |
+| `kyverno-resource-validating-webhook-cfg` | `gpol.validate.kyverno.svc-ignore` |
 | `kyverno-ttl-validating-webhook-cfg` | `kyverno-cleanup-controller.kyverno.svc` |
 | `kyverno-verify-mutating-webhook-cfg` | `monitor-webhooks.kyverno.svc` |
 
 ## Kyverno namespace NetworkPolicies
 
-If the `kyverno` namespace's own NetworkPolicies cut Kyverno off from the API server or its webhook callers, every `Fail` Kyverno webhook times out, including the policy webhook that guards ClusterPolicy changes. A graceful scale-down cannot help either, because a controller with no API reach cannot remove its webhook configurations. Disarm admission first, with the label delete from [Deleting the configuration](#deleting-the-configuration):
+If the `kyverno` namespace's own NetworkPolicies cut Kyverno off from the API server or its webhook callers, every `Fail` Kyverno webhook times out, including the policy webhook that guards policy changes. A graceful scale-down cannot help either, because a controller with no API reach cannot remove its webhook configurations. Disarm admission first, with the label delete from [Deleting the configuration](#deleting-the-configuration):
 
 ```
 kubectl delete validatingwebhookconfigurations,mutatingwebhookconfigurations \
@@ -148,15 +148,15 @@ flux suspend kustomization cluster-policies
 kubectl -n kyverno delete networkpolicy --all
 ```
 
-The `generate-network-policies` rules exclude the `kyverno` namespace by name, so nothing is generated there and the steps above are enough. Only if `kyverno` is ever removed from that list does a generated copy come back within seconds. In that case, after the delete above, also turn off `synchronize` on the generate rules (or delete the ClusterPolicy, which leaves the generated objects in every other namespace in place because the rules set `orphanDownstreamOnPolicyDelete`), then delete the NetworkPolicies again:
+The `generate-network-policies` namespace selector excludes the `kyverno` namespace by name, so nothing is generated there and the steps above are enough. Only if `kyverno` is ever removed from that list does a generated copy come back within seconds. In that case, after the delete above, also turn off `synchronize` on the policy (or delete the GeneratingPolicy, which leaves the generated objects in every other namespace in place because it enables `orphanDownstreamOnPolicyDelete`), then delete the NetworkPolicies again:
 
 ```
-kubectl get clusterpolicy generate-network-policies -o json \
-  | jq '(.spec.rules[].generate.synchronize) = false' | kubectl replace -f -
+kubectl get generatingpolicy generate-network-policies -o json \
+  | jq '.spec.evaluation.synchronize.enabled = false' | kubectl replace -f -
 kubectl -n kyverno delete networkpolicy --all
 ```
 
-Once Kyverno is healthy, resume both Kustomizations. Flux restores the NetworkPolicies and, where it was changed, the ClusterPolicy with `synchronize: true`. Kyverno recreates its webhook configurations on start:
+Once Kyverno is healthy, resume both Kustomizations. Flux restores the NetworkPolicies and, where it was changed, the GeneratingPolicy with `synchronize` enabled. Kyverno recreates its webhook configurations on start:
 
 ```
 flux resume kustomization cluster-policies
@@ -167,7 +167,7 @@ A NetworkPolicy outage in any other namespace needs none of this. NetworkPolicie
 
 ## Known gaps
 
-- `--webhookTimeout=5` reaches only the Kyverno resource and policy webhooks. The exception, CEL exception and global context webhooks, and the `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks served by the cleanup controller, whose binary has no timeout flag, stay at 10 seconds.
+- `--webhookTimeout=5` reaches only the Kyverno policy webhooks, `protect-generation-labels.kyverno.svc` and `monitor-webhooks.kyverno.svc`. The `vpol`, `mpol` and `gpol` resource webhooks, the exception, CEL exception and global context webhooks, and the `kyverno-cleanup-*` and `kyverno-ttl-*` webhooks served by the cleanup controller, whose binary has no timeout flag, stay at 10 seconds.
 
 ## Signing in without a passkey
 
