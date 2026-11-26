@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: violating
+  namespace: default
+spec:
+  containers:
+    - name: app
+      image: nginx:latest
+      securityContext:
+        allowPrivilegeEscalation: false
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault

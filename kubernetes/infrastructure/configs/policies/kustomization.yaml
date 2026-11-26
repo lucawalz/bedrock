@@ -5,7 +5,6 @@ resources:
   - require-resources.yaml
   - require-run-as-non-root.yaml
   - disallow-privilege-escalation.yaml
-  - mutate-privilege-escalation.yaml
   - require-drop-all-capabilities.yaml
   - disallow-latest-tag.yaml
   - generate-network-policies.yaml
@@ -14,4 +13,5 @@ resources:
   - disallow-privilege-escalation.vpol.yaml
   - require-drop-all-capabilities.vpol.yaml
   - disallow-latest-tag.vpol.yaml
+  - default-privilege-escalation.mpol.yaml
   - exceptions.yaml

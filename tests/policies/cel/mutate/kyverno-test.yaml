@@ -1,0 +1,48 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: cel-default-privilege-escalation
+policies:
+  - ../../../../kubernetes/infrastructure/configs/policies/default-privilege-escalation.mpol.yaml
+resources:
+  - ../../resources/unset-escalation.yaml
+  - ../../resources/violating.yaml
+  - ../../resources/escalating.yaml
+  - ../../resources/seccomp-set.yaml
+  - ../../resources/init-escalating.yaml
+results:
+  - policy: default-privilege-escalation
+    isMutatingPolicy: true
+    kind: Pod
+    resources:
+      - unset-escalation
+    patchedResources: ../../resources/patched-unset-escalation.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    isMutatingPolicy: true
+    kind: Pod
+    resources:
+      - violating
+    patchedResources: ../../resources/patched-violating.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    isMutatingPolicy: true
+    kind: Pod
+    resources:
+      - escalating
+    patchedResources: ../../resources/patched-escalating.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    isMutatingPolicy: true
+    kind: Pod
+    resources:
+      - seccomp-set
+    patchedResources: ../../resources/seccomp-set.yaml
+    result: pass
+  - policy: default-privilege-escalation
+    isMutatingPolicy: true
+    kind: Pod
+    resources:
+      - init-escalating
+    patchedResources: ../../resources/patched-init-escalating.yaml
+    result: pass
