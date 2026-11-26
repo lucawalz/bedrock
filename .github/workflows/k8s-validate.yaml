@@ -130,7 +130,7 @@ jobs:
       - name: Install kyverno CLI
         env:
           # renovate: datasource=github-releases depName=kyverno/kyverno
-          KYVERNO_VERSION: v1.19.2
+          KYVERNO_VERSION: v1.20.0
           KYVERNO_SHA256: 357eaf1df8bc24ddd5a73979fadeaae6a032e8710f11af264229756e4956bf4a
         run: |
           curl -sSfL -o "$RUNNER_TEMP/kyverno.tar.gz" "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz"
