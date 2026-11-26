@@ -45,11 +45,11 @@ spec:
         manager:
           registry: docker.io
           repository: longhornio/longhorn-manager
-          tag: v1.12.1@sha256:83b79f57043fe1405e68bc0d4c7987accbc6bb512def3e0db12b31966c070801
+          tag: v1.12.2@sha256:ce35c73a601d4fd73f9ed14f2abb33d34ca6c8ff7296e3aca4f90f1f3568b0e2
         ui:
           registry: docker.io
           repository: longhornio/longhorn-ui
-          tag: v1.12.1@sha256:03a3ce6673df6e948c261fe978a695adaa8fb190d68bfe5c358af8ee3d3fbef5
+          tag: v1.12.2@sha256:f25e20f06e13c9795f78efed3cbfd8cd4836ea8de68b6de27fe50a7cd7ce6c5e
       csi:
         attacher:
           registry: docker.io
