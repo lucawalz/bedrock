@@ -60,6 +60,10 @@ kubeApiServer:
         sourceLabels:
           - __name__
 
+coreDns:
+  serviceMonitor:
+    authorization: null
+
 prometheusOperator:
   resources:
     requests:
