@@ -1,0 +1,24 @@
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Test
+metadata:
+  name: cel-generate-network-policies
+policies:
+  - ../../../../kubernetes/infrastructure/configs/policies/generate-network-policies.gpol.yaml
+resources:
+  - ../../resources/namespaces.yaml
+results:
+  - policy: generate-network-policies
+    isGeneratingPolicy: true
+    kind: Namespace
+    resources:
+      - new-namespace
+    generatedResource: ../../resources/generated-network-policies.yaml
+    result: pass
+  - policy: generate-network-policies
+    isGeneratingPolicy: true
+    kind: Namespace
+    resources:
+      - kube-system
+      - kyverno
+      - cert-manager
+    result: skip

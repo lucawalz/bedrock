@@ -1,0 +1,80 @@
+apiVersion: policies.kyverno.io/v1
+kind: GeneratingPolicy
+metadata:
+  name: generate-network-policies
+  annotations:
+    policies.kyverno.io/title: Generate baseline NetworkPolicies
+    policies.kyverno.io/category: Network
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Namespace, NetworkPolicy
+spec:
+  useServerSideApply: true
+  evaluation:
+    generateExisting:
+      enabled: true
+    synchronize:
+      enabled: true
+    orphanDownstreamOnPolicyDelete:
+      enabled: true
+  matchConstraints:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kube-public
+            - kube-node-lease
+            - flux-system
+            - kyverno
+            - cnpg-system
+            - cert-manager
+            - longhorn-system
+            - metallb-system
+            - monitoring
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [namespaces]
+  variables:
+    - name: defaultDeny
+      expression: >-
+        {
+          "apiVersion": dyn("networking.k8s.io/v1"),
+          "kind": dyn("NetworkPolicy"),
+          "metadata": dyn({
+            "name": "default-deny",
+            "annotations": {"kustomize.toolkit.fluxcd.io/prune": "disabled"}
+          }),
+          "spec": dyn({
+            "podSelector": {},
+            "policyTypes": ["Ingress", "Egress"]
+          })
+        }
+    - name: allowDns
+      expression: >-
+        {
+          "apiVersion": dyn("networking.k8s.io/v1"),
+          "kind": dyn("NetworkPolicy"),
+          "metadata": dyn({
+            "name": "allow-dns",
+            "annotations": {"kustomize.toolkit.fluxcd.io/prune": "disabled"}
+          }),
+          "spec": dyn({
+            "podSelector": {},
+            "policyTypes": ["Egress"],
+            "egress": [{
+              "to": [{
+                "namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "kube-system"}},
+                "podSelector": {"matchLabels": {"k8s-app": "kube-dns"}}
+              }],
+              "ports": [
+                {"protocol": "TCP", "port": 53},
+                {"protocol": "UDP", "port": 53}
+              ]
+            }]
+          })
+        }
+  generate:
+    - expression: generator.Apply(object.metadata.name, [variables.defaultDeny, variables.allowDns])

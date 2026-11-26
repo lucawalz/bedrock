@@ -167,9 +167,9 @@ yq -N 'select(.kind == "ConfigMap" and .metadata.namespace == "kyverno" and .met
   | awk -F'[][,]' '($2 == "*/*" || $2 == "*") && $4 == "*" { print $3 }' \
   | sort -u > "$work/filtered-namespaces"
 
-yq -N 'select(.kind == "ClusterPolicy") | .spec.rules[] | select(.generate.kind == "NetworkPolicy")
-  | .generate.name + " " + ([.preconditions.all[]? | select(.key == "{{request.object.metadata.name}}" and .operator == "AnyNotIn") | .value[]] | join(","))' \
-  "$work/built.yaml" > "$work/generated-network-policies"
+yq -N '[.spec.matchConstraints.namespaceSelector.matchExpressions[] | select(.key == "kubernetes.io/metadata.name" and .operator == "NotIn") | .values[]] | join(",")' \
+  "$k8s_dir/infrastructure/configs/policies/generate-network-policies.gpol.yaml" \
+  | while read -r excluded; do printf "%s $excluded\n" "${baseline_network_policies[@]}"; done > "$work/generated-network-policies"
 
 yq -N 'select(.kind == "NetworkPolicy") | .metadata.namespace + "/" + .metadata.name' "$work/built.yaml" \
   | sort -u > "$work/declared-network-policies"
