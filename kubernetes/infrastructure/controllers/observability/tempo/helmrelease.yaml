@@ -58,7 +58,7 @@ spec:
       storageClassName: longhorn
       accessModes:
         - ReadWriteOnce
-      size: 10Gi
+      size: 1Gi
     serviceAccount:
       automountServiceAccountToken: false
     serviceMonitor:
