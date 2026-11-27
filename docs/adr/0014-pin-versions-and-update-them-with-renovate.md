@@ -17,7 +17,7 @@ A rebuild from git only reproduces the cluster if git names exact versions. Floa
 - Digest-exempt:
   - The Flux controllers. The `FluxInstance` pins the `2.10.x` line, not a digest. The Flux Operator, itself held and digest-pinned, resolves and runs each controller image by digest, and no values set them.
   - The images below, listed in `digest_exempt_images`.
-  - Longhorn engine and instance manager. Longhorn names an EngineImage or instance manager after its image string, so a new string starts an engine upgrade that stays manual here.
+  - Longhorn engine and instance manager. Longhorn names an EngineImage or instance manager after its image string, so a new string starts an engine upgrade. Engines upgrade automatically, one volume per node (`concurrentAutomaticEngineUpgradePerNodeLimit: 1`), except strict-local volumes. The engine process stays in the old instance manager until its volume detaches, so every volume detaches once after a Longhorn upgrade and the old instance managers then drain ([Longhorn upgrades](../disaster-recovery.md#longhorn-upgrades)).
   - Longhorn share manager and backing image manager. Each ShareManager and BackingImageManager records its image, so a new string replaces the NFS server of a shared volume or the manager that serves backing images on a disk.
   - Longhorn support bundle kit. It runs only for a requested support bundle and holds no data; it stays on the same tag-only setting as the other images Longhorn launches, whose digest support is unverified.
   - The CloudNativePG PostgreSQL image. It is the operator default, and setting `imageName` in the `Cluster` rolls every database instance.

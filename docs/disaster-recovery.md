@@ -620,6 +620,14 @@ Flannel runs over `tailscale0` on all three nodes ([ADR 0003](adr/0003-run-k3s-a
 
 The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when Longhorn creates a disk record, so the rebuilt nodes came up at 30 percent of their disks. A later change to the value reaches existing disks only by a patch to `spec.disks.<key>.storageReserved` on each `nodes.longhorn.io` object. Every disk key carries a generated suffix: read it with `kubectl -n longhorn-system get nodes.longhorn.io <node> -o jsonpath='{.spec.disks}'` first, because a merge patch on a missing key adds a second, broken disk entry. Keep `storage-over-provisioning-percentage` at 200 when raising the reserve, or replica scheduling stops on the smaller disks.
 
+## Longhorn upgrades
+
+A chart bump that changes the engine image starts automatic engine upgrades, one volume per node. The upgrade skips strict-local volumes, which are the three CloudNativePG volumes. Each engine process also stays in the old instance manager until its volume detaches, and the old instance manager keeps its CPU reservation until then. Every volume therefore needs one detach after the upgrade:
+
+1. Roll each workload that mounts a Longhorn volume, one at a time, with `kubectl rollout restart` and `kubectl rollout status`.
+2. Roll Postgres with `kubectl cnpg restart postgres -n postgres`. The command restarts the cluster in a rollout: the operator restarts the replicas one pod at a time and the primary last, by switchover because `primaryUpdateMethod` is `switchover` ([CloudNativePG rolling updates](https://cloudnative-pg.io/docs/current/rolling_update)).
+3. Check that `kubectl -n longhorn-system get engineimages` shows the old image at `REFCOUNT` 0 and that its old instance managers are gone.
+
 ## Recovery objectives
 
 | Data | Recovery point | Recovery time |
