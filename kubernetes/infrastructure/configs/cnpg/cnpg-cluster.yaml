@@ -47,10 +47,10 @@ spec:
         name: barman-cloud.cloudnative-pg.io
         parameters:
           barmanObjectName: postgres-backup
-          serverName: postgres-2026-11
+          serverName: postgres-2026-11-encrypted
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
       parameters:
         barmanObjectName: postgres-backup
-        serverName: postgres-2026-11
+        serverName: postgres-2026-11-encrypted
