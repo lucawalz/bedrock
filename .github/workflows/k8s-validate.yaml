@@ -206,5 +206,10 @@ jobs:
 
       - uses: ./.github/actions/manifest-tools
 
+      - name: Derive schemas for the CRDs this repository installs
+        run: |
+          RENDER_OUTPUT_DIR="$RUNNER_TEMP/rendered" bash scripts/render-helm-releases.sh > /dev/null
+          bash scripts/gen-crd-schemas.sh "$RUNNER_TEMP/crd-schemas" kubernetes "$RUNNER_TEMP/rendered"
+
       - name: Render the Flux Kustomizations and validate the applied output
-        run: bash scripts/validate-substitution.sh
+        run: bash scripts/validate-substitution.sh "$RUNNER_TEMP/crd-schemas"

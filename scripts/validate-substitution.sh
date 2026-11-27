@@ -12,7 +12,12 @@ if grep -RInE '\$([^${]|$)' kubernetes/apps/*/app 2>/dev/null | grep -vE '\$\$';
   fail=1
 fi
 
+derived_schemas="${1:-}"
+
 schema_args=(-schema-location default)
+if [ -n "$derived_schemas" ]; then
+  schema_args+=(-schema-location "$derived_schemas/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json")
+fi
 if [ -n "${KUBECONFORM_SCHEMA_LOCATION:-}" ]; then
   schema_args+=(-schema-location "$KUBECONFORM_SCHEMA_LOCATION")
 fi
