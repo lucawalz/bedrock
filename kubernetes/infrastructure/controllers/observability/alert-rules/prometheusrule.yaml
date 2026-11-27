@@ -27,13 +27,13 @@ spec:
     - name: flux.rules
       rules:
         - alert: FluxReconciliationFailure
-          expr: max(flux_resource_info{ready="False", suspended="False"}) by (kind, name, exported_namespace) == 1
+          expr: max(flux_resource_info{ready="False", suspended="False", reason!="DependencyNotReady"}) by (kind, name, exported_namespace) == 1
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} failed to reconcile"
-            description: "The Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} has not been ready for more than 15 minutes."
+            description: "The Flux {{ $labels.kind }} {{ $labels.exported_namespace }}/{{ $labels.name }} has not been ready for more than 15 minutes. An object that is only waiting for a dependency is left out, because the dependency that is not ready raises this alert itself."
         - alert: FluxMetricsAbsent
           expr: absent(flux_resource_info)
           for: 15m
@@ -262,13 +262,13 @@ spec:
     - name: container.rules
       rules:
         - alert: ContainerMemoryNearLimit
-          expr: max by (namespace, pod, container) (container_memory_working_set_bytes{container!=""}) / on (namespace, pod, container) max by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"}) > 0.85
+          expr: max by (namespace, pod, container) (container_memory_rss{container!=""}) / on (namespace, pod, container) max by (namespace, pod, container) (kube_pod_container_resource_limits{resource="memory"}) > 0.85
           for: 30m
           labels:
             severity: warning
           annotations:
             summary: "Container {{ $labels.container }} in {{ $labels.namespace }}/{{ $labels.pod }} is close to its memory limit"
-            description: "Container {{ $labels.container }} has held above 85 percent of its memory limit for 30 minutes, currently {{ $value | humanizePercentage }}. Exceeding the limit is an immediate OOMKill rather than a gradual slowdown, so this is the only warning available before the container is terminated. Either the limit was set below what the workload needs or the workload is leaking."
+            description: "Container {{ $labels.container }} has held its resident memory above 85 percent of its memory limit for 30 minutes, currently {{ $value | humanizePercentage }}. Resident memory leaves out the page cache, which the kernel reclaims under pressure before it kills the container. Exceeding the limit is an immediate OOMKill rather than a gradual slowdown, so this is the only warning available before the container is terminated. Either the limit was set below what the workload needs or the workload is leaking."
         - alert: ContainerOOMKilled
           expr: increase(kube_pod_container_status_restarts_total[1h]) > 0 and on (namespace, pod, container) kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
           for: 5m
@@ -316,10 +316,10 @@ spec:
             summary: "kube-state-metrics has stopped reporting"
             description: "Prometheus has held no kube_pod_info series for more than 15 minutes, so every workload, node and capacity alert derived from kube-state-metrics is unable to fire."
         - alert: KubeJobFailed
-          expr: max by (namespace, job_name) (kube_job_status_failed) > 0
+          expr: max by (namespace, job_name) (kube_job_status_failed) > 0 unless on (namespace, job_name) max by (namespace, job_name) (kube_job_complete{condition="true"}) == 1
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: "Job {{ $labels.namespace }}/{{ $labels.job_name }} failed to complete"
-            description: "The Job {{ $labels.namespace }}/{{ $labels.job_name }} has recorded {{ $value | printf \"%.0f\" }} failed pods for over 15 minutes. This replaces the mixin alert of the same name, which queried kube_job_failed, a metric kube-state-metrics does not export; the exported series is kube_job_status_failed and carries a failure count rather than a boolean. Deleting the Job after investigation clears this."
+            description: "The Job {{ $labels.namespace }}/{{ $labels.job_name }} has recorded {{ $value | printf \"%.0f\" }} failed pods and has not completed for over 15 minutes. A Job whose pods failed before a retry succeeded has completed and is left out. This replaces the mixin alert of the same name, which queried kube_job_failed, a metric kube-state-metrics does not export; the exported series is kube_job_status_failed and carries a failure count rather than a boolean. Deleting the Job after investigation clears this."
