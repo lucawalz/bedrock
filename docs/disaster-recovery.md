@@ -624,8 +624,8 @@ The chart sets `storageReservedPercentageForDefaultDisk: 30`, applied only when 
 
 A chart bump that changes the engine image starts automatic engine upgrades, one volume per node. The upgrade skips strict-local volumes, which are the three CloudNativePG volumes. Each engine process also stays in the old instance manager until its volume detaches, and the old instance manager keeps its CPU reservation until then. Every volume therefore needs one detach after the upgrade:
 
-1. Roll each workload that mounts a Longhorn volume, one at a time, with `kubectl rollout restart` and `kubectl rollout status`.
-2. Roll Postgres with `kubectl cnpg restart postgres -n postgres`. The command restarts the cluster in a rollout: the operator restarts the replicas one pod at a time and the primary last, by switchover because `primaryUpdateMethod` is `switchover` ([CloudNativePG rolling updates](https://cloudnative-pg.io/docs/current/rolling_update)).
+1. Detach each volume once. A restart that brings the pod back on the same node reuses the attachment, so scale each Deployment or StatefulSet that mounts a Longhorn volume to zero, wait until `kubectl -n longhorn-system get volumes.longhorn.io <volume>` reports `detached`, then scale it back.
+2. Detach each CloudNativePG instance once, replicas first. Set `node-drain-policy` to `always-allow` beforehand: with the default `block-for-eviction-if-contains-last-replica`, a cordon makes Longhorn copy the single strict-local replica onto the same node, and Longhorn then refuses to detach a strict-local volume with two replicas. For each instance, cordon its node, delete its pod, wait until its volume reports `detached`, uncordon, and wait until the cluster reports every instance ready. Before the primary's turn, move it with `kubectl cnpg promote postgres <instance> -n postgres`. Restore `node-drain-policy` afterwards.
 3. Check that `kubectl -n longhorn-system get engineimages` shows the old image at `REFCOUNT` 0 and that its old instance managers are gone.
 
 ## Recovery objectives
