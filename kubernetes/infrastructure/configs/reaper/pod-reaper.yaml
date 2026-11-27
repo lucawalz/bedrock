@@ -82,6 +82,6 @@ spec:
                       | while read -r ns name; do
                           [ -n "$name" ] || continue
                           echo "deleting $phase pod $ns/$name"
-                          kubectl delete pod -n "$ns" "$name" --wait=false
+                          kubectl delete pod -n "$ns" "$name" --wait=false --ignore-not-found
                         done
                   done
