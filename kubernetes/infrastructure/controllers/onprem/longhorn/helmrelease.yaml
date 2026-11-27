@@ -93,6 +93,7 @@ spec:
         bedrock.io/storage: "true"
     defaultSettings:
       allowVolumeCreationWithDegradedAvailability: false
+      concurrentAutomaticEngineUpgradePerNodeLimit: 1
       createDefaultDiskLabeledNodes: true
       defaultDataPath: /var/lib/longhorn
       defaultReplicaCount: 3
