@@ -31,7 +31,7 @@ tests:
               slo: blog-availability
             exp_annotations:
               summary: "Blog availability error budget burning fast (14.4x)"
-              description: "The blog is burning its 30d availability error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about two days."
+              description: "The blog is burning its 7d availability error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about 12 hours."
 
   - interval: 1m
     name: availability healthy does not fire and budget near full
@@ -84,7 +84,7 @@ tests:
               slo: blog-latency
             exp_annotations:
               summary: "Blog latency error budget burning fast (14.4x)"
-              description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+              description: "Requests to the blog slower than 300ms are burning the 7d latency error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about 12 hours."
 
   - interval: 1m
     name: the latency recording rule yields a series against the buckets traefik emits

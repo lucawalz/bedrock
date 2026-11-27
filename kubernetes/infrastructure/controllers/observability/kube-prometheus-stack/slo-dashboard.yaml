@@ -46,7 +46,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Availability error budget remaining (30d)",
+          "title": "Availability error budget remaining (7d)",
           "type": "stat"
         },
         {
@@ -81,7 +81,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Latency error budget remaining (30d)",
+          "title": "Latency error budget remaining (7d)",
           "type": "stat"
         },
         {

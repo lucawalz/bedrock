@@ -46,15 +46,15 @@ spec:
             sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[3d]))
         - record: slo:blog_availability:error_ratio
           labels:
-            window: 30d
+            window: 7d
           expr: |
-            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[30d])) or vector(0))
+            (sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*", code=~"5.."}[7d])) or vector(0))
             /
-            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[30d]))
+            sum(rate(traefik_router_requests_total{router=~"(websecure-)?blog-blog-.*"}[7d]))
         - record: slo:blog_availability:error_budget_remaining_ratio
           expr: |
             1 - (
-              clamp_min(sum without(window) (slo:blog_availability:error_ratio{window="30d"}), 0)
+              clamp_min(sum without(window) (slo:blog_availability:error_ratio{window="7d"}), 0)
               / (1 - 0.999)
             )
     - name: slo-blog.latency.recording
@@ -106,17 +106,17 @@ spec:
             )
         - record: slo:blog_latency:error_ratio
           labels:
-            window: 30d
+            window: 7d
           expr: |
             1 - (
-              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[30d]))
+              sum(rate(traefik_router_request_duration_seconds_bucket{router=~"(websecure-)?blog-blog-.*", le="0.3"}[7d]))
               /
-              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[30d]))
+              sum(rate(traefik_router_request_duration_seconds_count{router=~"(websecure-)?blog-blog-.*"}[7d]))
             )
         - record: slo:blog_latency:error_budget_remaining_ratio
           expr: |
             1 - (
-              clamp_min(sum without(window) (slo:blog_latency:error_ratio{window="30d"}), 0)
+              clamp_min(sum without(window) (slo:blog_latency:error_ratio{window="7d"}), 0)
               / (1 - 0.99)
             )
     - name: slo-blog.availability.alerts
@@ -132,7 +132,7 @@ spec:
             slo: blog-availability
           annotations:
             summary: "Blog availability error budget burning fast (14.4x)"
-            description: "The blog is burning its 30d availability error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about two days."
+            description: "The blog is burning its 7d availability error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about 12 hours."
         - alert: BlogAvailabilityErrorBudgetBurnMedium
           expr: |
             sum without(window) (slo:blog_availability:error_ratio{window="6h"}) > (6 * (1 - 0.999))
@@ -144,7 +144,7 @@ spec:
             slo: blog-availability
           annotations:
             summary: "Blog availability error budget burning medium (6x)"
-            description: "The blog is burning its 30d availability error budget at 6x over 6h and 30m windows."
+            description: "The blog is burning its 7d availability error budget at 6x over 6h and 30m windows; the budget will be exhausted in about 28 hours."
         - alert: BlogAvailabilityErrorBudgetBurnSlow
           expr: |
             sum without(window) (slo:blog_availability:error_ratio{window="3d"}) > (1 * (1 - 0.999))
@@ -156,7 +156,7 @@ spec:
             slo: blog-availability
           annotations:
             summary: "Blog availability error budget burning slow (1x)"
-            description: "The blog is burning its 30d availability error budget at 1x over 3d and 6h windows; the budget will be exhausted before the window closes."
+            description: "The blog is burning its 7d availability error budget at 1x over 3d and 6h windows; the budget will be exhausted in about 7 days."
     - name: slo-blog.latency.alerts
       rules:
         - alert: BlogLatencyErrorBudgetBurnFast
@@ -170,7 +170,7 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning fast (14.4x)"
-            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 14.4x over 1h and 5m windows."
+            description: "Requests to the blog slower than 300ms are burning the 7d latency error budget at 14.4x over 1h and 5m windows; the budget will be exhausted in about 12 hours."
         - alert: BlogLatencyErrorBudgetBurnMedium
           expr: |
             sum without(window) (slo:blog_latency:error_ratio{window="6h"}) > (6 * (1 - 0.99))
@@ -182,7 +182,7 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning medium (6x)"
-            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 6x over 6h and 30m windows."
+            description: "Requests to the blog slower than 300ms are burning the 7d latency error budget at 6x over 6h and 30m windows; the budget will be exhausted in about 28 hours."
         - alert: BlogLatencyErrorBudgetBurnSlow
           expr: |
             sum without(window) (slo:blog_latency:error_ratio{window="3d"}) > (1 * (1 - 0.99))
@@ -194,4 +194,4 @@ spec:
             slo: blog-latency
           annotations:
             summary: "Blog latency error budget burning slow (1x)"
-            description: "Requests to the blog slower than 300ms are burning the 30d latency error budget at 1x over 3d and 6h windows."
+            description: "Requests to the blog slower than 300ms are burning the 7d latency error budget at 1x over 3d and 6h windows; the budget will be exhausted in about 7 days."
