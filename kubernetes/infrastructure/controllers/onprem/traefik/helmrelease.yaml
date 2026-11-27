@@ -9,7 +9,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "41.4.0"
+      version: "42.4.1"
       sourceRef:
         kind: HelmRepository
         name: traefik
@@ -121,7 +121,7 @@ spec:
     image:
       registry: docker.io
       repository: traefik
-      tag: v3.7.13@sha256:24841fe2de7304c149343d877d2923b4c8800a38ba015dea9174c23b20e344a0
+      tag: v3.8.0@sha256:00c9734983e74ae35a1fc18eaee9e9da13f3dde95c4e45b3b8c3b60e0dbd2d17
   install:
     crds: Skip
     strategy:
